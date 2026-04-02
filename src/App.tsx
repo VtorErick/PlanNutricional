@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChefHat, CheckCircle2, TrendingDown, Calendar,
@@ -24,6 +24,20 @@ export default function App() {
   const [selecciones, setSelecciones] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState<'plan' | 'equivalencias' | 'resumen'>('plan');
   const [progressExpanded, setProgressExpanded] = useState(false);
+
+  // Refs para hacer scroll a cada sección de comida
+  const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const scrollToMomento = useCallback((momentoKey: string) => {
+    const el = mealSectionRefs.current[momentoKey];
+    if (!el) return;
+    // Cerrar panel expandido primero para que el offset sea el correcto (compacto)
+    setProgressExpanded(false);
+    // Offset = header principal (~56px) + barra compacta (~44px) + margen extra (8px)
+    const offset = 56 + 44 + 8;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }, []);
 
   const perfil = perfilActivo ? perfilesData[perfilActivo] : null;
   const diasDisponibles = perfil ? Object.keys(perfil.plan) : [];
@@ -250,26 +264,27 @@ export default function App() {
                 {diaActivo}
               </span>
 
-              {/* Indicadores de momentos */}
+              {/* Indicadores de momentos — clickeables para ir a esa sección */}
               <div className="flex items-center gap-1 flex-shrink-0">
                 {perfil!.momentos.map((momento) => {
                   const Icon = momentoIcons[momento.key] || UtensilsCrossed;
                   const done = momentoCompletado[momento.key];
                   return (
-                    <div
+                    <button
                       key={momento.key}
-                      title={momento.label}
-                      className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      title={`Ir a ${momento.label}`}
+                      onClick={(e) => { e.stopPropagation(); scrollToMomento(momento.key); }}
+                      className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 ${
                         done
-                          ? `bg-gradient-to-br ${ac.bgGradient} shadow-sm`
-                          : `${ac.bgLight} border ${ac.border}`
+                          ? `bg-gradient-to-br ${ac.bgGradient} shadow-sm hover:opacity-80`
+                          : `${ac.bgLight} border ${ac.border} hover:opacity-70`
                       }`}
                     >
                       {done
                         ? <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white" />
                         : <Icon className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${ac.iconColorPending}`} />
                       }
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -326,7 +341,7 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* Tarjetas de momentos */}
+                    {/* Tarjetas de momentos — clickeables para ir a la sección */}
                     <div className="grid grid-cols-5 gap-2">
                       {perfil!.momentos.map((momento) => {
                         const Icon = momentoIcons[momento.key] || UtensilsCrossed;
@@ -336,11 +351,15 @@ export default function App() {
                           .replace('mañana', 'AM')
                           .replace('tarde', 'PM');
                         return (
-                          <motion.div
+                          <motion.button
                             key={momento.key}
                             animate={{ scale: done ? 1.03 : 1 }}
+                            whileTap={{ scale: 0.95 }}
                             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                            className={`relative rounded-xl p-2 sm:p-2.5 flex flex-col items-center gap-1 border shadow-sm transition-all duration-300 ${done ? ac.cardDone : ac.cardPending}`}
+                            onClick={() => scrollToMomento(momento.key)}
+                            className={`relative rounded-xl p-2 sm:p-2.5 flex flex-col items-center gap-1 border shadow-sm transition-all duration-300 cursor-pointer text-left w-full ${
+                              done ? ac.cardDone : `${ac.cardPending} hover:shadow-md`
+                            }`}
                           >
                             <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center ${done ? ac.iconDone : ac.iconPending}`}>
                               {done
@@ -363,7 +382,7 @@ export default function App() {
                                 <CheckCircle2 className="w-2.5 h-2.5 text-white" />
                               </motion.span>
                             )}
-                          </motion.div>
+                          </motion.button>
                         );
                       })}
                     </div>
@@ -437,7 +456,11 @@ export default function App() {
                   if (comidas.length === 0) return null;
                   const done = momentoCompletado[momento.key];
                   return (
-                    <div key={momento.key} className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border ${done ? ac.borderAccent : 'border-slate-100'} transition-all duration-300`}>
+                    <div
+                      key={momento.key}
+                      ref={(el) => { mealSectionRefs.current[momento.key] = el; }}
+                      className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border ${done ? ac.borderAccent : 'border-slate-100'} transition-all duration-300`}
+                    >
                       <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
                         <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center flex-shrink-0`}>
                           <Icon className="w-3.5 h-3.5 text-white" />
