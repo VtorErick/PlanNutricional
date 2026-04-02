@@ -17,6 +17,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['dulce-controlado', 'anti-antojo', 'fácil'],
         super: ['yogurt griego', 'avena', 'canela', 'pepino', 'jícama', 'chía', 'almendras'],
       },
+      {
+        nombre: 'Omelette de jamón de pavo con espinaca',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '3 huevos en omelette con 3 rebanadas jamón de pavo, espinaca y champiñón, 1 tortilla, 1/4 aguacate, 1 cdita aceite.',
+        tags: ['proteico', 'saciante', 'rápido'],
+        super: ['huevo', 'jamón de pavo', 'espinaca', 'champiñón', 'tortilla', 'aguacate'],
+      },
     ],
     colacion_am: [
       {
@@ -25,6 +32,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1 manzana grande + 1 cda crema de cacahuate natural + 5 almendras. Comer despacio, la fibra + grasa te mantiene sin hambre.',
         tags: ['anti-antojo', 'dulce-natural', 'saciante'],
         super: ['manzana', 'crema de cacahuate', 'almendras'],
+      },
+      {
+        nombre: 'Pera con nueces',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 pera grande con cáscara + 8 nueces. La fibra de la pera te mantiene satisfecho.',
+        tags: ['fibra', 'saciante', 'práctico'],
+        super: ['pera', 'nueces'],
+      },
+      {
+        nombre: 'Fresas con yogurt y chía',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 taza fresas + 2 cdas chía + 5 almendras. Anti-antojo dulce.',
+        tags: ['anti-antojo', 'dulce-natural', 'fibra'],
+        super: ['fresas', 'chía', 'almendras'],
       },
     ],
     comida: [
@@ -42,6 +63,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['parrilla', 'proteico', 'llenador'],
         super: ['res magra', 'lechuga', 'jitomate', 'pepino', 'cebolla', 'tortilla', 'aguacate'],
       },
+      {
+        nombre: 'Bistec a la plancha con frijoles y verdura',
+        porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
+        detalle: '180g bistec de res a la plancha, frijoles (1/2 taza), ensalada de lechuga y jitomate, 1 tortilla, 1/4 aguacate.',
+        tags: ['mexicano', 'proteico', 'leguminosa'],
+        super: ['res', 'frijol', 'lechuga', 'jitomate', 'tortilla', 'aguacate'],
+      },
     ],
     colacion_pm: [
       {
@@ -58,6 +86,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['libre', 'dulce-controlado', 'práctico'],
         super: ['gelatina light'],
       },
+      {
+        nombre: 'Jícama con tajín y limón',
+        porciones: 'Libre',
+        detalle: '1 taza jícama en bastones con tajín y limón. Libre, crujiente y refrescante.',
+        tags: ['libre', 'crujiente', 'refrescante'],
+        super: ['jícama', 'limón'],
+      },
     ],
     cena: [
       {
@@ -73,6 +108,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '3 huevos en omelette con espinaca, champiñón y pimiento, 1 tortilla, 1/3 aguacate.',
         tags: ['rápido', 'proteico', 'anti-antojo'],
         super: ['huevo', 'espinaca', 'champiñón', 'pimiento', 'tortilla', 'aguacate'],
+      },
+      {
+        nombre: 'Quesadilla de panela con ensalada',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '1 tortilla con 50g panela y champiñones, ensalada de lechuga y jitomate al lado, 1/3 aguacate.',
+        tags: ['antojito-controlado', 'rápido', 'saciante'],
+        super: ['tortilla', 'panela', 'champiñón', 'lechuga', 'jitomate', 'aguacate'],
       },
     ],
   },
@@ -93,6 +135,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['proteico', 'saciante', 'bajo en carb'],
         super: ['huevo', 'espinaca', 'champiñón', 'tortilla', 'aguacate', 'aceite oliva'],
       },
+      {
+        nombre: 'Avena proteica con canela y nueces',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '1/3 taza avena + 1 taza yogurt griego + canela. Aparte: pepino y jícama. 2 cdas linaza, 5 nueces.',
+        tags: ['dulce-controlado', 'fibra', 'anti-antojo'],
+        super: ['avena', 'yogurt griego', 'canela', 'pepino', 'jícama', 'linaza', 'nueces'],
+      },
     ],
     colacion_am: [
       {
@@ -101,6 +150,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1/2 plátano + 8 nueces. Combinación de energía rápida + grasas que controlan hambre.',
         tags: ['energía', 'saciante', 'práctico'],
         super: ['plátano', 'nueces'],
+      },
+      {
+        nombre: 'Guayabas con almendras',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '2 guayabas + 10 almendras. Alta fibra + vitamina C.',
+        tags: ['fibra', 'vitamina C', 'fácil'],
+        super: ['guayaba', 'almendras'],
+      },
+      {
+        nombre: 'Manzana con cacahuates',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 manzana + 14 cacahuates naturales. Fibra + proteína vegetal = control de hambre.',
+        tags: ['anti-antojo', 'proteína vegetal', 'económico'],
+        super: ['manzana', 'cacahuates'],
       },
     ],
     comida: [
@@ -111,6 +174,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['casero', 'batch-cooking', 'llenador'],
         super: ['res molida', 'calabacita', 'zanahoria', 'ejotes', 'arroz', 'tortilla', 'aceite'],
       },
+      {
+        nombre: 'Pollo a la plancha con pasta integral',
+        porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
+        detalle: '180g pechuga a la plancha, 1/2 taza pasta integral, ensalada (lechuga, jitomate, pepino), 1 cdita aceite, 1/4 aguacate.',
+        tags: ['variado', 'proteico', 'saciante'],
+        super: ['pollo', 'pasta integral', 'lechuga', 'jitomate', 'pepino', 'aceite oliva', 'aguacate'],
+      },
+      {
+        nombre: 'Tinga de pollo con arroz',
+        porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
+        detalle: '180g pollo en tinga (jitomate, chipotle, cebolla), 1/2 taza arroz, ensalada verde, 1 tortilla, 1/4 aguacate.',
+        tags: ['mexicano', 'casero', 'sabroso'],
+        super: ['pollo', 'jitomate', 'chipotle', 'cebolla', 'arroz', 'tortilla', 'aguacate'],
+      },
     ],
     colacion_pm: [
       {
@@ -119,6 +196,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1 taza jícama en bastones con tajín y limón. Libre, ideal para antojo de botana crujiente.',
         tags: ['libre', 'crujiente', 'anti-antojo'],
         super: ['jícama', 'limón'],
+      },
+      {
+        nombre: 'Pepino con limón',
+        porciones: 'Libre',
+        detalle: '1 pepino en rodajas con limón y chile piquín. Libre.',
+        tags: ['libre', 'hidratante', 'cero calorías'],
+        super: ['pepino', 'limón'],
+      },
+      {
+        nombre: 'Gelatina light con fruta',
+        porciones: 'Libre',
+        detalle: '1-2 gelatinas light. Libre. Para el antojo de dulce de la tarde.',
+        tags: ['libre', 'dulce-controlado', 'práctico'],
+        super: ['gelatina light'],
       },
     ],
     cena: [
@@ -136,6 +227,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['antojito-controlado', 'rápido', 'saciante'],
         super: ['tortilla', 'panela', 'champiñón', 'espinaca', 'aguacate', 'jitomate'],
       },
+      {
+        nombre: 'Tostadas de atún fresco',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '1 tostada horneada con 1 lata atún, lechuga, jitomate, cebolla morada, 1/3 aguacate, salsa valentina.',
+        tags: ['práctico', 'rápido', 'omega-3'],
+        super: ['tostada', 'atún', 'lechuga', 'jitomate', 'cebolla', 'aguacate'],
+      },
     ],
   },
 
@@ -148,6 +246,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['mexicano', 'antojito-controlado', 'satisfactorio'],
         super: ['tortilla', 'tomate verde', 'huevo', 'crema', 'panela', 'lechuga', 'jitomate'],
       },
+      {
+        nombre: 'Huevos revueltos con nopales y queso',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '3 huevos revueltos con nopales y cebolla, 30g panela, 1 tortilla, 1/4 aguacate.',
+        tags: ['mexicano', 'saciante', 'clásico'],
+        super: ['huevo', 'nopales', 'cebolla', 'panela', 'tortilla', 'aguacate'],
+      },
+      {
+        nombre: 'Enfrijoladas con pollo y crema',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '1 tortilla bañada en salsa de frijol, 100g pollo desmenuzado, 1 cda crema, lechuga y jitomate al lado, 1/4 aguacate. Leguminosa.',
+        tags: ['mexicano', 'leguminosa', 'reconfortante'],
+        super: ['tortilla', 'frijol', 'pollo', 'crema', 'lechuga', 'jitomate', 'aguacate'],
+      },
     ],
     colacion_am: [
       {
@@ -156,6 +268,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '2 naranjas medianas + 10 almendras. La fibra de la naranja entera (no jugo) ayuda a evitar picos de azúcar.',
         tags: ['vitamina C', 'fibra', 'fácil'],
         super: ['naranja', 'almendras'],
+      },
+      {
+        nombre: 'Kiwi con nueces',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 kiwi + 8 nueces. Vitamina C + grasas saludables.',
+        tags: ['vitamina C', 'saciante', 'rápido'],
+        super: ['kiwi', 'nueces'],
+      },
+      {
+        nombre: 'Durazno con semillas de girasol',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 durazno grande + 2 cdas semillas de girasol + 5 almendras.',
+        tags: ['dulce-natural', 'energía', 'fácil'],
+        super: ['durazno', 'semillas de girasol', 'almendras'],
       },
     ],
     comida: [
@@ -173,6 +299,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['omega-3', 'ligero', 'limpio'],
         super: ['tilapia', 'lechuga', 'jitomate', 'pepino', 'arroz', 'tortilla', 'aceite oliva', 'aguacate'],
       },
+      {
+        nombre: 'Albóndigas en caldillo con arroz',
+        porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
+        detalle: '180g albóndigas de res magra en caldillo de jitomate con calabacita y zanahoria, 1/2 taza arroz, 1 tortilla, 1/4 aguacate.',
+        tags: ['casero', 'reconfortante', 'familiar'],
+        super: ['res molida', 'jitomate', 'calabacita', 'zanahoria', 'arroz', 'tortilla', 'aguacate'],
+      },
     ],
     colacion_pm: [
       {
@@ -181,6 +314,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: 'Palitos de pepino, zanahoria y jícama con limón y chile. Alimentos libres, come lo que quieras.',
         tags: ['libre', 'crujiente', 'anti-antojo'],
         super: ['pepino', 'zanahoria', 'jícama'],
+      },
+      {
+        nombre: 'Gelatina light',
+        porciones: 'Libre',
+        detalle: '1-2 gelatinas light. Libre, para calmar el antojo de dulce.',
+        tags: ['libre', 'dulce-controlado', 'práctico'],
+        super: ['gelatina light'],
+      },
+      {
+        nombre: 'Pepino con chile tajín',
+        porciones: 'Libre',
+        detalle: '1 pepino en rodajas con tajín y limón. Libre y refrescante.',
+        tags: ['libre', 'refrescante', 'hidratante'],
+        super: ['pepino', 'limón'],
       },
     ],
     cena: [
@@ -197,6 +344,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: 'Hojas de lechuga como tortilla con 120g carne molida magra, jitomate, cebolla, cilantro. 1 tostada extra, 1/3 aguacate.',
         tags: ['bajo en carb', 'sabroso', 'anti-antojo'],
         super: ['lechuga', 'res molida', 'jitomate', 'cebolla', 'cilantro', 'tostada', 'aguacate'],
+      },
+      {
+        nombre: 'Sopa de verduras con huevo pochado',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: 'Sopa de brócoli, zanahoria y espinaca. 3 huevos pochados, 1 tostada, 5 almendras.',
+        tags: ['reconfortante', 'caliente', 'noche'],
+        super: ['brócoli', 'zanahoria', 'espinaca', 'huevo', 'tostada', 'almendras'],
       },
     ],
   },
@@ -217,6 +371,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['mexicano', 'saciante', 'clásico'],
         super: ['huevo', 'nopales', 'cebolla', 'panela', 'tortilla', 'aguacate'],
       },
+      {
+        nombre: 'Huevos rancheros con frijol',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '2 huevos + 1 clara sobre 1 tortilla, salsa ranchera, frijoles (1/2 taza), 1/4 aguacate. Leguminosa.',
+        tags: ['mexicano', 'especial', 'leguminosa'],
+        super: ['huevo', 'tortilla', 'jitomate', 'chile', 'frijol', 'aguacate'],
+      },
     ],
     colacion_am: [
       {
@@ -225,6 +386,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '2 guayabas + 14 cacahuates naturales. Alta fibra + proteína vegetal = control de hambre.',
         tags: ['fibra', 'proteína vegetal', 'económico'],
         super: ['guayaba', 'cacahuates'],
+      },
+      {
+        nombre: 'Naranja con nueces',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '2 naranjas medianas + 6 nueces. Vitamina C natural + grasas saludables.',
+        tags: ['vitamina C', 'saciante', 'fácil'],
+        super: ['naranja', 'nueces'],
+      },
+      {
+        nombre: 'Manzana con crema de cacahuate',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 manzana + 1 cda crema de cacahuate + 5 almendras. Dulce + grasa = saciedad.',
+        tags: ['anti-antojo', 'dulce-natural', 'práctico'],
+        super: ['manzana', 'crema de cacahuate', 'almendras'],
       },
     ],
     comida: [
@@ -242,6 +417,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['leguminosa', 'fibra', 'muy llenador'],
         super: ['lenteja', 'pollo', 'zanahoria', 'calabacita', 'jitomate', 'arroz', 'aceite', 'aguacate'],
       },
+      {
+        nombre: 'Pollo al horno con camote y ensalada',
+        porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
+        detalle: '180g muslo de pollo sin piel al horno, 1/2 taza camote, ensalada verde grande, 1 cdita aceite, 1/4 aguacate.',
+        tags: ['horneado', 'saciante', 'variado'],
+        super: ['pollo', 'camote', 'lechuga', 'jitomate', 'pepino', 'aceite oliva', 'aguacate'],
+      },
     ],
     colacion_pm: [
       {
@@ -250,6 +432,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1 pepino entero en rodajas con limón. Libre. Come todo lo que necesites.',
         tags: ['libre', 'hidratante', 'cero calorías'],
         super: ['pepino', 'limón'],
+      },
+      {
+        nombre: 'Verduras crudas mixtas',
+        porciones: 'Libre',
+        detalle: 'Palitos de zanahoria, jícama y pepino con chile piquín. Libres.',
+        tags: ['libre', 'crujiente', 'saciante'],
+        super: ['zanahoria', 'jícama', 'pepino'],
+      },
+      {
+        nombre: 'Gelatina light con limón',
+        porciones: 'Libre',
+        detalle: '1-2 gelatinas light + pepino con limón. Libre.',
+        tags: ['libre', 'dulce-controlado', 'refrescante'],
+        super: ['gelatina light', 'pepino'],
       },
     ],
     cena: [
@@ -267,6 +463,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['antojito-controlado', 'vegetariano', 'noche'],
         super: ['tortilla', 'panela', 'champiñón', 'espinaca', 'aguacate', 'jitomate'],
       },
+      {
+        nombre: 'Ensalada de pollo con nueces',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '120g pollo desmenuzado con espinaca, jitomate, pepino, 1 tostada, 1/3 aguacate, 6 nueces.',
+        tags: ['fresco', 'proteico', 'ligero'],
+        super: ['pollo', 'espinaca', 'jitomate', 'pepino', 'tostada', 'aguacate', 'nueces'],
+      },
     ],
   },
 
@@ -279,6 +482,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['proteico', 'rápido', 'saciante'],
         super: ['huevo', 'jamón de pavo', 'jitomate', 'espinaca', 'tortilla', 'aguacate'],
       },
+      {
+        nombre: 'Chilaquiles rojos ligeros',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '1 tortilla cortada y horneada con salsa roja, 3 huevos, 1 cda crema, cebolla. Ensalada al lado.',
+        tags: ['mexicano', 'viernes', 'antojito-controlado'],
+        super: ['tortilla', 'jitomate', 'huevo', 'crema', 'cebolla', 'lechuga'],
+      },
+      {
+        nombre: 'Yogurt con avena y fresas',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '1 taza yogurt griego + 1/3 taza avena + canela. Pepino y jícama aparte. 2 cdas chía, 5 almendras.',
+        tags: ['dulce-controlado', 'fibra', 'fácil'],
+        super: ['yogurt griego', 'avena', 'canela', 'pepino', 'jícama', 'chía', 'almendras'],
+      },
     ],
     colacion_am: [
       {
@@ -287,6 +504,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1 pera grande con cáscara + 2 cdas semillas de girasol + 5 almendras.',
         tags: ['fibra', 'saciante', 'fácil'],
         super: ['pera', 'semillas de girasol', 'almendras'],
+      },
+      {
+        nombre: 'Fresas con chía y nueces',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 taza fresas + 2 cdas chía + 5 nueces.',
+        tags: ['anti-antojo', 'antioxidante', 'fibra'],
+        super: ['fresas', 'chía', 'nueces'],
+      },
+      {
+        nombre: 'Plátano con almendras',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1/2 plátano + 10 almendras. Energía rápida + grasas saludables.',
+        tags: ['energía', 'práctico', 'saciante'],
+        super: ['plátano', 'almendras'],
       },
     ],
     comida: [
@@ -304,6 +535,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['mexicano', 'parrilla', 'viernes'],
         super: ['tortilla', 'res', 'nopales', 'cebolla', 'cilantro', 'aguacate'],
       },
+      {
+        nombre: 'Pollo en mole ligero con arroz',
+        porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
+        detalle: '180g pechuga con mole casero ligero (poco aceite), 1/2 taza arroz, ensalada de nopales con jitomate. 1/4 aguacate.',
+        tags: ['mexicano', 'especial', 'casero'],
+        super: ['pollo', 'mole', 'arroz', 'nopales', 'jitomate', 'aguacate'],
+      },
     ],
     colacion_pm: [
       {
@@ -312,6 +550,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: 'Jícama en bastones con chile tajín y limón. Libre y crujiente.',
         tags: ['libre', 'crujiente', 'refrescante'],
         super: ['jícama', 'limón'],
+      },
+      {
+        nombre: 'Pepino con limón y tajín',
+        porciones: 'Libre',
+        detalle: '1 pepino en rodajas con limón y tajín. Libre.',
+        tags: ['libre', 'hidratante', 'anti-antojo'],
+        super: ['pepino', 'limón'],
+      },
+      {
+        nombre: 'Gelatina light',
+        porciones: 'Libre',
+        detalle: '1-2 gelatinas light. Libre, ideal para viernes.',
+        tags: ['libre', 'dulce-controlado', 'práctico'],
+        super: ['gelatina light'],
       },
     ],
     cena: [
@@ -328,6 +580,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '100g panela a la plancha, ensalada de espinaca, jitomate, pepino, 1 tostada, 1 cdita aceite, 6 nueces.',
         tags: ['vegetariano', 'rápido', 'saciante'],
         super: ['panela', 'espinaca', 'jitomate', 'pepino', 'tostada', 'aceite oliva', 'nueces'],
+      },
+      {
+        nombre: 'Tacos de lechuga con atún',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: 'Hojas de lechuga con 1 lata atún, jitomate, cebolla, cilantro. 1 tostada, 1/3 aguacate.',
+        tags: ['bajo en carb', 'omega-3', 'ligero'],
+        super: ['lechuga', 'atún', 'jitomate', 'cebolla', 'cilantro', 'tostada', 'aguacate'],
       },
     ],
   },
@@ -348,6 +607,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['especial', 'mexicano', 'leguminosa'],
         super: ['huevo', 'salsa verde', 'salsa roja', 'tortilla', 'frijol', 'aguacate'],
       },
+      {
+        nombre: 'Huevos a la mexicana con tortilla',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '3 huevos revueltos con jitomate, cebolla y chile, 1 tortilla, 1/4 aguacate. Ensalada al lado.',
+        tags: ['mexicano', 'clásico', 'saciante'],
+        super: ['huevo', 'jitomate', 'cebolla', 'chile', 'tortilla', 'aguacate'],
+      },
     ],
     colacion_am: [
       {
@@ -356,6 +622,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1 taza fresas + 1/2 taza yogurt griego sin azúcar + 2 cdas chía. Anti-antojo dulce perfecto.',
         tags: ['anti-antojo', 'dulce-natural', 'saciante'],
         super: ['fresas', 'yogurt griego', 'chía'],
+      },
+      {
+        nombre: 'Manzana con nueces',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 manzana + 8 nueces. Dulce natural + grasas saludables.',
+        tags: ['anti-antojo', 'fibra', 'práctico'],
+        super: ['manzana', 'nueces'],
+      },
+      {
+        nombre: 'Papaya con almendras',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 taza papaya picada + 10 almendras. Digestiva y saciante.',
+        tags: ['digestiva', 'dulce-natural', 'fácil'],
+        super: ['papaya', 'almendras'],
       },
     ],
     comida: [
@@ -373,6 +653,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['casero', 'reconfortante', 'familiar'],
         super: ['res', 'calabacita', 'chayote', 'zanahoria', 'ejotes', 'elote', 'tortilla', 'aguacate'],
       },
+      {
+        nombre: 'Pollo en adobo con arroz y nopales',
+        porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
+        detalle: '180g pollo en adobo casero, 1/2 taza arroz, nopales asados, 1 tortilla, 1/4 aguacate.',
+        tags: ['mexicano', 'sabor intenso', 'casero'],
+        super: ['pollo', 'chile guajillo', 'arroz', 'nopales', 'tortilla', 'aguacate'],
+      },
     ],
     colacion_pm: [
       {
@@ -381,6 +668,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1-2 gelatinas light + pepino con limón. Libres. Para el antojo de dulce de la tarde.',
         tags: ['libre', 'dulce-controlado', 'anti-antojo'],
         super: ['gelatina light', 'pepino'],
+      },
+      {
+        nombre: 'Jícama con limón y chile',
+        porciones: 'Libre',
+        detalle: 'Jícama en bastones con limón y chile piquín. Libre y crujiente.',
+        tags: ['libre', 'crujiente', 'refrescante'],
+        super: ['jícama', 'limón'],
+      },
+      {
+        nombre: 'Verduras mixtas con tajín',
+        porciones: 'Libre',
+        detalle: 'Pepino, zanahoria y jícama con tajín. Libres.',
+        tags: ['libre', 'crujiente', 'saciante'],
+        super: ['pepino', 'zanahoria', 'jícama'],
       },
     ],
     cena: [
@@ -397,6 +698,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: 'Sopa de brócoli, zanahoria, calabacita y espinaca. 2 huevos pochados + 30g panela, 1 tostada, 5 almendras.',
         tags: ['reconfortante', 'caliente', 'noche'],
         super: ['brócoli', 'zanahoria', 'calabacita', 'espinaca', 'huevo', 'panela', 'tostada', 'almendras'],
+      },
+      {
+        nombre: 'Ensalada de atún con aguacate',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '1 lata atún, lechuga, jitomate, pepino, cebolla morada, 1 tostada, 1/3 aguacate, limón.',
+        tags: ['práctico', 'omega-3', 'noche'],
+        super: ['atún', 'lechuga', 'jitomate', 'pepino', 'cebolla', 'tostada', 'aguacate'],
       },
     ],
   },
@@ -417,6 +725,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['dulce-controlado', 'dominical', 'anti-antojo'],
         super: ['avena', 'yogurt griego', 'plátano', 'pepino', 'jícama', 'chía', 'nueces'],
       },
+      {
+        nombre: 'Molletes de frijol con panela y pico de gallo',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '1 bolillo integral con frijoles (1/2 taza), panela gratinada, pico de gallo. Ensalada al lado. 1/4 aguacate.',
+        tags: ['dominical', 'mexicano', 'leguminosa'],
+        super: ['bolillo integral', 'frijol', 'panela', 'jitomate', 'cebolla', 'aguacate'],
+      },
     ],
     colacion_am: [
       {
@@ -425,6 +740,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1 kiwi + 8 nueces. Vitamina C + grasas saludables.',
         tags: ['vitamina C', 'saciante', 'rápido'],
         super: ['kiwi', 'nueces'],
+      },
+      {
+        nombre: 'Guayabas con almendras',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '2 guayabas + 10 almendras. Alta fibra y vitamina C.',
+        tags: ['fibra', 'vitamina C', 'económico'],
+        super: ['guayaba', 'almendras'],
+      },
+      {
+        nombre: 'Manzana con crema de cacahuate',
+        porciones: 'Fruta 1 | Grasas 2',
+        detalle: '1 manzana + 1 cda crema de cacahuate + 5 almendras.',
+        tags: ['anti-antojo', 'dulce-natural', 'saciante'],
+        super: ['manzana', 'crema de cacahuate', 'almendras'],
       },
     ],
     comida: [
@@ -442,6 +771,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         tags: ['parrilla', 'especial', 'dominical'],
         super: ['res', 'lechuga', 'jitomate', 'pepino', 'cebolla', 'aguacate', 'tortilla'],
       },
+      {
+        nombre: 'Caldo de pollo con verduras',
+        porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
+        detalle: 'Caldo con 180g pollo, calabacita, chayote, zanahoria, ejotes. 1/2 taza arroz, 1 tortilla, 1/4 aguacate.',
+        tags: ['casero', 'dominical', 'reconfortante'],
+        super: ['pollo', 'calabacita', 'chayote', 'zanahoria', 'ejotes', 'arroz', 'tortilla', 'aguacate'],
+      },
     ],
     colacion_pm: [
       {
@@ -450,6 +786,20 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1 pepino en rodajas con limón y chile. Libre.',
         tags: ['libre', 'refrescante', 'cero calorías'],
         super: ['pepino', 'limón'],
+      },
+      {
+        nombre: 'Gelatina light',
+        porciones: 'Libre',
+        detalle: '1-2 gelatinas light. Libre y dulce.',
+        tags: ['libre', 'dulce-controlado', 'práctico'],
+        super: ['gelatina light'],
+      },
+      {
+        nombre: 'Jícama con chile piquín',
+        porciones: 'Libre',
+        detalle: 'Jícama en bastones con chile piquín y limón. Libre.',
+        tags: ['libre', 'crujiente', 'refrescante'],
+        super: ['jícama', 'limón'],
       },
     ],
     cena: [
@@ -466,6 +816,13 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         detalle: '1 tortilla con 50g panela, espinaca y champiñón salteados, 1/3 aguacate. Ensalada al lado.',
         tags: ['antojito-controlado', 'rápido', 'reconfortante'],
         super: ['tortilla', 'panela', 'espinaca', 'champiñón', 'aguacate'],
+      },
+      {
+        nombre: 'Omelette de verduras con tostada',
+        porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
+        detalle: '3 huevos en omelette con pimiento, cebolla y espinaca, 1 tostada, 1/3 aguacate.',
+        tags: ['rápido', 'proteico', 'noche'],
+        super: ['huevo', 'pimiento', 'cebolla', 'espinaca', 'tostada', 'aguacate'],
       },
     ],
   },

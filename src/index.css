@@ -52,8 +52,35 @@ body {
   transition-timing-function: ease;
 }
 
+/* Scrollbar-none utility for horizontal scroll areas */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--accent-300); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-400); }
+
+/* Hide scrollbar on horizontal scroll areas (day selector) */
+.overflow-x-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile safe area */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
