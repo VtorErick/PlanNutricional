@@ -1,0 +1,12 @@
+node_modules
+dist
+.env.local
+.env.*.local
+.vscode
+.vscode-test
+*.swp
+*.swo
+*~
+.DS_Store
+pace.log
+lerna-debug.log

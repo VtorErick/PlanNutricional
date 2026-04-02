@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Profile color themes */
+[data-profile="vo"] {
+  --accent-50: #eff6ff;
+  --accent-100: #dbeafe;
+  --accent-200: #bfdbfe;
+  --accent-300: #93c5fd;
+  --accent-400: #60a5fa;
+  --accent-500: #3b82f6;
+  --accent-600: #2563eb;
+  --accent-700: #1d4ed8;
+  --accent-800: #1e40af;
+  --accent-900: #1e3a5f;
+  --accent-gradient: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  --accent-gradient-soft: linear-gradient(135deg, #eff6ff, #dbeafe);
+  --accent-gradient-dark: linear-gradient(135deg, #1e3a5f, #1e40af);
+}
+
+[data-profile="va"] {
+  --accent-50: #fff1f2;
+  --accent-100: #ffe4e6;
+  --accent-200: #fecdd3;
+  --accent-300: #fda4af;
+  --accent-400: #fb7185;
+  --accent-500: #f43f5e;
+  --accent-600: #e11d48;
+  --accent-700: #be123c;
+  --accent-800: #9f1239;
+  --accent-900: #4c0519;
+  --accent-gradient: linear-gradient(135deg, #f43f5e, #e11d48);
+  --accent-gradient-soft: linear-gradient(135deg, #fff1f2, #ffe4e6);
+  --accent-gradient-dark: linear-gradient(135deg, #4c0519, #9f1239);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Smooth transitions between profiles */
+* {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--accent-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-400); }
