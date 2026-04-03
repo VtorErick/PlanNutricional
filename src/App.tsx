@@ -644,10 +644,10 @@ export default function App() {
               exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
               className="space-y-6">
               {isAmbos ? (
-                <>
+                <div className="grid lg:grid-cols-2 gap-8">
                   <div>
                     <h3 className="text-sm font-bold text-blue-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.vo.nombre}</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                       {equivalenciasData.vo.map((eq, idx) => (
                         <EquivalenciasCard key={'vo'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-blue-50', text: 'text-blue-600', tagBg: 'bg-blue-100', tagText: 'text-blue-700'}} />
                       ))}
@@ -655,13 +655,13 @@ export default function App() {
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-rose-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.va.nombre}</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
                       {equivalenciasData.va.map((eq, idx) => (
                         <EquivalenciasCard key={'va'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-rose-50', text: 'text-rose-600', tagBg: 'bg-rose-100', tagText: 'text-rose-700'}} />
                       ))}
                     </div>
                   </div>
-                </>
+                </div>
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">
                   {equivalencias.map((eq, idx) => (
@@ -677,7 +677,7 @@ export default function App() {
             <motion.div key="resumen"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
-              className="space-y-10">
+              className={isAmbos ? "grid lg:grid-cols-2 gap-8" : "space-y-10"}>
               
               {(isAmbos ? [perfilesData.vo, perfilesData.va] : [perfil!]).map((p, pIdx) => {
                 const isFirst = pIdx === 0;
