@@ -4,7 +4,7 @@ import {
   ChefHat, CheckCircle2, TrendingDown, Calendar,
   BookOpen, Zap, Shield, Lightbulb, BarChart3, ArrowLeft,
   Sun, Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle,
-  Heart, ChevronDown, ChevronUp,
+  Heart, ChevronDown, ChevronUp, ShoppingCart
 } from 'lucide-react';
 import MealSelector from './components/MealSelector';
 import EquivalenciasCard from './components/EquivalenciasCard';
@@ -19,13 +19,13 @@ const momentoIcons: Record<string, any> = {
 };
 
 export default function App() {
-  const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | null>(null);
+  const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | 'ambos' | null>(null);
   const [diaActivo, setDiaActivo] = useState('Lunes');
   const [selecciones, setSelecciones] = useState<Record<string, boolean>>({});
-  const [tab, setTab] = useState<'plan' | 'equivalencias' | 'resumen'>('plan');
+  const [tab, setTab] = useState<'plan' | 'equivalencias' | 'resumen' | 'compras'>('plan');
   const [progressExpanded, setProgressExpanded] = useState(false);
 
-  // Refs para hacer scroll a cada sección de comida
+  // Refs to handle auto-scrolling to each meal section
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean) => {
@@ -39,48 +39,117 @@ export default function App() {
     };
 
     if (isExpanded) {
-      // Cerrar panel expandido primero y esperar a que termine la animación
+      // Close expanded panel first and wait for the animation to finish
       setProgressExpanded(false);
-      setTimeout(doScroll, 260); // 260ms para esperar la animación de 0.25s
+      setTimeout(doScroll, 260); // 260ms delay to account for the 0.25s animation
     } else {
       doScroll();
     }
   }, []);
 
-  const perfil = perfilActivo ? perfilesData[perfilActivo] : null;
-  const diasDisponibles = perfil ? Object.keys(perfil.plan) : [];
-  const equivalencias = perfilActivo ? equivalenciasData[perfilActivo] : [];
+  const isAmbos = perfilActivo === 'ambos';
+  const isVo = perfilActivo === 'vo';
+  // perfilBase is used to extract days and general structure (both share identical days and moments)
+  const perfilBase = perfilActivo && perfilActivo !== 'ambos' ? perfilesData[perfilActivo as 'vo' | 'va'] : perfilesData.vo;
+  const perfil = perfilBase;
+  const diasDisponibles = perfilActivo ? Object.keys(perfilBase.plan) : [];
+  const equivalencias = (perfilActivo && perfilActivo !== 'ambos') ? equivalenciasData[perfilActivo as 'vo' | 'va'] : [];
 
-  const toggleSeleccion = (dia: string, momento: string, nombre: string) => {
-    const key = `${dia}-${momento}-${nombre}`;
+  const toggleSeleccion = (perfilId: string, dia: string, momento: string, nombre: string) => {
+    const key = `${perfilId}-${dia}-${momento}-${nombre}`;
     setSelecciones((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const momentoCompletado = useMemo(() => {
-    if (!perfil) return {} as Record<string, boolean>;
+  const momentoCompletadoVo = useMemo(() => {
+    if (!perfilActivo) return {};
     const result: Record<string, boolean> = {};
-    perfil.momentos.forEach((m) => {
-      const comidas = perfil.plan[diaActivo]?.[m.key] || [];
-      result[m.key] = comidas.some((item) =>
-        selecciones[`${diaActivo}-${m.key}-${item.nombre}`]
-      );
+    perfilesData.vo.momentos.forEach((m) => {
+      const comidas = perfilesData.vo.plan[diaActivo]?.[m.key] || [];
+      result[m.key] = comidas.some((item) => selecciones[`vo-${diaActivo}-${m.key}-${item.nombre}`]);
     });
     return result;
-  }, [diaActivo, perfil, selecciones]);
+  }, [diaActivo, perfilActivo, selecciones]);
+
+  const momentoCompletadoVa = useMemo(() => {
+    if (!perfilActivo) return {};
+    const result: Record<string, boolean> = {};
+    perfilesData.va.momentos.forEach((m) => {
+      const comidas = perfilesData.va.plan[diaActivo]?.[m.key] || [];
+      result[m.key] = comidas.some((item) => selecciones[`va-${diaActivo}-${m.key}-${item.nombre}`]);
+    });
+    return result;
+  }, [diaActivo, perfilActivo, selecciones]);
+
+  const momentoCompletado = useMemo(() => {
+    if (!perfilActivo) return {} as Record<string, boolean>;
+    if (isAmbos) {
+      // In "both" mode, it's better for global progress to track exactly 10 meals (5 per profile)
+      // Visual checks at the top-level indicate completion only when both profiles complete the meal
+      const result: Record<string, boolean> = {};
+      perfilBase.momentos.forEach((m) => {
+        result[m.key] = momentoCompletadoVo[m.key] && momentoCompletadoVa[m.key];
+      });
+      return result;
+    }
+    return isVo ? momentoCompletadoVo : momentoCompletadoVa;
+  }, [isAmbos, isVo, momentoCompletadoVo, momentoCompletadoVa, perfilBase]);
 
   const progresoDia = useMemo(() => {
-    if (!perfil) return 0;
-    const total = perfil.momentos.length;
+    if (!perfilActivo) return 0;
+    if (isAmbos) {
+      const cVo = Object.values(momentoCompletadoVo).filter(Boolean).length;
+      const cVa = Object.values(momentoCompletadoVa).filter(Boolean).length;
+      const total = perfilesData.vo.momentos.length * 2;
+      return Math.round(((cVo + cVa) / total) * 100);
+    }
+    const total = perfilBase.momentos.length;
     const completados = Object.values(momentoCompletado).filter(Boolean).length;
     return Math.round((completados / total) * 100);
-  }, [perfil, momentoCompletado]);
+  }, [perfilActivo, isAmbos, perfilBase, momentoCompletado, momentoCompletadoVo, momentoCompletadoVa]);
 
-  const completadosCount = Object.values(momentoCompletado).filter(Boolean).length;
+  const completadosCount = isAmbos 
+    ? Object.values(momentoCompletadoVo).filter(Boolean).length + Object.values(momentoCompletadoVa).filter(Boolean).length
+    : Object.values(momentoCompletado).filter(Boolean).length;
+    
+  const totalMomentosProgress = isAmbos ? perfilBase.momentos.length * 2 : perfilBase.momentos.length;
 
   // Collapse progress when tab changes or day changes
   useEffect(() => {
     setProgressExpanded(false);
   }, [tab, diaActivo]);
+
+  const listaCompras = useMemo(() => {
+    const map: Record<string, { texto: string, perfil: string }[]> = {};
+    Object.entries(selecciones).forEach(([key, isSelected]) => {
+      if (!isSelected) return;
+      const parts = key.split('-');
+      if (parts.length < 4) return;
+      const [p, d, m, ...nParts] = parts;
+
+      if (perfilActivo !== 'ambos' && p !== perfilActivo) return;
+
+      const nombre = nParts.join('-'); // in case nombre had a dash
+      
+      const perfilObj = perfilesData[p as 'vo' | 'va'];
+      if (!perfilObj) return;
+
+      const comidas = perfilObj.plan[d]?.[m] || [];
+      const comida = comidas.find(c => c.nombre === nombre);
+      if (comida) {
+        comida.super.forEach(ing => {
+          if (!map[ing]) map[ing] = [];
+          const label = `${d} - ${m.replace('colacion_am', 'Col. AM').replace('colacion_pm', 'Col. PM')} (${perfilObj.nombre}): ${comida.nombre}`;
+          map[ing].push({ texto: label, perfil: p });
+        });
+      }
+    });
+
+    // Sort alphabetically
+    return Object.keys(map).sort().map(ing => ({
+      ingrediente: ing,
+      usos: map[ing]
+    }));
+  }, [selecciones]);
 
   // ─── Landing / Profile selector ───────────────────────────────────────────
   if (!perfilActivo) {
@@ -91,32 +160,37 @@ export default function App() {
             <img src="/images/hero.png" alt="" className="w-full h-full object-cover opacity-20" />
             <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/30 to-white" />
           </div>
-          <div className="relative max-w-4xl mx-auto px-6 pt-16 pb-8 text-center">
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur rounded-full shadow-sm mb-6">
-                <ChefHat className="w-5 h-5 text-emerald-600" />
-                <span className="text-sm font-semibold text-slate-700">Plan de alimentación 2026</span>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 leading-tight">
-                Tu plan de comidas<br />
-                <span className="bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">
-                  personalizado
+          <div className="relative max-w-4xl mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-4 text-center">
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                transition={{ delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-md rounded-full shadow-sm mb-4 border border-white/50"
+              >
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-xs font-bold tracking-wide text-slate-700 uppercase">Bienvenido a su plan</span>
+              </motion.div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-3 tracking-tight leading-[1.1]">
+                Nutrición inteligente,<br className="hidden sm:block"/>
+                <span className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 bg-clip-text text-transparent drop-shadow-sm">
+                  sin complicaciones.
                 </span>
               </h1>
-              <p className="text-lg text-slate-600 max-w-xl mx-auto">
-                Elige tu perfil para ver tu menú semanal, equivalencias y recomendaciones personalizadas.
+              <p className="text-sm md:text-lg text-slate-600 max-w-xl mx-auto font-medium leading-relaxed">
+                Elige de forma individual o armen su lista de compras juntos de forma automática.
               </p>
             </motion.div>
           </div>
         </div>
 
-        <div className="flex-1 max-w-4xl mx-auto px-6 pb-16 w-full">
-          <div className="grid md:grid-cols-2 gap-6 mt-8">
+        <div className="flex-1 max-w-4xl mx-auto px-4 md:px-6 pb-12 w-full z-10 relative -mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             <motion.button
               initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { setPerfilActivo('vo'); setDiaActivo('Lunes'); setSelecciones({}); }}
-              className="text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              onClick={() => { setPerfilActivo('vo'); setDiaActivo('Lunes'); setTab('plan'); }}
+              className="text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl" />
@@ -138,8 +212,8 @@ export default function App() {
             <motion.button
               initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setSelecciones({}); }}
-              className="text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setTab('plan'); }}
+              className="text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-rose-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-400/20 rounded-full blur-2xl" />
@@ -157,6 +231,27 @@ export default function App() {
                 </div>
               </div>
             </motion.button>
+            
+            <motion.button
+              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              onClick={() => { setPerfilActivo('ambos'); setDiaActivo('Lunes'); setTab('plan'); }}
+              className="sm:col-span-2 text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+            >
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl" />
+              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-teal-400/20 rounded-full blur-2xl" />
+              <div className="relative flex items-center gap-6">
+                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+                  <Heart className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Plan de Ambos</h2>
+                  <p className="text-emerald-100 text-sm leading-relaxed">
+                    Ve y selecciona platillos para ambos perfiles de forma simultánea. ¡Ideal para planear y armar la lista del supermercado juntos!
+                  </p>
+                </div>
+              </div>
+            </motion.button>
           </div>
 
           <motion.div
@@ -171,34 +266,37 @@ export default function App() {
   }
 
   // ─── Main app ────────────────────────────────────────────────────────────────
-  const isVo = perfilActivo === 'vo';
   const ac = {
-    color500: isVo ? '#3b82f6' : '#f43f5e',
-    bg: isVo ? 'bg-blue-500' : 'bg-rose-500',
-    bgLight: isVo ? 'bg-blue-50' : 'bg-rose-50',
-    bgGradient: isVo ? 'from-blue-500 to-indigo-600' : 'from-rose-500 to-pink-600',
-    bgGradientLight: isVo ? 'from-blue-50 to-indigo-50' : 'from-rose-50 to-pink-50',
-    text: isVo ? 'text-blue-600' : 'text-rose-600',
-    textDark: isVo ? 'text-blue-900' : 'text-rose-900',
-    border: isVo ? 'border-blue-200' : 'border-rose-200',
-    borderAccent: isVo ? 'border-blue-500' : 'border-rose-500',
-    tagBg: isVo ? 'bg-blue-100' : 'bg-rose-100',
-    tagText: isVo ? 'text-blue-700' : 'text-rose-700',
-    progressBg: isVo ? 'bg-blue-100' : 'bg-rose-100',
-    progressFill: isVo ? 'from-blue-500 to-indigo-500' : 'from-rose-500 to-pink-500',
-    btnActive: isVo
+    color500: isAmbos ? '#10b981' : isVo ? '#3b82f6' : '#f43f5e',
+    bg: isAmbos ? 'bg-emerald-500' : isVo ? 'bg-blue-500' : 'bg-rose-500',
+    bgLight: isAmbos ? 'bg-emerald-50' : isVo ? 'bg-blue-50' : 'bg-rose-50',
+    bgGradient: isAmbos ? 'from-emerald-500 to-teal-600' : isVo ? 'from-blue-500 to-indigo-600' : 'from-rose-500 to-pink-600',
+    bgGradientLight: isAmbos ? 'from-emerald-50 to-teal-50' : isVo ? 'from-blue-50 to-indigo-50' : 'from-rose-50 to-pink-50',
+    text: isAmbos ? 'text-emerald-600' : isVo ? 'text-blue-600' : 'text-rose-600',
+    textDark: isAmbos ? 'text-emerald-900' : isVo ? 'text-blue-900' : 'text-rose-900',
+    border: isAmbos ? 'border-emerald-200' : isVo ? 'border-blue-200' : 'border-rose-200',
+    borderAccent: isAmbos ? 'border-emerald-500' : isVo ? 'border-blue-500' : 'border-rose-500',
+    tagBg: isAmbos ? 'bg-emerald-100' : isVo ? 'bg-blue-100' : 'bg-rose-100',
+    tagText: isAmbos ? 'text-emerald-700' : isVo ? 'text-blue-700' : 'text-rose-700',
+    progressBg: isAmbos ? 'bg-emerald-100' : isVo ? 'bg-blue-100' : 'bg-rose-100',
+    progressFill: isAmbos ? 'from-emerald-500 to-teal-500' : isVo ? 'from-blue-500 to-indigo-500' : 'from-rose-500 to-pink-500',
+    btnActive: isAmbos 
+      ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25'
+      : isVo
       ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
       : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25',
     btnInactive: 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200',
-    dot: isVo ? 'bg-blue-500' : 'bg-rose-500',
-    cardDone: isVo
+    dot: isAmbos ? 'bg-emerald-500' : isVo ? 'bg-blue-500' : 'bg-rose-500',
+    cardDone: isAmbos 
+      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-400 shadow-emerald-200'
+      : isVo
       ? 'bg-gradient-to-br from-blue-500 to-indigo-600 border-blue-400 shadow-blue-200'
       : 'bg-gradient-to-br from-rose-500 to-pink-600 border-rose-400 shadow-rose-200',
     cardPending: 'bg-white border-slate-200 shadow-sm',
     iconDone: 'bg-white/20',
-    iconPending: isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
-    iconColorPending: isVo ? 'text-blue-400' : 'text-rose-400',
-    headerBg: isVo
+    iconPending: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
+    iconColorPending: isAmbos ? 'text-emerald-400' : isVo ? 'text-blue-400' : 'text-rose-400',
+    headerBg: isAmbos ? 'bg-gradient-to-r from-emerald-600 to-teal-700' : isVo
       ? 'bg-gradient-to-r from-blue-600 to-indigo-700'
       : 'bg-gradient-to-r from-rose-500 to-pink-600',
   };
@@ -217,7 +315,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50" data-profile={perfilActivo}>
 
-      {/* ── Header principal (sticky, z-50) ──────────────────────────────── */}
+      {/* ── Main sticky header (z-50) ──────────────────────────────── */}
       <motion.header
         initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
         className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/60 shadow-sm"
@@ -234,24 +332,28 @@ export default function App() {
               <ChefHat className="w-4 h-4 text-white" />
             </div>
             <div className="min-w-0">
-              <h1 className={`text-sm sm:text-base font-bold ${ac.text} truncate`}>Plan de {perfil!.nombre}</h1>
-              <p className="text-[11px] text-slate-500 truncate hidden sm:block">{perfil!.perfil}</p>
+              <h1 className={`text-sm sm:text-base font-bold ${ac.text} truncate`}>
+                Plan de {isAmbos ? 'Ambos' : perfil.nombre}
+              </h1>
+              <p className="text-[11px] text-slate-500 truncate hidden sm:block">
+                {isAmbos ? 'Vista combinada de V(o) y V(a)' : perfil.perfil}
+              </p>
             </div>
           </div>
           <div className="flex gap-1.5 flex-shrink-0">
-            {(['vo', 'va'] as const).map((p) => (
+            {(['vo', 'va', 'ambos'] as const).map((p) => (
               <button key={p}
-                onClick={() => { setPerfilActivo(p); setDiaActivo('Lunes'); setSelecciones({}); setTab('plan'); }}
+                onClick={() => { setPerfilActivo(p); setDiaActivo('Lunes'); setTab('plan'); }}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${perfilActivo === p ? ac.btnActive : ac.btnInactive}`}
               >
-                {perfilesData[p].nombre}
+                {p === 'ambos' ? 'Ambos' : perfilesData[p].nombre}
               </button>
             ))}
           </div>
         </div>
       </motion.header>
 
-      {/* ── PROGRESO DEL DÍA — Sticky justo bajo el header (solo en tab=plan) ── */}
+      {/* ── DAILY PROGRESS — Sticky right below the header (only in tab=plan) ── */}
       <AnimatePresence>
         {tab === 'plan' && (
           <motion.div
@@ -262,17 +364,17 @@ export default function App() {
             transition={{ duration: 0.2 }}
             className={`sticky top-[52px] sm:top-[56px] z-40 bg-white/97 backdrop-blur-xl border-b ${ac.border} shadow-md`}
           >
-            {/* ── Barra compacta siempre visible ── */}
+            {/* ── Always visible compact bar ── */}
             <div
               className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-3 cursor-pointer select-none"
               onClick={() => setProgressExpanded((e) => !e)}
             >
-              {/* Día activo */}
+              {/* Active day */}
               <span className={`text-[11px] sm:text-xs font-bold ${ac.text} whitespace-nowrap flex-shrink-0`}>
                 {diaActivo}
               </span>
 
-              {/* Indicadores de momentos — clickeables para ir a esa sección */}
+              {/* Moment indicators — clickable to navigate to that section */}
               <div className="flex items-center gap-1 flex-shrink-0">
                 {perfil!.momentos.map((momento) => {
                   const Icon = momentoIcons[momento.key] || UtensilsCrossed;
@@ -297,7 +399,7 @@ export default function App() {
                 })}
               </div>
 
-              {/* Barra de progreso */}
+              {/* Progress bar */}
               <div className={`flex-1 h-1.5 ${ac.progressBg} rounded-full overflow-hidden`}>
                 <motion.div
                   className={`h-full bg-gradient-to-r ${ac.progressFill} rounded-full`}
@@ -306,7 +408,7 @@ export default function App() {
                 />
               </div>
 
-              {/* Porcentaje */}
+              {/* Percentage */}
               <span className={`text-[11px] sm:text-xs font-bold ${progresoDia === 100 ? 'text-emerald-600' : ac.text} flex-shrink-0 tabular-nums w-7 sm:w-8 text-right`}>
                 {progresoDia}%
               </span>
@@ -324,7 +426,7 @@ export default function App() {
               </button>
             </div>
 
-            {/* ── Panel expandido con tarjetas de momentos ── */}
+            {/* ── Expanded panel with moment cards ── */}
             <AnimatePresence>
               {progressExpanded && (
                 <motion.div
@@ -336,7 +438,7 @@ export default function App() {
                   className="overflow-hidden"
                 >
                   <div className={`max-w-5xl mx-auto px-4 sm:px-6 pb-4 pt-1`}>
-                    {/* Encabezado */}
+                    {/* Header */}
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-[11px] text-slate-500">
                         {completadosCount} de {totalMomentos} momentos completados
@@ -349,7 +451,7 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* Tarjetas de momentos — clickeables para ir a la sección */}
+                    {/* Moment cards — clickable to navigate to section */}
                     <div className="grid grid-cols-5 gap-2">
                       {perfil!.momentos.map((momento) => {
                         const Icon = momentoIcons[momento.key] || UtensilsCrossed;
@@ -415,18 +517,22 @@ export default function App() {
 
         {/* ── Tab nav */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="flex gap-1 bg-slate-100 rounded-2xl p-1.5">
+          className="flex gap-1 bg-slate-100 rounded-2xl p-1.5 overflow-x-auto scrollbar-none snap-x">
           {([
             { key: 'plan' as const, label: 'Mi Plan', icon: Calendar },
             { key: 'equivalencias' as const, label: 'Equivalencias', icon: BookOpen },
+            { key: 'compras' as const, label: 'Compras', icon: ShoppingCart }, 
             { key: 'resumen' as const, label: 'Resumen', icon: Lightbulb },
-          ]).map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-1 sm:px-4 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 ${tab === t.key ? `bg-white shadow-md ${ac.text}` : 'text-slate-500 hover:text-slate-700'}`}>
-              <t.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-              <span className="truncate">{t.label}</span>
-            </button>
-          ))}
+          ]).map((t) => {
+            if (isAmbos && (t.key === 'equivalencias' || t.key === 'resumen')) return null;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-1 sm:px-4 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 snap-start flex-shrink-0 ${tab === t.key ? `bg-white shadow-md ${ac.text}` : 'text-slate-500 hover:text-slate-700'}`}>
+                <t.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="truncate">{t.label}</span>
+              </button>
+            );
+          })}
         </motion.div>
 
         {/* ── Tab content */}
@@ -439,7 +545,7 @@ export default function App() {
               exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
               className="space-y-4">
 
-              {/* Selector de día */}
+              {/* Day selector */}
               <div className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm border border-slate-100">
                 <div className="flex items-center gap-2 mb-2.5">
                   <Calendar className={`w-4 h-4 ${ac.text}`} />
@@ -456,13 +562,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ── Tarjetas de comidas ──────────────────────────────────── */}
+              {/* ── Meal cards ─────────────────────────────────────────────── */}
               <div className="space-y-4">
-                {perfil!.momentos.map((momento) => {
+                {perfilBase.momentos.map((momento) => {
                   const Icon = momentoIcons[momento.key] || UtensilsCrossed;
-                  const comidas = perfil!.plan[diaActivo]?.[momento.key] || [];
-                  if (comidas.length === 0) return null;
                   const done = momentoCompletado[momento.key];
+
                   return (
                     <div
                       key={momento.key}
@@ -479,14 +584,55 @@ export default function App() {
                         )}
                         <span className="text-[10px] font-normal text-slate-400 ml-auto whitespace-nowrap">{momento.hora}</span>
                       </h3>
-                      <MealSelector
-                        comidas={comidas}
-                        dia={diaActivo}
-                        momento={momento.key}
-                        selecciones={selecciones}
-                        onToggle={toggleSeleccion}
-                        accentClasses={accentColors}
-                      />
+
+                      {!isAmbos && (
+                        <MealSelector
+                          perfil={perfilActivo}
+                          comidas={perfilBase.plan[diaActivo]?.[momento.key] || []}
+                          dia={diaActivo}
+                          momento={momento.key}
+                          selecciones={selecciones}
+                          onToggle={toggleSeleccion}
+                          accentClasses={accentColors}
+                        />
+                      )}
+
+                      {isAmbos && (
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                            <h4 className="font-bold text-blue-800 text-xs mb-2">Para {perfilesData.vo.nombre}</h4>
+                            <MealSelector
+                              perfil="vo"
+                              comidas={perfilesData.vo.plan[diaActivo]?.[momento.key] || []}
+                              dia={diaActivo}
+                              momento={momento.key}
+                              selecciones={selecciones}
+                              onToggle={toggleSeleccion}
+                              accentClasses={{
+                                bg: 'bg-blue-500', bgLight: 'bg-blue-50', bgGradient: 'from-blue-500 to-indigo-600',
+                                text: 'text-blue-600', border: 'border-blue-200', borderAccent: 'border-blue-500',
+                                tagBg: 'bg-blue-100', tagText: 'text-blue-700'
+                              }}
+                            />
+                          </div>
+                          <div className="p-3 bg-rose-50/50 rounded-xl border border-rose-100">
+                            <h4 className="font-bold text-rose-800 text-xs mb-2">Para {perfilesData.va.nombre}</h4>
+                            <MealSelector
+                              perfil="va"
+                              comidas={perfilesData.va.plan[diaActivo]?.[momento.key] || []}
+                              dia={diaActivo}
+                              momento={momento.key}
+                              selecciones={selecciones}
+                              onToggle={toggleSeleccion}
+                              accentClasses={{
+                                bg: 'bg-rose-500', bgLight: 'bg-rose-50', bgGradient: 'from-rose-500 to-pink-600',
+                                text: 'text-rose-600', border: 'border-rose-200', borderAccent: 'border-rose-500',
+                                tagBg: 'bg-rose-100', tagText: 'text-rose-700'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -494,7 +640,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* ════ EQUIVALENCIAS ════ */}
+          {/* ════ EQUIVALENCIES ════ */}
           {tab === 'equivalencias' && (
             <motion.div key="equivalencias"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
@@ -506,7 +652,7 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* ════ RESUMEN ════ */}
+          {/* ════ SUMMARY ════ */}
           {tab === 'resumen' && (
             <motion.div key="resumen"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
@@ -580,6 +726,56 @@ export default function App() {
                   <h3 className="font-bold text-emerald-900 mb-1.5 text-xs sm:text-sm">Perfil</h3>
                   <p className="text-emerald-700 text-xs sm:text-sm">{perfil!.perfil}</p>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ════ SHOPPING ════ */}
+          {tab === 'compras' && (
+            <motion.div key="compras"
+              initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
+              className="space-y-4">
+              
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-4">
+                <h2 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center`}>
+                    <ShoppingCart className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  Lista de Compras
+                </h2>
+                <p className="text-sm text-slate-500 mb-4">
+                  Ingredientes agrupados automáticamente basados en tus comidas marcadas ({listaCompras.length} ingredientes distintos en tu carrito). Recuerda las porciones en las recetas y revisa qué tienes ya en la alacena.
+                </p>
+
+                {listaCompras.length === 0 ? (
+                  <div className="text-center py-10 bg-slate-50 rounded-xl border-dashed border-2 border-slate-200">
+                    <p className="text-slate-400 font-medium">Aún no has seleccionado comidas.</p>
+                    <p className="text-slate-400 text-xs mt-1">Ve a "Mi Plan" y marca algunas comidas para llenar tu carrito.</p>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {listaCompras.map(item => (
+                      <div key={item.ingrediente} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <CheckCircle2 className="w-4 h-4 text-slate-300" /> 
+                          <h3 className="font-bold text-slate-800 capitalize text-base">{item.ingrediente}</h3>
+                        </div>
+                        <ul className="space-y-2 ml-6 border-l-2 border-slate-200 pl-3">
+                          {item.usos.map((uso, idx) => (
+                            <li key={idx} className="flex gap-2 text-xs relative">
+                              <span className="absolute -left-[17px] top-1.5 w-1.5 h-1.5 rounded-full bg-slate-300" />
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                uso.perfil === 'vo' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'
+                              }`}>{uso.perfil.toUpperCase()}</span>
+                              <span className="text-slate-600 font-medium leading-tight">{uso.texto}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

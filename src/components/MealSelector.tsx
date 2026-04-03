@@ -3,15 +3,17 @@ import { Utensils, Tag, CheckCircle2 } from 'lucide-react';
 import type { MealItem } from '../data';
 
 interface MealSelectorProps {
+  perfil: string;
   comidas: MealItem[];
   dia: string;
   momento: string;
   selecciones: Record<string, boolean>;
-  onToggle: (dia: string, momento: string, nombre: string) => void;
+  onToggle: (perfil: string, dia: string, momento: string, nombre: string) => void;
   accentClasses: Record<string, string>;
 }
 
 export default function MealSelector({
+  perfil,
   comidas,
   dia,
   momento,
@@ -22,14 +24,14 @@ export default function MealSelector({
   return (
     <div className="grid gap-3">
       {comidas.map((comida, idx) => {
-        const esSeleccionada = selecciones[`${dia}-${momento}-${comida.nombre}`];
+        const esSeleccionada = selecciones[`${perfil}-${dia}-${momento}-${comida.nombre}`];
         return (
           <motion.div
             key={comida.nombre}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.04 }}
-            onClick={() => onToggle(dia, momento, comida.nombre)}
+            onClick={() => onToggle(perfil, dia, momento, comida.nombre)}
             className={`relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer group ${
               esSeleccionada
                 ? `${accentClasses.bgLight} border-2 ${accentClasses.borderAccent} shadow-md`
