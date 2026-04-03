@@ -179,11 +179,11 @@ export default function App() {
             <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/30 to-white" />
           </div>
           <div className="relative max-w-4xl mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-4 text-center">
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }} 
                 animate={{ scale: 1, opacity: 1 }} 
-                transition={{ delay: 0.2 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
                 className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-md rounded-full shadow-sm mb-4 border border-white/50"
               >
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -205,7 +205,7 @@ export default function App() {
         <div className="flex-1 max-w-4xl mx-auto px-4 md:px-6 pb-12 w-full z-10 relative -mt-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             <motion.button
-              initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+              initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('vo'); setDiaActivo('Lunes'); setTab('plan'); }}
               className="text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
@@ -228,7 +228,7 @@ export default function App() {
             </motion.button>
 
             <motion.button
-              initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
+              initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.15 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setTab('plan'); }}
               className="text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
@@ -251,7 +251,7 @@ export default function App() {
             </motion.button>
             
             <motion.button
-              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.2 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('ambos'); setDiaActivo('Lunes'); setTab('plan'); }}
               className="sm:col-span-2 text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
@@ -273,7 +273,7 @@ export default function App() {
           </div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.25 }}
             className="mt-10 rounded-2xl overflow-hidden shadow-lg"
           >
             <img src="/images/meal-prep.png" alt="Preparación de comidas saludables" className="w-full h-48 md:h-64 object-cover" />
@@ -379,7 +379,7 @@ export default function App() {
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.2 }}
+            transition={{ type: "spring", stiffness: 400, damping: 35 }}
             className={`sticky top-[52px] sm:top-[56px] z-40 bg-white/97 backdrop-blur-xl border-b ${ac.border} shadow-md`}
           >
             {/* ── Always visible compact bar ── */}
@@ -452,7 +452,7 @@ export default function App() {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  transition={{ type: "spring", stiffness: 400, damping: 35 }}
                   className="overflow-hidden"
                 >
                   <div className={`max-w-5xl mx-auto px-4 sm:px-6 pb-4 pt-1`}>
@@ -534,7 +534,7 @@ export default function App() {
         )}
 
         {/* ── Tab nav */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
           className="flex gap-1 bg-slate-100 rounded-2xl p-1.5 overflow-x-auto scrollbar-none snap-x">
           {([
             { key: 'plan' as const, label: 'Mi Plan', icon: Calendar },
@@ -557,7 +557,7 @@ export default function App() {
           {tab === 'plan' && (
             <motion.div key="plan"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="space-y-4">
 
               {/* Day selector */}
@@ -684,7 +684,7 @@ export default function App() {
           {tab === 'equivalencias' && (
             <motion.div key="equivalencias"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="space-y-6">
               {isAmbos ? (
                 <div className="grid lg:grid-cols-2 gap-8">
@@ -719,7 +719,7 @@ export default function App() {
           {tab === 'resumen' && (
             <motion.div key="resumen"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className={isAmbos ? "grid lg:grid-cols-2 gap-8" : "space-y-10"}>
               
               {(isAmbos ? [perfilesData.vo, perfilesData.va] : [perfil!]).map((p, pIdx) => {
@@ -741,6 +741,64 @@ export default function App() {
                       <h3 className={`text-lg font-bold pb-2 border-b-2 mt-4 ${isFirst ? 'text-blue-800 border-blue-200' : 'text-rose-800 border-rose-200'}`}>
                         Resumen de {p.nombre}
                       </h3>
+                    )}
+
+                    {p.objetivosPorMomento && (
+                      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100/80 overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl -z-10" />
+                        <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 text-sm sm:text-base">
+                          <BarChart3 className={`w-4 h-4 ${dynamicAc.text}`} />
+                          Tabla de Macros y Porciones
+                        </h3>
+                        <div className="overflow-x-auto scrollbar-none -mx-4 sm:mx-0 px-4 sm:px-0">
+                          <table className="w-full text-left text-xs sm:text-sm min-w-[500px]">
+                            <thead>
+                              <tr className={`border-b-2 ${dynamicAc.border} text-slate-400 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]`}>
+                                <th className="p-2 sm:p-3 pb-3 sticky left-0 bg-white/95 backdrop-blur-md z-10 w-28">Grupo</th>
+                                {['Desayuno', 'Col. AM', 'Comida', 'Col. PM', 'Cena'].map(l => <th key={l} className="p-2 sm:p-3 pb-3 text-center w-16">{l}</th>)}
+                                <th className="p-2 sm:p-3 pb-3 text-center bg-slate-50/50 rounded-tr-xl w-16">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100/60">
+                              {[
+                                { key: 'frutas', label: 'Frutas', icon: '🍎' },
+                                { key: 'verduras', label: 'Verduras', icon: '🥦' },
+                                { key: 'cereales', label: 'Cereales', icon: '🥐' },
+                                { key: 'proteina', label: 'Proteína', icon: '🥩' },
+                                { key: 'grasas', label: 'Grasas', icon: '🥑' },
+                                { key: 'leche', label: 'Leche', icon: '🥛' },
+                              ].map((cat, idx) => {
+                                const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
+                                const total = mKeys.reduce((acc, m) => acc + (p.objetivosPorMomento[m]?.[cat.key] || 0), 0);
+                                if (total === 0 && cat.key !== 'leche') return null;
+                                return (
+                                  <motion.tr 
+                                    key={cat.key}
+                                    initial={{opacity: 0, y: 8}} 
+                                    whileInView={{opacity: 1, y: 0}} 
+                                    viewport={{once: true}}
+                                    transition={{type: 'spring', stiffness: 400, damping: 30, delay: idx * 0.05}}
+                                    className="hover:bg-slate-50/70 transition-colors group"
+                                  >
+                                    <td className="p-2 sm:p-3 sticky left-0 bg-white/95 group-hover:bg-slate-50/95 backdrop-blur-md z-10 font-bold text-slate-700 flex items-center gap-2 border-r border-transparent group-hover:border-slate-100/50 transition-colors">
+                                      <span className="text-base drop-shadow-sm">{cat.icon}</span> {cat.label}
+                                    </td>
+                                    {mKeys.map(m => {
+                                      const val = p.objetivosPorMomento[m]?.[cat.key] || 0;
+                                      return (
+                                        <td key={m} className={`p-2 sm:p-3 text-center font-medium ${val > 0 ? 'text-slate-800' : 'text-slate-300'}`}>
+                                          {val > 0 ? val : '-'}
+                                        </td>
+                                      )
+                                    })}
+                                    <td className={`p-2 sm:p-3 text-center font-bold ${dynamicAc.text} bg-slate-50/50`}>{total}</td>
+                                  </motion.tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     )}
 
                     <div className="relative rounded-2xl overflow-hidden shadow-sm">
@@ -779,25 +837,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    {p.distribucionDiaria && (
-                      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
-                        <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
-                          <BarChart3 className={`w-4 h-4 ${dynamicAc.text}`} />
-                          Distribución diaria de porciones
-                        </h3>
-                        <div className="grid gap-2">
-                          {p.distribucionDiaria.map((item, idx) => (
-                            <div key={idx} className={`flex items-center justify-between p-2.5 rounded-xl ${dynamicAc.bgLight}`}>
-                              <div className="flex items-center gap-2.5">
-                                <span className={`font-bold ${dynamicAc.text} text-base w-7 text-center flex-shrink-0`}>{item.total}</span>
-                                <span className="font-medium text-slate-800 text-xs sm:text-sm">{item.grupo}</span>
-                              </div>
-                              <span className="text-[10px] sm:text-xs text-slate-500 text-right max-w-[120px] sm:max-w-none">{item.detalle}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className={`bg-gradient-to-br ${dynamicAc.bgGradientLight} rounded-2xl p-4 border ${dynamicAc.border}`}>
@@ -821,7 +861,7 @@ export default function App() {
           {tab === 'compras' && (
             <motion.div key="compras"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="space-y-4">
               
               <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-4">
