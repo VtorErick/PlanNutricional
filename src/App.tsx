@@ -618,9 +618,9 @@ export default function App() {
           </motion.div>
         </div>
 
-        {/* ── Mobile Bottom Tab Nav (Floating Pill) */}
-        <div className="sm:hidden fixed bottom-6 left-4 right-4 z-50">
-          <div className="bg-white/85 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60 rounded-[24px] px-2 py-2 flex justify-around items-center">
+        {/* ── Mobile Bottom Tab Nav (Docked) */}
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-5 pt-2 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 shadow-[0_-4px_30px_rgba(0,0,0,0.04)]">
+          <div className="flex justify-around items-center max-w-sm mx-auto">
             {([
               { key: 'plan' as const, label: 'Plan', icon: Calendar },
               { key: 'equivalencias' as const, label: 'Extras', icon: BookOpen },
@@ -630,13 +630,12 @@ export default function App() {
               const active = tab === t.key;
               return (
                 <button key={t.key} onClick={() => setTab(t.key)}
-                  className={`relative flex flex-col items-center justify-center gap-0.5 w-[72px] py-1.5 rounded-[18px] transition-all duration-300 active:scale-[0.85] ${active ? `bg-white shadow-sm border border-slate-100 ${ac.text}` : 'text-slate-400 hover:text-slate-500'}`}>
-                  {active && <div className={`absolute inset-0 rounded-[18px] opacity-[0.15] bg-gradient-to-br ${ac.bgGradientLight} pointer-events-none`} />}
-                  <div className="relative">
-                    <t.icon className={`w-4 h-4 ${active ? `fill-current opacity-20 absolute` : ''}`} />
-                    <t.icon className="w-4 h-4 relative z-10" strokeWidth={active ? 2.5 : 2} />
+                  className={`relative flex flex-col items-center justify-center gap-1 w-[72px] py-1 transition-all duration-200 active:scale-95 ${active ? ac.text : 'text-slate-400 hover:text-slate-500'}`}>
+                  <div className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300 ${active ? `bg-gradient-to-br ${ac.bgGradientLight} shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-${ac.border.split('-')[1]}-100` : 'bg-transparent'}`}>
+                    <t.icon className={`w-[18px] h-[18px] ${active ? `fill-current opacity-20 absolute` : ''}`} />
+                    <t.icon className="w-[18px] h-[18px] relative z-10" strokeWidth={active ? 2.5 : 2} />
                   </div>
-                  <span className={`text-[10px] tracking-wide mt-0.5 z-10 ${active ? `font-extrabold ${ac.textDark}` : 'font-medium'}`}>{t.label}</span>
+                  <span className={`text-[10px] tracking-wide ${active ? `font-extrabold ${ac.textDark}` : 'font-medium'}`}>{t.label}</span>
                 </button>
               );
             })}
