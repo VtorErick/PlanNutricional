@@ -619,8 +619,8 @@ export default function App() {
         </div>
 
         {/* ── Mobile Bottom Tab Nav (Docked) */}
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-3 pb-5 pt-2 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 shadow-[0_-4px_30px_rgba(0,0,0,0.04)]">
-          <div className="flex justify-around items-center max-w-sm mx-auto">
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-2 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 shadow-[0_-4px_30px_rgba(0,0,0,0.04)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="flex justify-around items-center max-w-sm mx-auto pt-1.5 pb-1.5">
             {([
               { key: 'plan' as const, label: 'Plan', icon: Calendar },
               { key: 'equivalencias' as const, label: 'Extras', icon: BookOpen },
