@@ -22,6 +22,7 @@ export default function App() {
   const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | 'ambos' | null>(null);
   const [diaActivo, setDiaActivo] = useState('Lunes');
   const [selecciones, setSelecciones] = useState<Record<string, boolean>>({});
+  const [momentosColapsados, setMomentosColapsados] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState<'plan' | 'equivalencias' | 'resumen' | 'compras'>('plan');
   const [progressExpanded, setProgressExpanded] = useState(false);
 
@@ -113,10 +114,27 @@ export default function App() {
     
   const totalMomentosProgress = isAmbos ? perfilBase.momentos.length * 2 : perfilBase.momentos.length;
 
+  // Auto-collapse moment when it becomes completed
+  const prevCompletado = useRef(momentoCompletado);
+  useEffect(() => {
+    const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+    Object.entries(momentoCompletado).forEach(([key, isDone]) => {
+      if (isDone && !prevCompletado.current[key]) {
+        const tid = setTimeout(() => {
+          setMomentosColapsados(p => ({ ...p, [key]: true }));
+        }, 800);
+        timeoutIds.push(tid);
+      }
+    });
+    prevCompletado.current = momentoCompletado;
+    return () => timeoutIds.forEach(clearTimeout);
+  }, [momentoCompletado]);
+
   // Collapse progress when tab changes or day changes
   useEffect(() => {
     setProgressExpanded(false);
-  }, [tab, diaActivo]);
+    setMomentosColapsados({});
+  }, [tab, diaActivo, perfilActivo]);
 
   const listaCompras = useMemo(() => {
     const map: Record<string, { texto: string, perfil: string }[]> = {};
@@ -566,71 +584,96 @@ export default function App() {
                   const done = momentoCompletado[momento.key];
 
                   return (
-                    <div
+                    <motion.div
+                      layout
                       key={momento.key}
                       ref={(el) => { mealSectionRefs.current[momento.key] = el; }}
-                      className={`bg-white rounded-2xl p-4 sm:p-5 shadow-sm border ${done ? ac.borderAccent : 'border-slate-100'} transition-all duration-300`}
+                      className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${done ? ac.borderAccent : 'border-slate-100'}`}
                     >
-                      <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                        <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center flex-shrink-0`}>
-                          <Icon className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <span className="truncate">{momento.label}</span>
-                        {done && (
-                          <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isVo ? 'text-blue-500' : 'text-rose-500'}`} />
+                      <button 
+                        onClick={() => setMomentosColapsados(p => ({...p, [momento.key]: !p[momento.key]}))}
+                        className={`w-full flex items-center justify-between text-left p-4 sm:p-5 transition-colors focus:outline-none ${done ? 'bg-slate-50/50' : 'hover:bg-slate-50'}`}
+                      >
+                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center flex-shrink-0`}>
+                            <Icon className="w-3.5 h-3.5 text-white" />
+                          </div>
+                          <span className="truncate">{momento.label}</span>
+                          {done && (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+                              <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isVo ? 'text-blue-500' : 'text-rose-500'}`} />
+                            </motion.div>
+                          )}
+                          <span className="text-[10px] font-normal text-slate-400 ml-2 whitespace-nowrap">{momento.hora}</span>
+                        </h3>
+                        <motion.div animate={{ rotate: momentosColapsados[momento.key] ? -180 : 0 }} transition={{ type: "spring", damping: 20 }}>
+                          <ChevronUp className="w-5 h-5 text-slate-400" />
+                        </motion.div>
+                      </button>
+
+                      <AnimatePresence initial={false}>
+                        {!momentosColapsados[momento.key] && (
+                          <motion.div
+                            key="content"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ type: "spring", damping: 26, stiffness: 200 }}
+                          >
+                            <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
+                              {!isAmbos && (
+                                <MealSelector
+                                  perfil={perfilActivo}
+                                  comidas={perfilBase.plan[diaActivo]?.[momento.key] || []}
+                                  dia={diaActivo}
+                                  momento={momento.key}
+                                  selecciones={selecciones}
+                                  onToggle={toggleSeleccion}
+                                  accentClasses={accentColors}
+                                />
+                              )}
+
+                              {isAmbos && (
+                                <div className="grid md:grid-cols-2 gap-4">
+                                  <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                                    <h4 className="font-bold text-blue-800 text-xs mb-2">Para {perfilesData.vo.nombre}</h4>
+                                    <MealSelector
+                                      perfil="vo"
+                                      comidas={perfilesData.vo.plan[diaActivo]?.[momento.key] || []}
+                                      dia={diaActivo}
+                                      momento={momento.key}
+                                      selecciones={selecciones}
+                                      onToggle={toggleSeleccion}
+                                      accentClasses={{
+                                        bg: 'bg-blue-500', bgLight: 'bg-blue-50', bgGradient: 'from-blue-500 to-indigo-600',
+                                        text: 'text-blue-600', border: 'border-blue-200', borderAccent: 'border-blue-500',
+                                        tagBg: 'bg-blue-100', tagText: 'text-blue-700'
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="p-3 bg-rose-50/50 rounded-xl border border-rose-100">
+                                    <h4 className="font-bold text-rose-800 text-xs mb-2">Para {perfilesData.va.nombre}</h4>
+                                    <MealSelector
+                                      perfil="va"
+                                      comidas={perfilesData.va.plan[diaActivo]?.[momento.key] || []}
+                                      dia={diaActivo}
+                                      momento={momento.key}
+                                      selecciones={selecciones}
+                                      onToggle={toggleSeleccion}
+                                      accentClasses={{
+                                        bg: 'bg-rose-500', bgLight: 'bg-rose-50', bgGradient: 'from-rose-500 to-pink-600',
+                                        text: 'text-rose-600', border: 'border-rose-200', borderAccent: 'border-rose-500',
+                                        tagBg: 'bg-rose-100', tagText: 'text-rose-700'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
                         )}
-                        <span className="text-[10px] font-normal text-slate-400 ml-auto whitespace-nowrap">{momento.hora}</span>
-                      </h3>
-
-                      {!isAmbos && (
-                        <MealSelector
-                          perfil={perfilActivo}
-                          comidas={perfilBase.plan[diaActivo]?.[momento.key] || []}
-                          dia={diaActivo}
-                          momento={momento.key}
-                          selecciones={selecciones}
-                          onToggle={toggleSeleccion}
-                          accentClasses={accentColors}
-                        />
-                      )}
-
-                      {isAmbos && (
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                            <h4 className="font-bold text-blue-800 text-xs mb-2">Para {perfilesData.vo.nombre}</h4>
-                            <MealSelector
-                              perfil="vo"
-                              comidas={perfilesData.vo.plan[diaActivo]?.[momento.key] || []}
-                              dia={diaActivo}
-                              momento={momento.key}
-                              selecciones={selecciones}
-                              onToggle={toggleSeleccion}
-                              accentClasses={{
-                                bg: 'bg-blue-500', bgLight: 'bg-blue-50', bgGradient: 'from-blue-500 to-indigo-600',
-                                text: 'text-blue-600', border: 'border-blue-200', borderAccent: 'border-blue-500',
-                                tagBg: 'bg-blue-100', tagText: 'text-blue-700'
-                              }}
-                            />
-                          </div>
-                          <div className="p-3 bg-rose-50/50 rounded-xl border border-rose-100">
-                            <h4 className="font-bold text-rose-800 text-xs mb-2">Para {perfilesData.va.nombre}</h4>
-                            <MealSelector
-                              perfil="va"
-                              comidas={perfilesData.va.plan[diaActivo]?.[momento.key] || []}
-                              dia={diaActivo}
-                              momento={momento.key}
-                              selecciones={selecciones}
-                              onToggle={toggleSeleccion}
-                              accentClasses={{
-                                bg: 'bg-rose-500', bgLight: 'bg-rose-50', bgGradient: 'from-rose-500 to-pink-600',
-                                text: 'text-rose-600', border: 'border-rose-200', borderAccent: 'border-rose-500',
-                                tagBg: 'bg-rose-100', tagText: 'text-rose-700'
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      </AnimatePresence>
+                    </motion.div>
                   );
                 })}
               </div>
