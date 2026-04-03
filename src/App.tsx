@@ -874,7 +874,7 @@ export default function App() {
             <motion.div key="resumen"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className={isAmbos ? "grid lg:grid-cols-2 gap-8" : "space-y-10"}>
+              className={`w-full overflow-hidden sm:overflow-visible ${isAmbos ? "grid lg:grid-cols-2 gap-8" : "space-y-10"}`}>
               
               {(isAmbos ? [perfilesData.vo, perfilesData.va] : [perfil!]).map((p, pIdx) => {
                 const isFirst = pIdx === 0;
@@ -898,19 +898,55 @@ export default function App() {
                     )}
 
                     {p.objetivosPorMomento && (
-                      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100/80 overflow-hidden relative">
+                      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100/80 overflow-hidden relative w-full">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl -z-10" />
-                        <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 text-sm sm:text-base">
+                        <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
                           <BarChart3 className={`w-4 h-4 ${dynamicAc.text}`} />
                           Tabla de Macros y Porciones
                         </h3>
-                        <div className="overflow-x-auto scrollbar-none -mx-4 sm:mx-0 px-4 sm:px-0">
-                          <table className="w-full text-left text-xs sm:text-sm min-w-[500px]">
+                        
+                        {/* Mobile Grid Layout (replaces horizontal table for small screens) */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:hidden mt-4">
+                          {[
+                            { key: 'frutas', label: 'Frutas', icon: '🍎' },
+                            { key: 'verduras', label: 'Verduras', icon: '🥦' },
+                            { key: 'cereales', label: 'Cereales', icon: '🥐' },
+                            { key: 'proteina', label: 'Proteína', icon: '🥩' },
+                            { key: 'grasas', label: 'Grasas', icon: '🥑' },
+                            { key: 'leche', label: 'Leche', icon: '🥛' },
+                          ].map(cat => {
+                            const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
+                            const total = mKeys.reduce((acc, m) => acc + (p.objetivosPorMomento[m]?.[cat.key] || 0), 0);
+                            if (total === 0 && cat.key !== 'leche') return null;
+                            return (
+                              <div key={cat.key} className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-between">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-slate-700 text-xs flex items-center gap-1.5"><span className="text-sm">{cat.icon}</span> <span className="truncate">{cat.label}</span></span>
+                                  <span className={`font-black ${dynamicAc.text} text-sm bg-white shadow-sm px-1.5 rounded-md`}>{total}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] text-slate-400 font-medium px-1">
+                                  {mKeys.map(m => {
+                                    const val = p.objetivosPorMomento[m]?.[cat.key] || 0;
+                                    return <span key={m} className={val > 0 ? 'text-slate-600 font-bold' : 'opacity-20'}>{val > 0 ? val : '-'}</span>;
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between items-center sm:hidden mt-2 px-1 text-[7px] uppercase tracking-widest text-slate-400 font-bold opacity-60">
+                           <span></span>
+                           <div className="flex gap-2"><span>Des</span><span>Cam</span><span>Com</span><span>Cpm</span><span>Cen</span></div>
+                        </div>
+
+                        {/* Desktop Table Layout */}
+                        <div className="hidden sm:block overflow-x-auto w-full scrollbar-none">
+                          <table className="w-full text-left text-sm min-w-max">
                             <thead>
-                              <tr className={`border-b-2 ${dynamicAc.border} text-slate-400 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]`}>
-                                <th className="p-2 sm:p-3 pb-3 sticky left-0 bg-white/95 backdrop-blur-md z-10 w-28">Grupo</th>
-                                {['Desayuno', 'Col. AM', 'Comida', 'Col. PM', 'Cena'].map(l => <th key={l} className="p-2 sm:p-3 pb-3 text-center w-16">{l}</th>)}
-                                <th className="p-2 sm:p-3 pb-3 text-center bg-slate-50/50 rounded-tr-xl w-16">Total</th>
+                              <tr className={`border-b-2 ${dynamicAc.border} text-slate-400 font-bold uppercase tracking-wider text-[11px]`}>
+                                <th className="p-3 pb-3 sticky left-0 bg-white/95 backdrop-blur-md z-10 w-28">Grupo</th>
+                                {['Desayuno', 'Col. AM', 'Comida', 'Col. PM', 'Cena'].map(l => <th key={l} className="p-3 pb-3 text-center w-16">{l}</th>)}
+                                <th className="p-3 pb-3 text-center bg-slate-50/50 rounded-tr-xl w-16">Total</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100/60">
@@ -921,32 +957,25 @@ export default function App() {
                                 { key: 'proteina', label: 'Proteína', icon: '🥩' },
                                 { key: 'grasas', label: 'Grasas', icon: '🥑' },
                                 { key: 'leche', label: 'Leche', icon: '🥛' },
-                              ].map((cat, idx) => {
+                              ].map((cat) => {
                                 const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
                                 const total = mKeys.reduce((acc, m) => acc + (p.objetivosPorMomento[m]?.[cat.key] || 0), 0);
                                 if (total === 0 && cat.key !== 'leche') return null;
                                 return (
-                                  <motion.tr 
-                                    key={cat.key}
-                                    initial={{opacity: 0, y: 8}} 
-                                    whileInView={{opacity: 1, y: 0}} 
-                                    viewport={{once: true}}
-                                    transition={{type: 'spring', stiffness: 400, damping: 30, delay: idx * 0.05}}
-                                    className="hover:bg-slate-50/70 transition-colors group"
-                                  >
-                                    <td className="p-2 sm:p-3 sticky left-0 bg-white/95 group-hover:bg-slate-50/95 backdrop-blur-md z-10 font-bold text-slate-700 flex items-center gap-2 border-r border-transparent group-hover:border-slate-100/50 transition-colors">
+                                  <tr key={cat.key} className="hover:bg-slate-50/70 transition-colors group">
+                                    <td className="p-3 sticky left-0 bg-white/95 group-hover:bg-slate-50/95 backdrop-blur-md z-10 font-bold text-slate-700 flex items-center gap-2 border-r border-transparent group-hover:border-slate-100/50 transition-colors">
                                       <span className="text-base drop-shadow-sm">{cat.icon}</span> {cat.label}
                                     </td>
                                     {mKeys.map(m => {
                                       const val = p.objetivosPorMomento[m]?.[cat.key] || 0;
                                       return (
-                                        <td key={m} className={`p-2 sm:p-3 text-center font-medium ${val > 0 ? 'text-slate-800' : 'text-slate-300'}`}>
+                                        <td key={m} className={`p-3 text-center font-medium ${val > 0 ? 'text-slate-800' : 'text-slate-300'}`}>
                                           {val > 0 ? val : '-'}
                                         </td>
                                       )
                                     })}
-                                    <td className={`p-2 sm:p-3 text-center font-bold ${dynamicAc.text} bg-slate-50/50`}>{total}</td>
-                                  </motion.tr>
+                                    <td className={`p-3 text-center font-bold ${dynamicAc.text} bg-slate-50/50`}>{total}</td>
+                                  </tr>
                                 );
                               })}
                             </tbody>
