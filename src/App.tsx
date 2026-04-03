@@ -578,7 +578,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-4 space-y-4">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-4">
 
         {/* Health note */}
         {perfil!.notaSalud && (
@@ -589,22 +589,48 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* ── Tab nav */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className="flex gap-1 bg-slate-100 rounded-2xl p-1.5 overflow-x-auto scrollbar-none snap-x">
-          {([
-            { key: 'plan' as const, label: 'Mi Plan', icon: Calendar },
-            { key: 'equivalencias' as const, label: 'Equivalencias', icon: BookOpen },
-            { key: 'compras' as const, label: 'Compras', icon: ShoppingCart }, 
-            { key: 'resumen' as const, label: 'Resumen', icon: Lightbulb },
-          ]).map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={`flex-1 min-w-[100px] flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-1 sm:px-4 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 snap-start flex-shrink-0 ${tab === t.key ? `bg-white shadow-md ${ac.text}` : 'text-slate-500 hover:text-slate-700'}`}>
-                <t.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="truncate">{t.label}</span>
-              </button>
-          ))}
-        </motion.div>
+        {/* ── Desktop Tab Nav (Hidden on Mobile) */}
+        <div className="hidden sm:block">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="flex gap-1 bg-slate-100/80 p-1.5 rounded-2xl">
+            {([
+              { key: 'plan' as const, label: 'Mi Plan', icon: Calendar },
+              { key: 'equivalencias' as const, label: 'Equivalencias', icon: BookOpen },
+              { key: 'compras' as const, label: 'Compras', icon: ShoppingCart }, 
+              { key: 'resumen' as const, label: 'Resumen', icon: Lightbulb },
+            ]).map((t) => (
+                <button key={t.key} onClick={() => setTab(t.key)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-[14px] font-bold text-sm transition-all duration-300 active:scale-95 ${tab === t.key ? `bg-white shadow-sm ${ac.text}` : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}>
+                  <t.icon className="w-4 h-4 flex-shrink-0" />
+                  <span>{t.label}</span>
+                </button>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* ── Mobile Bottom Tab Nav */}
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3 bg-white/80 backdrop-blur-3xl border-t border-slate-200/50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+          <div className="flex justify-around items-center gap-1">
+            {([
+              { key: 'plan' as const, label: 'Plan', icon: Calendar },
+              { key: 'equivalencias' as const, label: 'Extras', icon: BookOpen },
+              { key: 'compras' as const, label: 'Compras', icon: ShoppingCart }, 
+              { key: 'resumen' as const, label: 'Resumen', icon: Lightbulb },
+            ]).map((t) => {
+              const active = tab === t.key;
+              return (
+                <button key={t.key} onClick={() => setTab(t.key)}
+                  className={`flex flex-col items-center justify-center w-16 gap-1 p-1 transition-all duration-300 active:scale-90 ${active ? ac.text : 'text-slate-400'}`}>
+                  <div className={`flex items-center justify-center w-12 h-8 rounded-full mb-0.5 transition-all duration-300 ${active ? `${ac.bgGradientLight} shadow-sm` : 'bg-transparent'}`}>
+                    <t.icon className={`w-5 h-5 ${active ? `fill-current opacity-20 absolute` : ''}`} />
+                    <t.icon className="w-5 h-5 relative z-10" strokeWidth={active ? 2.5 : 2} />
+                  </div>
+                  <span className={`text-[10px] font-semibold tracking-wide ${active ? ac.textDark : 'font-medium'}`}>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* ── Tab content */}
         <AnimatePresence mode="wait">
@@ -642,7 +668,7 @@ export default function App() {
                       layout
                       key={momento.key}
                       ref={(el) => { mealSectionRefs.current[momento.key] = el; }}
-                      className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${done ? ac.borderAccent : 'border-slate-100'}`}
+                      className={`bg-white rounded-[28px] sm:rounded-3xl shadow-sm border overflow-hidden ${done ? ac.borderAccent : 'border-slate-100'}`}
                     >
                       <button 
                         onClick={() => {
@@ -982,42 +1008,51 @@ export default function App() {
               exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="space-y-4">
               
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-4">
-                <h2 className="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center`}>
-                    <ShoppingCart className="w-4 h-4 text-emerald-600" />
+              <div className="bg-white rounded-[28px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 mb-4 overflow-hidden relative">
+                {/* Decoration */}
+                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-50 rounded-full blur-3xl -z-10 pointer-events-none" />
+                
+                <h2 className="text-2xl font-black tracking-tight text-slate-900 mb-2 flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-[14px] bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm flex items-center justify-center`}>
+                    <ShoppingCart className="w-5 h-5 text-white" />
                   </div>
-                  Lista de Compras
+                  Supermercado
                 </h2>
-                <p className="text-sm text-slate-500 mb-4">
-                  Ingredientes agrupados automáticamente basados en tus comidas marcadas ({listaCompras.length} ingredientes distintos en tu carrito). Recuerda las porciones en las recetas y revisa qué tienes ya en la alacena.
+                <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed max-w-xl">
+                  Tienes <strong className="text-emerald-600">{listaCompras.length} ingredientes</strong> en tu lista basados en tus platillos seleccionados. Recuerda revisar la alacena antes de salir.
                 </p>
 
                 {listaCompras.length === 0 ? (
-                  <div className="text-center py-10 bg-slate-50 rounded-xl border-dashed border-2 border-slate-200">
-                    <p className="text-slate-400 font-medium">Aún no has seleccionado comidas.</p>
-                    <p className="text-slate-400 text-xs mt-1">Ve a "Mi Plan" y marca algunas comidas para llenar tu carrito.</p>
+                  <div className="text-center py-12 bg-slate-50 rounded-[20px] border-dashed border-2 border-slate-200">
+                    <ShoppingCart className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-500 font-bold">Carrito vacío</p>
+                    <p className="text-slate-400 text-sm mt-1">Ve a "Mi Plan" y selecciona comidas para agregar ingredientes automáticamente.</p>
                   </div>
                 ) : (
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-3">
                     {listaCompras.map(item => (
-                      <div key={item.ingrediente} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <CheckCircle2 className="w-4 h-4 text-slate-300" /> 
-                          <h3 className="font-bold text-slate-800 capitalize text-base">{item.ingrediente}</h3>
+                      <motion.div whileTap={{ scale: 0.98 }} key={item.ingrediente} className="group p-0 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden flex items-stretch">
+                        <div className="w-1.5 bg-gradient-to-b from-slate-200 to-transparent group-hover:from-emerald-400 group-hover:to-teal-500 transition-colors" />
+                        <div className="p-4 sm:p-5 flex-1">
+                          <div className="flex items-start gap-4 mb-3">
+                            <div className="w-6 h-6 rounded-full border-2 border-slate-200 group-hover:border-emerald-500 mt-0.5 flex-shrink-0 transition-colors bg-slate-50 flex items-center justify-center" />
+                            <div className="min-w-0">
+                              <h3 className="font-bold text-slate-800 tracking-tight text-base capitalize truncate">{item.ingrediente}</h3>
+                              <p className="text-xs text-slate-400 mt-0.5 font-medium">{item.usos.length} recet{item.usos.length > 1 ? 'as' : 'a'} lo ocupa{item.usos.length > 1 ? 'n' : ''}</p>
+                            </div>
+                          </div>
+                          <ul className="space-y-2 ml-10">
+                            {item.usos.map((uso, idx) => (
+                              <li key={idx} className="flex gap-2 text-xs relative bg-slate-50 rounded-lg p-2 items-center">
+                                <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${
+                                  uso.perfil === 'vo' ? 'bg-blue-100/80 text-blue-700' : 'bg-rose-100/80 text-rose-700'
+                                }`}>{uso.perfil}</span>
+                                <span className="text-slate-600 font-medium leading-tight truncate">{uso.texto}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <ul className="space-y-2 ml-6 border-l-2 border-slate-200 pl-3">
-                          {item.usos.map((uso, idx) => (
-                            <li key={idx} className="flex gap-2 text-xs relative">
-                              <span className="absolute -left-[17px] top-1.5 w-1.5 h-1.5 rounded-full bg-slate-300" />
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                                uso.perfil === 'vo' ? 'bg-blue-100 text-blue-700' : 'bg-rose-100 text-rose-700'
-                              }`}>{uso.perfil.toUpperCase()}</span>
-                              <span className="text-slate-600 font-medium leading-tight">{uso.texto}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 )}
