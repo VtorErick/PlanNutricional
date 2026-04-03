@@ -42,8 +42,18 @@ export default function App() {
   const [vistaFiltrada, setVistaFiltrada] = useState(() => {
     try { return localStorage.getItem('vistaFiltrada') === 'true'; } catch { return false; }
   });
+  const [comprasCheck, setComprasCheck] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('comprasCheck');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
 
   // Guardar en LocalStorage cada que cambian
+  useEffect(() => {
+    localStorage.setItem('comprasCheck', JSON.stringify(comprasCheck));
+  }, [comprasCheck]);
+
   useEffect(() => {
     if (perfilActivo) localStorage.setItem('perfilActivo', perfilActivo);
   }, [perfilActivo]);
@@ -609,7 +619,7 @@ export default function App() {
         </div>
 
         {/* ── Mobile Bottom Tab Nav */}
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3 bg-white/80 backdrop-blur-3xl border-t border-slate-200/50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-1.5 bg-white/85 backdrop-blur-3xl border-t border-slate-200/50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
           <div className="flex justify-around items-center gap-1">
             {([
               { key: 'plan' as const, label: 'Plan', icon: Calendar },
@@ -620,12 +630,12 @@ export default function App() {
               const active = tab === t.key;
               return (
                 <button key={t.key} onClick={() => setTab(t.key)}
-                  className={`flex flex-col items-center justify-center w-16 gap-1 p-1 transition-all duration-300 active:scale-90 ${active ? ac.text : 'text-slate-400'}`}>
-                  <div className={`flex items-center justify-center w-12 h-8 rounded-full mb-0.5 transition-all duration-300 ${active ? `${ac.bgGradientLight} shadow-sm` : 'bg-transparent'}`}>
-                    <t.icon className={`w-5 h-5 ${active ? `fill-current opacity-20 absolute` : ''}`} />
-                    <t.icon className="w-5 h-5 relative z-10" strokeWidth={active ? 2.5 : 2} />
+                  className={`flex flex-col items-center justify-center w-16 gap-0.5 p-1 transition-all duration-300 active:scale-90 ${active ? ac.text : 'text-slate-400'}`}>
+                  <div className={`flex items-center justify-center w-10 h-7 rounded-full transition-all duration-300 ${active ? `${ac.bgGradientLight} shadow-sm` : 'bg-transparent'}`}>
+                    <t.icon className={`w-4 h-4 ${active ? `fill-current opacity-20 absolute` : ''}`} />
+                    <t.icon className="w-4 h-4 relative z-10" strokeWidth={active ? 2.5 : 2} />
                   </div>
-                  <span className={`text-[10px] font-semibold tracking-wide ${active ? ac.textDark : 'font-medium'}`}>{t.label}</span>
+                  <span className={`text-[9.5px] font-bold tracking-wide ${active ? ac.textDark : 'font-medium'}`}>{t.label}</span>
                 </button>
               );
             })}
@@ -1030,30 +1040,40 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {listaCompras.map(item => (
-                      <motion.div whileTap={{ scale: 0.98 }} key={item.ingrediente} className="group p-0 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden flex items-stretch">
-                        <div className="w-1.5 bg-gradient-to-b from-slate-200 to-transparent group-hover:from-emerald-400 group-hover:to-teal-500 transition-colors" />
-                        <div className="p-4 sm:p-5 flex-1">
-                          <div className="flex items-start gap-4 mb-3">
-                            <div className="w-6 h-6 rounded-full border-2 border-slate-200 group-hover:border-emerald-500 mt-0.5 flex-shrink-0 transition-colors bg-slate-50 flex items-center justify-center" />
-                            <div className="min-w-0">
-                              <h3 className="font-bold text-slate-800 tracking-tight text-base capitalize truncate">{item.ingrediente}</h3>
-                              <p className="text-xs text-slate-400 mt-0.5 font-medium">{item.usos.length} recet{item.usos.length > 1 ? 'as' : 'a'} lo ocupa{item.usos.length > 1 ? 'n' : ''}</p>
+                    {listaCompras.map((item) => {
+                      const isChecked = comprasCheck[item.ingrediente];
+                      return (
+                        <motion.div 
+                          whileTap={{ scale: 0.98 }} 
+                          key={item.ingrediente} 
+                          onClick={() => setComprasCheck(prev => ({...prev, [item.ingrediente]: !prev[item.ingrediente]}))}
+                          className={`group p-0 rounded-2xl border shadow-sm transition-all duration-200 cursor-pointer overflow-hidden flex items-stretch ${isChecked ? 'bg-slate-50 border-emerald-200 opacity-60' : 'bg-white border-slate-100 hover:shadow-md'}`}
+                        >
+                          <div className={`w-1.5 transition-colors ${isChecked ? 'bg-emerald-400' : 'bg-gradient-to-b from-slate-200 to-transparent group-hover:from-emerald-400 group-hover:to-teal-500'}`} />
+                          <div className="p-4 sm:p-5 flex-1 min-w-0">
+                            <div className="flex items-start gap-4 mb-3">
+                              <div className={`w-6 h-6 rounded-full border-2 mt-0.5 flex-shrink-0 transition-all duration-300 flex items-center justify-center ${isChecked ? 'bg-emerald-500 border-emerald-500 scale-110' : 'border-slate-200 group-hover:border-emerald-500 bg-slate-50'}`}>
+                                {isChecked && <CheckCircle2 className="w-4 h-4 text-white" />}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className={`font-bold tracking-tight text-base capitalize leading-snug break-words ${isChecked ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{item.ingrediente}</h3>
+                                <p className="text-xs text-slate-400 mt-0.5 font-medium">{item.usos.length} recet{item.usos.length > 1 ? 'as' : 'a'} lo ocupa{item.usos.length > 1 ? 'n' : ''}</p>
+                              </div>
                             </div>
+                            <ul className="space-y-2 ml-10">
+                              {item.usos.map((uso, idx) => (
+                                <li key={idx} className={`flex gap-2 text-xs relative rounded-lg p-2 items-center ${isChecked ? 'bg-slate-100/50' : 'bg-slate-50'}`}>
+                                  <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${
+                                    uso.perfil === 'vo' ? 'bg-blue-100/80 text-blue-700' : 'bg-rose-100/80 text-rose-700'
+                                  }`}>{uso.perfil}</span>
+                                  <span className={`font-medium leading-snug break-words ${isChecked ? 'text-slate-400' : 'text-slate-600'}`}>{uso.texto}</span>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
-                          <ul className="space-y-2 ml-10">
-                            {item.usos.map((uso, idx) => (
-                              <li key={idx} className="flex gap-2 text-xs relative bg-slate-50 rounded-lg p-2 items-center">
-                                <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${
-                                  uso.perfil === 'vo' ? 'bg-blue-100/80 text-blue-700' : 'bg-rose-100/80 text-rose-700'
-                                }`}>{uso.perfil}</span>
-                                <span className="text-slate-600 font-medium leading-tight truncate">{uso.texto}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
