@@ -33,8 +33,8 @@ export default function App() {
     const doScroll = () => {
       const el = mealSectionRefs.current[momentoKey];
       if (!el) return;
-      // Offset = header principal (~56px) + barra compacta (~44px) + margen extra (12px)
-      const offset = 56 + 44 + 12;
+      // Offset = header (~56px) + dias (~48px) + progreso (~44px) + margen (12px)
+      const offset = 56 + 48 + 44 + 12;
       const top = el.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: 'smooth' });
     };
@@ -382,15 +382,28 @@ export default function App() {
             transition={{ type: "spring", stiffness: 400, damping: 35 }}
             className={`sticky top-[52px] sm:top-[56px] z-40 bg-white/97 backdrop-blur-xl border-b ${ac.border} shadow-md`}
           >
+            {/* ── Day selector (Unified) ── */}
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-3 pb-2 border-b border-slate-100/60">
+              <div className="flex gap-1.5 overflow-x-auto snap-x scrollbar-none items-center">
+                {diasDisponibles.map((dia) => (
+                  <button key={dia} onClick={(e) => { e.stopPropagation(); setDiaActivo(dia); }}
+                    className={`py-1.5 px-3 rounded-xl font-bold transition-all duration-300 text-xs whitespace-nowrap snap-start flex-shrink-0 ${diaActivo === dia ? `${ac.btnActive} shadow-sm` : 'bg-slate-100/80 hover:bg-slate-200 text-slate-600'}`}>
+                    <span className="sm:hidden">{dia.slice(0, 3)}</span>
+                    <span className="hidden sm:inline">{dia}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* ── Always visible compact bar ── */}
             <div
               className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-3 cursor-pointer select-none"
               onClick={() => setProgressExpanded((e) => !e)}
             >
-              {/* Active day */}
-              <span className={`text-[11px] sm:text-xs font-bold ${ac.text} whitespace-nowrap flex-shrink-0`}>
-                {diaActivo}
-              </span>
+              {/* Active day icon */}
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center bg-gradient-to-br ${ac.bgGradient} flex-shrink-0 shadow-sm`}>
+                <TrendingDown className="w-3 h-3 text-white" />
+              </div>
 
               {/* Moment indicators — clickable to navigate to that section */}
               <div className="flex items-center gap-1 flex-shrink-0">
@@ -559,23 +572,6 @@ export default function App() {
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="space-y-4">
-
-              {/* Day selector */}
-              <div className="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <Calendar className={`w-4 h-4 ${ac.text}`} />
-                  <h2 className="text-sm font-bold text-slate-900">Día de la semana</h2>
-                </div>
-                <div className="flex gap-1.5 overflow-x-auto pb-1 snap-x scrollbar-none">
-                  {diasDisponibles.map((dia) => (
-                    <button key={dia} onClick={() => setDiaActivo(dia)}
-                      className={`py-1.5 px-2.5 sm:px-3 rounded-xl font-semibold transition-all duration-300 text-xs whitespace-nowrap snap-start flex-shrink-0 ${diaActivo === dia ? `${ac.btnActive} scale-105` : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
-                      <span className="sm:hidden">{dia.slice(0, 3)}</span>
-                      <span className="hidden sm:inline">{dia}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* ── Meal cards ─────────────────────────────────────────────── */}
               <div className="space-y-4">
