@@ -618,9 +618,9 @@ export default function App() {
           </motion.div>
         </div>
 
-        {/* ── Mobile Bottom Tab Nav */}
-        <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-1.5 bg-white/85 backdrop-blur-3xl border-t border-slate-200/50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
-          <div className="flex justify-around items-center gap-1">
+        {/* ── Mobile Bottom Tab Nav (Floating Pill) */}
+        <div className="sm:hidden fixed bottom-6 left-4 right-4 z-50">
+          <div className="bg-white/85 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60 rounded-[24px] px-2 py-2 flex justify-around items-center">
             {([
               { key: 'plan' as const, label: 'Plan', icon: Calendar },
               { key: 'equivalencias' as const, label: 'Extras', icon: BookOpen },
@@ -630,12 +630,13 @@ export default function App() {
               const active = tab === t.key;
               return (
                 <button key={t.key} onClick={() => setTab(t.key)}
-                  className={`flex flex-col items-center justify-center w-16 gap-0.5 p-1 transition-all duration-300 active:scale-90 ${active ? ac.text : 'text-slate-400'}`}>
-                  <div className={`flex items-center justify-center w-10 h-7 rounded-full transition-all duration-300 ${active ? `${ac.bgGradientLight} shadow-sm` : 'bg-transparent'}`}>
+                  className={`relative flex flex-col items-center justify-center gap-0.5 w-[72px] py-1.5 rounded-[18px] transition-all duration-300 active:scale-[0.85] ${active ? `bg-white shadow-sm border border-slate-100 ${ac.text}` : 'text-slate-400 hover:text-slate-500'}`}>
+                  {active && <div className={`absolute inset-0 rounded-[18px] opacity-[0.15] bg-gradient-to-br ${ac.bgGradientLight} pointer-events-none`} />}
+                  <div className="relative">
                     <t.icon className={`w-4 h-4 ${active ? `fill-current opacity-20 absolute` : ''}`} />
                     <t.icon className="w-4 h-4 relative z-10" strokeWidth={active ? 2.5 : 2} />
                   </div>
-                  <span className={`text-[9.5px] font-bold tracking-wide ${active ? ac.textDark : 'font-medium'}`}>{t.label}</span>
+                  <span className={`text-[10px] tracking-wide mt-0.5 z-10 ${active ? `font-extrabold ${ac.textDark}` : 'font-medium'}`}>{t.label}</span>
                 </button>
               );
             })}
