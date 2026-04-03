@@ -57,7 +57,7 @@ export const perfilesData: Record<string, Profile> = {
       { key: 'cena', label: 'Cena', hora: '10:00–11:00 pm' },
     ],
     objetivosPorMomento: {
-      desayuno: { frutas: 0, verduras: 2, cereales: 2, leguminosas: 0, leche: 0, proteina: 4, grasas: 2 },
+      desayuno: { frutas: 0, verduras: 2, cereales: 2, leguminosas: 0, leche: 1, proteina: 4, grasas: 2 },
       colacion_am: { frutas: 1, verduras: 0, cereales: 1, leguminosas: 0, leche: 0, proteina: 0, grasas: 2 },
       comida: { frutas: 0, verduras: 2, cereales: 2, leguminosas: 0, leche: 0, proteina: 5, grasas: 2 },
       colacion_pm: { frutas: 0, verduras: 0, cereales: 0, leguminosas: 0, leche: 0, proteina: 0, grasas: 0 },
@@ -69,7 +69,7 @@ export const perfilesData: Record<string, Profile> = {
       { grupo: 'Cereales', total: 7, detalle: '2 desayuno + 1 col. AM + 2 comida + 2 cena' },
       { grupo: 'Proteína', total: 9, detalle: '4 desayuno + 5 comida' },
       { grupo: 'Grasas', total: 8, detalle: '2 desayuno + 2 col. AM + 2 comida + 2 cena' },
-      { grupo: 'Leche', total: 1, detalle: '1 en cena' },
+      { grupo: 'Leche', total: 2, detalle: '1 en desayuno + 1 en cena' },
     ],
     resumenPersonal: [
       'Tu riesgo principal no es comer poquito: es llegar con hambre y rebotar a pan, galletas, cereal o dulce. Por eso el plan lleva proteína alta en cada comida.',
