@@ -88,7 +88,6 @@ export const perfilesData: Record<string, Profile> = {
     perfil: '65 kg • 1.60 m • 31 años • IMC 25.4',
     meta: 'Llegar a peso saludable (~58 kg) con control de insulina',
     horariosTexto: '8 am • Col. AM • 3 pm • Col. PM • 9–10 pm',
-    notaSalud: '⚠️ Riesgo de insulina alta: priorizar fibra, evitar azúcares simples, no saltarse comidas, preferir frutas enteras (nunca en jugo), y combinar siempre carbohidrato con proteína o grasa.',
     momentos: [
       { key: 'desayuno', label: 'Desayuno', hora: '8:00 am' },
       { key: 'colacion_am', label: 'Colación mañana', hora: '11:00 am' },

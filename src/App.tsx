@@ -48,6 +48,7 @@ export default function App() {
       return saved ? JSON.parse(saved) : {};
     } catch { return {}; }
   });
+  const [ambosSubTab, setAmbosSubTab] = useState<'vo' | 'va'>('vo');
 
   // Guardar en LocalStorage cada que cambian
   useEffect(() => {
@@ -841,24 +842,30 @@ export default function App() {
               exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
               className="space-y-6">
               {isAmbos ? (
-                <div className="grid lg:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="text-sm font-bold text-blue-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.vo.nombre}</h3>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
-                      {equivalenciasData.vo.map((eq, idx) => (
-                        <EquivalenciasCard key={'vo'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-blue-50', text: 'text-blue-600', tagBg: 'bg-blue-100', tagText: 'text-blue-700'}} />
-                      ))}
+                <>
+                  <div className="lg:hidden flex bg-slate-100 p-1.5 rounded-xl mb-2 mx-auto max-w-xs shadow-inner w-full">
+                    <button onClick={() => setAmbosSubTab('vo')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'vo' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{perfilesData.vo.nombre}</button>
+                    <button onClick={() => setAmbosSubTab('va')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'va' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'}`}>{perfilesData.va.nombre}</button>
+                  </div>
+                  <div className="grid lg:grid-cols-2 gap-8">
+                    <div className={`${ambosSubTab === 'vo' ? 'block' : 'hidden lg:block'}`}>
+                      <h3 className="text-sm font-bold text-blue-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.vo.nombre}</h3>
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+                        {equivalenciasData.vo.map((eq, idx) => (
+                          <EquivalenciasCard key={'vo'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-blue-50', text: 'text-blue-600', tagBg: 'bg-blue-100', tagText: 'text-blue-700'}} />
+                        ))}
+                      </div>
+                    </div>
+                    <div className={`${ambosSubTab === 'va' ? 'block' : 'hidden lg:block'}`}>
+                      <h3 className="text-sm font-bold text-rose-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.va.nombre}</h3>
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+                        {equivalenciasData.va.map((eq, idx) => (
+                          <EquivalenciasCard key={'va'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-rose-50', text: 'text-rose-600', tagBg: 'bg-rose-100', tagText: 'text-rose-700'}} />
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-rose-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.va.nombre}</h3>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
-                      {equivalenciasData.va.map((eq, idx) => (
-                        <EquivalenciasCard key={'va'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-rose-50', text: 'text-rose-600', tagBg: 'bg-rose-100', tagText: 'text-rose-700'}} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                </>
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">
                   {equivalencias.map((eq, idx) => (
@@ -874,23 +881,33 @@ export default function App() {
             <motion.div key="resumen"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className={`w-full overflow-hidden sm:overflow-visible ${isAmbos ? "grid lg:grid-cols-2 gap-8" : "space-y-10"}`}>
+              className={`w-full overflow-hidden sm:overflow-visible flex flex-col`}>
               
-              {(isAmbos ? [perfilesData.vo, perfilesData.va] : [perfil!]).map((p, pIdx) => {
-                const isFirst = pIdx === 0;
-                const dynamicAc = isAmbos ? {
-                  ...ac,
-                  color500: isFirst ? '#3b82f6' : '#f43f5e',
-                  text: isFirst ? 'text-blue-600' : 'text-rose-600',
-                  textDark: isFirst ? 'text-blue-900' : 'text-rose-900',
-                  bgLight: isFirst ? 'bg-blue-50' : 'bg-rose-50',
-                  bgGradientLight: isFirst ? 'from-blue-50 to-indigo-50' : 'from-rose-50 to-pink-50',
-                  border: isFirst ? 'border-blue-200' : 'border-rose-200',
-                  dot: isFirst ? 'bg-blue-500' : 'bg-rose-500',
-                } : ac;
+              {isAmbos && (
+                <div className="lg:hidden flex bg-slate-100 p-1.5 rounded-xl mb-4 mx-auto max-w-xs shadow-inner w-full">
+                  <button onClick={() => setAmbosSubTab('vo')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'vo' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{perfilesData.vo.nombre}</button>
+                  <button onClick={() => setAmbosSubTab('va')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'va' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'}`}>{perfilesData.va.nombre}</button>
+                </div>
+              )}
 
-                return (
-                  <div key={p.perfil} className="space-y-4">
+              <div className={isAmbos ? "grid lg:grid-cols-2 gap-8" : "space-y-10"}>
+                {(isAmbos ? [perfilesData.vo, perfilesData.va] : [perfil!]).map((p, pIdx) => {
+                  const isFirst = pIdx === 0;
+                  const pfKey = isFirst ? 'vo' : 'va';
+                  const hiddenClass = isAmbos ? (ambosSubTab === pfKey ? 'block' : 'hidden lg:block') : 'block';
+                  const dynamicAc = isAmbos ? {
+                    ...ac,
+                    color500: isFirst ? '#3b82f6' : '#f43f5e',
+                    text: isFirst ? 'text-blue-600' : 'text-rose-600',
+                    textDark: isFirst ? 'text-blue-900' : 'text-rose-900',
+                    bgLight: isFirst ? 'bg-blue-50' : 'bg-rose-50',
+                    bgGradientLight: isFirst ? 'from-blue-50 to-indigo-50' : 'from-rose-50 to-pink-50',
+                    border: isFirst ? 'border-blue-200' : 'border-rose-200',
+                    dot: isFirst ? 'bg-blue-500' : 'bg-rose-500',
+                  } : ac;
+
+                  return (
+                    <div key={p.perfil} className={`space-y-4 ${hiddenClass}`}>
                     {isAmbos && (
                       <h3 className={`text-lg font-bold pb-2 border-b-2 mt-4 ${isFirst ? 'text-blue-800 border-blue-200' : 'text-rose-800 border-rose-200'}`}>
                         Resumen de {p.nombre}
@@ -1033,10 +1050,11 @@ export default function App() {
                         <h3 className={`font-bold ${isAmbos ? (isFirst ? 'text-blue-900' : 'text-rose-900') : 'text-emerald-900'} mb-1.5 text-xs sm:text-sm`}>Perfil</h3>
                         <p className={`${isAmbos ? (isFirst ? 'text-blue-700' : 'text-rose-700') : 'text-emerald-700'} text-xs sm:text-sm`}>{p.perfil}</p>
                       </div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </motion.div>
           )}
 
