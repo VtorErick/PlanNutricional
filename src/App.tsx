@@ -19,13 +19,46 @@ const momentoIcons: Record<string, any> = {
 };
 
 export default function App() {
-  const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | 'ambos' | null>(null);
-  const [diaActivo, setDiaActivo] = useState('Lunes');
-  const [selecciones, setSelecciones] = useState<Record<string, boolean>>({});
+  const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | 'ambos' | null>(() => {
+    try {
+      const saved = localStorage.getItem('perfilActivo');
+      return saved ? (saved as 'vo' | 'va' | 'ambos') : null;
+    } catch { return null; }
+  });
+  const [diaActivo, setDiaActivo] = useState(() => {
+    try {
+      return localStorage.getItem('diaActivo') || 'Lunes';
+    } catch { return 'Lunes'; }
+  });
+  const [selecciones, setSelecciones] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('seleccionesDieta');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [momentosColapsados, setMomentosColapsados] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState<'plan' | 'equivalencias' | 'resumen' | 'compras'>('plan');
   const [progressExpanded, setProgressExpanded] = useState(false);
-  const [vistaFiltrada, setVistaFiltrada] = useState(false);
+  const [vistaFiltrada, setVistaFiltrada] = useState(() => {
+    try { return localStorage.getItem('vistaFiltrada') === 'true'; } catch { return false; }
+  });
+
+  // Guardar en LocalStorage cada que cambian
+  useEffect(() => {
+    if (perfilActivo) localStorage.setItem('perfilActivo', perfilActivo);
+  }, [perfilActivo]);
+
+  useEffect(() => {
+    localStorage.setItem('diaActivo', diaActivo);
+  }, [diaActivo]);
+
+  useEffect(() => {
+    localStorage.setItem('seleccionesDieta', JSON.stringify(selecciones));
+  }, [selecciones]);
+
+  useEffect(() => {
+    localStorage.setItem('vistaFiltrada', String(vistaFiltrada));
+  }, [vistaFiltrada]);
 
   // Refs to handle auto-scrolling to each meal section
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
