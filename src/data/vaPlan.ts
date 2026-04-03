@@ -50,11 +50,11 @@ export const vaPlan: Record<string, Record<string, MealItem[]>> = {
     ],
     comida: [
       {
-        nombre: 'Pechuga asada con arroz integral y ensalada',
+        nombre: 'Carne en su jugo (Adaptación saludable)',
         porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
-        detalle: '120g pechuga a la plancha + 1/2 taza arroz integral + ensalada (lechuga, jitomate, pepino) + 1 cdita aceite oliva + 1/4 aguacate.',
-        tags: ['clásico', 'batch-cooking', 'equilibrado'],
-        super: ['pollo', 'arroz integral', 'lechuga', 'jitomate', 'pepino', 'aceite oliva', 'aguacate'],
+        detalle: '120g bistec de res magro cocido en caldo de tomate verde y cilantro. 1/2 taza de frijoles de la olla enteros (Cereal). Acompañar con cebolla, cilantro, rábanos y 1/4 aguacate. Sin tocino para cuidar lípidos.',
+        tags: ['jalisco', 'reconfortante', 'hierro'],
+        super: ['res magra', 'tomate verde', 'cilantro', 'frijol', 'rábano', 'cebolla', 'aguacate'],
       },
       {
         nombre: 'Pollo en salsa verde con calabacitas',
@@ -96,11 +96,11 @@ export const vaPlan: Record<string, Record<string, MealItem[]>> = {
     ],
     cena: [
       {
-        nombre: 'Atún con tostada horneada y aguacate',
+        nombre: 'Tostada de ceviche estilo Vallarta',
         porciones: 'Verduras 2 | Cereales 1 | Proteína 2 | Grasas 2',
-        detalle: '1/2 lata de atún en agua con jitomate y pepino picado, 1 tostada horneada, 1/3 aguacate, limón al gusto.',
-        tags: ['práctico', 'ligero', 'noche'],
-        super: ['atún', 'jitomate', 'pepino', 'tostada', 'aguacate'],
+        detalle: '80g de filete de pescado o atún curtido en limón con zanahoria rallada, pepino, cilantro y cebolla morada. Servido en 1 tostada horneada (ej. Saníssimo) con 1/3 aguacate encima.',
+        tags: ['jalisco', 'fresco', 'ligero'],
+        super: ['pescado/atún', 'zanahoria', 'pepino', 'cebolla morada', 'cilantro', 'tostada', 'aguacate'],
       },
       {
         nombre: 'Ensalada de pollo con nueces',
@@ -175,11 +175,11 @@ export const vaPlan: Record<string, Record<string, MealItem[]>> = {
         super: ['res magra', 'nopales', 'lechuga', 'tortilla', 'aceite oliva'],
       },
       {
-        nombre: 'Tostadas horneadas de pollo',
+        nombre: 'Pozole rojo de pollo (Magro)',
         porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
-        detalle: '2 tostadas horneadas con pollo desmenuzado (120g), lechuga, jitomate, 1/4 aguacate, salsa verde.',
-        tags: ['práctico', 'mexicano', 'crujiente'],
-        super: ['tostada', 'pollo', 'lechuga', 'jitomate', 'aguacate'],
+        detalle: '1 plato de caldo de guajillo con 120g de pechuga desmenuzada. En lugar de mucho grano, usar 1/3 taza de maíz o acompañar con 2 tostadas horneadas. Abundante lechuga, rábano, orégano y cebolla. 1/4 aguacate.',
+        tags: ['jalisco', 'tradicional', 'saciante'],
+        super: ['pollo', 'chile guajillo', 'maíz pozolero/tostadas', 'lechuga', 'rábano', 'orégano', 'aguacate'],
       },
       {
         nombre: 'Picadillo de res con calabacita',
@@ -240,11 +240,11 @@ export const vaPlan: Record<string, Record<string, MealItem[]>> = {
   Miércoles: {
     desayuno: [
       {
-        nombre: 'Chilaquiles verdes ligeros con pollo',
+        nombre: 'Lonche tapatío de panela',
         porciones: 'Verduras 2 | Cereales 1 | Proteína 2 | Grasas 2',
-        detalle: '1 tortilla cortada y horneada (no frita) con salsa verde, 80g pollo desmenuzado, cebolla, crema 1 cda, queso panela rallado. Jitomate y lechuga al lado.',
-        tags: ['mexicano', 'antojito-controlado', 'fin de semana'],
-        super: ['tortilla', 'tomate verde', 'pollo', 'panela', 'lechuga', 'crema'],
+        detalle: '1/2 birote salado o integral sin migajón (1 porción de cereal), embarrado con frijol molido. 60g de requesón o panela fresca, jitomate, cebolla desflemada y jalapeño. 1/3 aguacate. Lechuga al lado.',
+        tags: ['jalisco', 'desayuno-veloz', 'tradición'],
+        super: ['birote', 'panela', 'jitomate', 'cebolla', 'jalapeño', 'lechuga', 'aguacate'],
       },
       {
         nombre: 'Avena con yogurt y frutas',
@@ -418,11 +418,11 @@ export const vaPlan: Record<string, Record<string, MealItem[]>> = {
         super: ['lenteja', 'zanahoria', 'calabacita', 'jitomate', 'tortilla', 'aceite', 'aguacate'],
       },
       {
-        nombre: 'Carne asada con ensalada y tortilla',
+        nombre: 'Lonche "ahogado" de lomo magro',
         porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
-        detalle: '120g carne de res magra asada, ensalada de lechuga y jitomate, 1 tortilla, 1/4 aguacate, 1 cdita aceite.',
-        tags: ['parrilla', 'proteico', 'saciante'],
-        super: ['res magra', 'lechuga', 'jitomate', 'tortilla', 'aguacate', 'aceite oliva'],
+        detalle: '1/2 birote sin migajón (Cereal 1) relleno con 120g lomo de cerdo magro horneado, bañado abundantemente en salsa de jitomate con orégano y un toque de chile de árbol. Cebolla desflemada y 1/4 aguacate en rodajas u 8 nueces para la grasa.',
+        tags: ['jalisco', 'antojo-dominguero', 'alto-volumen'],
+        super: ['birote', 'lomo de cerdo', 'jitomate', 'chile de árbol', 'cebolla', 'orégano', 'aguacate'],
       },
     ],
     colacion_pm: [

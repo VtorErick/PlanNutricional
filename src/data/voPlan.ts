@@ -50,11 +50,11 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
     ],
     comida: [
       {
-        nombre: 'Pollo asado con arroz y nopales',
+        nombre: 'Carne en su jugo (Adaptada sin grasa extra)',
         porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
-        detalle: '180g pechuga asada + 1/2 taza arroz integral + nopales asados + ensalada verde + 1 tortilla + 1 cdita aceite + 1/4 aguacate.',
-        tags: ['batch-cooking', 'muy saciante', 'limpio'],
-        super: ['pollo', 'arroz integral', 'nopales', 'lechuga', 'pepino', 'tortilla', 'aceite oliva', 'aguacate'],
+        detalle: '180g bistec de res magro cocido en abundante caldo de tomate verde y cilantro. 1 taza de frijoles de la olla (Cereales 2). Servido con cebolla, cilantro, rábanos y 1/4 aguacate. Se omite el tocino para un mejor perfil lipídico.',
+        tags: ['jalisco', 'hierro', 'llenador'],
+        super: ['res magra', 'tomate verde', 'cilantro', 'frijol', 'rábano', 'cebolla', 'aguacate'],
       },
       {
         nombre: 'Carne asada con ensalada completa',
@@ -175,11 +175,11 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         super: ['res molida', 'calabacita', 'zanahoria', 'ejotes', 'arroz', 'tortilla', 'aceite'],
       },
       {
-        nombre: 'Pollo a la plancha con pasta integral',
+        nombre: 'Pozole rojo de pollo abundante',
         porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
-        detalle: '180g pechuga a la plancha, 1/2 taza pasta integral, ensalada (lechuga, jitomate, pepino), 1 cdita aceite, 1/4 aguacate.',
-        tags: ['variado', 'proteico', 'saciante'],
-        super: ['pollo', 'pasta integral', 'lechuga', 'jitomate', 'pepino', 'aceite oliva', 'aguacate'],
+        detalle: 'Caldo sustancioso de chile guajillo con 180g pechuga de pollo desmenuzada. 2/3 taza de maíz pozolero o 4 tostadas horneadas (Cereales 2). Gran ración de lechuga fresca, rábano, cebolla limos y orégano. 1/4 aguacate.',
+        tags: ['jalisco', 'muy saciante', 'cero-aburrimiento'],
+        super: ['pollo', 'chile guajillo', 'maíz pozolero', 'lechuga', 'rábano', 'orégano', 'aguacate'],
       },
       {
         nombre: 'Tinga de pollo con arroz',
@@ -240,11 +240,11 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
   Miércoles: {
     desayuno: [
       {
-        nombre: 'Chilaquiles ligeros con huevo',
+        nombre: 'Lonche tapatío de huevo',
         porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
-        detalle: '1 tortilla cortada y horneada (no frita) con salsa verde, 2 huevos estrellados encima, 1 cda crema, 30g panela. Lechuga y jitomate al lado.',
-        tags: ['mexicano', 'antojito-controlado', 'satisfactorio'],
-        super: ['tortilla', 'tomate verde', 'huevo', 'crema', 'panela', 'lechuga', 'jitomate'],
+        detalle: '1/2 birote integral o salado sin migajón (Cereal 1). Dentro: 2 huevos revueltos con 40g panela asada. Embarrado con un toque de frijol y acompañado de mucho jitomate, lechuga y cebolla desflemada. 1/4 aguacate.',
+        tags: ['jalisco', 'energía', 'rápido'],
+        super: ['birote', 'huevo', 'panela', 'jitomate', 'cebolla', 'aguacate', 'lechuga'],
       },
       {
         nombre: 'Huevos revueltos con nopales y queso',
@@ -418,11 +418,11 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
         super: ['lenteja', 'pollo', 'zanahoria', 'calabacita', 'jitomate', 'arroz', 'aceite', 'aguacate'],
       },
       {
-        nombre: 'Pollo al horno con camote y ensalada',
+        nombre: 'Torta ahogada magra (Lomo)',
         porciones: 'Verduras 2 | Cereales 2 | Proteína 4 | Grasas 2',
-        detalle: '180g muslo de pollo sin piel al horno, 1/2 taza camote, ensalada verde grande, 1 cdita aceite, 1/4 aguacate.',
-        tags: ['horneado', 'saciante', 'variado'],
-        super: ['pollo', 'camote', 'lechuga', 'jitomate', 'pepino', 'aceite oliva', 'aguacate'],
+        detalle: '1 birote entero sin migajón (Cereales 2). Relleno con 180g de lomo de cerdo cocido sin grasa. Bañado en su salsa tradicional de jitomate con orégano y limón. Cebolla desflemada abundante y 1/4 aguacate al lado o dentro.',
+        tags: ['jalisco', 'antojo-total', 'sin-culpa'],
+        super: ['birote', 'lomo de cerdo', 'jitomate', 'cebolla desflemada', 'orégano', 'aguacate'],
       },
     ],
     colacion_pm: [
@@ -568,11 +568,11 @@ export const voPlan: Record<string, Record<string, MealItem[]>> = {
     ],
     cena: [
       {
-        nombre: 'Ensalada de pollo con aguacate',
+        nombre: 'Tostadas de ceviche estilo Jalisco',
         porciones: 'Verduras 2 | Cereales 1 | Proteína 3 | Grasas 2',
-        detalle: '120g pollo desmenuzado, lechuga, jitomate, pepino, zanahoria, 1 tostada, 1/3 aguacate, limón.',
-        tags: ['fresco', 'completo', 'noche'],
-        super: ['pollo', 'lechuga', 'jitomate', 'pepino', 'zanahoria', 'tostada', 'aguacate'],
+        detalle: '120g de filete de pescado blanco (o soya hidratada y mezclada con atún) curtido en limón con bastante zanahoria, pepino y cebolla morada. Servido en 1 tostada horneada grande y 1/3 aguacate rebanado.',
+        tags: ['jalisco', 'refrescante', 'altamente-saciante'],
+        super: ['pescado', 'atún', 'zanahoria', 'pepino', 'cebolla morada', 'tostada', 'aguacate'],
       },
       {
         nombre: 'Queso panela a la plancha con verduras',

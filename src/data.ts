@@ -141,6 +141,8 @@ export const equivalenciasData: Record<string, Equivalencia[]> = {
       icon: Wheat,
       items: [
         '1 tortilla de maíz o 2 tortillas chicas = 1 porción',
+        '1/2 birote salado o integral (sin el migajón) = 1 porción',
+        '1/3 taza de maíz pozolero = 1 porción',
         '1/2 taza de arroz integral cocido = 1 porción',
         '1/3 taza de avena cruda = 1 porción',
         '1/2 taza avena cocida = 1 porción',
@@ -226,6 +228,8 @@ export const equivalenciasData: Record<string, Equivalencia[]> = {
       icon: Wheat,
       items: [
         '1 tortilla de maíz = 1 porción',
+        '1/2 birote salado o integral (sin el migajón) = 1 porción',
+        '1/3 taza de maíz pozolero = 1 porción',
         '1/2 taza arroz integral o quinoa cocida = 1 porción',
         '1/3 taza avena cruda o 1/2 taza cocida = 1 porción',
         '1 tostada horneada o 5 salmas = 1 porción',

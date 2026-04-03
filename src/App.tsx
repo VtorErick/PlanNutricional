@@ -28,15 +28,23 @@ export default function App() {
   // Refs para hacer scroll a cada sección de comida
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const scrollToMomento = useCallback((momentoKey: string) => {
-    const el = mealSectionRefs.current[momentoKey];
-    if (!el) return;
-    // Cerrar panel expandido primero para que el offset sea el correcto (compacto)
-    setProgressExpanded(false);
-    // Offset = header principal (~56px) + barra compacta (~44px) + margen extra (8px)
-    const offset = 56 + 44 + 8;
-    const top = el.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top, behavior: 'smooth' });
+  const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean) => {
+    const doScroll = () => {
+      const el = mealSectionRefs.current[momentoKey];
+      if (!el) return;
+      // Offset = header principal (~56px) + barra compacta (~44px) + margen extra (12px)
+      const offset = 56 + 44 + 12;
+      const top = el.getBoundingClientRect().top + window.scrollY - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
+    };
+
+    if (isExpanded) {
+      // Cerrar panel expandido primero y esperar a que termine la animación
+      setProgressExpanded(false);
+      setTimeout(doScroll, 260); // 260ms para esperar la animación de 0.25s
+    } else {
+      doScroll();
+    }
   }, []);
 
   const perfil = perfilActivo ? perfilesData[perfilActivo] : null;
@@ -273,7 +281,7 @@ export default function App() {
                     <button
                       key={momento.key}
                       title={`Ir a ${momento.label}`}
-                      onClick={(e) => { e.stopPropagation(); scrollToMomento(momento.key); }}
+                      onClick={(e) => { e.stopPropagation(); scrollToMomento(momento.key, progressExpanded); }}
                       className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 ${
                         done
                           ? `bg-gradient-to-br ${ac.bgGradient} shadow-sm hover:opacity-80`
@@ -356,7 +364,7 @@ export default function App() {
                             animate={{ scale: done ? 1.03 : 1 }}
                             whileTap={{ scale: 0.95 }}
                             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                            onClick={() => scrollToMomento(momento.key)}
+                            onClick={(e) => { e.stopPropagation(); scrollToMomento(momento.key, true); }}
                             className={`relative rounded-xl p-2 sm:p-2.5 flex flex-col items-center gap-1 border shadow-sm transition-all duration-300 cursor-pointer text-left w-full ${
                               done ? ac.cardDone : `${ac.cardPending} hover:shadow-md`
                             }`}
