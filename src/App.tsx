@@ -523,16 +523,13 @@ export default function App() {
             { key: 'equivalencias' as const, label: 'Equivalencias', icon: BookOpen },
             { key: 'compras' as const, label: 'Compras', icon: ShoppingCart }, 
             { key: 'resumen' as const, label: 'Resumen', icon: Lightbulb },
-          ]).map((t) => {
-            if (isAmbos && (t.key === 'equivalencias' || t.key === 'resumen')) return null;
-            return (
+          ]).map((t) => (
               <button key={t.key} onClick={() => setTab(t.key)}
                 className={`flex-1 min-w-[100px] flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-1 sm:px-4 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 snap-start flex-shrink-0 ${tab === t.key ? `bg-white shadow-md ${ac.text}` : 'text-slate-500 hover:text-slate-700'}`}>
                 <t.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                 <span className="truncate">{t.label}</span>
               </button>
-            );
-          })}
+          ))}
         </motion.div>
 
         {/* ── Tab content */}
@@ -645,10 +642,33 @@ export default function App() {
             <motion.div key="equivalencias"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
-              className="grid md:grid-cols-2 gap-4">
-              {equivalencias.map((eq, idx) => (
-                <EquivalenciasCard key={idx} equivalencia={eq} delay={idx * 0.05} accentClasses={accentColors} />
-              ))}
+              className="space-y-6">
+              {isAmbos ? (
+                <>
+                  <div>
+                    <h3 className="text-sm font-bold text-blue-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.vo.nombre}</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {equivalenciasData.vo.map((eq, idx) => (
+                        <EquivalenciasCard key={'vo'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-blue-50', text: 'text-blue-600', tagBg: 'bg-blue-100', tagText: 'text-blue-700'}} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-rose-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.va.nombre}</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {equivalenciasData.va.map((eq, idx) => (
+                        <EquivalenciasCard key={'va'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-rose-50', text: 'text-rose-600', tagBg: 'bg-rose-100', tagText: 'text-rose-700'}} />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {equivalencias.map((eq, idx) => (
+                    <EquivalenciasCard key={idx} equivalencia={eq} delay={idx * 0.05} accentClasses={accentColors} />
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -657,76 +677,100 @@ export default function App() {
             <motion.div key="resumen"
               initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.2 }}
-              className="space-y-4">
+              className="space-y-10">
+              
+              {(isAmbos ? [perfilesData.vo, perfilesData.va] : [perfil!]).map((p, pIdx) => {
+                const isFirst = pIdx === 0;
+                const dynamicAc = isAmbos ? {
+                  ...ac,
+                  color500: isFirst ? '#3b82f6' : '#f43f5e',
+                  text: isFirst ? 'text-blue-600' : 'text-rose-600',
+                  textDark: isFirst ? 'text-blue-900' : 'text-rose-900',
+                  bgLight: isFirst ? 'bg-blue-50' : 'bg-rose-50',
+                  bgGradientLight: isFirst ? 'from-blue-50 to-indigo-50' : 'from-rose-50 to-pink-50',
+                  border: isFirst ? 'border-blue-200' : 'border-rose-200',
+                  dot: isFirst ? 'bg-blue-500' : 'bg-rose-500',
+                } : ac;
 
-              <div className="relative rounded-2xl overflow-hidden shadow-sm">
-                <img src="/images/meal-prep.png" alt="Plan de comidas" className="w-full h-36 sm:h-44 object-cover" />
-                <div className={`absolute inset-0 bg-gradient-to-r ${ac.bgGradient} opacity-60`} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
-                    <Shield className="w-6 h-6" />
-                    Sobre {perfil!.nombre}
-                  </h2>
-                </div>
-              </div>
+                return (
+                  <div key={p.perfil} className="space-y-4">
+                    {isAmbos && (
+                      <h3 className={`text-lg font-bold pb-2 border-b-2 mt-4 ${isFirst ? 'text-blue-800 border-blue-200' : 'text-rose-800 border-rose-200'}`}>
+                        Resumen de {p.nombre}
+                      </h3>
+                    )}
 
-              {perfil!.notaSalud && (
-                <div className="flex items-start gap-3 p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs sm:text-sm text-amber-800 font-medium leading-relaxed">{perfil!.notaSalud}</p>
-                </div>
-              )}
-
-              <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
-                <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
-                  <Heart className={`w-4 h-4 ${ac.text}`} />
-                  Puntos clave de tu plan
-                </h3>
-                <div className="space-y-2.5">
-                  {perfil!.resumenPersonal.map((linea, idx) => (
-                    <motion.div key={idx}
-                      initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.07 }}
-                      className="flex gap-3 p-3 rounded-xl bg-slate-50"
-                      style={{ borderLeft: `3px solid ${ac.color500}` }}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${ac.dot} mt-1.5 flex-shrink-0`} />
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">{linea}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {perfil!.distribucionDiaria && (
-                <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
-                  <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
-                    <BarChart3 className={`w-4 h-4 ${ac.text}`} />
-                    Distribución diaria de porciones
-                  </h3>
-                  <div className="grid gap-2">
-                    {perfil!.distribucionDiaria.map((item, idx) => (
-                      <div key={idx} className={`flex items-center justify-between p-2.5 rounded-xl ${ac.bgLight}`}>
-                        <div className="flex items-center gap-2.5">
-                          <span className={`font-bold ${ac.text} text-base w-7 text-center flex-shrink-0`}>{item.total}</span>
-                          <span className="font-medium text-slate-800 text-xs sm:text-sm">{item.grupo}</span>
-                        </div>
-                        <span className="text-[10px] sm:text-xs text-slate-500 text-right max-w-[120px] sm:max-w-none">{item.detalle}</span>
+                    <div className="relative rounded-2xl overflow-hidden shadow-sm">
+                      <img src="/images/meal-prep.png" alt="Plan de comidas" className="w-full h-36 sm:h-44 object-cover" />
+                      <div className={`absolute inset-0 bg-gradient-to-r ${dynamicAc.bgGradient} opacity-60`} />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
+                          <Shield className="w-6 h-6" />
+                          Sobre {p.nombre}
+                        </h2>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className={`bg-gradient-to-br ${ac.bgGradientLight} rounded-2xl p-4 border ${ac.border}`}>
-                  <h3 className={`font-bold ${ac.textDark} mb-1.5 flex items-center gap-2 text-xs sm:text-sm`}>
-                    <TrendingDown className="w-3.5 h-3.5" /> Meta
-                  </h3>
-                  <p className={`${ac.text} text-xs sm:text-sm`}>{perfil!.meta}</p>
-                </div>
-                <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-4 border border-emerald-200">
-                  <h3 className="font-bold text-emerald-900 mb-1.5 text-xs sm:text-sm">Perfil</h3>
-                  <p className="text-emerald-700 text-xs sm:text-sm">{perfil!.perfil}</p>
-                </div>
-              </div>
+                    {p.notaSalud && (
+                      <div className="flex items-start gap-3 p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs sm:text-sm text-amber-800 font-medium leading-relaxed">{p.notaSalud}</p>
+                      </div>
+                    )}
+
+                    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
+                      <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                        <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
+                        Puntos clave de tu plan
+                      </h3>
+                      <div className="space-y-2.5">
+                        {p.resumenPersonal.map((linea, idx) => (
+                          <motion.div key={idx}
+                            initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.07 }}
+                            className="flex gap-3 p-3 rounded-xl bg-slate-50"
+                            style={{ borderLeft: `3px solid ${dynamicAc.color500}` }}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${dynamicAc.dot} mt-1.5 flex-shrink-0`} />
+                            <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">{linea}</p>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {p.distribucionDiaria && (
+                      <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
+                        <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                          <BarChart3 className={`w-4 h-4 ${dynamicAc.text}`} />
+                          Distribución diaria de porciones
+                        </h3>
+                        <div className="grid gap-2">
+                          {p.distribucionDiaria.map((item, idx) => (
+                            <div key={idx} className={`flex items-center justify-between p-2.5 rounded-xl ${dynamicAc.bgLight}`}>
+                              <div className="flex items-center gap-2.5">
+                                <span className={`font-bold ${dynamicAc.text} text-base w-7 text-center flex-shrink-0`}>{item.total}</span>
+                                <span className="font-medium text-slate-800 text-xs sm:text-sm">{item.grupo}</span>
+                              </div>
+                              <span className="text-[10px] sm:text-xs text-slate-500 text-right max-w-[120px] sm:max-w-none">{item.detalle}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className={`bg-gradient-to-br ${dynamicAc.bgGradientLight} rounded-2xl p-4 border ${dynamicAc.border}`}>
+                        <h3 className={`font-bold ${dynamicAc.textDark} mb-1.5 flex items-center gap-2 text-xs sm:text-sm`}>
+                          <TrendingDown className="w-3.5 h-3.5" /> Meta
+                        </h3>
+                        <p className={`${dynamicAc.text} text-xs sm:text-sm`}>{p.meta}</p>
+                      </div>
+                      <div className={`bg-gradient-to-br ${isAmbos ? (isFirst ? 'from-blue-50 to-indigo-50 border-blue-200' : 'from-rose-50 to-pink-50 border-rose-200') : 'from-emerald-50 to-green-50 border-emerald-200'} rounded-2xl p-4 border`}>
+                        <h3 className={`font-bold ${isAmbos ? (isFirst ? 'text-blue-900' : 'text-rose-900') : 'text-emerald-900'} mb-1.5 text-xs sm:text-sm`}>Perfil</h3>
+                        <p className={`${isAmbos ? (isFirst ? 'text-blue-700' : 'text-rose-700') : 'text-emerald-700'} text-xs sm:text-sm`}>{p.perfil}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </motion.div>
           )}
 
