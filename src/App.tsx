@@ -149,7 +149,7 @@ export default function App() {
       ingrediente: ing,
       usos: map[ing]
     }));
-  }, [selecciones]);
+  }, [selecciones, perfilActivo]);
 
   // ─── Landing / Profile selector ───────────────────────────────────────────
   if (!perfilActivo) {
