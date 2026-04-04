@@ -696,6 +696,7 @@ export default function App() {
                       if (geminiApiKey) {
                         // Guardar la nueva API key
                         localStorage.setItem('geminiApiKey', geminiApiKey);
+                        setGeminiApiKey(''); // Limpiar input para mostrar botón de cargar default
                         alert('✅ API Key guardada exitosamente');
                       } else {
                         // Cargar la predeterminada del .env
