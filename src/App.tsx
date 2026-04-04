@@ -778,6 +778,12 @@ export default function App() {
               <NutritionQuestionnaire
                 onCancel={() => setShowAdmin(false)}
                 onGenerate={handleGenerateWithAi}
+                onViewPlan={(profile) => {
+                  setShowAdmin(false);
+                  setPerfilActivo(profile);
+                  setDiaActivo('Lunes');
+                  setTab('plan');
+                }}
                 loading={generationLoading}
                 errorMessage={generationError}
                 geminiModel={geminiModel}

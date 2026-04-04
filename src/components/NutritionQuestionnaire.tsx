@@ -33,6 +33,7 @@ export interface QuestionnairePayload {
 interface Props {
   onCancel: () => void;
   onGenerate: (payload: QuestionnairePayload) => Promise<void>;
+  onViewPlan?: (profile: TargetProfile) => void;
   loading: boolean;
   errorMessage?: string;
   geminiModel?: string;
@@ -198,7 +199,7 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function NutritionQuestionnaire({
-  onCancel, onGenerate, loading, errorMessage, geminiModel, setGeminiModel, lastGeneratedData
+  onCancel, onGenerate, onViewPlan, loading, errorMessage, geminiModel, setGeminiModel, lastGeneratedData
 }: Props) {
   const [targetProfile, setTargetProfile] = useState<TargetProfile>('ambos');
   const [stepIdx, setStepIdx]   = useState(0);
@@ -773,7 +774,15 @@ export default function NutritionQuestionnaire({
             </div>
           )}
           
-          {!loading && (
+          {!loading && lastGeneratedData && onViewPlan && (
+            <button onClick={() => onViewPlan(targetProfile)}
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white">
+              <CheckCircle2 className="w-5 h-5" />
+              ¡Listo! Revisa tu plan
+            </button>
+          )}
+          
+          {!loading && !lastGeneratedData && (
             <button onClick={handleGenerate} disabled={loading}
               className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] ${
                 loading ? 'bg-slate-800 opacity-70 cursor-not-allowed' : 'bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-800 hover:to-slate-600'
