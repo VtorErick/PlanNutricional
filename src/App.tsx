@@ -9,9 +9,8 @@ import {
 import MealSelector from './components/MealSelector';
 import EquivalenciasCard from './components/EquivalenciasCard';
 import AdminPanel from './components/AdminPanel';
-import NutritionQuestionnaire, { QuestionnairePayload } from './components/NutritionQuestionnaire';
 import { perfilesData as origPerfilesData, equivalenciasData as origEquivData, rawData, iconsMap, Profile, Equivalencia } from './data';
-import { downloadDaySelectionPdf, parseObjectToData } from './dataManager';
+import { downloadDaySelectionPdf } from './dataManager';
 
 const momentoIcons: Record<string, any> = {
   desayuno: Sun,
@@ -93,9 +92,6 @@ export default function App() {
     } catch { return {}; }
   });
   const [ambosSubTab, setAmbosSubTab] = useState<'vo' | 'va'>('vo');
-  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
-  const [generationLoading, setGenerationLoading] = useState(false);
-  const [generationError, setGenerationError] = useState('');
 
   // Guardar en LocalStorage cada que cambian
   useEffect(() => {
@@ -289,45 +285,6 @@ export default function App() {
     }));
   }, [selecciones, perfilActivo]);
 
-
-  const handleGenerateWithAi = useCallback(async (payload: QuestionnairePayload) => {
-    setGenerationError('');
-    setGenerationLoading(true);
-    try {
-      const res = await fetch('/api/generate-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || 'No fue posible generar el plan con IA.');
-
-      setCustomData((prev: any) => {
-        const updated = { ...prev };
-
-        if (json.voData) {
-          updated.vo = parseObjectToData(json.voData, 'VO');
-        }
-        if (json.vaData) {
-          updated.va = parseObjectToData(json.vaData, 'VA');
-        }
-        return updated;
-      });
-
-      setDataVersions((prev) => ({
-        vo: json.voData ? 'custom' : prev.vo,
-        va: json.vaData ? 'custom' : prev.va,
-      }));
-
-      setShowQuestionnaire(false);
-      alert('¡Plan generado con IA y cargado automáticamente!');
-    } catch (err: any) {
-      setGenerationError(err?.message || 'Error desconocido al generar con IA.');
-    } finally {
-      setGenerationLoading(false);
-    }
-  }, []);
-
   // ─── Landing / Profile selector ───────────────────────────────────────────
   if (!perfilActivo) {
     return (
@@ -462,24 +419,6 @@ export default function App() {
                 setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, va: ver }))}
                 perfilesDataObj={origPerfilesData.va}
               />
-            </div>
-
-            <div className="mt-4">
-              <button
-                onClick={() => { setShowQuestionnaire((v) => !v); setGenerationError(''); }}
-                className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-3 px-4 shadow-lg shadow-emerald-500/25 hover:opacity-95 transition"
-              >
-                {showQuestionnaire ? 'Ocultar cuestionario IA' : 'Tercera opción: generar data por cuestionario con IA'}
-              </button>
-
-              {showQuestionnaire && (
-                <NutritionQuestionnaire
-                  onCancel={() => setShowQuestionnaire(false)}
-                  onGenerate={handleGenerateWithAi}
-                  loading={generationLoading}
-                  errorMessage={generationError}
-                />
-              )}
             </div>
           </motion.div>
         </div>
