@@ -9,10 +9,10 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 1. perfil${prefix}: {
     id: "${lowerPrefix}",
     nombre: "${prefix === 'VO' ? 'V(o)' : 'V(a)'}",
-    perfil: string (edad, peso, altura, IMC),
-    meta: string,
+  perfil: string (peso, altura, IMC calculado - SOLO incluir edad si se proporcionó en los datos),
+    meta: string (usa los datos reales: peso meta si se proporcionó, objetivos del usuario, tiempo objetivo si se proporcionó),
     descripcion: string,
-    edad: number,
+    edad: number | null (SOLO si se proporcionó en questionnaire.profileContext, de lo contrario null),
     horariosTexto: string,
     momentos: [{ key: "desayuno", label: "Desayuno", hora: "8:00 am" }, { key: "colacion_am", label: "Colación mañana", hora: "..." }, { key: "comida", label: "Comida", hora: "..." }, { key: "colacion_pm", label: "Colación tarde", hora: "..." }, { key: "cena", label: "Cena", hora: "..." }],
     objetivosPorMomento: {
@@ -28,7 +28,7 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
       { grupo: "Cereales", total: number, detalle: "ej: 1 desayuno + 1 comida" },
       { grupo: "Proteína", total: number, detalle: "ej: 3 desayuno + 4 comida" },
       { grupo: "Grasas", total: number, detalle: "ej: 2 desayuno + 2 col. AM" },
-      { grupo: "Leche", total: number, detalle: "ej: 1 en cena" },
+      { grupo: "Lácteos", total: number, detalle: "ej: 1 en cena" },
       { grupo: "Leguminosas", total: number, detalle: "ej: 3 veces por semana" }
     ],
     resumenPersonal: string[] (5-7 puntos clave específicos del plan),
@@ -47,9 +47,11 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 
 REGLAS CRÍTICAS:
 - OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'V(o)' : 'V(a)'}" - NO usar otros nombres
-- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, leche, proteina, grasas
+- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, leche (usar key 'leche' internamente pero mostrar como Lácteos en distribucionDiaria), proteina, grasas
 - OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
 - OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados
+- CRÍTICO: El perfil y meta deben reflejar los datos REALES del usuario. Si el usuario quiere "Perder grasa", NO describir su IMC como "bajo peso severo" - contextualiza correctamente basado en sus objetivos.
+- CRÍTICO: El peso meta debe ser razonable según el contexto. Si el usuario quiere ganar masa, el peso meta debe ser MAYOR que el actual. Si quiere perder grasa, debe ser MENOR o mantenerse.
 - Cada momento debe tener 3 opciones de comidas REALES y variadas
 - Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
 - Responde SOLO con JSON válido, sin markdown \`\`\`json`;

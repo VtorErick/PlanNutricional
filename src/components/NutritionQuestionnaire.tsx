@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Loader2, ChevronRight, ChevronLeft,
   CheckCircle2, User, Scale, Target, Shield, Activity, Settings2, SkipForward, Download,
-  Hourglass
+  Hourglass, Pill, Heart, Clock, ChefHat
 } from 'lucide-react';
 import { downloadJsonFile } from '../dataManager';
 
@@ -56,6 +56,15 @@ const ACTIVITY_LEVELS = [
   { val: 'Intenso',    emoji: '⚡', desc: '5+ días/sem' },
 ];
 
+const TIMELINE_OPTIONS = [
+  { val: '4 sem', label: '4 semanas', emoji: '⚡' },
+  { val: '8 sem', label: '8 semanas', emoji: '📅' },
+  { val: '12 sem', label: '12 semanas', emoji: '📆' },
+  { val: '16 sem', label: '16 semanas', emoji: '🗓️' },
+  { val: '20 sem', label: '20 semanas', emoji: '📌' },
+  { val: '24 sem', label: '24 semanas', emoji: '🔥' },
+];
+
 const GEMINI_MODELS = [
   { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: '⚡ Recomendado'  },
   { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito'    },
@@ -73,6 +82,7 @@ const DEFAULT_MOMENTS = [
 
 // ─── Person data ──────────────────────────────────────────────────────────────
 const emptyPerson = () => ({
+  age: '',
   currentWeightKg: '70',
   heightCm: '165',
   targetWeightKg: '',
@@ -80,14 +90,22 @@ const emptyPerson = () => ({
   objectiveTimeline: '12 sem',
   diagnostics: '',
   allergies: '',
+  medications: '',
+  intolerances: '',
+  digestiveSymptoms: '',
   favoriteFoods: '',
   dislikedFoods: '',
+  favoriteCuisineStyles: '',
+  cookingTime: '',
   activityLevel: 'Moderado',
+  wakeTime: '',
+  sleepTime: '',
+  trainingFrequency: '',
 });
 type Person = ReturnType<typeof emptyPerson>;
 
 // ─── Wizard steps ─────────────────────────────────────────────────────────────
-type StepType = 'who' | 'fisica' | 'objetivo' | 'salud' | 'lifestyle' | 'portions' | 'config' | 'confirm';
+type StepType = 'who' | 'fisica' | 'objetivo' | 'salud' | 'medicos' | 'preferencias' | 'lifestyle' | 'horarios' | 'portions' | 'cocina' | 'confirm';
 
 interface WizardStep {
   type: StepType;
@@ -96,10 +114,13 @@ interface WizardStep {
 
 function buildSteps(tp: TargetProfile): WizardStep[] {
   const personSteps = (p: 'vo' | 'va'): WizardStep[] => [
-    { type: 'fisica',    profile: p },
-    { type: 'objetivo',  profile: p },
-    { type: 'salud',     profile: p },
-    { type: 'lifestyle', profile: p },
+    { type: 'fisica',       profile: p },
+    { type: 'objetivo',     profile: p },
+    { type: 'salud',        profile: p },
+    { type: 'medicos',      profile: p },
+    { type: 'preferencias', profile: p },
+    { type: 'lifestyle',    profile: p },
+    { type: 'horarios',     profile: p },
   ];
   const steps: WizardStep[] = [{ type: 'who' }];
   if (tp === 'ambos') {
@@ -107,7 +128,7 @@ function buildSteps(tp: TargetProfile): WizardStep[] {
   } else {
     steps.push(...personSteps(tp));
   }
-  steps.push({ type: 'portions' }, { type: 'config' }, { type: 'confirm' });
+  steps.push({ type: 'portions' }, { type: 'cocina' }, { type: 'confirm' });
   return steps;
 }
 
@@ -162,14 +183,17 @@ const THEME = {
 };
 
 const STEP_META: Record<StepType, { label: string; Icon: any }> = {
-  who:       { label: '¿Para quién?',    Icon: User      },
-  fisica:    { label: 'Medidas',          Icon: Scale     },
-  objetivo:  { label: 'Objetivo',         Icon: Target    },
-  salud:     { label: 'Salud',            Icon: Shield    },
-  lifestyle: { label: 'Estilo de vida',   Icon: Activity  },
-  portions:  { label: 'Porciones',        Icon: Settings2 },
-  config:    { label: 'Configuración',    Icon: Settings2 },
-  confirm:   { label: 'Confirmar',        Icon: Sparkles  },
+  who:          { label: '¿Para quién?',      Icon: User      },
+  fisica:       { label: 'Medidas',            Icon: Scale     },
+  objetivo:     { label: 'Objetivo',           Icon: Target    },
+  salud:        { label: 'Salud',              Icon: Shield    },
+  medicos:      { label: 'Médicos',            Icon: Pill      },
+  preferencias: { label: 'Preferencias',       Icon: Heart     },
+  lifestyle:    { label: 'Actividad',          Icon: Activity  },
+  horarios:     { label: 'Horarios',           Icon: Clock     },
+  portions:     { label: 'Porciones',          Icon: Settings2 },
+  cocina:       { label: 'Cocina',             Icon: ChefHat   },
+  confirm:      { label: 'Confirmar',          Icon: Sparkles  },
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -222,7 +246,7 @@ export default function NutritionQuestionnaire({
 
   const canContinue = () => {
     const { type, profile } = currentStep;
-    if (type === 'fisica'   && profile) return !!person(profile).currentWeightKg && !!person(profile).heightCm;
+    if (type === 'fisica'   && profile) return !!person(profile).age && !!person(profile).currentWeightKg && !!person(profile).heightCm;
     if (type === 'objetivo' && profile) return person(profile).objectives.length > 0;
     return true;
   };
@@ -231,13 +255,14 @@ export default function NutritionQuestionnaire({
   const handleGenerate = async () => {
     const buildPP = (p: Person) => ({
       profileContext: {
+        age: p.age,
         currentWeightKg: p.currentWeightKg, heightCm: p.heightCm,
         targetWeightKg: p.targetWeightKg, objectives: p.objectives,
         objectiveTimelineWeeks: p.objectiveTimeline,
       },
-      healthContext:  { diagnostics: p.diagnostics, allergies: p.allergies, medications: '', intolerances: '', digestiveSymptoms: '' },
-      preferences:   { favoriteFoods: p.favoriteFoods, dislikedFoods: p.dislikedFoods, favoriteCuisineStyles: '', cookingTime: '' },
-      routine:       { activityLevel: p.activityLevel, wakeTime: '', sleepTime: '', trainingFrequency: '' },
+      healthContext:  { diagnostics: p.diagnostics, allergies: p.allergies, medications: p.medications, intolerances: p.intolerances, digestiveSymptoms: p.digestiveSymptoms },
+      preferences:   { favoriteFoods: p.favoriteFoods, dislikedFoods: p.dislikedFoods, favoriteCuisineStyles: p.favoriteCuisineStyles, cookingTime: p.cookingTime },
+      routine:       { activityLevel: p.activityLevel, wakeTime: p.wakeTime, sleepTime: p.sleepTime, trainingFrequency: p.trainingFrequency },
     });
 
     const base = {
@@ -292,21 +317,15 @@ export default function NutritionQuestionnaire({
     if (type === 'fisica' && profile) {
       const p = person(profile);
       return (
-        <div className="space-y-7">
-          <NumSlider label="Peso actual" unit="kg" min={30} max={200} step={0.5} required
+        <div className="space-y-5">
+          <NumSlider label="Edad" unit="años" min={10} max={100} step={1} required
+            value={p.age} onChange={v => setPerson(profile, { age: v })} accent={tc.accent} />
+          <NumSlider label="Peso actual" unit="kg" min={25} max={200} step={0.5} required
             value={p.currentWeightKg} onChange={v => setPerson(profile, { currentWeightKg: v })} accent={tc.accent} />
-          <NumSlider label="Estatura" unit="cm" min={130} max={220} required
+          <NumSlider label="Estatura" unit="cm" min={100} max={220} required
             value={p.heightCm} onChange={v => setPerson(profile, { heightCm: v })} accent={tc.accent} />
-          <div className="flex items-center gap-3 pt-1">
-            <label className="text-sm font-semibold text-slate-600 shrink-0">
-              Peso meta <span className="text-[11px] text-slate-400 font-normal">(opcional)</span>
-            </label>
-            <input type="number" min={30} max={200} step={0.5} placeholder="ej. 63"
-              className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-1 focus:ring-slate-300"
-              value={p.targetWeightKg}
-              onChange={e => setPerson(profile, { targetWeightKg: e.target.value })} />
-            <span className="text-xs text-slate-400">kg</span>
-          </div>
+          <NumSlider label="Peso meta" unit="kg" min={25} max={200} step={0.5}
+            value={p.targetWeightKg} onChange={v => setPerson(profile, { targetWeightKg: v })} accent={tc.accent} />
         </div>
       );
     }
@@ -315,28 +334,47 @@ export default function NutritionQuestionnaire({
     if (type === 'objetivo' && profile) {
       const p = person(profile);
       return (
-        <div className="space-y-2">
-          <p className="text-center text-slate-500 text-sm mb-3">Toca para seleccionar y continuar</p>
-          {OBJECTIVES.map(obj => {
-            const isSelected = p.objectives.includes(obj.val);
-            const toggleObjective = () => {
-              const newObjectives = isSelected 
-                ? p.objectives.filter((o: string) => o !== obj.val)
-                : [...p.objectives, obj.val];
-              setPerson(profile, { objectives: newObjectives });
-            };
-            return (
-              <button key={obj.val}
-                onClick={toggleObjective}
-                className={`w-full flex items-center gap-4 p-3.5 rounded-2xl border-2 font-semibold text-sm transition-all duration-200 active:scale-[.98] ${
-                  isSelected ? `border-transparent ${tc.light} ${tc.text} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                }`}>
-                <span className="text-xl">{obj.emoji}</span>
-                <span className="flex-1 text-left">{obj.val}</span>
-                {isSelected && <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
-              </button>
-            );
-          })}
+        <div className="space-y-3">
+          <div className="space-y-2">
+            {OBJECTIVES.map(obj => {
+              const isSelected = p.objectives.includes(obj.val);
+              const toggleObjective = () => {
+                const newObjectives = isSelected 
+                  ? p.objectives.filter((o: string) => o !== obj.val)
+                  : [...p.objectives, obj.val];
+                setPerson(profile, { objectives: newObjectives });
+              };
+              return (
+                <button key={obj.val}
+                  onClick={toggleObjective}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 font-semibold text-sm transition-all duration-200 active:scale-[.98] ${
+                    isSelected ? `border-transparent ${tc.light} ${tc.text} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                  }`}>
+                  <span className="text-xl">{obj.emoji}</span>
+                  <span className="flex-1 text-left">{obj.val}</span>
+                  {isSelected && <CheckCircle2 className="w-4 h-4 flex-shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* Selector de timeline - compacto */}
+          <div className="pt-2">
+            <label className="text-xs font-semibold text-slate-500 block mb-1.5">Tiempo objetivo</label>
+            <div className="flex gap-1.5">
+              {TIMELINE_OPTIONS.map(tl => {
+                const active = p.objectiveTimeline === tl.val;
+                return (
+                  <button key={tl.val} onClick={() => setPerson(profile, { objectiveTimeline: tl.val })}
+                    className={`flex-1 py-2 px-1 rounded-lg border text-center transition-all active:scale-[.97] ${
+                      active ? `border-transparent ${tc.light} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}>
+                    <span className="text-xs font-bold">{tl.val}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       );
     }
@@ -351,15 +389,59 @@ export default function NutritionQuestionnaire({
           </p>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">Condiciones médicas</label>
-            <textarea rows={2} placeholder="Diabetes, hipertensión, hipotiroidismo..."
+            <textarea rows={2} placeholder="Diabetes, hipertensión..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
               value={p.diagnostics} onChange={e => setPerson(profile, { diagnostics: e.target.value })} />
           </div>
+        </div>
+      );
+    }
+
+    /* ── MEDICOS ── */
+    if (type === 'medicos' && profile) {
+      const p = person(profile);
+      return (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            💡 Esta sección es opcional.
+          </p>
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-slate-700">Alergias e intolerancias</label>
-            <input placeholder="Lactosa, gluten, maní..."
+            <label className="text-sm font-semibold text-slate-700">Medicamentos</label>
+            <textarea rows={2} placeholder="Metformina, levotiroxina..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              value={p.medications} onChange={e => setPerson(profile, { medications: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">Alergias</label>
+              <input placeholder="Lactosa, gluten..."
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+                value={p.allergies} onChange={e => setPerson(profile, { allergies: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">Intolerancias</label>
+              <input placeholder="Fructosa, sorbitol..."
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+                value={p.intolerances} onChange={e => setPerson(profile, { intolerances: e.target.value })} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── PREFERENCIAS ── */
+    if (type === 'preferencias' && profile) {
+      const p = person(profile);
+      return (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            💡 Esta sección es opcional.
+          </p>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">Síntomas digestivos</label>
+            <input placeholder="Gastritis, reflujo, estreñimiento..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
-              value={p.allergies} onChange={e => setPerson(profile, { allergies: e.target.value })} />
+              value={p.digestiveSymptoms} onChange={e => setPerson(profile, { digestiveSymptoms: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -404,6 +486,38 @@ export default function NutritionQuestionnaire({
       );
     }
 
+    /* ── HORARIOS ── */
+    if (type === 'horarios' && profile) {
+      const p = person(profile);
+      return (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            💡 Esta sección es opcional.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">Hora de despertar</label>
+              <input type="time" 
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
+                value={p.wakeTime} onChange={e => setPerson(profile, { wakeTime: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700">Hora de dormir</label>
+              <input type="time"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
+                value={p.sleepTime} onChange={e => setPerson(profile, { sleepTime: e.target.value })} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">Frecuencia de entrenamiento</label>
+            <input placeholder="ej: 3 días por semana"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
+              value={p.trainingFrequency} onChange={e => setPerson(profile, { trainingFrequency: e.target.value })} />
+          </div>
+        </div>
+      );
+    }
+
     /* ── PORTIONS ── */
     if (type === 'portions') {
       const foodGroups = [
@@ -412,11 +526,12 @@ export default function NutritionQuestionnaire({
         { key: 'cereales', label: 'Cereales', icon: '🌾', color: 'text-amber-500', bg: 'bg-amber-50', ring: 'focus:ring-amber-400' },
         { key: 'proteina', label: 'Proteína', icon: '🥩', color: 'text-red-500', bg: 'bg-red-50', ring: 'focus:ring-red-400' },
         { key: 'grasas', label: 'Grasas', icon: '🥑', color: 'text-lime-500', bg: 'bg-lime-50', ring: 'focus:ring-lime-400' },
-        { key: 'leche', label: 'Leche', icon: '🥛', color: 'text-blue-500', bg: 'bg-blue-50', ring: 'focus:ring-blue-400' },
+        { key: 'lacteos', label: 'Lácteos', icon: '🥛', color: 'text-blue-500', bg: 'bg-blue-50', ring: 'focus:ring-blue-400' },
         { key: 'leguminosas', label: 'Leguminosas', icon: '🫘', color: 'text-amber-700', bg: 'bg-amber-100', ring: 'focus:ring-amber-500' },
       ];
       const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
-      const mLabels = ['Des', 'C.AM', 'Com', 'C.PM', 'Cen'];
+      const mLabels = ['Desayuno', 'Col. AM', 'Comida', 'Col. PM', 'Cena'];
+      const mShortLabels = ['Des', 'C.AM', 'Com', 'C.PM', 'Cen'];
 
       const updatePortion = (group: string, momento: string, value: string) => {
         const num = parseInt(value) || 0;
@@ -453,42 +568,32 @@ export default function NutritionQuestionnaire({
 
           {/* Manual portions table */}
           {portionMode === 'manual' && (
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-slate-700 block">Define tus porciones por momento</label>
-              
-              <div className="grid grid-cols-2 gap-3">
-                {foodGroups.map(group => {
-                  const total = mKeys.reduce((acc, m) => acc + (manualPortions[group.key]?.[m] || 0), 0);
-                  return (
-                    <div key={group.key} className={`${group.bg} rounded-xl p-3 border border-slate-100`}>
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className={`font-bold text-slate-700 text-xs flex items-center gap-1.5 ${group.color}`}>
-                          <span className="text-base">{group.icon}</span> 
-                          <span className="truncate">{group.label}</span>
-                        </span>
-                        <span className={`font-black ${group.color} text-lg bg-white shadow-sm px-2 py-0.5 rounded-md min-w-[28px] text-center`}>{total}</span>
-                      </div>
-                      <div className="grid grid-cols-5 gap-1">
-                        {mKeys.map((momento, idx) => {
-                          const val = manualPortions[group.key]?.[momento] || 0;
-                          return (
-                            <div key={momento} className="flex flex-col items-center">
-                              <span className="text-[8px] font-bold uppercase text-slate-400">{mLabels[idx]}</span>
-                              <input
-                                type="number"
-                                min="0"
-                                max="10"
-                                value={val}
-                                onChange={(e) => updatePortion(group.key, momento, e.target.value)}
-                                className={`w-full min-w-[28px] px-0.5 py-1 text-center text-sm font-bold bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-2 ${group.ring} focus:border-transparent transition-all`}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 block">Por momentos del día</label>
+              <div className="space-y-2">
+                {mKeys.map((momento, idx) => (
+                  <div key={momento} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <p className="text-xs font-bold text-slate-500 uppercase mb-2">{mLabels[idx]}</p>
+                    <div className="grid grid-cols-7 gap-1">
+                      {foodGroups.map(group => {
+                        const val = manualPortions[group.key]?.[momento] || 0;
+                        return (
+                          <div key={group.key} className="flex flex-col items-center">
+                            <span className="text-[10px] font-medium text-slate-400">{group.label.slice(0, 3)}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="10"
+                              value={val}
+                              onChange={(e) => updatePortion(group.key, momento, e.target.value)}
+                              className={`w-8 h-8 text-center text-sm font-bold bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-1 ${group.ring}`}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -496,13 +601,32 @@ export default function NutritionQuestionnaire({
       );
     }
 
-    /* ── CONFIG ── */
-    if (type === 'config') {
+    /* ── COCINA ── */
+    if (type === 'cocina') {
       return (
         <div className="space-y-5">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            💡 Esta sección es opcional.
+          </p>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">
-              Notas adicionales <span className="text-[11px] text-slate-400 font-normal">(opcional)</span>
+              Estilos de cocina preferidos
+            </label>
+            <input placeholder="Mexicana, Italiana, Asiática, Mediterránea..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              value={vo.favoriteCuisineStyles} onChange={e => { setVo(prev => ({ ...prev, favoriteCuisineStyles: e.target.value })); setVa(prev => ({ ...prev, favoriteCuisineStyles: e.target.value })); }} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">
+              Tiempo de cocina disponible
+            </label>
+            <input placeholder="15 min, 30 min, 1 hora..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              value={vo.cookingTime} onChange={e => { setVo(prev => ({ ...prev, cookingTime: e.target.value })); setVa(prev => ({ ...prev, cookingTime: e.target.value })); }} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">
+              Notas adicionales
             </label>
             <textarea rows={3} placeholder="Preferencias de preparación, contexto especial, alimentos que no te gustan..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
@@ -515,9 +639,30 @@ export default function NutritionQuestionnaire({
     /* ── CONFIRM ── */
     if (type === 'confirm') {
       const profiles: ('vo' | 'va')[] = targetProfile === 'ambos' ? ['vo', 'va'] : [targetProfile];
+      
+      // Calcular totales de porciones si es modo manual
+      const portionSummary = portionMode === 'manual' ? Object.entries(manualPortions).map(([group, moments]) => {
+        const total = Object.values(moments || {}).reduce((a, b) => a + (b || 0), 0);
+        return total > 0 ? `${group}: ${total}` : null;
+      }).filter(Boolean).join(', ') : null;
+      
       return (
         <div className="space-y-3">
           <p className="text-center text-sm text-slate-500">Revisa y confirma tu plan</p>
+          
+          {/* Configuración general del plan */}
+          <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+            <p className="text-xs font-bold uppercase tracking-wider mb-2.5 text-slate-600">📋 Configuración del Plan</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
+              <span>Perfil: <strong>{targetProfile === 'ambos' ? 'Ambos' : targetProfile === 'vo' ? 'V(o)' : 'V(a)'}</strong></span>
+              <span>Porciones: <strong>{portionMode === 'auto' ? 'IA decide 🤖' : 'Manual 📋'}</strong></span>
+              {portionSummary && <span className="col-span-2 text-slate-500">Resumen: {portionSummary}</span>}
+              {vo.favoriteCuisineStyles && <span className="col-span-2 text-slate-500">Cocina: {vo.favoriteCuisineStyles}</span>}
+              {vo.cookingTime && <span className="col-span-2 text-slate-500">Tiempo cocina: {vo.cookingTime}</span>}
+              {additionalNotes && <span className="col-span-2 text-slate-500 truncate">Notas: {additionalNotes}</span>}
+            </div>
+          </div>
+          
           {profiles.map(p => {
             const data = person(p);
             const t = THEME[p];
@@ -526,12 +671,23 @@ export default function NutritionQuestionnaire({
                 <p className={`text-xs font-bold uppercase tracking-wider mb-2.5 ${t.text}`}>
                   {p === 'vo' ? '👨 Perfil V(o)' : '👩 Perfil V(a)'}
                 </p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600">
+                  {data.age && <span>Edad: <strong>{data.age} años</strong></span>}
                   <span>Peso: <strong>{data.currentWeightKg} kg</strong></span>
                   <span>Estatura: <strong>{data.heightCm} cm</strong></span>
+                  {data.targetWeightKg && <span>Peso meta: <strong>{data.targetWeightKg} kg</strong></span>}
                   <span className="col-span-2">Objetivos: <strong>{data.objectives.join(', ') || 'Ninguno'}</strong></span>
                   <span className="col-span-2">Actividad: <strong>{data.activityLevel}</strong></span>
-                  {data.diagnostics && <span className="col-span-2 text-slate-400 truncate">Salud: {data.diagnostics}</span>}
+                  {data.objectiveTimeline && <span className="col-span-2">Tiempo: <strong>{data.objectiveTimeline}</strong></span>}
+                  {data.wakeTime && data.sleepTime && <span className="col-span-2">Horario: <strong>{data.wakeTime} - {data.sleepTime}</strong></span>}
+                  {data.trainingFrequency && <span className="col-span-2">Entreno: <strong>{data.trainingFrequency}</strong></span>}
+                  {data.diagnostics && <span className="col-span-2 text-slate-500">Salud: {data.diagnostics}</span>}
+                  {data.medications && <span className="col-span-2 text-slate-500">Medicamentos: {data.medications}</span>}
+                  {data.allergies && <span className="col-span-2 text-slate-500">Alergias: {data.allergies}</span>}
+                  {data.intolerances && <span className="col-span-2 text-slate-500">Intolerancias: {data.intolerances}</span>}
+                  {data.digestiveSymptoms && <span className="col-span-2 text-slate-500">Digestivo: {data.digestiveSymptoms}</span>}
+                  {data.favoriteFoods && <span className="col-span-2 text-emerald-600">Favoritos: {data.favoriteFoods}</span>}
+                  {data.dislikedFoods && <span className="col-span-2 text-rose-500">No incluir: {data.dislikedFoods}</span>}
                 </div>
               </div>
             );
@@ -566,7 +722,21 @@ export default function NutritionQuestionnaire({
           {/* Botón descargar JSON si hay datos generados */}
           {lastGeneratedData && (
             <button 
-              onClick={() => downloadJsonFile('plan_generado.json', JSON.stringify(lastGeneratedData, null, 2))}
+              onClick={() => {
+                // Transformar al formato RAW compatible (quitar wrapper voData/vaData)
+                const rawFormat: any = {};
+                if (lastGeneratedData.voData) {
+                  rawFormat.perfilVO = lastGeneratedData.voData.perfilVO;
+                  rawFormat.equivalenciasVO = lastGeneratedData.voData.equivalenciasVO;
+                  rawFormat.planVO = lastGeneratedData.voData.planVO;
+                }
+                if (lastGeneratedData.vaData) {
+                  rawFormat.perfilVA = lastGeneratedData.vaData.perfilVA;
+                  rawFormat.equivalenciasVA = lastGeneratedData.vaData.equivalenciasVA;
+                  rawFormat.planVA = lastGeneratedData.vaData.planVA;
+                }
+                downloadJsonFile('plan_generado.json', JSON.stringify(rawFormat, null, 2));
+              }}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold border-2 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all active:scale-[.98]">
               <Download className="w-4 h-4" />
               Descargar JSON generado
@@ -626,8 +796,8 @@ export default function NutritionQuestionnaire({
   const { type } = currentStep;
   const showBack    = stepIdx > 0;
   const showNext    = type !== 'who' && type !== 'confirm';
-  const isLastNav   = type === 'config';
-  const isOptional  = type === 'salud' || type === 'portions';
+  const isLastNav   = type === 'cocina';
+  const isOptional  = type === 'salud' || type === 'medicos' || type === 'preferencias' || type === 'horarios' || type === 'portions' || type === 'cocina';
 
   const { label: stepLabel, Icon: StepIcon } = STEP_META[type];
   const profileSuffix = currentStep.profile === 'vo' ? ' · V(o)' : currentStep.profile === 'va' ? ' · V(a)' : '';

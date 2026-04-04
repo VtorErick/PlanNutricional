@@ -173,12 +173,8 @@ const momentoIcons: Record<string, any> = {
 };
 
 export default function App() {
-  const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | 'ambos' | null>(() => {
-    try {
-      const saved = localStorage.getItem('perfilActivo');
-      return saved ? (saved as 'vo' | 'va' | 'ambos') : null;
-    } catch { return null; }
-  });
+  // Siempre iniciar en home (null), no restaurar perfil de localStorage
+  const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | 'ambos' | null>(null);
 
   const [dataVersions, setDataVersions] = useState<{ vo: 'original' | 'custom', va: 'original' | 'custom' }>(() => {
     try {
@@ -289,6 +285,14 @@ export default function App() {
   });
 
   const [adminTab, setAdminTab] = useState<'ai' | 'manual' | 'settings'>('ai');
+
+  // Limpiar lastGeneratedData cuando se abre el cuestionario de IA
+  useEffect(() => {
+    if (showAdmin && adminTab === 'ai') {
+      setLastGeneratedData(null);
+      setGenerationError('');
+    }
+  }, [showAdmin, adminTab]);
 
   useEffect(() => {
     localStorage.setItem('geminiApiKey', geminiApiKey);
@@ -1629,13 +1633,6 @@ export default function App() {
                         </h2>
                       </div>
                     </div>
-
-                    {p.notaSalud && (
-                      <div className="flex items-start gap-3 p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs sm:text-sm text-amber-800 font-medium leading-relaxed">{p.notaSalud}</p>
-                      </div>
-                    )}
 
                     <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
                       <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
