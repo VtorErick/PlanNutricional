@@ -946,9 +946,9 @@ export default function App() {
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl" />
               <div className="relative">
                 <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-5">
-                  <span className="text-2xl font-bold text-white">El</span>
+                  <span className="text-2xl" aria-hidden="true">👨</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Perfil El</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">El</h2>
                 <p className="text-blue-100 text-sm mb-4 leading-relaxed">{perfilesData.vo.perfil}</p>
                 <div className="flex items-center gap-2 text-blue-200 text-sm">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
@@ -969,9 +969,9 @@ export default function App() {
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-400/20 rounded-full blur-2xl" />
               <div className="relative">
                 <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-5">
-                  <span className="text-2xl font-bold text-white">Ella</span>
+                  <span className="text-2xl" aria-hidden="true">👩</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Perfil Ella</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">Ella</h2>
                 <p className="text-rose-100 text-sm mb-4 leading-relaxed">{perfilesData.va.perfil}</p>
                 <div className="flex items-center gap-2 text-rose-200 text-sm">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
