@@ -633,6 +633,17 @@ export default function App() {
         </header>
 
         {/* Admin Tab Bar */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
+          <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
+            {([
+              { key: 'ai', label: 'Generador IA', shortLabel: 'Generar', emoji: '🪄' },
+              { key: 'settings', label: 'Ajustes IA', shortLabel: 'Ajustes', emoji: '⚙️' },
+              { key: 'manual', label: 'Backup', shortLabel: 'Backup', emoji: '💾' },
+            ] as const).map(t => (
+              <button key={t.key} onClick={() => setAdminTab(t.key)}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 ${
+                  adminTab === t.key
+                    ? 'bg-white text-slate-800 shadow-sm'
                     : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
                 }`}>
                 <span className="block text-sm mb-0.5">{t.emoji}</span>
