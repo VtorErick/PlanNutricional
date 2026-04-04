@@ -9,7 +9,7 @@ import {
 import MealSelector from './components/MealSelector';
 import EquivalenciasCard from './components/EquivalenciasCard';
 import AdminPanel from './components/AdminPanel';
-import NutritionQuestionnaire, { QuestionnairePayload } from './components/NutritionQuestionnaire';
+import NutritionQuestionnaire, { QuestionnairePayload, TargetProfile } from './components/NutritionQuestionnaire';
 import { perfilesData as origPerfilesData, equivalenciasData as origEquivData, rawData, iconsMap, Profile, Equivalencia } from './data';
 import { downloadDaySelectionPdf, parseObjectToData } from './dataManager';
 
@@ -286,13 +286,61 @@ export default function App() {
 
   const [adminTab, setAdminTab] = useState<'ai' | 'manual' | 'settings'>('ai');
 
+  // Estado del cuestionario - persiste entre tabs del Admin Panel
+  const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useState<TargetProfile>('ambos');
+  const [questionnaireStepIdx, setQuestionnaireStepIdx] = useState(0);
+  const [questionnaireVo, setQuestionnaireVo] = useState<any>({
+    age: '', currentWeightKg: '70', heightCm: '165', targetWeightKg: '',
+    objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
+    medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
+    dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
+    wakeTime: '', sleepTime: '', trainingFrequency: ''
+  });
+  const [questionnaireVa, setQuestionnaireVa] = useState<any>({
+    age: '', currentWeightKg: '60', heightCm: '160', targetWeightKg: '',
+    objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
+    medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
+    dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
+    wakeTime: '', sleepTime: '', trainingFrequency: ''
+  });
+  const [questionnairePortionMode, setQuestionnairePortionMode] = useState<'auto' | 'manual'>('auto');
+  const [questionnaireManualPortions, setQuestionnaireManualPortions] = useState<Record<string, Record<string, number>>>({});
+  const [questionnaireAdditionalNotes, setQuestionnaireAdditionalNotes] = useState('');
+
+  // Resetear cuestionario al salir del Panel de Admin
+  useEffect(() => {
+    if (!showAdmin) {
+      // Salió del panel, resetear cuestionario
+      setQuestionnaireTargetProfile('ambos');
+      setQuestionnaireStepIdx(0);
+      setQuestionnaireVo({
+        age: '', currentWeightKg: '70', heightCm: '165', targetWeightKg: '',
+        objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
+        medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
+        dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
+        wakeTime: '', sleepTime: '', trainingFrequency: ''
+      });
+      setQuestionnaireVa({
+        age: '', currentWeightKg: '60', heightCm: '160', targetWeightKg: '',
+        objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
+        medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
+        dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
+        wakeTime: '', sleepTime: '', trainingFrequency: ''
+      });
+      setQuestionnairePortionMode('auto');
+      setQuestionnaireManualPortions({});
+      setQuestionnaireAdditionalNotes('');
+    }
+  }, [showAdmin]);
+
   // Limpiar lastGeneratedData cuando se abre el cuestionario de IA
   useEffect(() => {
-    if (showAdmin && adminTab === 'ai') {
+    if (showAdmin && adminTab === 'ai' && !questionnaireStepIdx) {
+      // Solo limpiar si está en paso 0 (cuestionario nuevo)
       setLastGeneratedData(null);
       setGenerationError('');
     }
-  }, [showAdmin, adminTab]);
+  }, [showAdmin, adminTab, questionnaireStepIdx]);
 
   useEffect(() => {
     localStorage.setItem('geminiApiKey', geminiApiKey);
@@ -818,6 +866,21 @@ export default function App() {
                 geminiModel={geminiModel}
                 setGeminiModel={setGeminiModel}
                 lastGeneratedData={lastGeneratedData}
+                // Estados persistentes del cuestionario
+                targetProfile={questionnaireTargetProfile}
+                setTargetProfile={setQuestionnaireTargetProfile}
+                stepIdx={questionnaireStepIdx}
+                setStepIdx={setQuestionnaireStepIdx}
+                vo={questionnaireVo}
+                setVo={setQuestionnaireVo}
+                va={questionnaireVa}
+                setVa={setQuestionnaireVa}
+                portionMode={questionnairePortionMode}
+                setPortionMode={setQuestionnairePortionMode}
+                manualPortions={questionnaireManualPortions}
+                setManualPortions={setQuestionnaireManualPortions}
+                additionalNotes={questionnaireAdditionalNotes}
+                setAdditionalNotes={setQuestionnaireAdditionalNotes}
               />
             </section>
           )}

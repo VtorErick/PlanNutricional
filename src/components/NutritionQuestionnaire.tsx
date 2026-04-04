@@ -39,6 +39,21 @@ interface Props {
   geminiModel?: string;
   setGeminiModel?: (m: string) => void;
   lastGeneratedData?: any; // Datos generados para descarga
+  // Estados persistentes (para mantener progreso entre tabs)
+  targetProfile: TargetProfile;
+  setTargetProfile: (p: TargetProfile) => void;
+  stepIdx: number;
+  setStepIdx: (i: number | ((prev: number) => number)) => void;
+  vo: any;
+  setVo: (v: any | ((prev: any) => any)) => void;
+  va: any;
+  setVa: (v: any | ((prev: any) => any)) => void;
+  portionMode: 'auto' | 'manual';
+  setPortionMode: (m: 'auto' | 'manual') => void;
+  manualPortions: Record<string, Record<string, number>>;
+  setManualPortions: (p: Record<string, Record<string, number>> | ((prev: Record<string, Record<string, number>>) => Record<string, Record<string, number>>)) => void;
+  additionalNotes: string;
+  setAdditionalNotes: (n: string | ((prev: string) => string)) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -199,16 +214,12 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function NutritionQuestionnaire({
-  onCancel, onGenerate, onViewPlan, loading, errorMessage, geminiModel, setGeminiModel, lastGeneratedData
+  onCancel, onGenerate, onViewPlan, loading, errorMessage, geminiModel, setGeminiModel, lastGeneratedData,
+  // Estados persistentes
+  targetProfile, setTargetProfile, stepIdx, setStepIdx, vo, setVo, va, setVa,
+  portionMode, setPortionMode, manualPortions, setManualPortions, additionalNotes, setAdditionalNotes
 }: Props) {
-  const [targetProfile, setTargetProfile] = useState<TargetProfile>('ambos');
-  const [stepIdx, setStepIdx]   = useState(0);
   const [direction, setDirection] = useState(1);
-  const [vo, setVo] = useState<Person>(emptyPerson());
-  const [va, setVa] = useState<Person>(emptyPerson());
-  const [portionMode, setPortionMode] = useState<PortionMode>('auto');
-  const [manualPortions, setManualPortions] = useState<Record<string, Record<string, number>>>({});
-  const [additionalNotes, setAdditionalNotes] = useState('');
   const [localModel, setLocalModel] = useState(geminiModel || 'gemini-2.0-flash');
 
   useEffect(() => { if (geminiModel) setLocalModel(geminiModel); }, [geminiModel]);
@@ -222,8 +233,8 @@ export default function NutritionQuestionnaire({
   // ── Helpers ──────────────────────────────────────────────────────────────
   const person  = (p: 'vo' | 'va') => p === 'vo' ? vo : va;
   const setPerson = (p: 'vo' | 'va', u: Partial<Person>) => {
-    if (p === 'vo') setVo(prev => ({ ...prev, ...u }));
-    else            setVa(prev => ({ ...prev, ...u }));
+    if (p === 'vo') setVo((prev: any) => ({ ...prev, ...u }));
+    else            setVa((prev: any) => ({ ...prev, ...u }));
   };
 
   const advance = () => {
@@ -536,7 +547,7 @@ export default function NutritionQuestionnaire({
 
       const updatePortion = (group: string, momento: string, value: string) => {
         const num = parseInt(value) || 0;
-        setManualPortions(prev => ({
+        setManualPortions((prev: Record<string, Record<string, number>>) => ({
           ...prev,
           [group]: { ...prev[group], [momento]: num }
         }));
@@ -615,7 +626,7 @@ export default function NutritionQuestionnaire({
             </label>
             <input placeholder="Mexicana, Italiana, Asiática, Mediterránea..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
-              value={vo.favoriteCuisineStyles} onChange={e => { setVo(prev => ({ ...prev, favoriteCuisineStyles: e.target.value })); setVa(prev => ({ ...prev, favoriteCuisineStyles: e.target.value })); }} />
+              value={vo.favoriteCuisineStyles} onChange={e => { setVo((prev: any) => ({ ...prev, favoriteCuisineStyles: e.target.value })); setVa((prev: any) => ({ ...prev, favoriteCuisineStyles: e.target.value })); }} />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">
@@ -623,7 +634,7 @@ export default function NutritionQuestionnaire({
             </label>
             <input placeholder="15 min, 30 min, 1 hora..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
-              value={vo.cookingTime} onChange={e => { setVo(prev => ({ ...prev, cookingTime: e.target.value })); setVa(prev => ({ ...prev, cookingTime: e.target.value })); }} />
+              value={vo.cookingTime} onChange={e => { setVo((prev: any) => ({ ...prev, cookingTime: e.target.value })); setVa((prev: any) => ({ ...prev, cookingTime: e.target.value })); }} />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">
