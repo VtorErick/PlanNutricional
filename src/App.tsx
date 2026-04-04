@@ -4,11 +4,13 @@ import {
   ChefHat, CheckCircle2, TrendingDown, Calendar,
   BookOpen, Zap, Shield, Lightbulb, BarChart3, ArrowLeft,
   Sun, Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle,
-  Heart, ChevronDown, ChevronUp, ShoppingCart, ListChecks
+  Heart, ChevronDown, ChevronUp, ShoppingCart, ListChecks, FileText
 } from 'lucide-react';
 import MealSelector from './components/MealSelector';
 import EquivalenciasCard from './components/EquivalenciasCard';
-import { perfilesData, equivalenciasData } from './data';
+import AdminPanel from './components/AdminPanel';
+import { perfilesData as origPerfilesData, equivalenciasData as origEquivData, rawData, iconsMap, Profile, Equivalencia } from './data';
+import { downloadDaySelectionPdf } from './dataManager';
 
 const momentoIcons: Record<string, any> = {
   desayuno: Sun,
@@ -25,6 +27,47 @@ export default function App() {
       return saved ? (saved as 'vo' | 'va' | 'ambos') : null;
     } catch { return null; }
   });
+
+  const [dataVersions, setDataVersions] = useState<{ vo: 'original' | 'custom', va: 'original' | 'custom' }>(() => {
+    try {
+      const saved = localStorage.getItem('dataVersions');
+      return saved ? JSON.parse(saved) : { vo: 'original', va: 'original' };
+    } catch { return { vo: 'original', va: 'original' }; }
+  });
+
+  const [customData, setCustomData] = useState<any>(() => {
+    try {
+      const saved = localStorage.getItem('customData');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('dataVersions', JSON.stringify(dataVersions));
+  }, [dataVersions]);
+
+  useEffect(() => {
+    localStorage.setItem('customData', JSON.stringify(customData));
+  }, [customData]);
+
+  const perfilesData: Record<string, Profile> = useMemo(() => {
+    return {
+      vo: dataVersions.vo === 'custom' && customData.vo?.perfilVO 
+          ? { ...customData.vo.perfilVO, plan: customData.vo.planVO } 
+          : origPerfilesData.vo,
+      va: dataVersions.va === 'custom' && customData.va?.perfilVA 
+          ? { ...customData.va.perfilVA, plan: customData.va.planVA } 
+          : origPerfilesData.va,
+    };
+  }, [dataVersions, customData, origPerfilesData]);
+
+  const equivalenciasData: Record<string, Equivalencia[]> = useMemo(() => {
+    const mapEquiv = (equivs: any) => equivs.map((eq: any) => ({ ...eq, icon: iconsMap[eq.icon] || Heart }));
+    return {
+      vo: dataVersions.vo === 'custom' && customData.vo?.equivalenciasVO ? mapEquiv(customData.vo.equivalenciasVO) : origEquivData.vo,
+      va: dataVersions.va === 'custom' && customData.va?.equivalenciasVA ? mapEquiv(customData.va.equivalenciasVA) : origEquivData.va,
+    };
+  }, [dataVersions, customData, origEquivData]);
   const [diaActivo, setDiaActivo] = useState(() => {
     try {
       return localStorage.getItem('diaActivo') || 'Lunes';
@@ -152,6 +195,34 @@ export default function App() {
     const completados = Object.values(momentoCompletado).filter(Boolean).length;
     return Math.round((completados / total) * 100);
   }, [perfilActivo, isAmbos, perfilBase, momentoCompletado, momentoCompletadoVo, momentoCompletadoVa]);
+  const handleDownloadDayPdf = useCallback(() => {
+    if (!perfilActivo) return;
+
+    if (perfilActivo === 'ambos') {
+      downloadDaySelectionPdf(
+        diaActivo, 
+        [
+          { perfilData: perfilesData.vo, color: [37, 99, 235], planObj: perfilesData.vo.plan, perfilId: 'vo' },
+          { perfilData: perfilesData.va, color: [225, 29, 72], planObj: perfilesData.va.plan, perfilId: 'va' }
+        ],
+        selecciones
+      );
+    } else {
+      const isVA = perfilActivo === 'va';
+      downloadDaySelectionPdf(
+        diaActivo, 
+        [
+          { 
+            perfilData: perfilesData[perfilActivo], 
+            color: isVA ? [225, 29, 72] : [37, 99, 235], 
+            planObj: perfilesData[perfilActivo].plan, 
+            perfilId: perfilActivo 
+          }
+        ],
+        selecciones
+      );
+    }
+  }, [perfilActivo, diaActivo, perfilesData, selecciones]);
 
   const completadosCount = isAmbos 
     ? Object.values(momentoCompletadoVo).filter(Boolean).length + Object.values(momentoCompletadoVa).filter(Boolean).length
@@ -319,9 +390,36 @@ export default function App() {
 
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.25 }}
-            className="mt-10 rounded-2xl overflow-hidden shadow-lg"
+            className="mt-12 pt-8 border-t border-slate-200/60"
           >
-            <img src="/images/meal-prep.png" alt="Preparación de comidas saludables" className="w-full h-48 md:h-64 object-cover" />
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">Administración de Datos</h2>
+              <p className="text-sm text-slate-500 mt-1">Exporta menús a PDF o carga tu propia configuración</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AdminPanel
+                perfilId="vo"
+                title="Datos V(o)"
+                themeColor="blue"
+                rawDataText={rawData.vo}
+                customData={customData}
+                setCustomData={setCustomData}
+                dataVersion={dataVersions.vo}
+                setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, vo: ver }))}
+                perfilesDataObj={origPerfilesData.vo}
+              />
+              <AdminPanel
+                perfilId="va"
+                title="Datos V(a)"
+                themeColor="rose"
+                rawDataText={rawData.va}
+                customData={customData}
+                setCustomData={setCustomData}
+                dataVersion={dataVersions.va}
+                setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, va: ver }))}
+                perfilesDataObj={origPerfilesData.va}
+              />
+            </div>
           </motion.div>
         </div>
       </div>
@@ -832,6 +930,38 @@ export default function App() {
                   );
                 })}
               </div>
+
+              {progresoDia === 100 && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  className={`mt-8 p-6 lg:p-8 rounded-[2rem] bg-gradient-to-br ${ac.bgGradient} text-white shadow-xl shadow-${ac.bg.split('-')[1]}-500/20 relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6`}
+                >
+                  <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/20 rounded-full blur-2xl pointer-events-none" />
+                  <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-black/10 rounded-full blur-2xl pointer-events-none" />
+                  
+                  <div className="flex items-center gap-5 z-10 text-center sm:text-left">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex flex-shrink-0 items-center justify-center shadow-inner">
+                      <CheckCircle2 className="w-8 h-8 text-white drop-shadow" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold mb-1">¡Día Completado! 🎉</h3>
+                      <p className="text-white/80 text-sm max-w-sm">
+                        Has registrado todas tus comidas planeadas para hoy. Mantén el excelente ritmo.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={handleDownloadDayPdf} 
+                    className="z-10 group flex items-center gap-2 bg-white text-slate-800 px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:shadow-xl hover:scale-105 active:scale-95 transition-all w-full sm:w-auto justify-center"
+                  >
+                    <FileText className={`w-5 h-5 ${ac.text}`} /> 
+                    <span>Descargar Menú</span>
+                  </button>
+                </motion.div>
+              )}
             </motion.div>
           )}
 

@@ -77,13 +77,16 @@ La app cuenta con:
 5. **Consulta Equivalencias**: Aprende porciones y consejos nutricionales
 6. **Lee Resumen**: Entiende los fundamentos de tu plan
 
-## 🔧 Personalización
+## 🔧 Personalización y Datos Dinámicos
 
-Edita `src/data.ts` para:
-- Agregar nuevos perfiles
-- Modificar planes de comidas
-- Cambiar equivalencias
-- Ajustar horarios
+La plataforma permite personalización flexible sin requerir conocimientos de código y sin usar un servidor:
+
+1. **Editar Archivos Directamente**: Edita `src/data/perfil-vo.ts` y `perfil-va.ts` para agregar dietas predeterminadas en el proyecto antes de compilar (Vercel).
+2. **Subida Dinámica en Navegador (Client-Side)**: 
+   - Gracias al Administrador de Datos en la página de inicio, los usuarios pueden descargar sus planes en `.ts`.
+   - Si se requiere actualizar el plan pero la página ya se encuentra compilada y hosteada (p. ej. en Vercel), simplemente pueden subir el nuevo `.ts` o un archivo de texto con la misma estructura.
+   - **Limitaciones de Vercel (Sitios Estáticos)**: Al carecer de back-end, la información subida se *evalúa dinámicamente* en el teléfono o PC de cada usuario y se **guarda en el LocalStorage**. Funciona perfectamente como una personalización individual que mantiene su rapidez. Si borran la caché de su navegador, volverán a la versión original.
+   - Para que un cambio sea universal para todos sin tener que subir su `.ts` manualmente, la modificación debe hacerse mediante un commit al repositorio en Vercel.
 
 ## 💡 Notas de Desarrollo
 

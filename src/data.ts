@@ -41,7 +41,7 @@ export interface Equivalencia {
   items: string[];
 }
 
-const iconsMap: Record<string, any> = {
+export const iconsMap: Record<string, any> = {
   Apple, Carrot, Wheat, Bean, Milk, Beef, Droplets, Candy, AlertTriangle, Heart,
 };
 
@@ -53,4 +53,9 @@ export const perfilesData: Record<string, Profile> = {
 export const equivalenciasData: Record<string, Equivalencia[]> = {
   vo: equivalenciasVO.map((eq: any) => ({ ...eq, icon: iconsMap[eq.icon] })),
   va: equivalenciasVA.map((eq: any) => ({ ...eq, icon: iconsMap[eq.icon] })),
+};
+
+export const rawData = {
+  vo: JSON.stringify({ perfilVO, equivalenciasVO, planVO }, null, 2),
+  va: JSON.stringify({ perfilVA, equivalenciasVA, planVA }, null, 2)
 };
