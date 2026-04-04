@@ -633,17 +633,6 @@ export default function App() {
         </header>
 
         {/* Admin Tab Bar */}
-        <div className="sticky top-[65px] z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/60 px-3 sm:px-6 py-2.5">
-          <div className="flex gap-1 bg-slate-100/80 p-1 rounded-2xl max-w-lg mx-auto">
-            {([
-              { key: 'ai', label: 'Generador IA', shortLabel: 'Generar', emoji: '🪄' },
-              { key: 'settings', label: 'Ajustes IA', shortLabel: 'Ajustes', emoji: '⚙️' },
-              { key: 'manual', label: 'Datos RAW', shortLabel: 'RAW', emoji: '📦' },
-            ] as const).map(t => (
-              <button key={t.key} onClick={() => setAdminTab(t.key)}
-                className={`flex-1 py-2 px-1 text-xs font-bold rounded-xl transition-all duration-200 leading-tight ${
-                  adminTab === t.key
-                    ? 'bg-white shadow-md text-slate-800 scale-[1.02]'
                     : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
                 }`}>
                 <span className="block text-sm mb-0.5">{t.emoji}</span>
@@ -681,7 +670,7 @@ export default function App() {
                   <input
                     type="password"
                     id="admin-api-key"
-                    placeholder="AIzaSy..."
+                    placeholder="Ingresa tu API key de Gemini (AIzaSy...)"
                     value={geminiApiKey}
                     onChange={(e) => setGeminiApiKey(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-10 text-slate-700 font-mono text-sm outline-none focus:ring-2 focus:ring-orange-400 transition"
@@ -691,7 +680,7 @@ export default function App() {
                   )}
                 </div>
                 {geminiApiKey && (
-                  <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">✅ API Key guardada correctamente en tu navegador.</p>
+                  <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">✅ API Key configurada</p>
                 )}
               </section>
 
@@ -706,6 +695,7 @@ export default function App() {
                     <p className="text-xs text-slate-500 mt-0.5">Selecciona qué versión de Gemini usará el generador de planes.</p>
                   </div>
                 </div>
+                <p className="text-xs font-bold text-slate-600 mb-2">Selecciona tu modelo preferido (ya hay uno preseleccionado):</p>
                 <div className="grid gap-2">
                   {[
                     { val: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: '⚡ Recomendado', desc: 'Velocidad óptima y calidad alta', badgeColor: 'bg-emerald-100 text-emerald-700' },
@@ -738,12 +728,12 @@ export default function App() {
             </div>
           )}
 
-          {/* ── MANUAL RAW TAB ── */}
+          {/* ── MANUAL BACKUP TAB ── */}
           {adminTab === 'manual' && (
             <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="text-center mb-6">
-                <h2 className="text-lg font-bold text-slate-800">📦 Importador de Datos RAW</h2>
-                <p className="text-sm text-slate-500">Carga archivos JSON modificados directamente, sin usar IA.</p>
+                <h2 className="text-lg font-bold text-slate-800">💾 Backup y Restauración</h2>
+                <p className="text-sm text-slate-500">Descarga tu plan como respaldo o restaura una versión anterior desde archivo JSON.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AdminPanel
