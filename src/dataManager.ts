@@ -5,14 +5,7 @@ import { Profile, Equivalencia, MealItem } from './data';
 /**
  * Parsea un JSON limpio y valida su estructura básica
  */
-export function parseJsonToData(jsonString: string, expectedPrefix: 'VO' | 'VA'): any {
-  let parsed: any;
-  try {
-    parsed = JSON.parse(jsonString);
-  } catch (e) {
-    throw new Error('El archivo no tiene un formato JSON válido.');
-  }
-
+export function parseObjectToData(parsed: any, expectedPrefix: 'VO' | 'VA'): any {
   const perfilKey = `perfil${expectedPrefix}`;
   const equivKey = `equivalencias${expectedPrefix}`;
   const planKey = `plan${expectedPrefix}`;
@@ -32,8 +25,8 @@ export function parseJsonToData(jsonString: string, expectedPrefix: 'VO' | 'VA')
   }
 
   const equivalencias = parsed[equivKey];
-  if (!Array.isArray(equivalencias)) {
-    throw new Error('Las equivalencias deben ser un arreglo.');
+  if (!Array.isArray(equivalencias) || equivalencias.length === 0) {
+    throw new Error('Las equivalencias deben ser un arreglo no vacío.');
   }
 
   const plan = parsed[planKey];
@@ -42,6 +35,17 @@ export function parseJsonToData(jsonString: string, expectedPrefix: 'VO' | 'VA')
   }
 
   return parsed;
+}
+
+export function parseJsonToData(jsonString: string, expectedPrefix: 'VO' | 'VA'): any {
+  let parsed: any;
+  try {
+    parsed = JSON.parse(jsonString);
+  } catch (e) {
+    throw new Error('El archivo no tiene un formato JSON válido.');
+  }
+
+  return parseObjectToData(parsed, expectedPrefix);
 }
 
 /**
