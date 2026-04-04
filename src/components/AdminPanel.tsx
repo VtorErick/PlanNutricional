@@ -67,6 +67,21 @@ export default function AdminPanel({
     downloadDietPdf(dataToUse, planToUse, perfilId === 'va');
   };
 
+  const handleJsonDownload = () => {
+    if (dataVersion === 'custom' && customData[perfilId]) {
+      // Descargar datos personalizados (IA o subidos manualmente)
+      const dataToDownload = {
+        [`perfil${perfilId.toUpperCase()}`]: customData[perfilId][`perfil${perfilId.toUpperCase()}`],
+        [`equivalencias${perfilId.toUpperCase()}`]: customData[perfilId][`equivalencias${perfilId.toUpperCase()}`],
+        [`plan${perfilId.toUpperCase()}`]: customData[perfilId][`plan${perfilId.toUpperCase()}`]
+      };
+      downloadJsonFile(`perfil-${perfilId}-personalizado.json`, JSON.stringify(dataToDownload, null, 2));
+    } else {
+      // Descargar datos originales
+      downloadJsonFile(`perfil-${perfilId}.json`, rawDataText);
+    }
+  };
+
   const bgGradient = themeColor === 'blue' ? 'from-blue-50 to-indigo-50' : 'from-rose-50 to-pink-50';
   const textColor = themeColor === 'blue' ? 'text-blue-700' : 'text-rose-700';
   const borderColor = themeColor === 'blue' ? 'border-blue-200' : 'border-rose-200';
@@ -111,7 +126,7 @@ export default function AdminPanel({
             <FileText className="w-4 h-4" /> PDF
           </button>
           <button 
-            onClick={() => downloadJsonFile(`perfil-${perfilId}.json`, rawDataText)}
+            onClick={handleJsonDownload}
             className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition active:scale-95 shadow-sm"
           >
             <FileJson className="w-4 h-4" /> JSON

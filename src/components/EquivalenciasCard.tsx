@@ -24,7 +24,7 @@ export default function EquivalenciasCard({ equivalencia, delay = 0, accentClass
       </div>
 
       {/* Header */}
-      <div className="flex items-center gap-4 mb-5">
+      <div className="flex items-center gap-4 mb-3">
         <div className={`relative inline-flex p-3 rounded-2xl bg-gradient-to-br ${accentClasses.bgGradient} shadow-sm`}>
           <Icon className={`w-6 h-6 text-white`} />
         </div>
@@ -32,6 +32,11 @@ export default function EquivalenciasCard({ equivalencia, delay = 0, accentClass
           {equivalencia.titulo}
         </h3>
       </div>
+
+      {/* Info message */}
+      <p className="text-xs text-slate-500 mb-4 px-1">
+        Cada elemento = 1 porción
+      </p>
 
       {/* Items */}
       <div className="relative space-y-2.5 z-10">

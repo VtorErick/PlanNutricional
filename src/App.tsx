@@ -16,20 +16,58 @@ import { downloadDaySelectionPdf, parseObjectToData } from './dataManager';
 // Función auxiliar para llamar directamente a Gemini API en desarrollo local
 async function callGeminiDirectly(payload: any, apiKey: string, modelName: string) {
   const buildSystemPrompt = (prefix: string) => {
+    const lowerPrefix = prefix.toLowerCase();
     return `Eres un nutricionista clínico experto. Genera un plan semanal COMPLETO y VARIADO con comidas reales.
 
-ESTRUCTURA REQUERIDA (usa estas 3 llaves raíz):
-- perfil${prefix}: { id, nombre, perfil, meta, momentos[{key, label, hora}] }
-- equivalencias${prefix}: array con { categoria, equivalencia, ejemplos, icon }
-- plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
+ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 
-REGLAS IMPORTANTES:
-1. Cada momento debe tener 3 opciones de comidas REALES y variadas (NO uses "Opción 1", genera nombres reales como "Tacos de pollo", "Ensalada de atún", etc.)
-2. Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
-3. Las equivalencias deben incluir: Verduras, Frutas, Cereales, Leguminosas, Lácteos, Proteínas, Grasas
-4. Responde SOLO con JSON válido, sin markdown \`\`\`json
+1. perfil${prefix}: {
+    id: "${lowerPrefix}",
+    nombre: "${prefix === 'VO' ? 'V(o)' : 'V(a)'}",
+    perfil: string (edad, peso, altura, IMC),
+    meta: string,
+    descripcion: string,
+    edad: number,
+    horariosTexto: string,
+    momentos: [{ key: "desayuno", label: "Desayuno", hora: "8:00 am" }, { key: "colacion_am", label: "Colación mañana", hora: "..." }, { key: "comida", label: "Comida", hora: "..." }, { key: "colacion_pm", label: "Colación tarde", hora: "..." }, { key: "cena", label: "Cena", hora: "..." }],
+    objetivosPorMomento: {
+      desayuno: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
+      colacion_am: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
+      comida: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
+      colacion_pm: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
+      cena: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number }
+    },
+    distribucionDiaria: [
+      { grupo: "Frutas", total: number, detalle: "ej: 1 en desayuno + 1 en colación" },
+      { grupo: "Verduras", total: number, detalle: "ej: 2 desayuno + 2 comida" },
+      { grupo: "Cereales", total: number, detalle: "ej: 1 desayuno + 1 comida" },
+      { grupo: "Proteína", total: number, detalle: "ej: 3 desayuno + 4 comida" },
+      { grupo: "Grasas", total: number, detalle: "ej: 2 desayuno + 2 col. AM" },
+      { grupo: "Leche", total: number, detalle: "ej: 1 en cena" },
+      { grupo: "Leguminosas", total: number, detalle: "ej: 3 veces por semana" }
+    ],
+    resumenPersonal: string[] (5-7 puntos clave específicos del plan),
+    notaSalud: string (nota sobre salud específica, requerida)
+  }
 
-Icons permitidos: Carrot, Apple, Wheat, Bean, Milk, Beef, Droplets, Candy, Heart, AlertTriangle`;
+2. equivalencias${prefix}: array con MINIMO 6-7 objetos, cada uno con:
+    { titulo: string, icon: enum[Carrot, Apple, Wheat, Bean, Milk, Beef, Droplets, Candy, AlertTriangle, Heart], items: string[] (5-10 items detallados con cantidad y gramos, formato: "1 manzana mediana (150g)", "1 taza de brócoli cocido (150g)", "30g de pechuga de pollo cocida") }
+   
+   Categorías requeridas: Frutas, Verduras, Cereales, Proteínas, Grasas, Leguminosas, Lácteos, y opcionalmente "Alimentos libres", "Antojos saludables", "Notas especiales"
+   
+   EJEMPLO de items para Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 plátano pequeño (100g)"]
+   EJEMPLO de items para Verduras: ["1 taza de brócoli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morrón (100g)", "1 taza de pepino rallado (150g)"]
+
+3. plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
+
+REGLAS CRÍTICAS:
+- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'V(o)' : 'V(a)'}" - NO usar otros nombres
+- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, leche, proteina, grasas
+- OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
+- OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados
+- Cada momento debe tener 3 opciones de comidas REALES y variadas
+- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+- Responde SOLO con JSON válido, sin markdown \`\`\`json`;
   };
 
   const buildUserPrompt = (p: any, prefix: string) => {
@@ -176,7 +214,19 @@ export default function App() {
   }, [dataVersions, customData, origPerfilesData]);
 
   const equivalenciasData: Record<string, Equivalencia[]> = useMemo(() => {
-    const mapEquiv = (equivs: any) => equivs.map((eq: any) => ({ ...eq, icon: iconsMap[eq.icon] || Heart }));
+    const mapEquiv = (equivs: any) => {
+      if (!Array.isArray(equivs)) return [];
+      return equivs.map((eq: any) => {
+        // Transform AI structure (categoria, ejemplos) to UI structure (titulo, items)
+        const titulo = eq.categoria || eq.titulo || 'Sin título';
+        const items = eq.items || (eq.ejemplos ? [eq.ejemplos] : []);
+        return { 
+          titulo, 
+          items, 
+          icon: iconsMap[eq.icon] || Heart 
+        };
+      });
+    };
     return {
       vo: dataVersions.vo === 'custom' && customData.vo?.equivalenciasVO ? mapEquiv(customData.vo.equivalenciasVO) : origEquivData.vo,
       va: dataVersions.va === 'custom' && customData.va?.equivalenciasVA ? mapEquiv(customData.va.equivalenciasVA) : origEquivData.va,
@@ -1484,38 +1534,44 @@ export default function App() {
                           Tabla de Macros y Porciones
                         </h3>
                         
-                        {/* Mobile Grid Layout (replaces horizontal table for small screens) */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:hidden mt-4">
+                        {/* Mobile Grid Layout - Improved */}
+                        <div className="grid grid-cols-2 gap-3 sm:hidden mt-4">
                           {[
-                            { key: 'frutas', label: 'Frutas', icon: '🍎' },
-                            { key: 'verduras', label: 'Verduras', icon: '🥦' },
-                            { key: 'cereales', label: 'Cereales', icon: '🥐' },
-                            { key: 'proteina', label: 'Proteína', icon: '🥩' },
-                            { key: 'grasas', label: 'Grasas', icon: '🥑' },
-                            { key: 'leche', label: 'Leche', icon: '🥛' },
+                            { key: 'frutas', label: 'Frutas', icon: '🍎', color: 'text-rose-500', bg: 'bg-rose-50' },
+                            { key: 'verduras', label: 'Verduras', icon: '🥦', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                            { key: 'cereales', label: 'Cereales', icon: '🌾', color: 'text-amber-500', bg: 'bg-amber-50' },
+                            { key: 'proteina', label: 'Proteína', icon: '🥩', color: 'text-red-500', bg: 'bg-red-50' },
+                            { key: 'grasas', label: 'Grasas', icon: '🥑', color: 'text-lime-500', bg: 'bg-lime-50' },
+                            { key: 'leche', label: 'Leche', icon: '🥛', color: 'text-blue-500', bg: 'bg-blue-50' },
+                            { key: 'leguminosas', label: 'Leguminosas', icon: '🫘', color: 'text-amber-700', bg: 'bg-amber-100' },
                           ].map(cat => {
                             const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
-                            const total = mKeys.reduce((acc, m) => acc + (p.objetivosPorMomento[m]?.[cat.key] || 0), 0);
-                            if (total === 0 && cat.key !== 'leche') return null;
+                            const mLabels = ['Des', 'C.AM', 'Com', 'C.PM', 'Cen'];
+                            const total = mKeys.reduce((acc, m) => acc + (p.objetivosPorMomento?.[m]?.[cat.key] || 0), 0);
                             return (
-                              <div key={cat.key} className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex flex-col justify-between">
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-slate-700 text-xs flex items-center gap-1.5"><span className="text-sm">{cat.icon}</span> <span className="truncate">{cat.label}</span></span>
-                                  <span className={`font-black ${dynamicAc.text} text-sm bg-white shadow-sm px-1.5 rounded-md`}>{total}</span>
+                              <div key={cat.key} className={`${cat.bg} rounded-xl p-3 border border-slate-100`}>
+                                <div className="flex items-center justify-between mb-2.5">
+                                  <span className={`font-bold text-slate-700 text-xs flex items-center gap-1.5 ${cat.color}`}>
+                                    <span className="text-base">{cat.icon}</span> 
+                                    <span className="truncate">{cat.label}</span>
+                                  </span>
+                                  <span className={`font-black ${cat.color} text-lg bg-white shadow-sm px-2 py-0.5 rounded-md min-w-[28px] text-center`}>{total}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-[10px] text-slate-400 font-medium px-1">
-                                  {mKeys.map(m => {
-                                    const val = p.objetivosPorMomento[m]?.[cat.key] || 0;
-                                    return <span key={m} className={val > 0 ? 'text-slate-600 font-bold' : 'opacity-20'}>{val > 0 ? val : '-'}</span>;
+                                <div className="grid grid-cols-5 gap-1">
+                                  {mKeys.map((m, idx) => {
+                                    const val = p.objetivosPorMomento?.[m]?.[cat.key] || 0;
+                                    const isActive = val > 0;
+                                    return (
+                                      <div key={m} className="flex flex-col items-center">
+                                        <span className={`text-[8px] font-bold uppercase ${isActive ? 'text-slate-500' : 'text-slate-300'}`}>{mLabels[idx]}</span>
+                                        <span className={`text-sm font-bold ${isActive ? 'text-slate-700' : 'text-slate-300'}`}>{val}</span>
+                                      </div>
+                                    );
                                   })}
                                 </div>
                               </div>
                             );
                           })}
-                        </div>
-                        <div className="flex justify-between items-center sm:hidden mt-2 px-1 text-[7px] uppercase tracking-widest text-slate-400 font-bold opacity-60">
-                           <span></span>
-                           <div className="flex gap-2"><span>Des</span><span>Cam</span><span>Com</span><span>Cpm</span><span>Cen</span></div>
                         </div>
 
                         {/* Desktop Table Layout */}
@@ -1532,24 +1588,24 @@ export default function App() {
                               {[
                                 { key: 'frutas', label: 'Frutas', icon: '🍎' },
                                 { key: 'verduras', label: 'Verduras', icon: '🥦' },
-                                { key: 'cereales', label: 'Cereales', icon: '🥐' },
+                                { key: 'cereales', label: 'Cereales', icon: '🌾' },
                                 { key: 'proteina', label: 'Proteína', icon: '🥩' },
                                 { key: 'grasas', label: 'Grasas', icon: '🥑' },
                                 { key: 'leche', label: 'Leche', icon: '🥛' },
+                                { key: 'leguminosas', label: 'Leguminosas', icon: '🫘' },
                               ].map((cat) => {
                                 const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
-                                const total = mKeys.reduce((acc, m) => acc + (p.objetivosPorMomento[m]?.[cat.key] || 0), 0);
-                                if (total === 0 && cat.key !== 'leche') return null;
+                                const total = mKeys.reduce((acc, m) => acc + (p.objetivosPorMomento?.[m]?.[cat.key] || 0), 0);
                                 return (
                                   <tr key={cat.key} className="hover:bg-slate-50/70 transition-colors group">
                                     <td className="p-3 sticky left-0 bg-white/95 group-hover:bg-slate-50/95 backdrop-blur-md z-10 font-bold text-slate-700 flex items-center gap-2 border-r border-transparent group-hover:border-slate-100/50 transition-colors">
                                       <span className="text-base drop-shadow-sm">{cat.icon}</span> {cat.label}
                                     </td>
                                     {mKeys.map(m => {
-                                      const val = p.objetivosPorMomento[m]?.[cat.key] || 0;
+                                      const val = p.objetivosPorMomento?.[m]?.[cat.key] || 0;
                                       return (
                                         <td key={m} className={`p-3 text-center font-medium ${val > 0 ? 'text-slate-800' : 'text-slate-300'}`}>
-                                          {val > 0 ? val : '-'}
+                                          {val}
                                         </td>
                                       )
                                     })}

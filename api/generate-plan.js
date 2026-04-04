@@ -1,21 +1,58 @@
 const ALLOWED_ICONS = ['Apple', 'Carrot', 'Wheat', 'Bean', 'Milk', 'Beef', 'Droplets', 'Candy', 'AlertTriangle', 'Heart'];
 
 function buildSystemPrompt(prefix) {
+  const lowerPrefix = prefix.toLowerCase();
   return `Eres un nutricionista clínico experto. Genera un plan semanal COMPLETO y VARIADO con comidas reales.
 
-ESTRUCTURA REQUERIDA (usa estas 3 llaves raíz):
-- perfil${prefix}: { id, nombre, perfil, meta, momentos[{key, label, hora}] }
-- equivalencias${prefix}: array con { categoria, equivalencia, ejemplos, icon }
-- plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
+ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 
-REGLAS IMPORTANTES:
-1. Cada momento debe tener 3 opciones de comidas REALES y variadas (NO uses "Opción 1", genera nombres reales como "Tacos de pollo", "Ensalada de atún", etc.)
-2. Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
-3. Las equivalencias deben incluir: Verduras, Frutas, Cereales, Leguminosas, Lácteos, Proteínas, Grasas
-4. Responde SOLO con JSON válido, sin markdown \`\`\`json
+1. perfil${prefix}: {
+    id: "${lowerPrefix}",
+    nombre: "${prefix === 'VO' ? 'V(o)' : 'V(a)'}",
+    perfil: string (edad, peso, altura, IMC),
+    meta: string,
+    descripcion: string,
+    edad: number,
+    horariosTexto: string,
+    momentos: [{ key: "desayuno", label: "Desayuno", hora: "8:00 am" }, { key: "colacion_am", label: "Colación mañana", hora: "..." }, { key: "comida", label: "Comida", hora: "..." }, { key: "colacion_pm", label: "Colación tarde", hora: "..." }, { key: "cena", label: "Cena", hora: "..." }],
+    objetivosPorMomento: {
+      desayuno: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
+      colacion_am: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
+      comida: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
+      colacion_pm: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
+      cena: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number }
+    },
+    distribucionDiaria: [
+      { grupo: "Frutas", total: number, detalle: "ej: 1 en desayuno + 1 en colación" },
+      { grupo: "Verduras", total: number, detalle: "ej: 2 desayuno + 2 comida" },
+      { grupo: "Cereales", total: number, detalle: "ej: 1 desayuno + 1 comida" },
+      { grupo: "Proteína", total: number, detalle: "ej: 3 desayuno + 4 comida" },
+      { grupo: "Grasas", total: number, detalle: "ej: 2 desayuno + 2 col. AM" },
+      { grupo: "Leche", total: number, detalle: "ej: 1 en cena" },
+      { grupo: "Leguminosas", total: number, detalle: "ej: 3 veces por semana" }
+    ],
+    resumenPersonal: string[] (5-7 puntos clave específicos del plan),
+    notaSalud: string (nota sobre salud específica, requerida)
+  }
 
-Icons permitidos: ${ALLOWED_ICONS.join(', ')}`;
-}
+2. equivalencias${prefix}: array con MINIMO 6-7 objetos, cada uno con:
+    { titulo: string, icon: enum[${ALLOWED_ICONS.join(', ')}], items: string[] (5-10 items detallados con cantidad y gramos, formato: "1 manzana mediana (150g)", "1 taza de brócoli cocido (150g)", "30g de pechuga de pollo cocida") }
+   
+   Categorías requeridas: Frutas, Verduras, Cereales, Proteínas, Grasas, Leguminosas, Lácteos, y opcionalmente "Alimentos libres", "Antojos saludables", "Notas especiales"
+   
+   EJEMPLO de items para Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 plátano pequeño (100g)"]
+   EJEMPLO de items para Verduras: ["1 taza de brócoli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morrón (100g)", "1 taza de pepino rallado (150g)"]
+
+3. plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
+
+REGLAS CRÍTICAS:
+- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'V(o)' : 'V(a)'}" - NO usar otros nombres
+- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, leche, proteina, grasas
+- OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
+- OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados
+- Cada momento debe tener 3 opciones de comidas REALES y variadas
+- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+- Responde SOLO con JSON válido, sin markdown \`\`\`json`;
 
 function buildUserPrompt(payload, prefix) {
   return JSON.stringify({

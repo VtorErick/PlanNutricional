@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Loader2, ChevronRight, ChevronLeft,
-  CheckCircle2, User, Scale, Target, Shield, Activity, Settings2, SkipForward, Download
+  CheckCircle2, User, Scale, Target, Shield, Activity, Settings2, SkipForward, Download,
+  Hourglass
 } from 'lucide-react';
 import { downloadJsonFile } from '../dataManager';
 
@@ -55,12 +56,6 @@ const ACTIVITY_LEVELS = [
   { val: 'Intenso',    emoji: '⚡', desc: '5+ días/sem' },
 ];
 
-const BUDGET_LEVELS = [
-  { val: 'bajo',  emoji: '💸', label: 'Económico'  },
-  { val: 'medio', emoji: '🛒', label: 'Moderado'   },
-  { val: 'alto',  emoji: '✨', label: 'Sin límite'  },
-];
-
 const GEMINI_MODELS = [
   { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: '⚡ Recomendado'  },
   { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito'    },
@@ -81,19 +76,18 @@ const emptyPerson = () => ({
   currentWeightKg: '70',
   heightCm: '165',
   targetWeightKg: '',
-  objective: '',
+  objectives: [] as string[],
   objectiveTimeline: '12 sem',
   diagnostics: '',
   allergies: '',
   favoriteFoods: '',
   dislikedFoods: '',
   activityLevel: 'Moderado',
-  budgetLevel: 'medio' as 'bajo' | 'medio' | 'alto',
 });
 type Person = ReturnType<typeof emptyPerson>;
 
 // ─── Wizard steps ─────────────────────────────────────────────────────────────
-type StepType = 'who' | 'fisica' | 'objetivo' | 'salud' | 'lifestyle' | 'config' | 'confirm';
+type StepType = 'who' | 'fisica' | 'objetivo' | 'salud' | 'lifestyle' | 'portions' | 'config' | 'confirm';
 
 interface WizardStep {
   type: StepType;
@@ -113,7 +107,7 @@ function buildSteps(tp: TargetProfile): WizardStep[] {
   } else {
     steps.push(...personSteps(tp));
   }
-  steps.push({ type: 'config' }, { type: 'confirm' });
+  steps.push({ type: 'portions' }, { type: 'config' }, { type: 'confirm' });
   return steps;
 }
 
@@ -173,6 +167,7 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
   objetivo:  { label: 'Objetivo',         Icon: Target    },
   salud:     { label: 'Salud',            Icon: Shield    },
   lifestyle: { label: 'Estilo de vida',   Icon: Activity  },
+  portions:  { label: 'Porciones',        Icon: Settings2 },
   config:    { label: 'Configuración',    Icon: Settings2 },
   confirm:   { label: 'Confirmar',        Icon: Sparkles  },
 };
@@ -187,6 +182,7 @@ export default function NutritionQuestionnaire({
   const [vo, setVo] = useState<Person>(emptyPerson());
   const [va, setVa] = useState<Person>(emptyPerson());
   const [portionMode, setPortionMode] = useState<PortionMode>('auto');
+  const [manualPortions, setManualPortions] = useState<Record<string, Record<string, number>>>({});
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [localModel, setLocalModel] = useState(geminiModel || 'gemini-2.0-flash');
 
@@ -227,7 +223,7 @@ export default function NutritionQuestionnaire({
   const canContinue = () => {
     const { type, profile } = currentStep;
     if (type === 'fisica'   && profile) return !!person(profile).currentWeightKg && !!person(profile).heightCm;
-    if (type === 'objetivo' && profile) return !!person(profile).objective;
+    if (type === 'objetivo' && profile) return person(profile).objectives.length > 0;
     return true;
   };
 
@@ -236,11 +232,11 @@ export default function NutritionQuestionnaire({
     const buildPP = (p: Person) => ({
       profileContext: {
         currentWeightKg: p.currentWeightKg, heightCm: p.heightCm,
-        targetWeightKg: p.targetWeightKg, objective: p.objective,
+        targetWeightKg: p.targetWeightKg, objectives: p.objectives,
         objectiveTimelineWeeks: p.objectiveTimeline,
       },
       healthContext:  { diagnostics: p.diagnostics, allergies: p.allergies, medications: '', intolerances: '', digestiveSymptoms: '' },
-      preferences:   { favoriteFoods: p.favoriteFoods, dislikedFoods: p.dislikedFoods, budgetLevel: p.budgetLevel, favoriteCuisineStyles: '', cookingTime: '' },
+      preferences:   { favoriteFoods: p.favoriteFoods, dislikedFoods: p.dislikedFoods, favoriteCuisineStyles: '', cookingTime: '' },
       routine:       { activityLevel: p.activityLevel, wakeTime: '', sleepTime: '', trainingFrequency: '' },
     });
 
@@ -249,7 +245,7 @@ export default function NutritionQuestionnaire({
       profileToUpdate: targetProfile,
       portionMode,
       preferredModel: localModel,
-      planConfig: { mealsPerDay: DEFAULT_MOMENTS.length.toString(), selectedMoments: DEFAULT_MOMENTS, manualPortions: {}, additionalNotes },
+      planConfig: { mealsPerDay: DEFAULT_MOMENTS.length.toString(), selectedMoments: DEFAULT_MOMENTS, manualPortions: portionMode === 'manual' ? manualPortions : {}, additionalNotes },
     };
 
     if (targetProfile === 'ambos') {
@@ -322,16 +318,22 @@ export default function NutritionQuestionnaire({
         <div className="space-y-2">
           <p className="text-center text-slate-500 text-sm mb-3">Toca para seleccionar y continuar</p>
           {OBJECTIVES.map(obj => {
-            const active = p.objective === obj.val;
+            const isSelected = p.objectives.includes(obj.val);
+            const toggleObjective = () => {
+              const newObjectives = isSelected 
+                ? p.objectives.filter((o: string) => o !== obj.val)
+                : [...p.objectives, obj.val];
+              setPerson(profile, { objectives: newObjectives });
+            };
             return (
               <button key={obj.val}
-                onClick={() => pick(() => setPerson(profile, { objective: obj.val }))}
+                onClick={toggleObjective}
                 className={`w-full flex items-center gap-4 p-3.5 rounded-2xl border-2 font-semibold text-sm transition-all duration-200 active:scale-[.98] ${
-                  active ? `border-transparent ${tc.light} ${tc.text} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                  isSelected ? `border-transparent ${tc.light} ${tc.text} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                 }`}>
                 <span className="text-xl">{obj.emoji}</span>
                 <span className="flex-1 text-left">{obj.val}</span>
-                {active && <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
+                {isSelected && <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
               </button>
             );
           })}
@@ -398,75 +400,117 @@ export default function NutritionQuestionnaire({
               })}
             </div>
           </div>
+        </div>
+      );
+    }
+
+    /* ── PORTIONS ── */
+    if (type === 'portions') {
+      const foodGroups = [
+        { key: 'frutas', label: 'Frutas', icon: '🍎', color: 'text-rose-500', bg: 'bg-rose-50', ring: 'focus:ring-rose-400' },
+        { key: 'verduras', label: 'Verduras', icon: '🥦', color: 'text-emerald-500', bg: 'bg-emerald-50', ring: 'focus:ring-emerald-400' },
+        { key: 'cereales', label: 'Cereales', icon: '🌾', color: 'text-amber-500', bg: 'bg-amber-50', ring: 'focus:ring-amber-400' },
+        { key: 'proteina', label: 'Proteína', icon: '🥩', color: 'text-red-500', bg: 'bg-red-50', ring: 'focus:ring-red-400' },
+        { key: 'grasas', label: 'Grasas', icon: '🥑', color: 'text-lime-500', bg: 'bg-lime-50', ring: 'focus:ring-lime-400' },
+        { key: 'leche', label: 'Leche', icon: '🥛', color: 'text-blue-500', bg: 'bg-blue-50', ring: 'focus:ring-blue-400' },
+        { key: 'leguminosas', label: 'Leguminosas', icon: '🫘', color: 'text-amber-700', bg: 'bg-amber-100', ring: 'focus:ring-amber-500' },
+      ];
+      const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
+      const mLabels = ['Des', 'C.AM', 'Com', 'C.PM', 'Cen'];
+
+      const updatePortion = (group: string, momento: string, value: string) => {
+        const num = parseInt(value) || 0;
+        setManualPortions(prev => ({
+          ...prev,
+          [group]: { ...prev[group], [momento]: num }
+        }));
+      };
+
+      return (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            💡 Este paso es opcional. Puedes saltar si prefieres que la IA calcule las porciones automáticamente.
+          </p>
+          
           <div>
-            <label className="text-sm font-semibold text-slate-700 block mb-3">Presupuesto alimenticio</label>
-            <div className="grid grid-cols-3 gap-2">
-              {BUDGET_LEVELS.map(bl => {
-                const active = p.budgetLevel === bl.val;
-                return (
-                  <button key={bl.val} onClick={() => setPerson(profile, { budgetLevel: bl.val as any })}
-                    className={`flex flex-col items-center gap-1 py-3 rounded-2xl border-2 transition-all active:scale-[.97] ${
-                      active ? `border-transparent ${tc.light} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50'
-                    }`}>
-                    <span className="text-xl">{bl.emoji}</span>
-                    <span className={`text-[11px] font-bold ${active ? tc.text : 'text-slate-600'}`}>{bl.label}</span>
-                  </button>
-                );
-              })}
+            <label className="text-sm font-semibold text-slate-700 block mb-3">Modo de porciones</label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                ['auto',   '🤖', 'IA decide',  'Calculado automáticamente'],
+                ['manual', '📋', 'Manual',     'Yo defino las cantidades' ],
+              ] as const).map(([val, emoji, title, sub]) => (
+                <button key={val} onClick={() => setPortionMode(val)}
+                  className={`flex flex-col gap-0.5 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[.97] ${
+                    portionMode === val ? 'border-slate-800 bg-slate-800' : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}>
+                  <span className="text-xl">{emoji}</span>
+                  <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-white' : 'text-slate-800'}`}>{title}</span>
+                  <span className={`text-[10px] ${portionMode === val ? 'text-slate-300' : 'text-slate-400'}`}>{sub}</span>
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* Manual portions table */}
+          {portionMode === 'manual' && (
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-slate-700 block">Define tus porciones por momento</label>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {foodGroups.map(group => {
+                  const total = mKeys.reduce((acc, m) => acc + (manualPortions[group.key]?.[m] || 0), 0);
+                  return (
+                    <div key={group.key} className={`${group.bg} rounded-xl p-3 border border-slate-100`}>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className={`font-bold text-slate-700 text-xs flex items-center gap-1.5 ${group.color}`}>
+                          <span className="text-base">{group.icon}</span> 
+                          <span className="truncate">{group.label}</span>
+                        </span>
+                        <span className={`font-black ${group.color} text-lg bg-white shadow-sm px-2 py-0.5 rounded-md min-w-[28px] text-center`}>{total}</span>
+                      </div>
+                      <div className="grid grid-cols-5 gap-1">
+                        {mKeys.map((momento, idx) => {
+                          const val = manualPortions[group.key]?.[momento] || 0;
+                          return (
+                            <div key={momento} className="flex flex-col items-center">
+                              <span className="text-[8px] font-bold uppercase text-slate-400">{mLabels[idx]}</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="10"
+                                value={val}
+                                onChange={(e) => updatePortion(group.key, momento, e.target.value)}
+                                className={`w-full min-w-[28px] px-0.5 py-1 text-center text-sm font-bold bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-2 ${group.ring} focus:border-transparent transition-all`}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
 
     /* ── CONFIG ── */
-    if (type === 'config') return (
-      <div className="space-y-5">
-        <div>
-          <label className="text-sm font-semibold text-slate-700 block mb-2.5">Porciones</label>
-          <div className="grid grid-cols-2 gap-2">
-            {([
-              ['auto',   '🤖', 'IA decide',  'Calculado automáticamente'],
-              ['manual', '📋', 'Manual',     'Yo defino las cantidades' ],
-            ] as const).map(([val, emoji, title, sub]) => (
-              <button key={val} onClick={() => setPortionMode(val)}
-                className={`flex flex-col gap-0.5 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[.97] ${
-                  portionMode === val ? 'border-slate-800 bg-slate-800' : 'border-slate-200 bg-white hover:bg-slate-50'
-                }`}>
-                <span className="text-xl">{emoji}</span>
-                <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-white' : 'text-slate-800'}`}>{title}</span>
-                <span className={`text-[10px] ${portionMode === val ? 'text-slate-300' : 'text-slate-400'}`}>{sub}</span>
-              </button>
-            ))}
+    if (type === 'config') {
+      return (
+        <div className="space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">
+              Notas adicionales <span className="text-[11px] text-slate-400 font-normal">(opcional)</span>
+            </label>
+            <textarea rows={3} placeholder="Preferencias de preparación, contexto especial, alimentos que no te gustan..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} />
           </div>
         </div>
-        <div>
-          <label className="text-sm font-semibold text-slate-700 block mb-2.5">Modelo de Gemini</label>
-          <div className="grid grid-cols-2 gap-2">
-            {GEMINI_MODELS.map(m => {
-              const active = localModel === m.value;
-              return (
-                <button key={m.value} onClick={() => { setLocalModel(m.value); setGeminiModel?.(m.value); }}
-                  className={`flex flex-col gap-1 p-3 rounded-xl border-2 text-left transition-all active:scale-[.97] ${
-                    active ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                  }`}>
-                  <span className={`text-[11px] font-bold leading-tight ${active ? 'text-indigo-700' : 'text-slate-700'}`}>{m.label}</span>
-                  <span className={`text-[9px] font-semibold ${active ? 'text-indigo-500' : 'text-slate-400'}`}>{m.badge}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-semibold text-slate-700">
-            Notas adicionales <span className="text-[11px] text-slate-400 font-normal">(opcional)</span>
-          </label>
-          <textarea rows={2} placeholder="Preferencias de preparación, contexto especial..."
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
-            value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} />
-        </div>
-      </div>
-    );
+      );
+    }
 
     /* ── CONFIRM ── */
     if (type === 'confirm') {
@@ -485,7 +529,7 @@ export default function NutritionQuestionnaire({
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
                   <span>Peso: <strong>{data.currentWeightKg} kg</strong></span>
                   <span>Estatura: <strong>{data.heightCm} cm</strong></span>
-                  <span className="col-span-2">Objetivo: <strong>{data.objective}</strong></span>
+                  <span className="col-span-2">Objetivos: <strong>{data.objectives.join(', ') || 'Ninguno'}</strong></span>
                   <span className="col-span-2">Actividad: <strong>{data.activityLevel}</strong></span>
                   {data.diagnostics && <span className="col-span-2 text-slate-400 truncate">Salud: {data.diagnostics}</span>}
                 </div>
@@ -495,6 +539,27 @@ export default function NutritionQuestionnaire({
           {errorMessage && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 leading-relaxed">
               {errorMessage}
+            </div>
+          )}
+          
+          {/* Selección de modelo Gemini cuando hay error para reintentar */}
+          {errorMessage && (
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 block">Cambiar modelo de Gemini (opcional)</label>
+              <div className="grid grid-cols-2 gap-2">
+                {GEMINI_MODELS.map(m => {
+                  const active = localModel === m.value;
+                  return (
+                    <button key={m.value} onClick={() => { setLocalModel(m.value); setGeminiModel?.(m.value); }}
+                      className={`flex flex-col gap-1 p-3 rounded-xl border-2 text-left transition-all active:scale-[.97] ${
+                        active ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      }`}>
+                      <span className={`text-[11px] font-bold leading-tight ${active ? 'text-indigo-700' : 'text-slate-700'}`}>{m.label}</span>
+                      <span className={`text-[9px] font-semibold ${active ? 'text-indigo-500' : 'text-slate-400'}`}>{m.badge}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
           
@@ -508,13 +573,45 @@ export default function NutritionQuestionnaire({
             </button>
           )}
           
-          <button onClick={handleGenerate} disabled={loading}
-            className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] ${
-              loading ? 'bg-slate-800 opacity-70 cursor-not-allowed' : 'bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-800 hover:to-slate-600'
-            } text-white`}>
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-amber-300" />}
-            {loading ? 'Generando plan...' : '✨ Generar Plan con IA'}
-          </button>
+          {/* Animación de carga con reloj de arena */}
+          {loading && (
+            <div className="py-8 flex flex-col items-center justify-center space-y-4">
+              <div className="relative">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  className="w-20 h-20 rounded-full border-4 border-slate-200 border-t-indigo-500 border-r-indigo-500"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Hourglass className="w-8 h-8 text-indigo-600" />
+                </div>
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-sm font-bold text-slate-700">La IA está creando tu plan</p>
+                <p className="text-xs text-slate-500">Esto puede tomar 30-60 segundos...</p>
+              </div>
+              <div className="flex gap-1">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
+                    className="w-2 h-2 rounded-full bg-indigo-500"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {!loading && (
+            <button onClick={handleGenerate} disabled={loading}
+              className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] ${
+                loading ? 'bg-slate-800 opacity-70 cursor-not-allowed' : 'bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-800 hover:to-slate-600'
+              } text-white`}>
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-amber-300" />}
+              {loading ? 'Generando plan...' : '✨ Generar Plan con IA'}
+            </button>
+          )}
           <p className="text-[10px] text-slate-400 text-center leading-relaxed">
             Las recomendaciones de IA no sustituyen valoración profesional.
           </p>
@@ -528,9 +625,9 @@ export default function NutritionQuestionnaire({
   // ── Navigation buttons ────────────────────────────────────────────────────
   const { type } = currentStep;
   const showBack    = stepIdx > 0;
-  const showNext    = type !== 'who' && type !== 'objetivo' && type !== 'confirm';
+  const showNext    = type !== 'who' && type !== 'confirm';
   const isLastNav   = type === 'config';
-  const isOptional  = type === 'salud';
+  const isOptional  = type === 'salud' || type === 'portions';
 
   const { label: stepLabel, Icon: StepIcon } = STEP_META[type];
   const profileSuffix = currentStep.profile === 'vo' ? ' · V(o)' : currentStep.profile === 'va' ? ' · V(a)' : '';
