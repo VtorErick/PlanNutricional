@@ -677,7 +677,7 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-                <div className="relative">
+                <div className="relative mb-3">
                   <input
                     type="password"
                     id="admin-api-key"
@@ -690,9 +690,35 @@ export default function App() {
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-bold">✓</span>
                   )}
                 </div>
-                {geminiApiKey && (
-                  <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">✅ API Key configurada</p>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (geminiApiKey) {
+                        // Guardar la nueva API key
+                        localStorage.setItem('geminiApiKey', geminiApiKey);
+                        alert('✅ API Key guardada exitosamente');
+                      } else {
+                        // Cargar la predeterminada del .env
+                        const envKey = (import.meta as any).env?.GEMINI_API_KEY || '';
+                        localStorage.setItem('geminiApiKey', envKey);
+                        setGeminiApiKey(envKey);
+                        if (envKey) {
+                          alert('✅ API Key predeterminada cargada desde configuración');
+                        } else {
+                          alert('🗑️ API Key eliminada (no hay predeterminada en .env)');
+                        }
+                      }
+                    }}
+                    className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98] shadow-md"
+                  >
+                    {geminiApiKey ? '💾 Guardar API Key' : '🔄 Cargar predeterminada'}
+                  </button>
+                  {geminiApiKey && (
+                    <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 bg-emerald-50 px-3 py-2 rounded-lg">
+                      ✅ Configurada
+                    </span>
+                  )}
+                </div>
               </section>
 
               {/* Model Select */}
@@ -709,8 +735,9 @@ export default function App() {
                 <p className="text-xs font-bold text-slate-600 mb-2">Selecciona tu modelo preferido (ya hay uno preseleccionado):</p>
                 <div className="grid gap-2">
                   {[
-                    { val: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: '⚡ Recomendado', desc: 'Velocidad óptima y calidad alta', badgeColor: 'bg-emerald-100 text-emerald-700' },
-                    { val: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito', desc: 'Ideal para cuentas sin cuota pagada', badgeColor: 'bg-blue-100 text-blue-700' },
+                    { val: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', badge: '⚡ Más reciente', desc: 'Versión más nueva y rápida de 2.5', badgeColor: 'bg-emerald-100 text-emerald-700' },
+                    { val: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: 'Recomendado', desc: 'Velocidad óptima y calidad alta', badgeColor: 'bg-blue-100 text-blue-700' },
+                    { val: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito', desc: 'Ideal para cuentas sin cuota pagada', badgeColor: 'bg-slate-100 text-slate-700' },
                     { val: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', badge: '🧠 Pro', desc: 'Razonamiento complejo, más lento', badgeColor: 'bg-violet-100 text-violet-700' },
                     { val: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', badge: '🚀 Máx. potencia', desc: 'El modelo más avanzado disponible', badgeColor: 'bg-amber-100 text-amber-700' },
                   ].map(m => (
