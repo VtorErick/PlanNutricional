@@ -10,6 +10,7 @@ Una aplicación web moderna y responsiva para gestionar planes de nutrición per
 - **Seguimiento de Progreso**: Visualiza tu avance diario en tiempo real
 - **Equivalencias Inteligentes**: Consulta porciones y equivalencias de alimentos
 - **Interfaz Moderna**: Animaciones suaves, gradientes, y diseño 2026
+- **Generación con IA mediante cuestionario**: Crea JSON VO/VA automáticamente con Gemini
 - **Completamente Responsiva**: Funciona perfecto en móvil, tablet y desktop
 
 ## 🚀 Quick Start
@@ -105,3 +106,11 @@ La plataforma permite personalización flexible sin requerir conocimientos de c�
 ---
 
 **Hecho con ❤️ - Nutrición Inteligente 2026**
+
+
+## 🤖 Variables de entorno (Vercel)
+
+Agrega estas variables en tu proyecto de Vercel:
+
+- `GEMINI_API_KEY` (obligatoria)
+- `GEMINI_MODEL` (opcional, por defecto `gemini-1.5-flash`)
