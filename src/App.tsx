@@ -23,7 +23,7 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 
 1. perfil${prefix}: {
     id: "${lowerPrefix}",
-    nombre: "${prefix === 'VO' ? 'V(o)' : 'V(a)'}",
+    nombre: "${prefix === 'VO' ? 'El' : 'Ella'}",
     perfil: string (edad, peso, altura, IMC),
     meta: string,
     descripcion: string,
@@ -61,7 +61,7 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 3. plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
 
 REGLAS CRÍTICAS:
-- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'V(o)' : 'V(a)'}" - NO usar otros nombres
+- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'El' : 'Ella'}" - NO usar otros nombres
 - OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, leche, proteina, grasas
 - OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
 - OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados
@@ -825,7 +825,7 @@ export default function App() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AdminPanel
                   perfilId="vo"
-                  title="Datos V(o)"
+                  title="Datos El"
                   themeColor="blue"
                   rawDataText={rawData.vo}
                   customData={customData}
@@ -836,7 +836,7 @@ export default function App() {
                 />
                 <AdminPanel
                   perfilId="va"
-                  title="Datos V(a)"
+                  title="Datos Ella"
                   themeColor="rose"
                   rawDataText={rawData.va}
                   customData={customData}
@@ -946,9 +946,9 @@ export default function App() {
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl" />
               <div className="relative">
                 <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-5">
-                  <span className="text-2xl font-bold text-white">V(o)</span>
+                  <span className="text-2xl font-bold text-white">El</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Perfil V(o)</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">Perfil El</h2>
                 <p className="text-blue-100 text-sm mb-4 leading-relaxed">{perfilesData.vo.perfil}</p>
                 <div className="flex items-center gap-2 text-blue-200 text-sm">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
@@ -969,9 +969,9 @@ export default function App() {
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-400/20 rounded-full blur-2xl" />
               <div className="relative">
                 <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-5">
-                  <span className="text-2xl font-bold text-white">V(a)</span>
+                  <span className="text-2xl font-bold text-white">Ella</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Perfil V(a)</h2>
+                <h2 className="text-2xl font-bold text-white mb-2">Perfil Ella</h2>
                 <p className="text-rose-100 text-sm mb-4 leading-relaxed">{perfilesData.va.perfil}</p>
                 <div className="flex items-center gap-2 text-rose-200 text-sm">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
@@ -1079,7 +1079,7 @@ export default function App() {
                 Plan de {isAmbos ? 'Ambos' : perfil.nombre}
               </h1>
               <p className="text-[11px] text-slate-500 truncate hidden sm:block">
-                {isAmbos ? 'Vista combinada de V(o) y V(a)' : perfil.perfil}
+                {isAmbos ? 'Vista combinada de El y Ella' : perfil.perfil}
               </p>
             </div>
           </div>
