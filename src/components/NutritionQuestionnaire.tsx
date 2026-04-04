@@ -1,6 +1,12 @@
-import { useMemo, useState } from 'react';
-import { Brain, Loader2, Plus, Trash2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Sparkles, Loader2, ChevronRight, ChevronLeft,
+  CheckCircle2, User, Scale, Target, Shield, Activity, Settings2, SkipForward, Download
+} from 'lucide-react';
+import { downloadJsonFile } from '../dataManager';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 export type TargetProfile = 'vo' | 'va' | 'ambos';
 export type PortionMode = 'manual' | 'auto';
 
@@ -8,39 +14,19 @@ export interface QuestionnairePayload {
   targetProfile: TargetProfile;
   profileToUpdate: TargetProfile;
   portionMode: PortionMode;
-  profileContext: {
-    currentWeightKg: string;
-    heightCm: string;
-    targetWeightKg: string;
-    objective: string;
-    objectiveTimelineWeeks: string;
-  };
-  healthContext: {
-    diagnostics: string;
-    medications: string;
-    allergies: string;
-    intolerances: string;
-    digestiveSymptoms: string;
-  };
-  preferences: {
-    favoriteFoods: string;
-    dislikedFoods: string;
-    favoriteCuisineStyles: string;
-    budgetLevel: 'bajo' | 'medio' | 'alto';
-    cookingTime: string;
-  };
-  routine: {
-    wakeTime: string;
-    sleepTime: string;
-    activityLevel: string;
-    trainingFrequency: string;
-  };
   planConfig: {
     mealsPerDay: string;
     selectedMoments: { key: string; label: string; hora: string }[];
-    manualPortionInstructions: string;
+    manualPortions: Record<string, Record<string, number>>;
     additionalNotes: string;
   };
+  vo?: any;
+  va?: any;
+  profileContext?: any;
+  healthContext?: any;
+  preferences?: any;
+  routine?: any;
+  preferredModel?: string;
 }
 
 interface Props {
@@ -48,210 +34,584 @@ interface Props {
   onGenerate: (payload: QuestionnairePayload) => Promise<void>;
   loading: boolean;
   errorMessage?: string;
+  geminiModel?: string;
+  setGeminiModel?: (m: string) => void;
+  lastGeneratedData?: any; // Datos generados para descarga
 }
 
-const defaultMoments = [
-  { key: 'desayuno', label: 'Desayuno', hora: '08:00' },
-  { key: 'colacion_am', label: 'Colación AM', hora: '11:00' },
-  { key: 'comida', label: 'Comida', hora: '14:00' },
-  { key: 'colacion_pm', label: 'Colación PM', hora: '17:00' },
-  { key: 'cena', label: 'Cena', hora: '20:00' },
+// ─── Constants ────────────────────────────────────────────────────────────────
+const OBJECTIVES = [
+  { val: 'Perder grasa',       emoji: '🔥' },
+  { val: 'Ganar músculo',      emoji: '💪' },
+  { val: 'Mantener peso',      emoji: '⚖️' },
+  { val: 'Mejorar salud',      emoji: '❤️' },
+  { val: 'Control glucémico',  emoji: '🩺' },
 ];
 
-export default function NutritionQuestionnaire({ onCancel, onGenerate, loading, errorMessage }: Props) {
+const ACTIVITY_LEVELS = [
+  { val: 'Sedentario', emoji: '🪑', desc: 'Sin ejercicio' },
+  { val: 'Ligero',     emoji: '🚶', desc: '1-2 días/sem' },
+  { val: 'Moderado',   emoji: '🏃', desc: '3-4 días/sem' },
+  { val: 'Intenso',    emoji: '⚡', desc: '5+ días/sem' },
+];
+
+const BUDGET_LEVELS = [
+  { val: 'bajo',  emoji: '💸', label: 'Económico'  },
+  { val: 'medio', emoji: '🛒', label: 'Moderado'   },
+  { val: 'alto',  emoji: '✨', label: 'Sin límite'  },
+];
+
+const GEMINI_MODELS = [
+  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: '⚡ Recomendado'  },
+  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito'    },
+  { value: 'gemini-1.5-pro',   label: 'Gemini 1.5 Pro',   badge: '🧠 Pro'          },
+  { value: 'gemini-2.5-pro',   label: 'Gemini 2.5 Pro',   badge: '🚀 Máximo'       },
+];
+
+const DEFAULT_MOMENTS = [
+  { key: 'desayuno',    label: 'Desayuno',     hora: '08:00' },
+  { key: 'colacion_am', label: 'Colación AM',  hora: '11:00' },
+  { key: 'comida',      label: 'Comida',       hora: '14:00' },
+  { key: 'colacion_pm', label: 'Colación PM',  hora: '17:00' },
+  { key: 'cena',        label: 'Cena',         hora: '20:00' },
+];
+
+// ─── Person data ──────────────────────────────────────────────────────────────
+const emptyPerson = () => ({
+  currentWeightKg: '70',
+  heightCm: '165',
+  targetWeightKg: '',
+  objective: '',
+  objectiveTimeline: '12 sem',
+  diagnostics: '',
+  allergies: '',
+  favoriteFoods: '',
+  dislikedFoods: '',
+  activityLevel: 'Moderado',
+  budgetLevel: 'medio' as 'bajo' | 'medio' | 'alto',
+});
+type Person = ReturnType<typeof emptyPerson>;
+
+// ─── Wizard steps ─────────────────────────────────────────────────────────────
+type StepType = 'who' | 'fisica' | 'objetivo' | 'salud' | 'lifestyle' | 'config' | 'confirm';
+
+interface WizardStep {
+  type: StepType;
+  profile?: 'vo' | 'va';
+}
+
+function buildSteps(tp: TargetProfile): WizardStep[] {
+  const personSteps = (p: 'vo' | 'va'): WizardStep[] => [
+    { type: 'fisica',    profile: p },
+    { type: 'objetivo',  profile: p },
+    { type: 'salud',     profile: p },
+    { type: 'lifestyle', profile: p },
+  ];
+  const steps: WizardStep[] = [{ type: 'who' }];
+  if (tp === 'ambos') {
+    steps.push(...personSteps('vo'), ...personSteps('va'));
+  } else {
+    steps.push(...personSteps(tp));
+  }
+  steps.push({ type: 'config' }, { type: 'confirm' });
+  return steps;
+}
+
+// ─── Slide variants ───────────────────────────────────────────────────────────
+const slideVariants = {
+  enter:  (d: number) => ({ x: d > 0 ? 48 : -48, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit:   (d: number) => ({ x: d > 0 ? -48 : 48, opacity: 0 }),
+};
+
+// ─── Compact slider ───────────────────────────────────────────────────────────
+function NumSlider({ label, unit, value, min, max, step = 1, onChange, required, accent }: {
+  label: string; unit: string; value: string; min: number; max: number;
+  step?: number; onChange: (v: string) => void; required?: boolean; accent: string;
+}) {
+  const num = parseFloat(value) || min;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end justify-between">
+        <label className="text-sm font-semibold text-slate-600">
+          {label}{required && <span className="text-rose-400 ml-1 font-bold">*</span>}
+        </label>
+        <div className="flex items-baseline gap-1">
+          <input
+            type="number" min={min} max={max} step={step}
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            className="w-16 text-right text-2xl font-black text-slate-900 bg-transparent border-none outline-none tabular-nums"
+          />
+          <span className="text-sm text-slate-400 font-medium pb-0.5">{unit}</span>
+        </div>
+      </div>
+      <input
+        type="range" min={min} max={max} step={step}
+        value={num}
+        onChange={e => onChange(e.target.value)}
+        className="w-full h-2.5 rounded-full cursor-pointer appearance-none bg-slate-100"
+        style={{ accentColor: accent }}
+      />
+      <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+        <span>{min} {unit}</span><span>{max} {unit}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Theme by profile ─────────────────────────────────────────────────────────
+const THEME = {
+  vo:    { accent: '#3b82f6', light: 'bg-blue-50',    text: 'text-blue-600',   border: 'border-blue-200',   grad: 'from-blue-500 to-indigo-600'   },
+  va:    { accent: '#f43f5e', light: 'bg-rose-50',    text: 'text-rose-600',   border: 'border-rose-200',   grad: 'from-rose-500 to-pink-600'     },
+  ambos: { accent: '#10b981', light: 'bg-emerald-50', text: 'text-emerald-600',border: 'border-emerald-200',grad: 'from-emerald-500 to-teal-600'  },
+};
+
+const STEP_META: Record<StepType, { label: string; Icon: any }> = {
+  who:       { label: '¿Para quién?',    Icon: User      },
+  fisica:    { label: 'Medidas',          Icon: Scale     },
+  objetivo:  { label: 'Objetivo',         Icon: Target    },
+  salud:     { label: 'Salud',            Icon: Shield    },
+  lifestyle: { label: 'Estilo de vida',   Icon: Activity  },
+  config:    { label: 'Configuración',    Icon: Settings2 },
+  confirm:   { label: 'Confirmar',        Icon: Sparkles  },
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function NutritionQuestionnaire({
+  onCancel, onGenerate, loading, errorMessage, geminiModel, setGeminiModel, lastGeneratedData
+}: Props) {
   const [targetProfile, setTargetProfile] = useState<TargetProfile>('ambos');
+  const [stepIdx, setStepIdx]   = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [vo, setVo] = useState<Person>(emptyPerson());
+  const [va, setVa] = useState<Person>(emptyPerson());
   const [portionMode, setPortionMode] = useState<PortionMode>('auto');
+  const [additionalNotes, setAdditionalNotes] = useState('');
+  const [localModel, setLocalModel] = useState(geminiModel || 'gemini-2.0-flash');
 
-  const [selectedMoments, setSelectedMoments] = useState(defaultMoments);
+  useEffect(() => { if (geminiModel) setLocalModel(geminiModel); }, [geminiModel]);
 
-  const [profileContext, setProfileContext] = useState({
-    currentWeightKg: '',
-    heightCm: '',
-    targetWeightKg: '',
-    objective: '',
-    objectiveTimelineWeeks: '',
-  });
+  const steps = useMemo(() => buildSteps(targetProfile), [targetProfile]);
+  const currentStep = steps[stepIdx] ?? steps[0];
+  const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
 
-  const [healthContext, setHealthContext] = useState({
-    diagnostics: '',
-    medications: '',
-    allergies: '',
-    intolerances: '',
-    digestiveSymptoms: '',
-  });
+  const tc = THEME[currentStep.profile ?? targetProfile];
 
-  const [preferences, setPreferences] = useState({
-    favoriteFoods: '',
-    dislikedFoods: '',
-    favoriteCuisineStyles: '',
-    budgetLevel: 'medio' as 'bajo' | 'medio' | 'alto',
-    cookingTime: '',
-  });
-
-  const [routine, setRoutine] = useState({
-    wakeTime: '',
-    sleepTime: '',
-    activityLevel: '',
-    trainingFrequency: '',
-  });
-
-  const [planConfig, setPlanConfig] = useState({
-    mealsPerDay: '5',
-    manualPortionInstructions: '',
-    additionalNotes: '',
-  });
-
-  const isInvalid = useMemo(() => {
-    return !profileContext.currentWeightKg || !profileContext.heightCm || !profileContext.objective || selectedMoments.length === 0;
-  }, [profileContext, selectedMoments]);
-
-  const updateMoment = (idx: number, field: 'key' | 'label' | 'hora', value: string) => {
-    setSelectedMoments((prev) => prev.map((m, i) => (i === idx ? { ...m, [field]: value } : m)));
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const person  = (p: 'vo' | 'va') => p === 'vo' ? vo : va;
+  const setPerson = (p: 'vo' | 'va', u: Partial<Person>) => {
+    if (p === 'vo') setVo(prev => ({ ...prev, ...u }));
+    else            setVa(prev => ({ ...prev, ...u }));
   };
 
-  const addMoment = () => {
-    setSelectedMoments((prev) => [...prev, { key: `momento_${prev.length + 1}`, label: `Momento ${prev.length + 1}`, hora: '12:00' }]);
+  const advance = () => {
+    if (stepIdx < steps.length - 1) { setDirection(1); setStepIdx(i => i + 1); }
+  };
+  const goBack = () => {
+    if (stepIdx > 0) { setDirection(-1); setStepIdx(i => i - 1); }
   };
 
-  const removeMoment = (idx: number) => {
-    setSelectedMoments((prev) => prev.filter((_, i) => i !== idx));
+  /** Tap a card → set state → auto-advance */
+  const pick = (setFn: () => void, delay = 220) => {
+    setFn();
+    setTimeout(() => { setDirection(1); setStepIdx(i => Math.min(i + 1, steps.length - 1)); }, delay);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isInvalid || loading) return;
+  const selectProfile = (p: TargetProfile) => {
+    setTargetProfile(p);
+    setDirection(1);
+    setTimeout(() => setStepIdx(1), 260);
+  };
 
-    await onGenerate({
+  const canContinue = () => {
+    const { type, profile } = currentStep;
+    if (type === 'fisica'   && profile) return !!person(profile).currentWeightKg && !!person(profile).heightCm;
+    if (type === 'objetivo' && profile) return !!person(profile).objective;
+    return true;
+  };
+
+  // ── Submit ───────────────────────────────────────────────────────────────
+  const handleGenerate = async () => {
+    const buildPP = (p: Person) => ({
+      profileContext: {
+        currentWeightKg: p.currentWeightKg, heightCm: p.heightCm,
+        targetWeightKg: p.targetWeightKg, objective: p.objective,
+        objectiveTimelineWeeks: p.objectiveTimeline,
+      },
+      healthContext:  { diagnostics: p.diagnostics, allergies: p.allergies, medications: '', intolerances: '', digestiveSymptoms: '' },
+      preferences:   { favoriteFoods: p.favoriteFoods, dislikedFoods: p.dislikedFoods, budgetLevel: p.budgetLevel, favoriteCuisineStyles: '', cookingTime: '' },
+      routine:       { activityLevel: p.activityLevel, wakeTime: '', sleepTime: '', trainingFrequency: '' },
+    });
+
+    const base = {
       targetProfile,
       profileToUpdate: targetProfile,
       portionMode,
-      profileContext,
-      healthContext,
-      preferences,
-      routine,
-      planConfig: {
-        mealsPerDay: planConfig.mealsPerDay,
-        selectedMoments,
-        manualPortionInstructions: planConfig.manualPortionInstructions,
-        additionalNotes: planConfig.additionalNotes,
-      },
-    });
+      preferredModel: localModel,
+      planConfig: { mealsPerDay: DEFAULT_MOMENTS.length.toString(), selectedMoments: DEFAULT_MOMENTS, manualPortions: {}, additionalNotes },
+    };
+
+    if (targetProfile === 'ambos') {
+      await onGenerate({ ...base, vo: buildPP(vo), va: buildPP(va) });
+    } else {
+      const p = targetProfile === 'vo' ? vo : va;
+      await onGenerate({ ...base, ...buildPP(p) });
+    }
   };
 
-  return (
-    <div className="mt-6 rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-5 md:p-6 shadow-sm">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div>
-          <h3 className="text-lg md:text-xl font-bold text-emerald-900">Cuestionario profesional para generar plan con IA</h3>
-          <p className="text-sm text-emerald-700">Diseñado para crear JSON completo compatible con VO/VA y equivalencias.</p>
+  // ── Step content ─────────────────────────────────────────────────────────
+  const renderStep = () => {
+    const { type, profile } = currentStep;
+
+    /* ── WHO ── */
+    if (type === 'who') return (
+      <div className="space-y-2.5">
+        <p className="text-center text-slate-500 text-sm mb-4">Selecciona para quién generas el plan</p>
+        {([
+          ['vo',    '👨', 'Perfil V(o)',     'Plan individual masculino'],
+          ['va',    '👩', 'Perfil V(a)',     'Plan individual femenino' ],
+          ['ambos', '👫', 'Ambos Perfiles', 'Plan completo para los dos'],
+        ] as const).map(([val, emoji, title, sub]) => {
+          const t = THEME[val];
+          const active = targetProfile === val;
+          return (
+            <button key={val} onClick={() => selectProfile(val)}
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 font-semibold text-left transition-all duration-200 active:scale-[.98] ${
+                active ? `${t.border} ${t.light} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}>
+              <span className="text-2xl">{emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-slate-800'}`}>{title}</p>
+                <p className={`text-[11px] mt-0.5 ${active ? t.text + ' opacity-70' : 'text-slate-400'}`}>{sub}</p>
+              </div>
+              {active && <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${t.text}`} />}
+            </button>
+          );
+        })}
+      </div>
+    );
+
+    /* ── FÍSICA ── */
+    if (type === 'fisica' && profile) {
+      const p = person(profile);
+      return (
+        <div className="space-y-7">
+          <NumSlider label="Peso actual" unit="kg" min={30} max={200} step={0.5} required
+            value={p.currentWeightKg} onChange={v => setPerson(profile, { currentWeightKg: v })} accent={tc.accent} />
+          <NumSlider label="Estatura" unit="cm" min={130} max={220} required
+            value={p.heightCm} onChange={v => setPerson(profile, { heightCm: v })} accent={tc.accent} />
+          <div className="flex items-center gap-3 pt-1">
+            <label className="text-sm font-semibold text-slate-600 shrink-0">
+              Peso meta <span className="text-[11px] text-slate-400 font-normal">(opcional)</span>
+            </label>
+            <input type="number" min={30} max={200} step={0.5} placeholder="ej. 63"
+              className="w-20 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-1 focus:ring-slate-300"
+              value={p.targetWeightKg}
+              onChange={e => setPerson(profile, { targetWeightKg: e.target.value })} />
+            <span className="text-xs text-slate-400">kg</span>
+          </div>
         </div>
-        <button type="button" onClick={onCancel} className="text-sm px-3 py-1.5 rounded-lg bg-white border border-emerald-200 text-emerald-700">
+      );
+    }
+
+    /* ── OBJETIVO ── */
+    if (type === 'objetivo' && profile) {
+      const p = person(profile);
+      return (
+        <div className="space-y-2">
+          <p className="text-center text-slate-500 text-sm mb-3">Toca para seleccionar y continuar</p>
+          {OBJECTIVES.map(obj => {
+            const active = p.objective === obj.val;
+            return (
+              <button key={obj.val}
+                onClick={() => pick(() => setPerson(profile, { objective: obj.val }))}
+                className={`w-full flex items-center gap-4 p-3.5 rounded-2xl border-2 font-semibold text-sm transition-all duration-200 active:scale-[.98] ${
+                  active ? `border-transparent ${tc.light} ${tc.text} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                }`}>
+                <span className="text-xl">{obj.emoji}</span>
+                <span className="flex-1 text-left">{obj.val}</span>
+                {active && <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+
+    /* ── SALUD ── */
+    if (type === 'salud' && profile) {
+      const p = person(profile);
+      return (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            💡 Esta sección es opcional. Puedes saltar si no aplica.
+          </p>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">Condiciones médicas</label>
+            <textarea rows={2} placeholder="Diabetes, hipertensión, hipotiroidismo..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              value={p.diagnostics} onChange={e => setPerson(profile, { diagnostics: e.target.value })} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-slate-700">Alergias e intolerancias</label>
+            <input placeholder="Lactosa, gluten, maní..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              value={p.allergies} onChange={e => setPerson(profile, { allergies: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500">Favoritos</label>
+              <input placeholder="Pollo, arroz..." className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
+                value={p.favoriteFoods} onChange={e => setPerson(profile, { favoriteFoods: e.target.value })} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-500">Jamás incluir</label>
+              <input placeholder="Hígado, brócoli..." className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
+                value={p.dislikedFoods} onChange={e => setPerson(profile, { dislikedFoods: e.target.value })} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── LIFESTYLE ── */
+    if (type === 'lifestyle' && profile) {
+      const p = person(profile);
+      return (
+        <div className="space-y-5">
+          <div>
+            <label className="text-sm font-semibold text-slate-700 block mb-3">Actividad física</label>
+            <div className="grid grid-cols-2 gap-2">
+              {ACTIVITY_LEVELS.map(al => {
+                const active = p.activityLevel === al.val;
+                return (
+                  <button key={al.val} onClick={() => setPerson(profile, { activityLevel: al.val })}
+                    className={`flex flex-col items-start gap-0.5 p-3 rounded-2xl border-2 transition-all active:scale-[.97] ${
+                      active ? `border-transparent ${tc.light} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}>
+                    <span className="text-xl mb-0.5">{al.emoji}</span>
+                    <span className={`text-xs font-bold leading-tight ${active ? tc.text : 'text-slate-700'}`}>{al.val}</span>
+                    <span className={`text-[10px] leading-tight ${active ? tc.text + ' opacity-60' : 'text-slate-400'}`}>{al.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-slate-700 block mb-3">Presupuesto alimenticio</label>
+            <div className="grid grid-cols-3 gap-2">
+              {BUDGET_LEVELS.map(bl => {
+                const active = p.budgetLevel === bl.val;
+                return (
+                  <button key={bl.val} onClick={() => setPerson(profile, { budgetLevel: bl.val as any })}
+                    className={`flex flex-col items-center gap-1 py-3 rounded-2xl border-2 transition-all active:scale-[.97] ${
+                      active ? `border-transparent ${tc.light} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}>
+                    <span className="text-xl">{bl.emoji}</span>
+                    <span className={`text-[11px] font-bold ${active ? tc.text : 'text-slate-600'}`}>{bl.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ── CONFIG ── */
+    if (type === 'config') return (
+      <div className="space-y-5">
+        <div>
+          <label className="text-sm font-semibold text-slate-700 block mb-2.5">Porciones</label>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              ['auto',   '🤖', 'IA decide',  'Calculado automáticamente'],
+              ['manual', '📋', 'Manual',     'Yo defino las cantidades' ],
+            ] as const).map(([val, emoji, title, sub]) => (
+              <button key={val} onClick={() => setPortionMode(val)}
+                className={`flex flex-col gap-0.5 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[.97] ${
+                  portionMode === val ? 'border-slate-800 bg-slate-800' : 'border-slate-200 bg-white hover:bg-slate-50'
+                }`}>
+                <span className="text-xl">{emoji}</span>
+                <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-white' : 'text-slate-800'}`}>{title}</span>
+                <span className={`text-[10px] ${portionMode === val ? 'text-slate-300' : 'text-slate-400'}`}>{sub}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-sm font-semibold text-slate-700 block mb-2.5">Modelo de Gemini</label>
+          <div className="grid grid-cols-2 gap-2">
+            {GEMINI_MODELS.map(m => {
+              const active = localModel === m.value;
+              return (
+                <button key={m.value} onClick={() => { setLocalModel(m.value); setGeminiModel?.(m.value); }}
+                  className={`flex flex-col gap-1 p-3 rounded-xl border-2 text-left transition-all active:scale-[.97] ${
+                    active ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                  }`}>
+                  <span className={`text-[11px] font-bold leading-tight ${active ? 'text-indigo-700' : 'text-slate-700'}`}>{m.label}</span>
+                  <span className={`text-[9px] font-semibold ${active ? 'text-indigo-500' : 'text-slate-400'}`}>{m.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-slate-700">
+            Notas adicionales <span className="text-[11px] text-slate-400 font-normal">(opcional)</span>
+          </label>
+          <textarea rows={2} placeholder="Preferencias de preparación, contexto especial..."
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+            value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} />
+        </div>
+      </div>
+    );
+
+    /* ── CONFIRM ── */
+    if (type === 'confirm') {
+      const profiles: ('vo' | 'va')[] = targetProfile === 'ambos' ? ['vo', 'va'] : [targetProfile];
+      return (
+        <div className="space-y-3">
+          <p className="text-center text-sm text-slate-500">Revisa y confirma tu plan</p>
+          {profiles.map(p => {
+            const data = person(p);
+            const t = THEME[p];
+            return (
+              <div key={p} className={`p-4 rounded-2xl border ${t.border} ${t.light}`}>
+                <p className={`text-xs font-bold uppercase tracking-wider mb-2.5 ${t.text}`}>
+                  {p === 'vo' ? '👨 Perfil V(o)' : '👩 Perfil V(a)'}
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
+                  <span>Peso: <strong>{data.currentWeightKg} kg</strong></span>
+                  <span>Estatura: <strong>{data.heightCm} cm</strong></span>
+                  <span className="col-span-2">Objetivo: <strong>{data.objective}</strong></span>
+                  <span className="col-span-2">Actividad: <strong>{data.activityLevel}</strong></span>
+                  {data.diagnostics && <span className="col-span-2 text-slate-400 truncate">Salud: {data.diagnostics}</span>}
+                </div>
+              </div>
+            );
+          })}
+          {errorMessage && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 leading-relaxed">
+              {errorMessage}
+            </div>
+          )}
+          
+          {/* Botón descargar JSON si hay datos generados */}
+          {lastGeneratedData && (
+            <button 
+              onClick={() => downloadJsonFile('plan_generado.json', JSON.stringify(lastGeneratedData, null, 2))}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold border-2 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all active:scale-[.98]">
+              <Download className="w-4 h-4" />
+              Descargar JSON generado
+            </button>
+          )}
+          
+          <button onClick={handleGenerate} disabled={loading}
+            className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] ${
+              loading ? 'bg-slate-800 opacity-70 cursor-not-allowed' : 'bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-800 hover:to-slate-600'
+            } text-white`}>
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-amber-300" />}
+            {loading ? 'Generando plan...' : '✨ Generar Plan con IA'}
+          </button>
+          <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+            Las recomendaciones de IA no sustituyen valoración profesional.
+          </p>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // ── Navigation buttons ────────────────────────────────────────────────────
+  const { type } = currentStep;
+  const showBack    = stepIdx > 0;
+  const showNext    = type !== 'who' && type !== 'objetivo' && type !== 'confirm';
+  const isLastNav   = type === 'config';
+  const isOptional  = type === 'salud';
+
+  const { label: stepLabel, Icon: StepIcon } = STEP_META[type];
+  const profileSuffix = currentStep.profile === 'vo' ? ' · V(o)' : currentStep.profile === 'va' ? ' · V(a)' : '';
+
+  return (
+    <div className="mt-4 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      {/* Progress bar */}
+      <div className="h-1 bg-slate-100 flex-shrink-0">
+        <motion.div
+          className={`h-full bg-gradient-to-r ${tc.grad}`}
+          animate={{ width: `${progress * 100}%` }}
+          transition={{ type: 'spring', stiffness: 80, damping: 20 }}
+        />
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={`w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${tc.grad}`}>
+            <StepIcon className="w-4 h-4 text-white" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-slate-800 leading-tight truncate">{stepLabel}{profileSuffix}</p>
+            <p className="text-[10px] text-slate-400">Paso {stepIdx + 1} / {steps.length}</p>
+          </div>
+        </div>
+        <button onClick={onCancel}
+          className="flex-shrink-0 text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition font-medium">
           Cerrar
         </button>
       </div>
 
-      <form className="grid gap-6" onSubmit={handleSubmit}>
-        <section className="bg-white/80 rounded-2xl p-4 border border-emerald-100">
-          <h4 className="font-semibold text-slate-800 mb-3">1) Perfil a modificar</h4>
-          <div className="grid sm:grid-cols-3 gap-2 text-sm">
-            {([
-              ['vo', 'Solo VO'],
-              ['va', 'Solo VA'],
-              ['ambos', 'VO + VA (independiente)'],
-            ] as const).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setTargetProfile(value)}
-                className={`rounded-xl border px-3 py-2 font-semibold transition ${targetProfile === value ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-200'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </section>
+      {/* Slide content */}
+      <div className="flex-1 px-4 py-5 overflow-y-auto" style={{ maxHeight: 'min(420px, 55vh)' }}>
+        <AnimatePresence custom={direction} mode="wait">
+          <motion.div
+            key={stepIdx}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+          >
+            {renderStep()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-        <section className="bg-white/80 rounded-2xl p-4 border border-emerald-100 grid md:grid-cols-2 gap-3">
-          <h4 className="font-semibold text-slate-800 md:col-span-2">2) Antropometría y objetivos</h4>
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Peso actual (kg)*" value={profileContext.currentWeightKg} onChange={(e) => setProfileContext((p) => ({ ...p, currentWeightKg: e.target.value }))} />
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Altura (cm)*" value={profileContext.heightCm} onChange={(e) => setProfileContext((p) => ({ ...p, heightCm: e.target.value }))} />
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Peso objetivo (kg)" value={profileContext.targetWeightKg} onChange={(e) => setProfileContext((p) => ({ ...p, targetWeightKg: e.target.value }))} />
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Horizonte objetivo (semanas)" value={profileContext.objectiveTimelineWeeks} onChange={(e) => setProfileContext((p) => ({ ...p, objectiveTimelineWeeks: e.target.value }))} />
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2" rows={2} placeholder="Objetivo principal (ej. recomposición, pérdida de grasa, salud metabólica)*" value={profileContext.objective} onChange={(e) => setProfileContext((p) => ({ ...p, objective: e.target.value }))} />
-        </section>
-
-        <section className="bg-white/80 rounded-2xl p-4 border border-emerald-100 grid md:grid-cols-2 gap-3">
-          <h4 className="font-semibold text-slate-800 md:col-span-2">3) Salud y restricciones</h4>
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm" rows={2} placeholder="Diagnósticos relevantes" value={healthContext.diagnostics} onChange={(e) => setHealthContext((p) => ({ ...p, diagnostics: e.target.value }))} />
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm" rows={2} placeholder="Medicamentos actuales" value={healthContext.medications} onChange={(e) => setHealthContext((p) => ({ ...p, medications: e.target.value }))} />
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm" rows={2} placeholder="Alergias alimentarias" value={healthContext.allergies} onChange={(e) => setHealthContext((p) => ({ ...p, allergies: e.target.value }))} />
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm" rows={2} placeholder="Intolerancias" value={healthContext.intolerances} onChange={(e) => setHealthContext((p) => ({ ...p, intolerances: e.target.value }))} />
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2" rows={2} placeholder="Síntomas digestivos frecuentes" value={healthContext.digestiveSymptoms} onChange={(e) => setHealthContext((p) => ({ ...p, digestiveSymptoms: e.target.value }))} />
-        </section>
-
-        <section className="bg-white/80 rounded-2xl p-4 border border-emerald-100 grid md:grid-cols-2 gap-3">
-          <h4 className="font-semibold text-slate-800 md:col-span-2">4) Preferencias, aversiones y contexto</h4>
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm" rows={2} placeholder="Comidas que sí quiere en su día" value={preferences.favoriteFoods} onChange={(e) => setPreferences((p) => ({ ...p, favoriteFoods: e.target.value }))} />
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm" rows={2} placeholder="Comidas que no le gustan" value={preferences.dislikedFoods} onChange={(e) => setPreferences((p) => ({ ...p, dislikedFoods: e.target.value }))} />
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Tipos de cocina preferidos" value={preferences.favoriteCuisineStyles} onChange={(e) => setPreferences((p) => ({ ...p, favoriteCuisineStyles: e.target.value }))} />
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Tiempo disponible para cocinar" value={preferences.cookingTime} onChange={(e) => setPreferences((p) => ({ ...p, cookingTime: e.target.value }))} />
-          <select className="rounded-xl border border-slate-200 px-3 py-2 text-sm md:col-span-2" value={preferences.budgetLevel} onChange={(e) => setPreferences((p) => ({ ...p, budgetLevel: e.target.value as 'bajo' | 'medio' | 'alto' }))}>
-            <option value="bajo">Presupuesto bajo</option>
-            <option value="medio">Presupuesto medio</option>
-            <option value="alto">Presupuesto alto</option>
-          </select>
-        </section>
-
-        <section className="bg-white/80 rounded-2xl p-4 border border-emerald-100 grid md:grid-cols-2 gap-3">
-          <h4 className="font-semibold text-slate-800 md:col-span-2">5) Rutina y nivel de actividad</h4>
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Hora de despertar" value={routine.wakeTime} onChange={(e) => setRoutine((p) => ({ ...p, wakeTime: e.target.value }))} />
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Hora de dormir" value={routine.sleepTime} onChange={(e) => setRoutine((p) => ({ ...p, sleepTime: e.target.value }))} />
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Nivel de actividad (sedentario, moderado...)" value={routine.activityLevel} onChange={(e) => setRoutine((p) => ({ ...p, activityLevel: e.target.value }))} />
-          <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="Frecuencia de entrenamiento" value={routine.trainingFrequency} onChange={(e) => setRoutine((p) => ({ ...p, trainingFrequency: e.target.value }))} />
-        </section>
-
-        <section className="bg-white/80 rounded-2xl p-4 border border-emerald-100 grid gap-3">
-          <h4 className="font-semibold text-slate-800">6) Estructura de momentos y porciones</h4>
-
-          <div className="grid md:grid-cols-2 gap-3">
-            <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="¿Cuántas comidas al día desea?" value={planConfig.mealsPerDay} onChange={(e) => setPlanConfig((p) => ({ ...p, mealsPerDay: e.target.value }))} />
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => setPortionMode('auto')} className={`rounded-xl border px-3 py-2 text-sm font-semibold ${portionMode === 'auto' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-200'}`}>Porciones auto</button>
-              <button type="button" onClick={() => setPortionMode('manual')} className={`rounded-xl border px-3 py-2 text-sm font-semibold ${portionMode === 'manual' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-200'}`}>Porciones manual</button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            {selectedMoments.map((moment, idx) => (
-              <div key={`${moment.key}-${idx}`} className="grid md:grid-cols-[1fr_1fr_120px_36px] gap-2 items-center">
-                <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="key (ej. desayuno)" value={moment.key} onChange={(e) => updateMoment(idx, 'key', e.target.value)} />
-                <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="label" value={moment.label} onChange={(e) => updateMoment(idx, 'label', e.target.value)} />
-                <input className="rounded-xl border border-slate-200 px-3 py-2 text-sm" placeholder="hora" value={moment.hora} onChange={(e) => updateMoment(idx, 'hora', e.target.value)} />
-                <button type="button" onClick={() => removeMoment(idx)} className="h-9 w-9 rounded-lg border border-rose-200 text-rose-600 bg-white flex items-center justify-center"><Trash2 className="w-4 h-4" /></button>
-              </div>
-            ))}
-            <button type="button" onClick={addMoment} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700">
-              <Plus className="w-4 h-4" /> Agregar momento
+      {/* Navigation */}
+      {(showBack || showNext) && (
+        <div className="flex items-center gap-2 px-4 pb-4 pt-2 flex-shrink-0 border-t border-slate-100">
+          {showBack && (
+            <button onClick={goBack}
+              className="flex items-center gap-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition active:scale-95 flex-shrink-0">
+              <ChevronLeft className="w-4 h-4" />
+              Atrás
             </button>
-          </div>
-
-          {portionMode === 'manual' && (
-            <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm" rows={3} placeholder="Indica porciones manuales por momento o por grupo alimenticio" value={planConfig.manualPortionInstructions} onChange={(e) => setPlanConfig((p) => ({ ...p, manualPortionInstructions: e.target.value }))} />
           )}
-
-          <textarea className="rounded-xl border border-slate-200 px-3 py-2 text-sm" rows={3} placeholder="Notas adicionales para la IA (adherencia, alimentos locales, reglas familiares, etc.)" value={planConfig.additionalNotes} onChange={(e) => setPlanConfig((p) => ({ ...p, additionalNotes: e.target.value }))} />
-        </section>
-
-        {errorMessage && <p className="text-sm text-rose-600 font-medium">{errorMessage}</p>}
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button disabled={isInvalid || loading} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold px-4 py-2.5 shadow-md">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-            {loading ? 'Generando...' : 'Generar JSON ideal con IA'}
-          </button>
-          <p className="text-xs text-slate-500">Este proceso es informativo y no sustituye evaluación clínica presencial.</p>
+          {showNext && (
+            <>
+              {isOptional && (
+                <button onClick={advance}
+                  className="flex items-center gap-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-400 hover:bg-slate-50 transition active:scale-95">
+                  <SkipForward className="w-3.5 h-3.5" />
+                  Saltar
+                </button>
+              )}
+              <button onClick={advance} disabled={!canContinue()}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[.98] ${
+                  canContinue()
+                    ? `bg-gradient-to-r ${tc.grad} text-white shadow-sm`
+                    : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                }`}>
+                {isLastNav ? 'Ver resumen' : 'Continuar'}
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
-      </form>
+      )}
     </div>
   );
 }

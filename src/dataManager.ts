@@ -4,6 +4,7 @@ import { Profile, Equivalencia, MealItem } from './data';
 
 /**
  * Parsea un JSON limpio y valida su estructura básica
+ * Ahora es más permisivo para aceptar estructuras generadas por IA
  */
 export function parseObjectToData(parsed: any, expectedPrefix: 'VO' | 'VA'): any {
   const perfilKey = `perfil${expectedPrefix}`;
@@ -20,8 +21,9 @@ export function parseObjectToData(parsed: any, expectedPrefix: 'VO' | 'VA'): any
   }
 
   const perfil = parsed[perfilKey];
-  if (!perfil.id || !perfil.nombre || !Array.isArray(perfil.momentos)) {
-    throw new Error('La estructura del perfil no coincide con el formato esperado. Faltan propiedades esenciales.');
+  // Validación permisiva: solo verificar que tenga nombre y momentos (array)
+  if (!perfil.nombre || !Array.isArray(perfil.momentos)) {
+    throw new Error('La estructura del perfil no coincide con el formato esperado. Faltan: nombre o momentos.');
   }
 
   const equivalencias = parsed[equivKey];
@@ -32,6 +34,28 @@ export function parseObjectToData(parsed: any, expectedPrefix: 'VO' | 'VA'): any
   const plan = parsed[planKey];
   if (typeof plan !== 'object' || plan === null) {
     throw new Error('El plan de comidas no tiene un formato válido.');
+  }
+
+  // Validar que el plan tenga al menos un día con momentos
+  const dias = Object.keys(plan);
+  if (dias.length === 0) {
+    throw new Error('El plan no contiene días.');
+  }
+
+  // Validar que cada día tenga los momentos esperados
+  const momentosKeys = perfil.momentos.map((m: any) => m.key);
+  for (const dia of dias) {
+    const diaPlan = plan[dia];
+    if (typeof diaPlan !== 'object' || diaPlan === null) {
+      throw new Error(`El día ${dia} no tiene formato válido.`);
+    }
+    // Verificar que existan los momentos (pueden estar vacíos)
+    for (const momento of momentosKeys) {
+      if (!Array.isArray(diaPlan[momento])) {
+        // Si no existe, inicializar como array vacío
+        diaPlan[momento] = [];
+      }
+    }
   }
 
   return parsed;

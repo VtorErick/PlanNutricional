@@ -4,7 +4,7 @@ import {
   ChefHat, CheckCircle2, TrendingDown, Calendar,
   BookOpen, Zap, Shield, Lightbulb, BarChart3, ArrowLeft,
   Sun, Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle,
-  Heart, ChevronDown, ChevronUp, ShoppingCart, ListChecks, FileText
+  Heart, ChevronDown, ChevronUp, ShoppingCart, ListChecks, FileText, Settings, X, KeyRound
 } from 'lucide-react';
 import MealSelector from './components/MealSelector';
 import EquivalenciasCard from './components/EquivalenciasCard';
@@ -12,6 +12,119 @@ import AdminPanel from './components/AdminPanel';
 import NutritionQuestionnaire, { QuestionnairePayload } from './components/NutritionQuestionnaire';
 import { perfilesData as origPerfilesData, equivalenciasData as origEquivData, rawData, iconsMap, Profile, Equivalencia } from './data';
 import { downloadDaySelectionPdf, parseObjectToData } from './dataManager';
+
+// Función auxiliar para llamar directamente a Gemini API en desarrollo local
+async function callGeminiDirectly(payload: any, apiKey: string, modelName: string) {
+  const buildSystemPrompt = (prefix: string) => {
+    return `Eres un nutricionista clínico experto. Genera un plan semanal COMPLETO y VARIADO con comidas reales.
+
+ESTRUCTURA REQUERIDA (usa estas 3 llaves raíz):
+- perfil${prefix}: { id, nombre, perfil, meta, momentos[{key, label, hora}] }
+- equivalencias${prefix}: array con { categoria, equivalencia, ejemplos, icon }
+- plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
+
+REGLAS IMPORTANTES:
+1. Cada momento debe tener 3 opciones de comidas REALES y variadas (NO uses "Opción 1", genera nombres reales como "Tacos de pollo", "Ensalada de atún", etc.)
+2. Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+3. Las equivalencias deben incluir: Verduras, Frutas, Cereales, Leguminosas, Lácteos, Proteínas, Grasas
+4. Responde SOLO con JSON válido, sin markdown \`\`\`json
+
+Icons permitidos: Carrot, Apple, Wheat, Bean, Milk, Beef, Droplets, Candy, Heart, AlertTriangle`;
+  };
+
+  const buildUserPrompt = (p: any, prefix: string) => {
+    return JSON.stringify({
+      profilePrefix: prefix,
+      questionnaire: p,
+      outputContract: {
+        rootKeys: [`perfil${prefix}`, `equivalencias${prefix}`, `plan${prefix}`],
+        fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+        momentsSource: 'questionnaire.planConfig.selectedMoments',
+        mealsRequiredKeys: ['nombre', 'porciones', 'detalle', 'tags', 'super']
+      }
+    });
+  };
+
+  const generateForProfile = async (prefix: string, profilePayload: any) => {
+    const body = {
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: buildSystemPrompt(prefix) },
+            { text: buildUserPrompt(profilePayload, prefix) }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.5,
+        responseMimeType: 'application/json'
+      }
+    };
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
+    
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const text = await res.text();
+    
+    if (!res.ok) {
+      let errorMsg = `Error ${res.status}`;
+      try {
+        const errJson = JSON.parse(text);
+        errorMsg = errJson?.error?.message || errorMsg;
+      } catch {}
+      throw new Error(`Gemini API Error: ${errorMsg}`);
+    }
+
+    const json = JSON.parse(text);
+    const generatedText = json?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Sanitizar y parsear
+    const cleaned = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const first = cleaned.indexOf('{');
+    const last = cleaned.lastIndexOf('}');
+    if (first === -1 || last === -1) {
+      throw new Error('Respuesta de IA no contiene JSON válido');
+    }
+    const sanitized = cleaned.slice(first, last + 1);
+    
+    return JSON.parse(sanitized);
+  };
+
+  const target = payload?.targetProfile || 'ambos';
+  let voData = null;
+  let vaData = null;
+
+  // Preparar payloads por perfil
+  const buildProfilePayload = (profileData: any) => ({
+    ...payload,
+    profileContext: profileData?.profileContext,
+    healthContext: profileData?.healthContext,
+    preferences: profileData?.preferences,
+    routine: profileData?.routine,
+  });
+
+  if (target === 'vo' || target === 'ambos') {
+    const voPayload = target === 'ambos' && payload.vo ? buildProfilePayload(payload.vo) : payload;
+    voData = await generateForProfile('VO', voPayload);
+  }
+
+  if (target === 'va' || target === 'ambos') {
+    // Delay para evitar rate limit
+    if (target === 'ambos') {
+      await new Promise(r => setTimeout(r, 4500));
+    }
+    const vaPayload = target === 'ambos' && payload.va ? buildProfilePayload(payload.va) : payload;
+    vaData = await generateForProfile('VA', vaPayload);
+  }
+
+  return { voData, vaData };
+}
 
 const momentoIcons: Record<string, any> = {
   desayuno: Sun,
@@ -96,6 +209,44 @@ export default function App() {
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [generationLoading, setGenerationLoading] = useState(false);
   const [generationError, setGenerationError] = useState('');
+  const [lastGeneratedData, setLastGeneratedData] = useState<any>(null); // Para descarga de JSON
+  
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState(() => {
+    try { 
+      // Intentar leer desde localStorage primero, luego desde .env
+      const saved = localStorage.getItem('geminiApiKey') || '';
+      const fromEnv = (import.meta as any).env?.GEMINI_API_KEY || '';
+      return saved || fromEnv;
+    } catch { 
+      return ''; 
+    }
+  });
+  const [geminiModel, setGeminiModel] = useState(() => {
+    try { 
+      const saved = localStorage.getItem('geminiModel');
+      // Modelos válidos disponibles
+      const validModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-pro', 'gemini-2.5-flash'];
+      // Si el modelo guardado no es válido o es el viejo 1.5-flash, migrar a 2.5-flash
+      if (!saved || saved === 'gemini-1.5-flash' || !validModels.includes(saved)) {
+        localStorage.setItem('geminiModel', 'gemini-2.5-flash');
+        return 'gemini-2.5-flash'; 
+      }
+      return saved;
+    } catch { 
+      return 'gemini-2.5-flash'; 
+    }
+  });
+
+  const [adminTab, setAdminTab] = useState<'ai' | 'manual' | 'settings'>('ai');
+
+  useEffect(() => {
+    localStorage.setItem('geminiApiKey', geminiApiKey);
+  }, [geminiApiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('geminiModel', geminiModel);
+  }, [geminiModel]);
 
   // Guardar en LocalStorage cada que cambian
   useEffect(() => {
@@ -294,23 +445,100 @@ export default function App() {
     setGenerationError('');
     setGenerationLoading(true);
     try {
-      const res = await fetch('/api/generate-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json?.error || 'No fue posible generar el plan con IA.');
+      const payloadWithKey = { ...payload, customApiKey: geminiApiKey, preferredModel: geminiModel };
+      
+      let json;
+      let usedDirectApi = false;
+      
+      // Intentar llamar al endpoint /api primero
+      try {
+        const res = await fetch('/api/generate-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payloadWithKey),
+        });
+
+        // Obtener texto crudo primero para validación
+        const responseText = await res.text();
+        
+        // Verificar si la respuesta está vacía
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('SERVER_UNAVAILABLE');
+        }
+
+        // Verificar si parece HTML (error del servidor)
+        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+          throw new Error('SERVER_UNAVAILABLE');
+        }
+
+        // Intentar parsear JSON
+        try {
+          json = JSON.parse(responseText);
+        } catch (parseErr: any) {
+          throw new Error('SERVER_UNAVAILABLE');
+        }
+
+        if (!res.ok) {
+          throw new Error(json?.error || `Error ${res.status}`);
+        }
+      } catch (serverErr: any) {
+        // Si el servidor no está disponible (desarrollo local sin Vercel), usar API directa
+        console.log('Server error caught:', serverErr.message);
+        console.log('API Key available:', geminiApiKey ? 'YES (length: ' + geminiApiKey.length + ')' : 'NO');
+        
+        const isServerUnavailable = serverErr.message === 'SERVER_UNAVAILABLE' || 
+            serverErr.message?.includes('fetch') ||
+            serverErr.message?.includes('Failed to fetch') ||
+            serverErr.message?.includes('NetworkError');
+        
+        if (isServerUnavailable) {
+          // En desarrollo, permitir usar API key desde .env via import.meta.env
+          const envApiKey = (import.meta as any).env?.GEMINI_API_KEY || '';
+          
+          if (!envApiKey && !geminiApiKey) {
+            throw new Error('En desarrollo local, configura tu GEMINI_API_KEY en el archivo .env o en el panel de Administración (Ajustes IA) para generar planes con IA.');
+          }
+          
+          usedDirectApi = true;
+          const keyToUse = geminiApiKey || envApiKey;
+          console.log('Using direct API with key length:', keyToUse.length);
+          json = await callGeminiDirectly(payloadWithKey, keyToUse, geminiModel);
+        } else {
+          throw serverErr;
+        }
+      }
+
+      // Validar que tengamos datos
+      if (!json.voData && !json.vaData) {
+        throw new Error('La respuesta no contiene datos del plan. Intenta de nuevo.');
+      }
+
+      console.log('=== DATOS GENERADOS POR IA ===');
+      console.log('voData:', json.voData ? 'EXISTS' : 'null', json.voData ? Object.keys(json.voData) : '');
+      console.log('vaData:', json.vaData ? 'EXISTS' : 'null', json.vaData ? Object.keys(json.vaData) : '');
+      
+      // Guardar datos crudos para descarga
+      setLastGeneratedData(json);
 
       setCustomData((prev: any) => {
         const updated = { ...prev };
 
-        if (json.voData) {
-          updated.vo = parseObjectToData(json.voData, 'VO');
+        try {
+          if (json.voData) {
+            console.log('Parseando voData...');
+            updated.vo = parseObjectToData(json.voData, 'VO');
+            console.log('voData parseado correctamente');
+          }
+          if (json.vaData) {
+            console.log('Parseando vaData...');
+            updated.va = parseObjectToData(json.vaData, 'VA');
+            console.log('vaData parseado correctamente');
+          }
+        } catch (parseErr: any) {
+          console.error('Error parseando datos de IA:', parseErr);
+          throw new Error(`Error en los datos generados: ${parseErr.message}. La IA no generó la estructura esperada.`);
         }
-        if (json.vaData) {
-          updated.va = parseObjectToData(json.vaData, 'VA');
-        }
+        console.log('=== DATOS GUARDADOS EN CUSTOMDATA ===', updated);
         return updated;
       });
 
@@ -320,18 +548,206 @@ export default function App() {
       }));
 
       setShowQuestionnaire(false);
-      alert('¡Plan generado con IA y cargado automáticamente!');
+      alert(usedDirectApi ? '¡Plan generado con IA (modo directo)!' : '¡Plan generado con IA y cargado automáticamente!');
     } catch (err: any) {
+      console.error('Error en handleGenerateWithAi:', err);
       setGenerationError(err?.message || 'Error desconocido al generar con IA.');
     } finally {
       setGenerationLoading(false);
     }
-  }, []);
+  }, [geminiApiKey, geminiModel]);
+
+  // ─── Admin View ───────────────────────────────────────────────────────────
+  if (showAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
+        {/* Admin Header */}
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
+              <Settings className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-slate-800 leading-tight">Panel de Administración</h1>
+              <p className="text-[11px] text-slate-400 hidden sm:block">Configura la IA, gestiona datos y ajusta el motor</p>
+            </div>
+          </div>
+          <button onClick={() => setShowAdmin(false)}
+            className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </header>
+
+        {/* Admin Tab Bar */}
+        <div className="sticky top-[65px] z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/60 px-3 sm:px-6 py-2.5">
+          <div className="flex gap-1 bg-slate-100/80 p-1 rounded-2xl max-w-lg mx-auto">
+            {([
+              { key: 'ai', label: 'Generador IA', shortLabel: 'Generar', emoji: '🪄' },
+              { key: 'settings', label: 'Ajustes IA', shortLabel: 'Ajustes', emoji: '⚙️' },
+              { key: 'manual', label: 'Datos RAW', shortLabel: 'RAW', emoji: '📦' },
+            ] as const).map(t => (
+              <button key={t.key} onClick={() => setAdminTab(t.key)}
+                className={`flex-1 py-2 px-1 text-xs font-bold rounded-xl transition-all duration-200 leading-tight ${
+                  adminTab === t.key
+                    ? 'bg-white shadow-md text-slate-800 scale-[1.02]'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                }`}>
+                <span className="block text-sm mb-0.5">{t.emoji}</span>
+                <span className="hidden sm:block">{t.label}</span>
+                <span className="sm:hidden">{t.shortLabel}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 pb-24">
+
+          {/* ── SETTINGS TAB ── */}
+          {adminTab === 'settings' && (
+            <div className="space-y-5 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="text-center pb-2">
+                <h2 className="text-lg font-bold text-slate-800">⚙️ Ajustes de Inteligencia Artificial</h2>
+                <p className="text-sm text-slate-500">Configura tu clave y el modelo de Gemini a utilizar.</p>
+              </div>
+
+              {/* API Key */}
+              <section className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <KeyRound className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">Clave de API Gemini</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Se guarda en tu navegador. Evita el límite de solicitudes compartido (Error 429).
+                    </p>
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="password"
+                    id="admin-api-key"
+                    placeholder="AIzaSy..."
+                    value={geminiApiKey}
+                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-10 text-slate-700 font-mono text-sm outline-none focus:ring-2 focus:ring-orange-400 transition"
+                  />
+                  {geminiApiKey && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-bold">✓</span>
+                  )}
+                </div>
+                {geminiApiKey && (
+                  <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">✅ API Key guardada correctamente en tu navegador.</p>
+                )}
+              </section>
+
+              {/* Model Select */}
+              <section className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">Motor de Gemini</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Selecciona qué versión de Gemini usará el generador de planes.</p>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  {[
+                    { val: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: '⚡ Recomendado', desc: 'Velocidad óptima y calidad alta', badgeColor: 'bg-emerald-100 text-emerald-700' },
+                    { val: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito', desc: 'Ideal para cuentas sin cuota pagada', badgeColor: 'bg-blue-100 text-blue-700' },
+                    { val: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', badge: '🧠 Pro', desc: 'Razonamiento complejo, más lento', badgeColor: 'bg-violet-100 text-violet-700' },
+                    { val: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', badge: '🚀 Máx. potencia', desc: 'El modelo más avanzado disponible', badgeColor: 'bg-amber-100 text-amber-700' },
+                  ].map(m => (
+                    <button key={m.val} type="button" onClick={() => setGeminiModel(m.val)}
+                      className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all ${
+                        geminiModel === m.val
+                          ? 'border-indigo-400 bg-indigo-50 shadow-sm'
+                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      }`}>
+                      <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                        geminiModel === m.val ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 bg-white'
+                      }`}>
+                        {geminiModel === m.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-slate-800">{m.label}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>{m.badge}</span>
+                        </div>
+                        <p className="text-xs text-slate-400">{m.desc}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* ── MANUAL RAW TAB ── */}
+          {adminTab === 'manual' && (
+            <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="text-center mb-6">
+                <h2 className="text-lg font-bold text-slate-800">📦 Importador de Datos RAW</h2>
+                <p className="text-sm text-slate-500">Carga archivos JSON modificados directamente, sin usar IA.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AdminPanel
+                  perfilId="vo"
+                  title="Datos V(o)"
+                  themeColor="blue"
+                  rawDataText={rawData.vo}
+                  customData={customData}
+                  setCustomData={setCustomData}
+                  dataVersion={dataVersions.vo}
+                  setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, vo: ver }))}
+                  perfilesDataObj={origPerfilesData.vo}
+                />
+                <AdminPanel
+                  perfilId="va"
+                  title="Datos V(a)"
+                  themeColor="rose"
+                  rawDataText={rawData.va}
+                  customData={customData}
+                  setCustomData={setCustomData}
+                  dataVersion={dataVersions.va}
+                  setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, va: ver }))}
+                  perfilesDataObj={origPerfilesData.va}
+                />
+              </div>
+            </section>
+          )}
+
+          {/* ── AI GENERATOR TAB ── */}
+          {adminTab === 'ai' && (
+            <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <NutritionQuestionnaire
+                onCancel={() => setShowAdmin(false)}
+                onGenerate={handleGenerateWithAi}
+                loading={generationLoading}
+                errorMessage={generationError}
+                geminiModel={geminiModel}
+                setGeminiModel={setGeminiModel}
+                lastGeneratedData={lastGeneratedData}
+              />
+            </section>
+          )}
+        </main>
+      </div>
+    );
+  }
 
   // ─── Landing / Profile selector ───────────────────────────────────────────
   if (!perfilActivo) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col relative">
+        <button 
+          onClick={() => setShowAdmin(true)} 
+          className="absolute top-4 right-4 z-20 p-2.5 bg-white/50 backdrop-blur hover:bg-white rounded-full text-slate-600 shadow-sm transition"
+          title="Administración"
+        >
+          <Settings className="w-5 h-5" />
+        </button>
         <div className="relative overflow-hidden">
           <div className="absolute inset-0">
             <img src="/images/hero.png" alt="" className="w-full h-full object-cover opacity-20" />
@@ -430,58 +846,6 @@ export default function App() {
               </div>
             </motion.button>
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.25 }}
-            className="mt-12 pt-8 border-t border-slate-200/60"
-          >
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-slate-800">Administración de Datos</h2>
-              <p className="text-sm text-slate-500 mt-1">Exporta menús a PDF o carga tu propia configuración</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <AdminPanel
-                perfilId="vo"
-                title="Datos V(o)"
-                themeColor="blue"
-                rawDataText={rawData.vo}
-                customData={customData}
-                setCustomData={setCustomData}
-                dataVersion={dataVersions.vo}
-                setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, vo: ver }))}
-                perfilesDataObj={origPerfilesData.vo}
-              />
-              <AdminPanel
-                perfilId="va"
-                title="Datos V(a)"
-                themeColor="rose"
-                rawDataText={rawData.va}
-                customData={customData}
-                setCustomData={setCustomData}
-                dataVersion={dataVersions.va}
-                setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, va: ver }))}
-                perfilesDataObj={origPerfilesData.va}
-              />
-            </div>
-
-            <div className="mt-4">
-              <button
-                onClick={() => { setShowQuestionnaire((v) => !v); setGenerationError(''); }}
-                className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-3 px-4 shadow-lg shadow-emerald-500/25 hover:opacity-95 transition"
-              >
-                {showQuestionnaire ? 'Ocultar cuestionario IA' : 'Tercera opción: generar data por cuestionario con IA'}
-              </button>
-
-              {showQuestionnaire && (
-                <NutritionQuestionnaire
-                  onCancel={() => setShowQuestionnaire(false)}
-                  onGenerate={handleGenerateWithAi}
-                  loading={generationLoading}
-                  errorMessage={generationError}
-                />
-              )}
-            </div>
-          </motion.div>
         </div>
       </div>
     );
@@ -562,7 +926,7 @@ export default function App() {
               </p>
             </div>
           </div>
-          <div className="flex gap-1.5 flex-shrink-0">
+          <div className="flex gap-1.5 flex-shrink-0 items-center">
             {(['vo', 'va', 'ambos'] as const).map((p) => (
               <button key={p}
                 onClick={() => { setPerfilActivo(p); setDiaActivo('Lunes'); setTab('plan'); }}
@@ -571,6 +935,13 @@ export default function App() {
                 {p === 'ambos' ? 'Ambos' : perfilesData[p].nombre}
               </button>
             ))}
+            <button 
+              onClick={() => setShowAdmin(true)} 
+              className="ml-1 p-1.5 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+              title="Administración"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </motion.header>

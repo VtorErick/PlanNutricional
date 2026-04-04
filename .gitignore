@@ -1,6 +1,7 @@
 node_modules
 dist
 .env.local
+.env
 .env.*.local
 .vscode
 .vscode-test
@@ -10,3 +11,5 @@ dist
 .DS_Store
 pace.log
 lerna-debug.log
+test-*.js
+test-*.json
