@@ -893,13 +893,18 @@ export default function App() {
   if (!perfilActivo) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col relative">
-        <button 
-          onClick={() => setShowAdmin(true)} 
-          className="absolute top-4 right-4 z-20 p-2.5 bg-white/50 backdrop-blur hover:bg-white rounded-full text-slate-600 shadow-sm transition"
-          title="Administración"
-        >
-          <Settings className="w-5 h-5" />
-        </button>
+        {/* Botón de Admin más intuitivo - Landing page */}
+        <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+          <button 
+            onClick={() => setShowAdmin(true)} 
+            className="group flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur hover:bg-gradient-to-r hover:from-violet-500 hover:to-indigo-600 hover:text-white rounded-full text-slate-700 shadow-md hover:shadow-lg transition-all active:scale-95"
+          >
+            <span className="text-lg">🪄</span>
+            <span className="text-sm font-bold hidden sm:block">Crear plan con IA</span>
+            <span className="text-sm font-bold sm:hidden">IA</span>
+          </button>
+          <span className="text-[10px] text-slate-500 bg-white/70 px-2 py-0.5 rounded-full hidden sm:block">⚙️ Configura tu API key</span>
+        </div>
         <div className="relative overflow-hidden">
           <div className="absolute inset-0">
             <img src="/images/hero.png" alt="" className="w-full h-full object-cover opacity-20" />
@@ -1087,12 +1092,14 @@ export default function App() {
                 {p === 'ambos' ? 'Ambos' : perfilesData[p].nombre}
               </button>
             ))}
+            {/* Botón Admin más intuitivo - Main app */}
             <button 
               onClick={() => setShowAdmin(true)} 
-              className="ml-1 p-1.5 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
-              title="Administración"
+              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-gradient-to-r hover:from-violet-500 hover:to-indigo-600 hover:text-white text-slate-600 text-xs font-bold transition-all active:scale-95"
+              title="Crear plan con IA"
             >
-              <Settings className="w-4 h-4" />
+              <span className="text-sm">🪄</span>
+              <span className="hidden sm:block">Nuevo plan IA</span>
             </button>
           </div>
         </div>
