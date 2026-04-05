@@ -623,22 +623,6 @@ export default function App() {
     
   const totalMomentosProgress = isAmbos ? perfilBase.momentos.length * 2 : perfilBase.momentos.length;
 
-  // Auto-collapse moment when it becomes completed
-  const prevCompletado = useRef(momentoCompletado);
-  useEffect(() => {
-    const timeoutIds: ReturnType<typeof setTimeout>[] = [];
-    Object.entries(momentoCompletado).forEach(([key, isDone]) => {
-      if (isDone && !prevCompletado.current[key]) {
-        const tid = setTimeout(() => {
-          setMomentosColapsados(p => ({ ...p, [key]: true }));
-        }, 800);
-        timeoutIds.push(tid);
-      }
-    });
-    prevCompletado.current = momentoCompletado;
-    return () => timeoutIds.forEach(clearTimeout);
-  }, [momentoCompletado]);
-
   // Collapse progress when tab changes or day changes
   useEffect(() => {
     setProgressExpanded(false);
@@ -1612,7 +1596,10 @@ export default function App() {
                 {perfilBase.momentos.map((momento) => {
                   const Icon = momentoIcons[momento.key] || UtensilsCrossed;
                   const done = momentoCompletado[momento.key];
-                  const estaEnEdicion = Boolean(momentosEnEdicion[momento.key]);
+                  const estaEnEdicionVo = Boolean(momentosEnEdicion[`${momento.key}-vo`]);
+                  const estaEnEdicionVa = Boolean(momentosEnEdicion[`${momento.key}-va`]);
+                  const estaEnEdicionSingle = Boolean(momentosEnEdicion[momento.key]);
+                  const estaEnEdicion = isAmbos ? (estaEnEdicionVo || estaEnEdicionVa) : estaEnEdicionSingle;
                   const mealsSingleAll = perfilBase.plan[diaActivo]?.[momento.key] || [];
                   const mealsVOAll = perfilesData.vo.plan[diaActivo]?.[momento.key] || [];
                   const mealsVAAll = perfilesData.va.plan[diaActivo]?.[momento.key] || [];
@@ -1622,9 +1609,8 @@ export default function App() {
                   const porcionesSingleMomento = !isAmbos && perfilActivo ? getMomentMacroPortions(perfilesData[perfilActivo], momento.key) : [];
                   const porcionesVoMomento = getMomentMacroPortions(perfilesData.vo, momento.key);
                   const porcionesVaMomento = getMomentMacroPortions(perfilesData.va, momento.key);
-                  const isElegidoVacio = !estaEnEdicion && (isAmbos
-                    ? (mealsVOSeleccionadas.length === 0 && mealsVASeleccionadas.length === 0)
-                    : mealsSingleSeleccionadas.length === 0
+                  const isElegidoVacio = !estaEnEdicion && !isAmbos && (
+                    mealsSingleSeleccionadas.length === 0
                   );
 
                   return (
@@ -1733,106 +1719,115 @@ export default function App() {
                                   )}
 
                                   {isAmbos && (
-                                    !estaEnEdicion ? (
-                                      <div className="grid md:grid-cols-2 gap-4">
-                                        {(mealsVOSeleccionadas.length > 0 || mealsVASeleccionadas.length === 0) && (
-                                          <div className="space-y-3">
-                                            <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2">Para {perfilesData.vo.nombre}</div>
-                                            {mealsVOSeleccionadas.map((meal, idx) => (
-                                              <div key={idx} className="p-4 rounded-xl border border-blue-50 bg-gradient-to-r from-blue-50 to-transparent">
-                                                <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
-                                                <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
-                                                <div className="mt-2 flex flex-wrap gap-1.5">
-                                                  {porcionesVoMomento.map((item) => (
-                                                    <span
-                                                      key={`${meal.nombre}-${item.key}-${item.cantidad}`}
-                                                      title={`${item.label} ${item.cantidad}`}
-                                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-bold"
-                                                    >
-                                                      <span>{item.icon}</span>
-                                                      <span>x{item.cantidad}</span>
-                                                    </span>
-                                                  ))}
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                      <div className="space-y-3">
+                                        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2">Para {perfilesData.vo.nombre}</div>
+                                        {!estaEnEdicionVo ? (
+                                          <>
+                                            {mealsVOSeleccionadas.length > 0 ? (
+                                              mealsVOSeleccionadas.map((meal, idx) => (
+                                                <div key={idx} className="p-4 rounded-xl border border-blue-50 bg-gradient-to-r from-blue-50 to-transparent">
+                                                  <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
+                                                  <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
+                                                  <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    {porcionesVoMomento.map((item) => (
+                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-bold">
+                                                        <span>{item.icon}</span>
+                                                        <span>x{item.cantidad}</span>
+                                                      </span>
+                                                    ))}
+                                                  </div>
                                                 </div>
+                                              ))
+                                            ) : (
+                                              <div className="text-center py-5 px-4 bg-blue-50/50 rounded-xl border border-dashed border-blue-200">
+                                                <p className="text-blue-700 text-sm font-semibold">Ningún platillo reservado</p>
                                               </div>
-                                            ))}
+                                            )}
+                                            <button
+                                              onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [`${momento.key}-vo`]: true }))}
+                                              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 active:scale-95 transition"
+                                            >
+                                              <Zap className="w-3.5 h-3.5" />
+                                              {mealsVOSeleccionadas.length > 0 ? 'Cambiar opción para él' : 'Ir a elegir para él'}
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                                            <MealSelector
+                                              perfil="vo"
+                                              comidas={mealsVOAll}
+                                              dia={diaActivo}
+                                              momento={momento.key}
+                                              selecciones={selecciones}
+                                              onToggle={(perfilId, dia, momentoKey, nombre) => {
+                                                toggleSeleccion(perfilId, dia, momentoKey, nombre);
+                                                setMomentosEnEdicion((prev) => ({ ...prev, [`${momentoKey}-vo`]: false }));
+                                              }}
+                                              accentClasses={{
+                                                bg: 'bg-blue-500', bgLight: 'bg-blue-50', bgGradient: 'from-blue-500 to-indigo-600',
+                                                text: 'text-blue-600', border: 'border-blue-200', borderAccent: 'border-blue-500',
+                                                tagBg: 'bg-blue-100', tagText: 'text-blue-700'
+                                              }}
+                                            />
                                           </div>
                                         )}
-                                        {(mealsVASeleccionadas.length > 0 || mealsVOSeleccionadas.length === 0) && (
-                                          <div className="space-y-3">
-                                            <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-2">Para {perfilesData.va.nombre}</div>
-                                            {mealsVASeleccionadas.map((meal, idx) => (
-                                              <div key={idx} className="p-4 rounded-xl border border-rose-50 bg-gradient-to-r from-rose-50 to-transparent">
-                                                <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
-                                                <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
-                                                <div className="mt-2 flex flex-wrap gap-1.5">
-                                                  {porcionesVaMomento.map((item) => (
-                                                    <span
-                                                      key={`${meal.nombre}-${item.key}-${item.cantidad}`}
-                                                      title={`${item.label} ${item.cantidad}`}
-                                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold"
-                                                    >
-                                                      <span>{item.icon}</span>
-                                                      <span>x{item.cantidad}</span>
-                                                    </span>
-                                                  ))}
+                                      </div>
+
+                                      <div className="space-y-3">
+                                        <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-2">Para {perfilesData.va.nombre}</div>
+                                        {!estaEnEdicionVa ? (
+                                          <>
+                                            {mealsVASeleccionadas.length > 0 ? (
+                                              mealsVASeleccionadas.map((meal, idx) => (
+                                                <div key={idx} className="p-4 rounded-xl border border-rose-50 bg-gradient-to-r from-rose-50 to-transparent">
+                                                  <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
+                                                  <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
+                                                  <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    {porcionesVaMomento.map((item) => (
+                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold">
+                                                        <span>{item.icon}</span>
+                                                        <span>x{item.cantidad}</span>
+                                                      </span>
+                                                    ))}
+                                                  </div>
                                                 </div>
+                                              ))
+                                            ) : (
+                                              <div className="text-center py-5 px-4 bg-rose-50/50 rounded-xl border border-dashed border-rose-200">
+                                                <p className="text-rose-700 text-sm font-semibold">Ningún platillo reservado</p>
                                               </div>
-                                            ))}
+                                            )}
+                                            <button
+                                              onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [`${momento.key}-va`]: true }))}
+                                              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 active:scale-95 transition"
+                                            >
+                                              <Zap className="w-3.5 h-3.5" />
+                                              {mealsVASeleccionadas.length > 0 ? 'Cambiar opción para ella' : 'Ir a elegir para ella'}
+                                            </button>
+                                          </>
+                                        ) : (
+                                          <div className="p-3 bg-rose-50/50 rounded-xl border border-rose-100">
+                                            <MealSelector
+                                              perfil="va"
+                                              comidas={mealsVAAll}
+                                              dia={diaActivo}
+                                              momento={momento.key}
+                                              selecciones={selecciones}
+                                              onToggle={(perfilId, dia, momentoKey, nombre) => {
+                                                toggleSeleccion(perfilId, dia, momentoKey, nombre);
+                                                setMomentosEnEdicion((prev) => ({ ...prev, [`${momentoKey}-va`]: false }));
+                                              }}
+                                              accentClasses={{
+                                                bg: 'bg-rose-500', bgLight: 'bg-rose-50', bgGradient: 'from-rose-500 to-pink-600',
+                                                text: 'text-rose-600', border: 'border-rose-200', borderAccent: 'border-rose-500',
+                                                tagBg: 'bg-rose-100', tagText: 'text-rose-700'
+                                              }}
+                                            />
                                           </div>
                                         )}
-                                        <div className="md:col-span-2">
-                                          <button
-                                            onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [momento.key]: true }))}
-                                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${ac.text} ${ac.bgLight} border ${ac.border} hover:opacity-90 active:scale-95 transition`}
-                                          >
-                                            <Zap className="w-3.5 h-3.5" />
-                                            Cambiar opción
-                                          </button>
-                                        </div>
                                       </div>
-                                    ) : (
-                                      <div className="grid md:grid-cols-2 gap-4">
-                                        <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                                          <h4 className="font-bold text-blue-800 text-xs mb-2">Para {perfilesData.vo.nombre}</h4>
-                                          <MealSelector
-                                            perfil="vo"
-                                            comidas={mealsVOAll}
-                                            dia={diaActivo}
-                                            momento={momento.key}
-                                            selecciones={selecciones}
-                                            onToggle={(perfilId, dia, momentoKey, nombre) => {
-                                              toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                              setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
-                                            }}
-                                            accentClasses={{
-                                              bg: 'bg-blue-500', bgLight: 'bg-blue-50', bgGradient: 'from-blue-500 to-indigo-600',
-                                              text: 'text-blue-600', border: 'border-blue-200', borderAccent: 'border-blue-500',
-                                              tagBg: 'bg-blue-100', tagText: 'text-blue-700'
-                                            }}
-                                          />
-                                        </div>
-                                        <div className="p-3 bg-rose-50/50 rounded-xl border border-rose-100">
-                                          <h4 className="font-bold text-rose-800 text-xs mb-2">Para {perfilesData.va.nombre}</h4>
-                                          <MealSelector
-                                            perfil="va"
-                                            comidas={mealsVAAll}
-                                            dia={diaActivo}
-                                            momento={momento.key}
-                                            selecciones={selecciones}
-                                            onToggle={(perfilId, dia, momentoKey, nombre) => {
-                                              toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                              setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
-                                            }}
-                                            accentClasses={{
-                                              bg: 'bg-rose-500', bgLight: 'bg-rose-50', bgGradient: 'from-rose-500 to-pink-600',
-                                              text: 'text-rose-600', border: 'border-rose-200', borderAccent: 'border-rose-500',
-                                              tagBg: 'bg-rose-100', tagText: 'text-rose-700'
-                                            }}
-                                          />
-                                        </div>
-                                      </div>
-                                    )
+                                    </div>
                                   )}
                                 </>
                               )}
