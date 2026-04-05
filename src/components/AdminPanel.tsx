@@ -121,15 +121,17 @@ export default function AdminPanel({
         <div className="grid grid-cols-2 gap-2">
           <button 
             onClick={handlePdfDownload}
-            className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition active:scale-95 shadow-sm"
+            className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-700 transition active:scale-95 shadow-sm"
           >
-            <FileText className="w-4 h-4" /> PDF
+            <FileText className="w-4 h-4" />
+            <span className="text-xs sm:text-sm leading-tight text-center font-semibold">Imprime tu plan en PDF</span>
           </button>
           <button 
             onClick={handleJsonDownload}
-            className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition active:scale-95 shadow-sm"
+            className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-700 transition active:scale-95 shadow-sm"
           >
-            <FileJson className="w-4 h-4" /> JSON
+            <FileJson className="w-4 h-4" />
+            <span className="text-xs sm:text-sm leading-tight text-center font-semibold">Exporta tu plan</span>
           </button>
         </div>
 
@@ -160,9 +162,10 @@ export default function AdminPanel({
             />
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 ${btnColor} text-white rounded-xl text-sm font-bold transition shadow-md active:scale-95`}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 ${btnColor} text-white rounded-xl font-bold transition shadow-md active:scale-95`}
             >
-              <Upload className="w-4 h-4" /> Subir archivo .json modificado
+              <Upload className="w-4 h-4" />
+              <span className="text-xs sm:text-sm leading-tight text-center">Importa tu plan</span>
             </button>
           </div>
         )}
