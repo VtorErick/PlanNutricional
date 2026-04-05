@@ -304,6 +304,7 @@ export default function NutritionQuestionnaire({
     field: 'wakeTime' | 'sleepTime' | null;
     value: string;
   }>({ open: false, profile: null, field: null, value: '' });
+  const [activePortionMoment, setActivePortionMoment] = useState('desayuno');
 
   useEffect(() => { if (geminiModel) setLocalModel(geminiModel); }, [geminiModel]);
 
@@ -744,23 +745,32 @@ export default function NutritionQuestionnaire({
     /* ── PORTIONS ── */
     if (type === 'portions') {
       const foodGroups = [
-        { key: 'frutas', label: 'Frutas', icon: '🍎', color: 'text-rose-500', bg: 'bg-rose-50', ring: 'focus:ring-rose-400' },
-        { key: 'verduras', label: 'Verduras', icon: '🥦', color: 'text-emerald-500', bg: 'bg-emerald-50', ring: 'focus:ring-emerald-400' },
-        { key: 'cereales', label: 'Cereales', icon: '🌾', color: 'text-amber-500', bg: 'bg-amber-50', ring: 'focus:ring-amber-400' },
-        { key: 'proteina', label: 'Proteína', icon: '🥩', color: 'text-red-500', bg: 'bg-red-50', ring: 'focus:ring-red-400' },
-        { key: 'grasas', label: 'Grasas', icon: '🥑', color: 'text-lime-500', bg: 'bg-lime-50', ring: 'focus:ring-lime-400' },
-        { key: 'lacteos', label: 'Lácteos', icon: '🥛', color: 'text-blue-500', bg: 'bg-blue-50', ring: 'focus:ring-blue-400' },
-        { key: 'leguminosas', label: 'Leguminosas', icon: '🫘', color: 'text-amber-700', bg: 'bg-amber-100', ring: 'focus:ring-amber-500' },
+        { key: 'frutas', label: 'Frutas', icon: Apple, color: 'text-rose-300', activeColor: 'text-rose-500', bg: 'bg-rose-50' },
+        { key: 'verduras', label: 'Verduras', icon: Leaf, color: 'text-emerald-300', activeColor: 'text-emerald-500', bg: 'bg-emerald-50' },
+        { key: 'cereales', label: 'Cereales', icon: Wheat, color: 'text-amber-300', activeColor: 'text-amber-500', bg: 'bg-amber-50' },
+        { key: 'proteina', label: 'Proteína', icon: Beef, color: 'text-red-300', activeColor: 'text-red-500', bg: 'bg-red-50' },
+        { key: 'grasas', label: 'Grasas', icon: Droplets, color: 'text-lime-300', activeColor: 'text-lime-500', bg: 'bg-lime-50' },
+        { key: 'lacteos', label: 'Lácteos', icon: Milk, color: 'text-blue-300', activeColor: 'text-blue-500', bg: 'bg-blue-50' },
+        { key: 'leguminosas', label: 'Leguminosas', icon: Bean, color: 'text-amber-300', activeColor: 'text-amber-700', bg: 'bg-amber-100' },
+      ];
+      const macroGroups = [
+        { key: 'carbs', label: 'Carbohidratos', foodKeys: ['frutas', 'cereales', 'leguminosas'], tone: 'border-amber-100 bg-amber-50/60' },
+        { key: 'protein', label: 'Proteínas', foodKeys: ['proteina', 'lacteos'], tone: 'border-red-100 bg-red-50/60' },
+        { key: 'fat-veggie', label: 'Fibra y grasas', foodKeys: ['verduras', 'grasas'], tone: 'border-emerald-100 bg-emerald-50/60' },
       ];
       const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
       const mLabels = ['Desayuno', 'Col. AM', 'Comida', 'Col. PM', 'Cena'];
+      const totalPortions = foodGroups.reduce((acc, group) => (
+        acc + mKeys.reduce((sum, moment) => sum + (manualPortions[group.key]?.[moment] || 0), 0)
+      ), 0);
+      const progressPercent = Math.min(100, Math.round((totalPortions / (foodGroups.length * mKeys.length * 10)) * 100));
 
       return (
         <div className="space-y-4">
           <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
             💡 Este paso es opcional. Puedes saltar si prefieres que la IA calcule las porciones automáticamente.
           </p>
-          
+
           <div>
             <label className="text-sm font-semibold text-slate-700 block mb-3">Modo de porciones</label>
             <div className="grid grid-cols-2 gap-2">
@@ -789,44 +799,108 @@ export default function NutritionQuestionnaire({
 
           {/* Manual portions table */}
           {portionMode === 'manual' && (
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 block">Por momentos del día</label>
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-indigo-800">Total de porciones</p>
+                  <span className="text-sm font-black text-indigo-700 tabular-nums">{totalPortions}</span>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-white/80 overflow-hidden">
+                  <motion.div
+                    animate={{ width: `${progressPercent}%` }}
+                    transition={{ type: 'spring', stiffness: 140, damping: 20 }}
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                  />
+                </div>
+                <p className="mt-1 text-[11px] text-indigo-600">Completado: {progressPercent}%</p>
+              </div>
+
+              <label className="text-sm font-semibold text-slate-700 block">Por momentos del día (acordeón)</label>
               <div className="space-y-2">
                 {mKeys.map((momento, idx) => (
-                  <div key={momento} className="bg-slate-100/70 rounded-xl p-3 border border-slate-200">
-                    <p className="text-xs font-bold text-slate-500 uppercase mb-2">{mLabels[idx]}</p>
-                    <div className="grid grid-cols-7 gap-1">
-                      {foodGroups.map(group => {
-                        const val = manualPortions[group.key]?.[momento] || 0;
-                        const Icon = group.key === 'frutas' ? Apple :
-                          group.key === 'verduras' ? Leaf :
-                          group.key === 'cereales' ? Wheat :
-                          group.key === 'proteina' ? Beef :
-                          group.key === 'grasas' ? Droplets :
-                          group.key === 'lacteos' ? Milk : Bean;
-                        return (
-                          <div key={group.key} className="flex flex-col items-center gap-1">
-                            <Icon className={`w-3.5 h-3.5 ${group.color}`} />
-                            <span className="text-[10px] font-semibold text-slate-500">{group.label.slice(0, 3)}</span>
-                            <div className="flex items-center rounded-lg border border-slate-200 bg-white">
-                              <button
-                                onClick={() => updatePortionValue(group.key, momento, (n) => n - 1)}
-                                className="w-6 h-6 flex items-center justify-center text-slate-500 active:scale-95"
-                              >
-                                <Minus className="w-3 h-3" />
-                              </button>
-                              <span className="w-5 text-center text-xs font-black text-slate-700 tabular-nums">{val}</span>
-                              <button
-                                onClick={() => updatePortionValue(group.key, momento, (n) => n + 1)}
-                                className="w-6 h-6 flex items-center justify-center text-slate-500 active:scale-95"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
-                            </div>
+                  <div key={momento} className="rounded-2xl border border-slate-200 bg-slate-50/80 overflow-hidden">
+                    <button
+                      onClick={() => setActivePortionMoment(prev => prev === momento ? '' : momento)}
+                      className="w-full flex items-center justify-between px-3 py-3 text-left"
+                    >
+                      <p className="text-xs font-bold text-slate-600 uppercase">{mLabels[idx]}</p>
+                      <ChevronRight className={`w-4 h-4 text-slate-500 transition-transform ${activePortionMoment === momento ? 'rotate-90' : ''}`} />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {activePortionMoment === momento && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="px-3 pb-3"
+                        >
+                          <div className="space-y-2">
+                            {macroGroups.map(macro => (
+                              <div key={macro.key} className={`rounded-xl border p-2 ${macro.tone}`}>
+                                <p className="text-[11px] font-bold text-slate-600 uppercase mb-1">{macro.label}</p>
+                                <div className="space-y-2">
+                                  {macro.foodKeys.map(foodKey => {
+                                    const group = foodGroups.find(item => item.key === foodKey);
+                                    if (!group) return null;
+                                    const value = manualPortions[group.key]?.[momento] || 0;
+                                    const Icon = group.icon;
+                                    const iconClass = value === 0 ? `${group.color} opacity-50 grayscale` : group.activeColor;
+
+                                    return (
+                                      <div key={group.key} className="rounded-lg border border-white/80 bg-white px-2 py-2">
+                                        <div className="flex items-center gap-2">
+                                          <Icon className={`w-4 h-4 ${iconClass}`} />
+                                          <span className="text-xs font-semibold text-slate-700 flex-1">{group.label}</span>
+                                          <div className="flex items-center gap-2">
+                                            <button
+                                              onClick={() => updatePortionValue(group.key, momento, n => n - 1)}
+                                              className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 active:scale-95"
+                                              aria-label={`Reducir ${group.label}`}
+                                            >
+                                              <Minus className="w-4 h-4" />
+                                            </button>
+                                            <input
+                                              type="number"
+                                              inputMode="numeric"
+                                              min={0}
+                                              max={10}
+                                              value={value}
+                                              onChange={(e) => {
+                                                const parsed = Number.parseInt(e.target.value, 10);
+                                                updatePortionValue(group.key, momento, () => Number.isFinite(parsed) ? parsed : 0);
+                                              }}
+                                              className={`w-14 h-9 rounded-lg border border-slate-200 text-center text-sm font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-300 ${group.bg}`}
+                                              aria-label={`Porciones de ${group.label}`}
+                                            />
+                                            <button
+                                              onClick={() => updatePortionValue(group.key, momento, n => n + 1)}
+                                              className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 active:scale-95"
+                                              aria-label={`Aumentar ${group.label}`}
+                                            >
+                                              <Plus className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <input
+                                          type="range"
+                                          min={0}
+                                          max={10}
+                                          step={1}
+                                          value={value}
+                                          onChange={(e) => updatePortionValue(group.key, momento, () => Number.parseInt(e.target.value, 10))}
+                                          className="w-full mt-2 accent-indigo-500"
+                                          aria-label={`Slider porciones ${group.label}`}
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      })}
-                    </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 ))}
               </div>
