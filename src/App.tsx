@@ -266,6 +266,7 @@ export default function App() {
     const match = perfilText.match(/IMC\s*([\d.]+)/i);
     const imc = match ? Number(match[1]) : null;
     if (!imc || Number.isNaN(imc)) return null;
+    const markerPct = Math.min(95, Math.max(5, ((imc - 16) / (35 - 16)) * 100));
 
     const status = imc < 18.5
       ? { label: 'Bajo', color: 'bg-sky-500', pct: 15 }
@@ -275,8 +276,59 @@ export default function App() {
       ? { label: 'Sobrepeso', color: 'bg-amber-500', pct: 70 }
       : { label: 'Obesidad', color: 'bg-rose-500', pct: 90 };
 
-    return { imc, ...status };
+    return { imc, ...status, pct: markerPct };
   };
+
+  const formatProfileForCard = (perfilText: string) => {
+    return perfilText
+      .replace(/,\s*/g, ' • ')
+      .replace(/:\s*/g, ' ')
+      .replace(/\(([^)]+)\)/g, '• $1')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  };
+
+  const ambosInsights = useMemo(() => {
+    const normalize = (value: string) =>
+      value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+
+    const extractPlanData = (plan: Profile['plan']) => {
+      const mealNames = new Set<string>();
+      const ingredients = new Set<string>();
+
+      Object.values(plan || {}).forEach((day) => {
+        Object.values(day || {}).forEach((meals) => {
+          if (!Array.isArray(meals)) return;
+          meals.forEach((meal: any) => {
+            if (meal?.nombre) mealNames.add(normalize(String(meal.nombre)));
+            if (Array.isArray(meal?.super)) {
+              meal.super.forEach((ingredient: string) => ingredients.add(normalize(String(ingredient))));
+            }
+          });
+        });
+      });
+
+      return { mealNames, ingredients };
+    };
+
+    const vo = extractPlanData(perfilesData.vo.plan);
+    const va = extractPlanData(perfilesData.va.plan);
+
+    const sharedMeals = [...vo.mealNames].filter((name) => va.mealNames.has(name)).length;
+    const commonIngredients = [...vo.ingredients].filter((item) => va.ingredients.has(item)).length;
+    const ingredientsUnion = new Set([...vo.ingredients, ...va.ingredients]).size;
+    const overlapPct = ingredientsUnion > 0 ? Math.round((commonIngredients / ingredientsUnion) * 100) : 0;
+
+    return {
+      sharedMeals,
+      overlapPct
+    };
+  }, [perfilesData.vo.plan, perfilesData.va.plan]);
+
   const voImcData = getImcData(perfilesData.vo.perfil);
   const vaImcData = getImcData(perfilesData.va.perfil);
 
@@ -1073,27 +1125,35 @@ export default function App() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">El</span>
                 </div>
-                <p className="text-blue-100 text-sm mb-3 leading-relaxed">{perfilesData.vo.perfil}</p>
+                <p className="text-blue-100 text-sm mb-4 leading-relaxed">{formatProfileForCard(perfilesData.vo.perfil)}</p>
                 {voImcData && (
                   <div className="mb-3">
-                    <div className="flex items-center justify-between text-[11px] text-blue-100 mb-1">
-                      <span>IMC {voImcData.imc}</span>
-                      <span>{voImcData.label}</span>
+                    <div className="relative h-4 mb-1">
+                      <span
+                        className="absolute -translate-x-1/2 text-[11px] text-blue-100 font-semibold whitespace-nowrap"
+                        style={{ left: `${voImcData.pct}%` }}
+                      >
+                        IMC {voImcData.imc} · {voImcData.label}
+                      </span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
+                    <div className="relative h-1.5 rounded-full bg-white/25 overflow-hidden">
                       <div
                         className={`h-full ${voImcData.color}`}
                         style={{ width: `${voImcData.pct}%` }}
                       />
+                      <span
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white border border-blue-300/80"
+                        style={{ left: `${voImcData.pct}%` }}
+                      />
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-blue-100/90 mt-1">
-                      <span className="text-emerald-200">Normal</span>
-                      <span className="text-amber-200">Sobrepeso</span>
-                      <span className="text-rose-200">Obesidad</span>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-blue-100/90">
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-300" />Normal</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300" />Sobrepeso</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-300" />Obesidad</span>
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-blue-200 text-xs sm:text-sm mt-auto">
+                <div className="flex items-center gap-2 text-blue-200 text-xs sm:text-sm mt-auto mb-2">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
                 </div>
                 <button
@@ -1103,7 +1163,7 @@ export default function App() {
                     setQuestionnaireTargetProfile('vo');
                     setShowQuestionnaire(true);
                   }}
-                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${voReady ? 'bg-white text-blue-700 hover:bg-blue-50 border-white/80' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${voReady ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border-white/35 shadow-[0_6px_20px_rgba(255,255,255,0.18)]' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
                 >
                   <span>{voReady ? '✅' : '✨'}</span>
                   <span>{voReady ? 'Actualizar El con IA' : 'Personalizar El con IA'}</span>
@@ -1128,27 +1188,35 @@ export default function App() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ella</span>
                 </div>
-                <p className="text-rose-50 text-sm mb-3 leading-relaxed">{perfilesData.va.perfil}</p>
+                <p className="text-rose-50 text-sm mb-4 leading-relaxed">{formatProfileForCard(perfilesData.va.perfil)}</p>
                 {vaImcData && (
                   <div className="mb-3">
-                    <div className="flex items-center justify-between text-[11px] text-rose-50 mb-1">
-                      <span>IMC {vaImcData.imc}</span>
-                      <span>{vaImcData.label}</span>
+                    <div className="relative h-4 mb-1">
+                      <span
+                        className="absolute -translate-x-1/2 text-[11px] text-rose-50 font-semibold whitespace-nowrap"
+                        style={{ left: `${vaImcData.pct}%` }}
+                      >
+                        IMC {vaImcData.imc} · {vaImcData.label}
+                      </span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
+                    <div className="relative h-1.5 rounded-full bg-white/25 overflow-hidden">
                       <div
                         className={`h-full ${vaImcData.color}`}
                         style={{ width: `${vaImcData.pct}%` }}
                       />
+                      <span
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white border border-rose-300/80"
+                        style={{ left: `${vaImcData.pct}%` }}
+                      />
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-rose-50/90 mt-1">
-                      <span className="text-emerald-200">Normal</span>
-                      <span className="text-amber-200">Sobrepeso</span>
-                      <span className="text-rose-200">Obesidad</span>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-rose-50/90">
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-300" />Normal</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300" />Sobrepeso</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-300" />Obesidad</span>
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-rose-100 text-xs sm:text-sm mt-auto">
+                <div className="flex items-center gap-2 text-rose-100 text-xs sm:text-sm mt-auto mb-2">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
                 </div>
                 <button
@@ -1158,7 +1226,7 @@ export default function App() {
                     setQuestionnaireTargetProfile('va');
                     setShowQuestionnaire(true);
                   }}
-                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${vaReady ? 'bg-white text-rose-700 hover:bg-rose-50 border-white/80' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${vaReady ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border-white/35 shadow-[0_6px_20px_rgba(255,255,255,0.18)]' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
                 >
                   <span>{vaReady ? '✅' : '✨'}</span>
                   <span>{vaReady ? 'Actualizar Ella con IA' : 'Personalizar Ella con IA'}</span>
@@ -1182,6 +1250,16 @@ export default function App() {
                   <p className="text-emerald-100 text-sm leading-relaxed">
                     Ve y selecciona platillos de ambos perfiles en una sola vista para organizar comidas y compras fácilmente.
                   </p>
+                  <div className="mt-3 grid sm:grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-emerald-100/80">Adelanto IA</p>
+                      <p className="text-sm font-semibold text-white">{ambosInsights.sharedMeals} comidas compartidas detectadas</p>
+                    </div>
+                    <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-emerald-100/80">Sinergia</p>
+                      <p className="text-sm font-semibold text-white">{ambosInsights.overlapPct}% de ingredientes en común</p>
+                    </div>
+                  </div>
                 </div>
                 <button
                   type="button"
