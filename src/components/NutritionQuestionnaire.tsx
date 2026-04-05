@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Loader2, ChevronRight, ChevronLeft,
   CheckCircle2, User, Scale, Target, Shield, Activity, Settings2, SkipForward, Download,
-  Hourglass, Pill, Heart, Clock, ChefHat
+  Hourglass, Pill, Heart, Clock, ChefHat, Check, Plus, Minus, Apple, Leaf, Wheat, Beef, Droplets, Milk, Bean, Ruler
 } from 'lucide-react';
 import { downloadJsonFile } from '../dataManager';
 
@@ -231,6 +231,64 @@ const QUICK_TAGS = {
   disliked: ['Hígado', 'Brócoli', 'Coliflor'],
 };
 
+const TRAINING_FREQUENCY_CHIPS = ['1-2 días', '3-4 días', '5+ días', 'Diario'];
+const CUISINE_STYLE_OPTIONS = ['Mexicana', 'Italiana', 'Asiática', 'Mediterránea', 'Casera', 'Vegetariana'];
+const COOKING_TIME_OPTIONS = ['15 min', '30 min', '45 min', '1 hora'];
+
+function parseTimeToParts(value: string) {
+  if (!value || !value.includes(':')) return { hour: 7, minute: 0 };
+  const [h, m] = value.split(':').map(v => parseInt(v, 10));
+  return {
+    hour: Number.isFinite(h) ? Math.max(0, Math.min(23, h)) : 7,
+    minute: Number.isFinite(m) ? Math.max(0, Math.min(59, m)) : 0,
+  };
+}
+
+function formatTimeFromParts(hour: number, minute: number) {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function TimeWheelPicker({
+  title,
+  value,
+  onChange,
+}: {
+  title: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { hour, minute } = parseTimeToParts(value);
+  return (
+    <div className="space-y-4">
+      <p className="text-center text-sm font-semibold text-slate-700">{title}</p>
+      <div className="mx-auto w-fit bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl p-4">
+        <div className="flex items-center gap-2">
+          <select
+            value={hour}
+            onChange={e => onChange(formatTimeFromParts(parseInt(e.target.value, 10), minute))}
+            className="h-40 w-24 rounded-xl border border-indigo-200 bg-white text-center text-3xl font-black text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              <option key={i} value={i}>{String(i).padStart(2, '0')}</option>
+            ))}
+          </select>
+          <span className="text-3xl font-black text-indigo-400">:</span>
+          <select
+            value={minute}
+            onChange={e => onChange(formatTimeFromParts(hour, parseInt(e.target.value, 10)))}
+            className="h-40 w-24 rounded-xl border border-indigo-200 bg-white text-center text-3xl font-black text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          >
+            {Array.from({ length: 60 }, (_, i) => (
+              <option key={i} value={i}>{String(i).padStart(2, '0')}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <p className="text-center text-xs text-indigo-500 font-semibold">Hora seleccionada: {value || '07:00'}</p>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function NutritionQuestionnaire({
   onCancel, onGenerate, onViewPlan, loading, errorMessage, geminiModel, setGeminiModel, lastGeneratedData,
@@ -240,6 +298,12 @@ export default function NutritionQuestionnaire({
 }: Props) {
   const [direction, setDirection] = useState(1);
   const [localModel, setLocalModel] = useState(geminiModel || 'gemini-2.0-flash');
+  const [timePickerState, setTimePickerState] = useState<{
+    open: boolean;
+    profile: 'vo' | 'va' | null;
+    field: 'wakeTime' | 'sleepTime' | null;
+    value: string;
+  }>({ open: false, profile: null, field: null, value: '' });
 
   useEffect(() => { if (geminiModel) setLocalModel(geminiModel); }, [geminiModel]);
 
@@ -290,6 +354,47 @@ export default function NutritionQuestionnaire({
       const next = [...values, tag].join(', ');
       setPerson(profile, { [field]: next } as Partial<Person>);
     }
+  };
+
+  const openTimePicker = (profile: 'vo' | 'va', field: 'wakeTime' | 'sleepTime', currentValue: string) => {
+    setTimePickerState({
+      open: true,
+      profile,
+      field,
+      value: currentValue || '07:00',
+    });
+  };
+  const closeTimePicker = () => setTimePickerState({ open: false, profile: null, field: null, value: '' });
+
+  const updatePortionValue = (group: string, momento: string, updater: (n: number) => number) => {
+    setManualPortions((prev: Record<string, Record<string, number>>) => {
+      const current = prev[group]?.[momento] ?? 0;
+      const next = Math.max(0, Math.min(10, updater(current)));
+      return {
+        ...prev,
+        [group]: { ...prev[group], [momento]: next },
+      };
+    });
+  };
+
+  const selectedCuisineStyles = useMemo(() => {
+    return String(vo.favoriteCuisineStyles || '')
+      .split(',')
+      .map(v => v.trim())
+      .filter(Boolean);
+  }, [vo.favoriteCuisineStyles]);
+
+  const setCuisineStyles = (styles: string[]) => {
+    const joined = styles.join(', ');
+    setVo((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+    setVa((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+  };
+
+  const toggleCuisineStyle = (style: string) => {
+    const next = selectedCuisineStyles.includes(style)
+      ? selectedCuisineStyles.filter(s => s !== style)
+      : [...selectedCuisineStyles, style];
+    setCuisineStyles(next);
   };
 
   // ── Submit ───────────────────────────────────────────────────────────────
@@ -594,22 +699,43 @@ export default function NutritionQuestionnaire({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">Hora de despertar</label>
-              <input type="time" 
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
-                value={p.wakeTime} onChange={e => setPerson(profile, { wakeTime: e.target.value })} />
+              <button
+                onClick={() => openTimePicker(profile, 'wakeTime', p.wakeTime)}
+                className="w-full rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-2.5 text-sm font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 flex items-center justify-between"
+              >
+                <span>{p.wakeTime || '07:00'}</span>
+                <Clock className="w-4 h-4" />
+              </button>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">Hora de dormir</label>
-              <input type="time"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
-                value={p.sleepTime} onChange={e => setPerson(profile, { sleepTime: e.target.value })} />
+              <button
+                onClick={() => openTimePicker(profile, 'sleepTime', p.sleepTime)}
+                className="w-full rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-2.5 text-sm font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 flex items-center justify-between"
+              >
+                <span>{p.sleepTime || '22:00'}</span>
+                <Clock className="w-4 h-4" />
+              </button>
             </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">Frecuencia de entrenamiento</label>
-            <input placeholder="ej: 3 días por semana"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
-              value={p.trainingFrequency} onChange={e => setPerson(profile, { trainingFrequency: e.target.value })} />
+            <div className="grid grid-cols-2 gap-2">
+              {TRAINING_FREQUENCY_CHIPS.map(option => {
+                const active = p.trainingFrequency === option;
+                return (
+                  <button
+                    key={option}
+                    onClick={() => setPerson(profile, { trainingFrequency: option })}
+                    className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-all active:scale-[.98] ${
+                      active ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       );
@@ -628,15 +754,6 @@ export default function NutritionQuestionnaire({
       ];
       const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
       const mLabels = ['Desayuno', 'Col. AM', 'Comida', 'Col. PM', 'Cena'];
-      const mShortLabels = ['Des', 'C.AM', 'Com', 'C.PM', 'Cen'];
-
-      const updatePortion = (group: string, momento: string, value: string) => {
-        const num = parseInt(value) || 0;
-        setManualPortions((prev: Record<string, Record<string, number>>) => ({
-          ...prev,
-          [group]: { ...prev[group], [momento]: num }
-        }));
-      };
 
       return (
         <div className="space-y-4">
@@ -652,12 +769,19 @@ export default function NutritionQuestionnaire({
                 ['manual', '📋', 'Manual',     'Yo defino las cantidades' ],
               ] as const).map(([val, emoji, title, sub]) => (
                 <button key={val} onClick={() => setPortionMode(val)}
-                  className={`flex flex-col gap-0.5 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[.97] ${
-                    portionMode === val ? 'border-slate-800 bg-slate-800' : 'border-slate-200 bg-white hover:bg-slate-50'
+                  className={`relative flex flex-col gap-0.5 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[.97] ${
+                    portionMode === val ? 'border-[2.5px] border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100' : 'border-slate-200 bg-white hover:bg-slate-50'
                   }`}>
+                  <motion.span
+                    initial={false}
+                    animate={{ scale: portionMode === val ? 1 : 0.6, opacity: portionMode === val ? 1 : 0 }}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </motion.span>
                   <span className="text-xl">{emoji}</span>
-                  <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-white' : 'text-slate-800'}`}>{title}</span>
-                  <span className={`text-[10px] ${portionMode === val ? 'text-slate-300' : 'text-slate-400'}`}>{sub}</span>
+                  <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-indigo-700' : 'text-slate-800'}`}>{title}</span>
+                  <span className={`text-[10px] ${portionMode === val ? 'text-indigo-500' : 'text-slate-400'}`}>{sub}</span>
                 </button>
               ))}
             </div>
@@ -669,22 +793,36 @@ export default function NutritionQuestionnaire({
               <label className="text-sm font-semibold text-slate-700 block">Por momentos del día</label>
               <div className="space-y-2">
                 {mKeys.map((momento, idx) => (
-                  <div key={momento} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                  <div key={momento} className="bg-slate-100/70 rounded-xl p-3 border border-slate-200">
                     <p className="text-xs font-bold text-slate-500 uppercase mb-2">{mLabels[idx]}</p>
                     <div className="grid grid-cols-7 gap-1">
                       {foodGroups.map(group => {
                         const val = manualPortions[group.key]?.[momento] || 0;
+                        const Icon = group.key === 'frutas' ? Apple :
+                          group.key === 'verduras' ? Leaf :
+                          group.key === 'cereales' ? Wheat :
+                          group.key === 'proteina' ? Beef :
+                          group.key === 'grasas' ? Droplets :
+                          group.key === 'lacteos' ? Milk : Bean;
                         return (
-                          <div key={group.key} className="flex flex-col items-center">
-                            <span className="text-[10px] font-medium text-slate-400">{group.label.slice(0, 3)}</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max="10"
-                              value={val}
-                              onChange={(e) => updatePortion(group.key, momento, e.target.value)}
-                              className={`w-8 h-8 text-center text-sm font-bold bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-1 ${group.ring}`}
-                            />
+                          <div key={group.key} className="flex flex-col items-center gap-1">
+                            <Icon className={`w-3.5 h-3.5 ${group.color}`} />
+                            <span className="text-[10px] font-semibold text-slate-500">{group.label.slice(0, 3)}</span>
+                            <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+                              <button
+                                onClick={() => updatePortionValue(group.key, momento, (n) => n - 1)}
+                                className="w-6 h-6 flex items-center justify-center text-slate-500 active:scale-95"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="w-5 text-center text-xs font-black text-slate-700 tabular-nums">{val}</span>
+                              <button
+                                onClick={() => updatePortionValue(group.key, momento, (n) => n + 1)}
+                                className="w-6 h-6 flex items-center justify-center text-slate-500 active:scale-95"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -709,24 +847,55 @@ export default function NutritionQuestionnaire({
             <label className="text-sm font-semibold text-slate-700">
               Estilos de cocina preferidos
             </label>
-            <input placeholder="Mexicana, Italiana, Asiática, Mediterránea..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
-              value={vo.favoriteCuisineStyles} onChange={e => { setVo((prev: any) => ({ ...prev, favoriteCuisineStyles: e.target.value })); setVa((prev: any) => ({ ...prev, favoriteCuisineStyles: e.target.value })); }} />
+            <div className="flex flex-wrap gap-2">
+              {CUISINE_STYLE_OPTIONS.map(style => {
+                const active = selectedCuisineStyles.includes(style);
+                return (
+                  <button
+                    key={style}
+                    onClick={() => toggleCuisineStyle(style)}
+                    className={`px-3 py-2 rounded-full text-xs font-semibold border transition-all active:scale-[.98] ${
+                      active ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600'
+                    }`}
+                  >
+                    {style}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">
               Tiempo de cocina disponible
             </label>
-            <input placeholder="15 min, 30 min, 1 hora..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
-              value={vo.cookingTime} onChange={e => { setVo((prev: any) => ({ ...prev, cookingTime: e.target.value })); setVa((prev: any) => ({ ...prev, cookingTime: e.target.value })); }} />
+            <div className="flex flex-wrap gap-2">
+              {COOKING_TIME_OPTIONS.map(time => {
+                const active = vo.cookingTime === time;
+                return (
+                  <button
+                    key={time}
+                    onClick={() => { setVo((prev: any) => ({ ...prev, cookingTime: time })); setVa((prev: any) => ({ ...prev, cookingTime: time })); }}
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all active:scale-[.98] ${
+                      active ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600'
+                    }`}
+                  >
+                    {time}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">
               Notas adicionales
             </label>
-            <textarea rows={3} placeholder="Preferencias de preparación, contexto especial, alimentos que no te gustan..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+            <textarea rows={2} placeholder="Preferencias de preparación, contexto especial, alimentos que no te gustan..."
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = `${target.scrollHeight}px`;
+              }}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none overflow-hidden focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
               value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} />
           </div>
         </div>
@@ -744,20 +913,21 @@ export default function NutritionQuestionnaire({
       }).filter(Boolean).join(', ') : null;
       
       return (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <p className="text-center text-sm text-slate-500">Revisa y confirma tu plan</p>
           
           {/* Configuración general del plan */}
-          <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
+          <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider mb-2.5 text-slate-600">📋 Configuración del Plan</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
-              <span>Perfil: <strong>{targetProfile === 'ambos' ? 'Ambos' : targetProfile === 'vo' ? 'El' : 'Ella'}</strong></span>
-              <span>Porciones: <strong>{portionMode === 'auto' ? 'IA decide 🤖' : 'Manual 📋'}</strong></span>
-              {portionSummary && <span className="col-span-2 text-slate-500">Resumen: {portionSummary}</span>}
-              {vo.favoriteCuisineStyles && <span className="col-span-2 text-slate-500">Cocina: {vo.favoriteCuisineStyles}</span>}
-              {vo.cookingTime && <span className="col-span-2 text-slate-500">Tiempo cocina: {vo.cookingTime}</span>}
+              <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400" />Perfil: <strong>{targetProfile === 'ambos' ? 'Ambos' : targetProfile === 'vo' ? 'El' : 'Ella'}</strong></span>
+              <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-slate-400" />Porciones: <strong>{portionMode === 'auto' ? 'IA decide 🤖' : 'Manual 📋'}</strong></span>
+              {portionSummary && <span className="col-span-2 text-slate-500 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" />Resumen: {portionSummary}</span>}
+              {vo.favoriteCuisineStyles && <span className="col-span-2 text-slate-500 flex items-center gap-1.5"><ChefHat className="w-3.5 h-3.5" />Cocina: {vo.favoriteCuisineStyles}</span>}
+              {vo.cookingTime && <span className="col-span-2 text-slate-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />Tiempo cocina: {vo.cookingTime}</span>}
               {additionalNotes && <span className="col-span-2 text-slate-500 truncate">Notas: {additionalNotes}</span>}
             </div>
+            <div className="h-px bg-slate-200" />
           </div>
           
           {profiles.map(p => {
@@ -769,12 +939,12 @@ export default function NutritionQuestionnaire({
                   {p === 'vo' ? '👨 Perfil El' : '👩 Perfil Ella'}
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600">
-                  {data.age && <span>Edad: <strong>{data.age} años</strong></span>}
-                  <span>Peso: <strong>{data.currentWeightKg} kg</strong></span>
-                  <span>Estatura: <strong>{data.heightCm} cm</strong></span>
-                  {data.targetWeightKg && <span>Peso meta: <strong>{data.targetWeightKg} kg</strong></span>}
-                  <span className="col-span-2">Objetivos: <strong>{data.objectives.join(', ') || 'Ninguno'}</strong></span>
-                  <span className="col-span-2">Actividad: <strong>{data.activityLevel}</strong></span>
+                  {data.age && <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400" />Edad: <strong>{data.age} años</strong></span>}
+                  <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5 text-slate-400" />Peso: <strong>{data.currentWeightKg} kg</strong></span>
+                  <span className="flex items-center gap-1.5"><Ruler className="w-3.5 h-3.5 text-slate-400" />Estatura: <strong>{data.heightCm} cm</strong></span>
+                  {data.targetWeightKg && <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-slate-400" />Peso meta: <strong>{data.targetWeightKg} kg</strong></span>}
+                  <span className="col-span-2 flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-slate-400" />Objetivos: <strong>{data.objectives.join(', ') || 'Ninguno'}</strong></span>
+                  <span className="col-span-2 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-slate-400" />Actividad: <strong>{data.activityLevel}</strong></span>
                   {data.objectiveTimeline && <span className="col-span-2">Tiempo: <strong>{data.objectiveTimeline}</strong></span>}
                   {data.wakeTime && data.sleepTime && <span className="col-span-2">Horario: <strong>{data.wakeTime} - {data.sleepTime}</strong></span>}
                   {data.trainingFrequency && <span className="col-span-2">Entreno: <strong>{data.trainingFrequency}</strong></span>}
@@ -879,15 +1049,17 @@ export default function NutritionQuestionnaire({
           )}
           
           {!loading && !lastGeneratedData && (
-            <button onClick={handleGenerate} disabled={loading}
+            <motion.button onClick={handleGenerate} disabled={loading}
+              animate={!loading ? { backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] } : {}}
+              transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
               className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] ${
-                loading ? 'bg-slate-800 opacity-70 cursor-not-allowed' : 'bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-800 hover:to-slate-600'
+                loading ? 'bg-slate-800 opacity-70 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-[length:200%_200%] hover:brightness-110'
               } text-white`}>
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-amber-300" />}
               {loading ? 'Generando plan...' : '✨ Generar Plan con IA'}
-            </button>
+            </motion.button>
           )}
-          <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+          <p className="mt-3 text-[10px] text-slate-300 text-center leading-relaxed">
             Las recomendaciones de IA no sustituyen valoración profesional.
           </p>
         </div>
@@ -908,6 +1080,7 @@ export default function NutritionQuestionnaire({
   const profileSuffix = currentStep.profile === 'vo' ? ' · El' : currentStep.profile === 'va' ? ' · Ella' : '';
 
   return (
+    <>
     <div className="mt-4 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       {/* Progress bar */}
       <div className="h-2 bg-slate-100 flex-shrink-0">
@@ -987,5 +1160,48 @@ export default function NutritionQuestionnaire({
         </div>
       )}
     </div>
+    <AnimatePresence>
+      {timePickerState.open && timePickerState.profile && timePickerState.field && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-[2px] flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ y: 16, scale: 0.98, opacity: 0 }}
+            animate={{ y: 0, scale: 1, opacity: 1 }}
+            exit={{ y: 8, scale: 0.98, opacity: 0 }}
+            className="w-full max-w-xs rounded-3xl border border-indigo-200 bg-white p-4 shadow-xl space-y-4"
+          >
+            <TimeWheelPicker
+              title={timePickerState.field === 'wakeTime' ? 'Hora de despertar' : 'Hora de dormir'}
+              value={timePickerState.value}
+              onChange={v => setTimePickerState(prev => ({ ...prev, value: v }))}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={closeTimePicker}
+                className="py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (timePickerState.profile && timePickerState.field) {
+                    setPerson(timePickerState.profile, { [timePickerState.field]: timePickerState.value } as Partial<Person>);
+                  }
+                  closeTimePicker();
+                }}
+                className="py-2.5 rounded-xl border border-indigo-600 bg-indigo-600 text-sm font-semibold text-white"
+              >
+                Guardar
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }
