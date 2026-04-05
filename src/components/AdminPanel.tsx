@@ -107,7 +107,7 @@ export default function AdminPanel({
           <div className="flex items-center gap-2">
             <button 
               onClick={handleDelete}
-              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-white rounded-lg transition-colors"
+              className="min-h-[44px] min-w-[44px] p-1.5 text-slate-500 hover:text-red-500 hover:bg-white rounded-lg border border-slate-200 shadow-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-300 active:scale-95"
               title="Eliminar versión personalizada"
             >
               <Trash2 className="w-4 h-4" />
@@ -118,16 +118,16 @@ export default function AdminPanel({
 
       <div className="flex flex-col gap-3 z-10">
         {/* Opciones de descarga */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button 
             onClick={handlePdfDownload}
-            className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition active:scale-95 shadow-sm"
+            className="min-h-[44px] flex items-center justify-center gap-2 px-3 sm:px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 text-center leading-tight transition duration-150 active:scale-95 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
           >
             <FileText className="w-4 h-4" /> PDF
           </button>
           <button 
             onClick={handleJsonDownload}
-            className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition active:scale-95 shadow-sm"
+            className="min-h-[44px] flex items-center justify-center gap-2 px-3 sm:px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 text-center leading-tight transition duration-150 active:scale-95 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
           >
             <FileJson className="w-4 h-4" /> JSON
           </button>
@@ -138,15 +138,15 @@ export default function AdminPanel({
 
         {/* Opciones de carga */}
         {isCustomAvailable ? (
-          <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span className="text-sm font-medium text-slate-600">Usar versión:</span>
             <button 
               onClick={() => setDataVersion(dataVersion === 'original' ? 'custom' : 'original')}
-              className={`flex items-center gap-2 font-bold text-sm transition-colors ${dataVersion === 'custom' ? activeColor : 'text-slate-400'}`}
+              className={`min-h-[44px] w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 px-3 sm:px-4 py-2 border border-slate-200 rounded-xl shadow-sm font-semibold text-sm text-center leading-tight transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 active:scale-95 ${dataVersion === 'custom' ? activeColor : 'text-slate-500'}`}
             >
-              <span className={dataVersion === 'original' ? 'text-slate-700' : ''}>Original</span>
+              <span className={`text-left ${dataVersion === 'original' ? 'text-slate-700' : 'text-slate-500'}`}>Original</span>
               {dataVersion === 'custom' ? <ToggleRight className={`w-6 h-6 ${activeColor}`} /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
-              <span className={dataVersion === 'custom' ? activeColor : ''}>Subida</span>
+              <span className={`text-right ${dataVersion === 'custom' ? activeColor : 'text-slate-500'}`}>Personalizada</span>
             </button>
           </div>
         ) : (
@@ -160,7 +160,7 @@ export default function AdminPanel({
             />
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 ${btnColor} text-white rounded-xl text-sm font-bold transition shadow-md active:scale-95`}
+              className={`w-full min-h-[44px] flex items-center justify-center gap-2 px-3 sm:px-4 ${btnColor} text-white rounded-xl text-sm font-semibold text-center leading-tight transition duration-150 shadow-sm border border-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-300 active:scale-95`}
             >
               <Upload className="w-4 h-4" /> Subir archivo .json modificado
             </button>
