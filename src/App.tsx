@@ -258,6 +258,23 @@ export default function App() {
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null); // Para descarga de JSON
   
   const [showAdmin, setShowAdmin] = useState(false);
+  const hasCustomPlan = dataVersions.vo === 'custom' || dataVersions.va === 'custom';
+
+  const getImcData = (perfilText: string) => {
+    const match = perfilText.match(/IMC\s*([\d.]+)/i);
+    const imc = match ? Number(match[1]) : null;
+    if (!imc || Number.isNaN(imc)) return null;
+
+    const status = imc < 18.5
+      ? { label: 'Bajo', color: 'bg-sky-500', pct: 15 }
+      : imc < 25
+      ? { label: 'Saludable', color: 'bg-emerald-500', pct: 45 }
+      : imc < 30
+      ? { label: 'Sobrepeso', color: 'bg-amber-500', pct: 70 }
+      : { label: 'Obesidad', color: 'bg-rose-500', pct: 90 };
+
+    return { imc, ...status };
+  };
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
     try { 
       // Intentar leer desde localStorage primero, luego desde .env
@@ -934,7 +951,7 @@ export default function App() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 backdrop-blur border border-slate-200 text-slate-700 font-semibold text-sm shadow-sm hover:shadow-md transition-all active:scale-95"
                 >
                   <Settings className="w-4 h-4" />
-                  <span>Panel de administración</span>
+                  <span>Mi perfil</span>
                 </button>
               </div>
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-3 tracking-tight leading-[1.1]">
@@ -946,15 +963,6 @@ export default function App() {
               <p className="text-sm md:text-lg text-slate-600 max-w-xl mx-auto font-medium leading-relaxed">
                 Elige tu plan individual o armen su lista de compras juntos de forma automática.
               </p>
-              <div className="mt-4">
-                <button
-                  onClick={() => setShowQuestionnaire(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-bold text-sm shadow-md hover:shadow-lg hover:from-violet-400 hover:to-indigo-500 transition-all active:scale-95"
-                >
-                  <span>✨</span>
-                  <span>Generar un plan con IA</span>
-                </button>
-              </div>
             </motion.div>
           </div>
         </div>
@@ -963,17 +971,24 @@ export default function App() {
           <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">✅ Plan editable</span>
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">🛒 Lista de compras</span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">📱 Optimizado para móvil</span>
           </div>
           <div className="mb-3 sm:mb-4 text-center">
             <p className="text-xs sm:text-sm text-slate-500 font-semibold tracking-wide uppercase">Selecciona un perfil para comenzar</p>
           </div>
-          <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/70 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
-            <p className="text-[11px] sm:text-xs font-semibold text-violet-700 uppercase tracking-wide">Planes base de referencia</p>
-            <p className="text-xs sm:text-sm text-violet-900 font-medium leading-snug mt-1">
-              Para mejores resultados, lo ideal es generar un plan personalizado con IA.
-            </p>
-          </div>
+          {hasCustomPlan ? (
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
+              <p className="text-xs sm:text-sm text-emerald-800 font-semibold leading-snug">
+                ✅ Tu nutrición inteligente está lista. Plan personalizado generado con éxito.
+              </p>
+            </div>
+          ) : (
+            <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/70 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
+              <p className="text-[11px] sm:text-xs font-semibold text-violet-700 uppercase tracking-wide">Planes base de referencia</p>
+              <p className="text-xs sm:text-sm text-violet-900 font-medium leading-snug mt-1">
+                Explora nuestros planes base o crea tu plan personalizado con IA.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 items-stretch">
             <motion.button
               initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
@@ -988,9 +1003,35 @@ export default function App() {
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">El</span>
                 </div>
                 <p className="text-blue-100 text-sm mb-3 leading-relaxed">{perfilesData.vo.perfil}</p>
+                {getImcData(perfilesData.vo.perfil) && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-[11px] text-blue-100 mb-1">
+                      <span>IMC {getImcData(perfilesData.vo.perfil)?.imc}</span>
+                      <span>{getImcData(perfilesData.vo.perfil)?.label}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
+                      <div
+                        className={`h-full ${getImcData(perfilesData.vo.perfil)?.color}`}
+                        style={{ width: `${getImcData(perfilesData.vo.perfil)?.pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-blue-200 text-xs sm:text-sm mt-auto">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuestionnaireTargetProfile('vo');
+                    setShowQuestionnaire(true);
+                  }}
+                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-semibold border border-white/30 transition-colors"
+                >
+                  <span>✨</span>
+                  <span>Personalizar El con IA</span>
+                </button>
               </div>
             </motion.button>
 
@@ -998,7 +1039,7 @@ export default function App() {
               initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.15 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-600 via-rose-700 to-pink-800 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-rose-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-400/20 rounded-full blur-2xl" />
@@ -1006,10 +1047,36 @@ export default function App() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ella</span>
                 </div>
-                <p className="text-rose-100 text-sm mb-3 leading-relaxed">{perfilesData.va.perfil}</p>
-                <div className="flex items-center gap-2 text-rose-200 text-xs sm:text-sm mt-auto">
+                <p className="text-rose-50 text-sm mb-3 leading-relaxed">{perfilesData.va.perfil}</p>
+                {getImcData(perfilesData.va.perfil) && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-[11px] text-rose-50 mb-1">
+                      <span>IMC {getImcData(perfilesData.va.perfil)?.imc}</span>
+                      <span>{getImcData(perfilesData.va.perfil)?.label}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
+                      <div
+                        className={`h-full ${getImcData(perfilesData.va.perfil)?.color}`}
+                        style={{ width: `${getImcData(perfilesData.va.perfil)?.pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-rose-100 text-xs sm:text-sm mt-auto">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuestionnaireTargetProfile('va');
+                    setShowQuestionnaire(true);
+                  }}
+                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-semibold border border-white/30 transition-colors"
+                >
+                  <span>✨</span>
+                  <span>Personalizar Ella con IA</span>
+                </button>
               </div>
             </motion.button>
             
@@ -1030,6 +1097,18 @@ export default function App() {
                     Ve y selecciona platillos de ambos perfiles en una sola vista para organizar comidas y compras fácilmente.
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuestionnaireTargetProfile('ambos');
+                    setShowQuestionnaire(true);
+                  }}
+                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-semibold border border-white/30 transition-colors"
+                >
+                  <span>✨</span>
+                  <span>Personalizar ambos con IA</span>
+                </button>
               </div>
             </motion.button>
           </div>
