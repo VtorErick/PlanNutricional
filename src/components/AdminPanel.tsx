@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Download, Upload, FileText, FileJson, Trash2, ToggleLeft, ToggleRight, CheckCircle2 } from 'lucide-react';
+import { Upload, FileText, FileJson, Trash2, ToggleLeft, ToggleRight, CheckCircle2 } from 'lucide-react';
 import { downloadJsonFile, downloadDietPdf, parseJsonToData } from '../dataManager';
 
 interface AdminPanelProps {
@@ -118,16 +117,16 @@ export default function AdminPanel({
 
       <div className="flex flex-col gap-3 z-10">
         {/* Opciones de descarga */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3">
           <button 
             onClick={handlePdfDownload}
-            className="min-h-[44px] flex items-center justify-center gap-2 px-3 sm:px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 text-center leading-tight transition duration-150 active:scale-95 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
+            className="min-h-[44px] flex items-center justify-center gap-2 px-3 sm:px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 text-center leading-tight whitespace-normal break-words transition duration-150 active:scale-95 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
           >
             <FileText className="w-4 h-4" /> PDF
           </button>
           <button 
             onClick={handleJsonDownload}
-            className="min-h-[44px] flex items-center justify-center gap-2 px-3 sm:px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 text-center leading-tight transition duration-150 active:scale-95 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
+            className="min-h-[44px] flex items-center justify-center gap-2 px-3 sm:px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 text-center leading-tight whitespace-normal break-words transition duration-150 active:scale-95 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400"
           >
             <FileJson className="w-4 h-4" /> JSON
           </button>
@@ -144,9 +143,9 @@ export default function AdminPanel({
               onClick={() => setDataVersion(dataVersion === 'original' ? 'custom' : 'original')}
               className={`min-h-[44px] w-full sm:w-auto flex items-center justify-between sm:justify-start gap-2 px-3 sm:px-4 py-2 border border-slate-200 rounded-xl shadow-sm font-semibold text-sm text-center leading-tight transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-400 active:scale-95 ${dataVersion === 'custom' ? activeColor : 'text-slate-500'}`}
             >
-              <span className={`text-left ${dataVersion === 'original' ? 'text-slate-700' : 'text-slate-500'}`}>Original</span>
-              {dataVersion === 'custom' ? <ToggleRight className={`w-6 h-6 ${activeColor}`} /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
-              <span className={`text-right ${dataVersion === 'custom' ? activeColor : 'text-slate-500'}`}>Personalizada</span>
+              <span className={`flex-1 text-left ${dataVersion === 'original' ? 'text-slate-700' : 'text-slate-500'}`}>Original</span>
+              {dataVersion === 'custom' ? <ToggleRight className={`w-6 h-6 shrink-0 ${activeColor}`} /> : <ToggleLeft className="w-6 h-6 shrink-0 text-slate-400" />}
+              <span className={`flex-1 text-right ${dataVersion === 'custom' ? activeColor : 'text-slate-500'}`}>Personalizada</span>
             </button>
           </div>
         ) : (
