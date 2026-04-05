@@ -910,7 +910,7 @@ export default function App() {
             <img src="/images/hero.png" alt="" className="w-full h-full object-cover opacity-20" />
             <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/30 to-white" />
           </div>
-          <div className="relative max-w-4xl mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-4 text-center">
+          <div className="relative max-w-4xl mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-5 text-center">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }} 
@@ -921,20 +921,28 @@ export default function App() {
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                 <span className="text-xs font-bold tracking-wide text-slate-700 uppercase">Bienvenido a su plan</span>
               </motion.div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-3 tracking-tight leading-[1.1]">
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-3 tracking-tight leading-[1.1]">
                 Nutrición inteligente,<br className="hidden sm:block"/>
                 <span className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 bg-clip-text text-transparent drop-shadow-sm">
                   sin complicaciones.
                 </span>
               </h1>
               <p className="text-sm md:text-lg text-slate-600 max-w-xl mx-auto font-medium leading-relaxed">
-                Elige de forma individual o armen su lista de compras juntos de forma automática.
+                Elige tu plan individual o armen su lista de compras juntos de forma automática.
               </p>
             </motion.div>
           </div>
         </div>
 
         <div className="flex-1 max-w-4xl mx-auto px-4 md:px-6 pb-12 w-full z-10 relative -mt-2">
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">✅ Plan editable</span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">🛒 Lista de compras</span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">📱 Optimizado para móvil</span>
+          </div>
+          <div className="mb-4 text-center">
+            <p className="text-xs sm:text-sm text-slate-500 font-semibold tracking-wide uppercase">Selecciona un perfil para comenzar</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             <motion.button
               initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
@@ -990,8 +998,8 @@ export default function App() {
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-teal-400/20 rounded-full blur-2xl" />
-              <div className="relative flex items-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+              <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
                   <Heart className="w-8 h-8 text-white" />
                 </div>
                 <div>
