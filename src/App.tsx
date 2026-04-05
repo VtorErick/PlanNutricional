@@ -537,10 +537,28 @@ export default function App() {
   const diasDisponibles = perfilActivo ? Object.keys(perfilBase.plan) : [];
   const equivalencias = (perfilActivo && perfilActivo !== 'ambos') ? equivalenciasData[perfilActivo as 'vo' | 'va'] : [];
 
-  const toggleSeleccion = (perfilId: string, dia: string, momento: string, nombre: string) => {
+  const getNextMomentoKey = useCallback((momentoKey: string) => {
+    const momentKeys = perfilBase.momentos.map((m) => m.key);
+    const currentIdx = momentKeys.indexOf(momentoKey);
+    if (currentIdx === -1 || currentIdx >= momentKeys.length - 1) return null;
+    return momentKeys[currentIdx + 1];
+  }, [perfilBase.momentos]);
+
+  const toggleSeleccion = useCallback((perfilId: string, dia: string, momento: string, nombre: string) => {
     const key = `${perfilId}-${dia}-${momento}-${nombre}`;
+    const profileData = perfilId === 'va' ? perfilesData.va : perfilesData.vo;
+    const comidasMomento = profileData.plan[dia]?.[momento] || [];
+    const nextMomento = getNextMomentoKey(momento);
+    const wasCompleted = comidasMomento.some((item) => selecciones[`${perfilId}-${dia}-${momento}-${item.nombre}`]);
+    const willSelectCurrentMeal = !selecciones[key];
+    const isNowCompleted = wasCompleted || willSelectCurrentMeal;
+
     setSelecciones((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+
+    if (!wasCompleted && isNowCompleted && nextMomento) {
+      setTimeout(() => scrollToMomento(nextMomento, progressExpanded), 120);
+    }
+  }, [getNextMomentoKey, perfilesData.va, perfilesData.vo, progressExpanded, scrollToMomento, selecciones]);
 
   const momentoCompletadoVo = useMemo(() => {
     if (!perfilActivo) return {};
