@@ -1314,6 +1314,10 @@ export default function App() {
     iconDone: 'bg-white/20',
     iconPending: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
     iconColorPending: isAmbos ? 'text-emerald-400' : isVo ? 'text-blue-400' : 'text-rose-400',
+    momentoIconBgDone: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
+    momentoIconColorDone: isAmbos ? 'text-emerald-600' : isVo ? 'text-blue-600' : 'text-rose-600',
+    momentoIconBgPending: 'bg-slate-100 border border-slate-200',
+    momentoIconColorPending: 'text-slate-500',
     headerBg: isAmbos ? 'bg-gradient-to-r from-emerald-600 to-teal-700' : isVo
       ? 'bg-gradient-to-r from-blue-600 to-indigo-700'
       : 'bg-gradient-to-r from-rose-500 to-pink-600',
@@ -1629,8 +1633,12 @@ export default function App() {
                         className={`w-full flex items-center justify-between text-left p-4 sm:p-5 transition-colors focus:outline-none ${done ? 'bg-slate-50/50' : 'hover:bg-slate-50'} ${estaEnEdicion ? 'cursor-default' : ''}`}
                       >
                         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center flex-shrink-0`}>
-                            <Icon className="w-3.5 h-3.5 text-white" />
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            done ? ac.momentoIconBgDone : ac.momentoIconBgPending
+                          }`}>
+                            <Icon className={`w-3.5 h-3.5 ${
+                              done ? ac.momentoIconColorDone : ac.momentoIconColorPending
+                            }`} />
                           </div>
                           <span className="truncate">{momento.label}</span>
                           {done && (
