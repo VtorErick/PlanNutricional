@@ -914,13 +914,6 @@ export default function App() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col relative">
         {/* Acciones rápidas - Landing page */}
         <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
-          <button
-            onClick={() => setShowQuestionnaire(true)}
-            className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-400 hover:to-indigo-500 text-white rounded-full shadow-md hover:shadow-lg transition-all active:scale-95"
-          >
-            <span className="text-base">🪄</span>
-            <span className="text-sm font-bold">Generar con IA</span>
-          </button>
           <button 
             onClick={() => setShowAdmin(true)} 
             className="group flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur hover:bg-white text-slate-700 rounded-full shadow-md hover:shadow-lg border border-slate-200 transition-all active:scale-95"
@@ -978,26 +971,22 @@ export default function App() {
           <div className="mb-4 text-center">
             <p className="text-xs sm:text-sm text-slate-500 font-semibold tracking-wide uppercase">Selecciona un perfil para comenzar</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 items-stretch">
             <motion.button
               initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('vo'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl" />
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-5">
-                  <span className="text-base font-semibold tracking-wide text-white">El</span>
+              <div className="relative h-full flex flex-col">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+                  <span className="text-sm sm:text-base font-semibold tracking-wide text-white">El</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Plan personalizado</h2>
-                <p className="text-blue-100 text-sm mb-4 leading-relaxed">{perfilesData.vo.perfil}</p>
-                <div className="flex items-center gap-2 text-blue-200 text-sm">
+                <p className="text-blue-100 text-sm mb-3 leading-relaxed">{perfilesData.vo.perfil}</p>
+                <div className="flex items-center gap-2 text-blue-200 text-xs sm:text-sm mt-auto">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
-                </div>
-                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white text-sm font-medium group-hover:bg-white/30 transition-colors">
-                  Ver plan →
                 </div>
               </div>
             </motion.button>
@@ -1006,21 +995,17 @@ export default function App() {
               initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.15 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-rose-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-400/20 rounded-full blur-2xl" />
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-5">
-                  <span className="text-base font-semibold tracking-wide text-white">Ella</span>
+              <div className="relative h-full flex flex-col">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+                  <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ella</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Plan personalizado</h2>
-                <p className="text-rose-100 text-sm mb-4 leading-relaxed">{perfilesData.va.perfil}</p>
-                <div className="flex items-center gap-2 text-rose-200 text-sm">
+                <p className="text-rose-100 text-sm mb-3 leading-relaxed">{perfilesData.va.perfil}</p>
+                <div className="flex items-center gap-2 text-rose-200 text-xs sm:text-sm mt-auto">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
-                </div>
-                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white text-sm font-medium group-hover:bg-white/30 transition-colors">
-                  Ver plan →
                 </div>
               </div>
             </motion.button>
