@@ -1670,10 +1670,7 @@ export default function App() {
                                         {mealsSingleSeleccionadas.map((meal, idx) => (
                                           <div key={idx} className={`p-4 rounded-xl border border-slate-100 bg-gradient-to-r ${ac.bgLight} to-transparent`}>
                                             <h4 className={`font-bold text-sm mb-1 ${ac.text}`}>{meal.nombre}</h4>
-                                            <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
-                                            {meal.super && meal.super.length > 0 && (
-                                              <div className="mt-2 text-[10px] text-slate-400 font-medium">✨ {meal.super.join(', ')}</div>
-                                            )}
+                                            <p className="text-slate-600 text-xs font-medium leading-relaxed">{meal.porciones}</p>
                                           </div>
                                         ))}
                                         <button
@@ -1709,10 +1706,7 @@ export default function App() {
                                             {mealsVOSeleccionadas.map((meal, idx) => (
                                               <div key={idx} className="p-4 rounded-xl border border-blue-50 bg-gradient-to-r from-blue-50 to-transparent">
                                                 <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
-                                                <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
-                                                {meal.super && meal.super.length > 0 && (
-                                                  <div className="mt-2 text-[10px] text-blue-400/80 font-medium tracking-tight">✨ {meal.super.join(', ')}</div>
-                                                )}
+                                                <p className="text-slate-600 text-xs font-medium leading-relaxed">{meal.porciones}</p>
                                               </div>
                                             ))}
                                           </div>
@@ -1723,10 +1717,7 @@ export default function App() {
                                             {mealsVASeleccionadas.map((meal, idx) => (
                                               <div key={idx} className="p-4 rounded-xl border border-rose-50 bg-gradient-to-r from-rose-50 to-transparent">
                                                 <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
-                                                <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
-                                                {meal.super && meal.super.length > 0 && (
-                                                  <div className="mt-2 text-[10px] text-rose-400/80 font-medium tracking-tight">✨ {meal.super.join(', ')}</div>
-                                                )}
+                                                <p className="text-slate-600 text-xs font-medium leading-relaxed">{meal.porciones}</p>
                                               </div>
                                             ))}
                                           </div>
