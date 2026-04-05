@@ -1155,7 +1155,10 @@ export default function NutritionQuestionnaire({
 
   return (
     <>
-    <div className="mt-4 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+    <div
+      className="mt-4 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col"
+      style={{ height: 'min(720px, calc(100dvh - 180px))' }}
+    >
       {/* Progress bar */}
       <div className="h-2 bg-slate-100 flex-shrink-0">
         <motion.div
@@ -1185,7 +1188,7 @@ export default function NutritionQuestionnaire({
       </div>
 
       {/* Slide content */}
-      <div className="flex-1 px-4 py-5 overflow-y-auto" style={{ maxHeight: 'min(420px, 55vh)' }}>
+      <div className="flex-1 min-h-0 px-4 py-5 overflow-y-auto">
         <AnimatePresence custom={direction} mode="wait">
           <motion.div
             key={stepIdx}
