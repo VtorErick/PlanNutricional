@@ -1296,8 +1296,8 @@ export default function App() {
     borderAccent: isAmbos ? 'border-emerald-500' : isVo ? 'border-blue-500' : 'border-rose-500',
     tagBg: isAmbos ? 'bg-emerald-100' : isVo ? 'bg-blue-100' : 'bg-rose-100',
     tagText: isAmbos ? 'text-emerald-700' : isVo ? 'text-blue-700' : 'text-rose-700',
-    progressBg: isAmbos ? 'bg-emerald-100' : isVo ? 'bg-blue-100' : 'bg-rose-100',
-    progressFill: isAmbos ? 'from-emerald-500 to-teal-500' : isVo ? 'from-blue-500 to-indigo-500' : 'from-rose-500 to-pink-500',
+    progressBg: isAmbos ? 'from-emerald-50 via-teal-50 to-emerald-100' : isVo ? 'from-blue-50 via-sky-50 to-indigo-100' : 'from-rose-50 via-pink-50 to-rose-100',
+    progressFill: isAmbos ? 'from-emerald-300 via-teal-400 to-emerald-600' : isVo ? 'from-sky-300 via-blue-400 to-indigo-600' : 'from-pink-300 via-rose-400 to-pink-600',
     btnActive: isAmbos 
       ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25'
       : isVo
@@ -1423,9 +1423,9 @@ export default function App() {
               </div>
 
               {/* Progress bar */}
-              <div className={`flex-1 h-1.5 ${ac.progressBg} rounded-full overflow-hidden`}>
+              <div className={`flex-1 h-2 bg-gradient-to-r ${ac.progressBg} rounded-full overflow-hidden shadow-inner shadow-slate-200/70`}>
                 <motion.div
-                  className={`h-full bg-gradient-to-r ${ac.progressFill} rounded-full`}
+                  className={`h-full bg-gradient-to-r ${ac.progressFill} rounded-full shadow-[0_0_12px_rgba(15,23,42,0.25)]`}
                   animate={{ width: `${progresoDia}%` }}
                   transition={{ type: 'spring', stiffness: 80, damping: 15 }}
                 />
@@ -1618,7 +1618,7 @@ export default function App() {
                       layout
                       key={momento.key}
                       ref={(el) => { mealSectionRefs.current[momento.key] = el; }}
-                      className={`bg-white rounded-[28px] sm:rounded-3xl shadow-sm border overflow-hidden ${done ? ac.borderAccent : 'border-slate-100'}`}
+                      className={`bg-white rounded-[28px] sm:rounded-3xl shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.08)] border border-white/70 overflow-hidden transition-shadow duration-300 ${done ? ac.borderAccent : ''}`}
                     >
                       <button
                         onClick={() => {
@@ -1677,7 +1677,7 @@ export default function App() {
                                     !estaEnEdicion ? (
                                       <div className="space-y-3">
                                         {mealsSingleSeleccionadas.map((meal, idx) => (
-                                          <div key={idx} className={`p-4 rounded-xl border border-slate-100 bg-gradient-to-r ${ac.bgLight} to-transparent`}>
+                                          <div key={idx} className={`p-4 rounded-2xl border border-white/70 bg-gradient-to-br ${ac.bgLight} via-white to-white shadow-[0_10px_24px_rgba(15,23,42,0.06)]`}>
                                             <h4 className={`font-bold text-sm mb-1 ${ac.text}`}>{meal.nombre}</h4>
                                             <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1685,9 +1685,11 @@ export default function App() {
                                                 <span
                                                   key={`${meal.nombre}-${item.key}-${item.cantidad}`}
                                                   title={`${item.label} ${item.cantidad}`}
-                                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}
+                                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}
                                                 >
-                                                  <span>{item.icon}</span>
+                                                  <span className="w-5 h-5 rounded-full bg-white/70 flex items-center justify-center text-[12px] shadow-sm shadow-slate-200/50">
+                                                    {item.icon}
+                                                  </span>
                                                   <span>x{item.cantidad}</span>
                                                 </span>
                                               ))}
@@ -1726,13 +1728,13 @@ export default function App() {
                                           <>
                                             {mealsVOSeleccionadas.length > 0 ? (
                                               mealsVOSeleccionadas.map((meal, idx) => (
-                                                <div key={idx} className="p-4 rounded-xl border border-blue-50 bg-gradient-to-r from-blue-50 to-transparent">
+                                                <div key={idx} className="p-4 rounded-2xl border border-white/70 bg-gradient-to-br from-blue-50 via-white to-white shadow-[0_10px_24px_rgba(37,99,235,0.10)]">
                                                   <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
                                                   <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                                   <div className="mt-2 flex flex-wrap gap-1.5">
                                                     {porcionesVoMomento.map((item) => (
-                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-bold">
-                                                        <span>{item.icon}</span>
+                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold">
+                                                        <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[12px] shadow-sm shadow-blue-200/60">{item.icon}</span>
                                                         <span>x{item.cantidad}</span>
                                                       </span>
                                                     ))}
@@ -1780,13 +1782,13 @@ export default function App() {
                                           <>
                                             {mealsVASeleccionadas.length > 0 ? (
                                               mealsVASeleccionadas.map((meal, idx) => (
-                                                <div key={idx} className="p-4 rounded-xl border border-rose-50 bg-gradient-to-r from-rose-50 to-transparent">
+                                                <div key={idx} className="p-4 rounded-2xl border border-white/70 bg-gradient-to-br from-rose-50 via-white to-white shadow-[0_10px_24px_rgba(244,63,94,0.10)]">
                                                   <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
                                                   <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                                   <div className="mt-2 flex flex-wrap gap-1.5">
                                                     {porcionesVaMomento.map((item) => (
-                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold">
-                                                        <span>{item.icon}</span>
+                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[11px] font-bold">
+                                                        <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[12px] shadow-sm shadow-rose-200/60">{item.icon}</span>
                                                         <span>x{item.cantidad}</span>
                                                       </span>
                                                     ))}
