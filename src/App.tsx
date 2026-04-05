@@ -510,12 +510,12 @@ export default function App() {
   // Refs to handle auto-scrolling to each meal section
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean, extraOffset = 0) => {
+  const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean) => {
     const doScroll = () => {
       const el = mealSectionRefs.current[momentoKey];
       if (!el) return;
       // Offset = header (~56px) + dias (~48px) + progreso (~44px) + margen (12px)
-      const offset = 56 + 48 + 44 + 12 + extraOffset;
+      const offset = 56 + 48 + 44 + 12;
       const top = el.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: 'smooth' });
     };
@@ -537,46 +537,9 @@ export default function App() {
   const diasDisponibles = perfilActivo ? Object.keys(perfilBase.plan) : [];
   const equivalencias = (perfilActivo && perfilActivo !== 'ambos') ? equivalenciasData[perfilActivo as 'vo' | 'va'] : [];
 
-  const getNextMomentoKey = useCallback((momentoKey: string) => {
-    const idx = perfilBase.momentos.findIndex((m) => m.key === momentoKey);
-    if (idx === -1 || idx >= perfilBase.momentos.length - 1) return null;
-    return perfilBase.momentos[idx + 1].key;
-  }, [perfilBase]);
-
-  const hasSelectionForMomento = useCallback((
-    currentSelecciones: Record<string, boolean>,
-    perfilId: 'vo' | 'va',
-    momentoKey: string
-  ) => {
-    const plan = perfilesData[perfilId].plan[diaActivo]?.[momentoKey] || [];
-    return plan.some((item) => currentSelecciones[`${perfilId}-${diaActivo}-${momentoKey}-${item.nombre}`]);
-  }, [perfilesData, diaActivo]);
-
   const toggleSeleccion = (perfilId: string, dia: string, momento: string, nombre: string) => {
     const key = `${perfilId}-${dia}-${momento}-${nombre}`;
-    setSelecciones((prev) => {
-      const nextValue = !prev[key];
-      const nextSelecciones = { ...prev, [key]: nextValue };
-
-      if (nextValue) {
-        const nextMomentoKey = getNextMomentoKey(momento);
-        if (nextMomentoKey) {
-          const isPrimerSalto = momento === perfilBase.momentos[0]?.key;
-          const autoScrollOffset = isPrimerSalto ? 130 : 90;
-          if (isAmbos) {
-            const voListo = hasSelectionForMomento(nextSelecciones, 'vo', momento);
-            const vaListo = hasSelectionForMomento(nextSelecciones, 'va', momento);
-            if (voListo && vaListo) {
-              setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded, autoScrollOffset), 250);
-            }
-          } else {
-            setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded, autoScrollOffset), 250);
-          }
-        }
-      }
-
-      return nextSelecciones;
-    });
+    setSelecciones((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const momentoCompletadoVo = useMemo(() => {
