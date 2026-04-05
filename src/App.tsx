@@ -258,7 +258,9 @@ export default function App() {
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null); // Para descarga de JSON
   
   const [showAdmin, setShowAdmin] = useState(false);
-  const hasCustomPlan = dataVersions.vo === 'custom' || dataVersions.va === 'custom';
+  const voReady = dataVersions.vo === 'custom';
+  const vaReady = dataVersions.va === 'custom';
+  const hasCustomPlan = voReady || vaReady;
 
   const getImcData = (perfilText: string) => {
     const match = perfilText.match(/IMC\s*([\d.]+)/i);
@@ -275,6 +277,50 @@ export default function App() {
 
     return { imc, ...status };
   };
+  const voImcData = getImcData(perfilesData.vo.perfil);
+  const vaImcData = getImcData(perfilesData.va.perfil);
+
+  const ambosButtonConfig = (() => {
+    if (voReady && vaReady) {
+      return {
+        label: 'Ver lista de compras conjunta',
+        onClick: () => {
+          setPerfilActivo('ambos');
+          setDiaActivo('Lunes');
+          setTab('compras');
+        },
+        style: 'bg-white text-emerald-700 hover:bg-emerald-50 border border-white/80'
+      };
+    }
+    if (voReady && !vaReady) {
+      return {
+        label: 'Generar perfil faltante: Ella',
+        onClick: () => {
+          setQuestionnaireTargetProfile('va');
+          setShowQuestionnaire(true);
+        },
+        style: 'bg-white/20 hover:bg-white/30 text-white border border-white/30 animate-pulse'
+      };
+    }
+    if (!voReady && vaReady) {
+      return {
+        label: 'Generar perfil faltante: El',
+        onClick: () => {
+          setQuestionnaireTargetProfile('vo');
+          setShowQuestionnaire(true);
+        },
+        style: 'bg-white/20 hover:bg-white/30 text-white border border-white/30 animate-pulse'
+      };
+    }
+    return {
+      label: 'Personalizar ambos con IA',
+      onClick: () => {
+        setQuestionnaireTargetProfile('ambos');
+        setShowQuestionnaire(true);
+      },
+      style: 'bg-white/20 hover:bg-white/30 text-white border border-white/30 animate-pulse'
+    };
+  })();
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
     try { 
       // Intentar leer desde localStorage primero, luego desde .env
@@ -975,17 +1021,37 @@ export default function App() {
           <div className="mb-3 sm:mb-4 text-center">
             <p className="text-xs sm:text-sm text-slate-500 font-semibold tracking-wide uppercase">Selecciona un perfil para comenzar</p>
           </div>
-          {hasCustomPlan ? (
-            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
-              <p className="text-xs sm:text-sm text-emerald-800 font-semibold leading-snug">
-                ✅ Tu nutrición inteligente está lista. Plan personalizado generado con éxito.
+          {!hasCustomPlan && (
+            <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50/80 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
+              <p className="text-xs sm:text-sm text-sky-900 font-semibold leading-snug">
+                Selecciona un perfil para personalizar tu plan con IA.
               </p>
             </div>
-          ) : (
-            <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/70 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
-              <p className="text-[11px] sm:text-xs font-semibold text-violet-700 uppercase tracking-wide">Planes base de referencia</p>
-              <p className="text-xs sm:text-sm text-violet-900 font-medium leading-snug mt-1">
-                Explora nuestros planes base o crea tu plan personalizado con IA.
+          )}
+          {voReady !== vaReady && (
+            <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/80 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm">
+              <p className="text-xs sm:text-sm text-violet-900 font-semibold leading-snug text-center">
+                {voReady ? '¡Genial! El plan de Él está listo. ¿Personalizamos el de Ella ahora?' : '¡Genial! El plan de Ella está listo. ¿Personalizamos el de Él ahora?'}
+              </p>
+              <div className="mt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuestionnaireTargetProfile(voReady ? 'va' : 'vo');
+                    setShowQuestionnaire(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors"
+                >
+                  <span>✨</span>
+                  <span>{voReady ? 'Generar plan de Ella' : 'Generar plan de Él'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+          {voReady && vaReady && (
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
+              <p className="text-xs sm:text-sm text-emerald-800 font-semibold leading-snug">
+                ✅ ¡Todo listo! Los planes personalizados para ambos han sido generados.
               </p>
             </div>
           )}
@@ -994,8 +1060,13 @@ export default function App() {
               initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('vo'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-5 sm:p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
+              {voReady && (
+                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-emerald-500/95 text-white text-[10px] font-bold shadow-sm">
+                  ✅ Listo
+                </div>
+              )}
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl" />
               <div className="relative h-full flex flex-col">
@@ -1003,17 +1074,22 @@ export default function App() {
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">El</span>
                 </div>
                 <p className="text-blue-100 text-sm mb-3 leading-relaxed">{perfilesData.vo.perfil}</p>
-                {getImcData(perfilesData.vo.perfil) && (
+                {voImcData && (
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-[11px] text-blue-100 mb-1">
-                      <span>IMC {getImcData(perfilesData.vo.perfil)?.imc}</span>
-                      <span>{getImcData(perfilesData.vo.perfil)?.label}</span>
+                      <span>IMC {voImcData.imc}</span>
+                      <span>{voImcData.label}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
                       <div
-                        className={`h-full ${getImcData(perfilesData.vo.perfil)?.color}`}
-                        style={{ width: `${getImcData(perfilesData.vo.perfil)?.pct}%` }}
+                        className={`h-full ${voImcData.color}`}
+                        style={{ width: `${voImcData.pct}%` }}
                       />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-blue-100/90 mt-1">
+                      <span className="text-emerald-200">Normal</span>
+                      <span className="text-amber-200">Sobrepeso</span>
+                      <span className="text-rose-200">Obesidad</span>
                     </div>
                   </div>
                 )}
@@ -1027,10 +1103,10 @@ export default function App() {
                     setQuestionnaireTargetProfile('vo');
                     setShowQuestionnaire(true);
                   }}
-                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-semibold border border-white/30 transition-colors"
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${voReady ? 'bg-white text-blue-700 hover:bg-blue-50 border-white/80' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
                 >
-                  <span>✨</span>
-                  <span>Personalizar El con IA</span>
+                  <span>{voReady ? '✅' : '✨'}</span>
+                  <span>{voReady ? 'Actualizar El con IA' : 'Personalizar El con IA'}</span>
                 </button>
               </div>
             </motion.button>
@@ -1039,8 +1115,13 @@ export default function App() {
               initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.15 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-600 via-rose-700 to-pink-800 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-600 via-rose-700 to-pink-800 p-5 sm:p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
+              {vaReady && (
+                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-emerald-500/95 text-white text-[10px] font-bold shadow-sm">
+                  ✅ Listo
+                </div>
+              )}
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-rose-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-400/20 rounded-full blur-2xl" />
               <div className="relative h-full flex flex-col">
@@ -1048,17 +1129,22 @@ export default function App() {
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ella</span>
                 </div>
                 <p className="text-rose-50 text-sm mb-3 leading-relaxed">{perfilesData.va.perfil}</p>
-                {getImcData(perfilesData.va.perfil) && (
+                {vaImcData && (
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-[11px] text-rose-50 mb-1">
-                      <span>IMC {getImcData(perfilesData.va.perfil)?.imc}</span>
-                      <span>{getImcData(perfilesData.va.perfil)?.label}</span>
+                      <span>IMC {vaImcData.imc}</span>
+                      <span>{vaImcData.label}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
                       <div
-                        className={`h-full ${getImcData(perfilesData.va.perfil)?.color}`}
-                        style={{ width: `${getImcData(perfilesData.va.perfil)?.pct}%` }}
+                        className={`h-full ${vaImcData.color}`}
+                        style={{ width: `${vaImcData.pct}%` }}
                       />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-rose-50/90 mt-1">
+                      <span className="text-emerald-200">Normal</span>
+                      <span className="text-amber-200">Sobrepeso</span>
+                      <span className="text-rose-200">Obesidad</span>
                     </div>
                   </div>
                 )}
@@ -1072,10 +1158,10 @@ export default function App() {
                     setQuestionnaireTargetProfile('va');
                     setShowQuestionnaire(true);
                   }}
-                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-semibold border border-white/30 transition-colors"
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${vaReady ? 'bg-white text-rose-700 hover:bg-rose-50 border-white/80' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
                 >
-                  <span>✨</span>
-                  <span>Personalizar Ella con IA</span>
+                  <span>{vaReady ? '✅' : '✨'}</span>
+                  <span>{vaReady ? 'Actualizar Ella con IA' : 'Personalizar Ella con IA'}</span>
                 </button>
               </div>
             </motion.button>
@@ -1101,13 +1187,12 @@ export default function App() {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setQuestionnaireTargetProfile('ambos');
-                    setShowQuestionnaire(true);
+                    ambosButtonConfig.onClick();
                   }}
-                  className="mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs sm:text-sm font-semibold border border-white/30 transition-colors"
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${ambosButtonConfig.style}`}
                 >
-                  <span>✨</span>
-                  <span>Personalizar ambos con IA</span>
+                  <span>{voReady && vaReady ? '🛒' : '✨'}</span>
+                  <span>{ambosButtonConfig.label}</span>
                 </button>
               </div>
             </motion.button>
