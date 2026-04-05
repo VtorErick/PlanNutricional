@@ -1641,11 +1641,6 @@ export default function App() {
                             }`} />
                           </div>
                           <span className="truncate">{momento.label}</span>
-                          {done && (
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                              <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isVo ? 'text-blue-500' : 'text-rose-500'}`} />
-                            </motion.div>
-                          )}
                           <span className="text-[10px] font-normal text-slate-400 ml-2 whitespace-nowrap">{momento.hora}</span>
                         </h3>
                         {estaEnEdicion ? (
