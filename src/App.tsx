@@ -12,6 +12,7 @@ import AdminPanel from './components/AdminPanel';
 import NutritionQuestionnaire, { QuestionnairePayload, TargetProfile } from './components/NutritionQuestionnaire';
 import { perfilesData as origPerfilesData, equivalenciasData as origEquivData, rawData, iconsMap, Profile, Equivalencia } from './data';
 import { downloadDaySelectionPdf, parseObjectToData } from './dataManager';
+import { showAppAlert, showAppConfirm } from './utils/appDialogs';
 
 // Función auxiliar para llamar directamente a Gemini API en desarrollo local
 async function callGeminiDirectly(payload: any, apiKey: string, modelName: string) {
@@ -261,6 +262,8 @@ export default function App() {
   const voReady = dataVersions.vo === 'custom';
   const vaReady = dataVersions.va === 'custom';
   const hasCustomPlan = voReady || vaReady;
+  const notify = useCallback((title: string, message: string) => showAppAlert({ title, message }), []);
+  const confirmAction = useCallback((title: string, message: string) => showAppConfirm({ title, message }), []);
 
   const getImcData = (perfilText: string) => {
     const match = perfilText.match(/IMC\s*[:\-]?\s*([\d]+(?:[.,]\d+)?)/i);
@@ -769,7 +772,7 @@ export default function App() {
       }));
 
       setShowQuestionnaire(false);
-      alert(usedDirectApi ? '¡Plan generado con IA (modo directo)!' : '¡Plan generado con IA y cargado automáticamente!');
+      await notify('Plan generado', usedDirectApi ? '¡Plan generado con IA (modo directo)!' : '¡Plan generado con IA y cargado automáticamente!');
     } catch (err: any) {
       console.error('Error en handleGenerateWithAi:', err);
       setGenerationError(err?.message || 'Error desconocido al generar con IA.');
@@ -915,21 +918,21 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (geminiApiKey) {
                         // Guardar la nueva API key
                         localStorage.setItem('geminiApiKey', geminiApiKey);
                         setGeminiApiKey(''); // Limpiar input para mostrar botón de cargar default
-                        alert('✅ API Key guardada exitosamente');
+                        await notify('Configuración guardada', '✅ API Key guardada exitosamente');
                       } else {
                         // Cargar la predeterminada del .env
                         const envKey = (import.meta as any).env?.GEMINI_API_KEY || '';
                         localStorage.setItem('geminiApiKey', envKey);
                         setGeminiApiKey(envKey);
                         if (envKey) {
-                          alert('✅ API Key predeterminada cargada desde configuración');
+                          await notify('Configuración actualizada', '✅ API Key predeterminada cargada desde configuración');
                         } else {
-                          alert('🗑️ API Key eliminada (no hay predeterminada en .env)');
+                          await notify('Configuración actualizada', '🗑️ API Key eliminada (no hay predeterminada en .env)');
                         }
                       }
                     }}
@@ -1008,6 +1011,8 @@ export default function App() {
                   dataVersion={dataVersions.vo}
                   setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, vo: ver }))}
                   perfilesDataObj={origPerfilesData.vo}
+                  notify={notify}
+                  confirmAction={confirmAction}
                 />
                 <AdminPanel
                   perfilId="va"
@@ -1019,6 +1024,8 @@ export default function App() {
                   dataVersion={dataVersions.va}
                   setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, va: ver }))}
                   perfilesDataObj={origPerfilesData.va}
+                  notify={notify}
+                  confirmAction={confirmAction}
                 />
               </div>
             </section>

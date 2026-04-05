@@ -13,11 +13,13 @@ interface AdminPanelProps {
   dataVersion: 'original' | 'custom';
   setDataVersion: (ver: 'original' | 'custom') => void;
   perfilesDataObj: any; // the original data to use for PDF generating if original is chosen
+  notify: (title: string, message: string) => Promise<void>;
+  confirmAction: (title: string, message: string) => Promise<boolean>;
 }
 
 export default function AdminPanel({
   perfilId, title, themeColor, rawDataText,
-  customData, setCustomData, dataVersion, setDataVersion, perfilesDataObj
+  customData, setCustomData, dataVersion, setDataVersion, perfilesDataObj, notify, confirmAction
 }: AdminPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isCustomAvailable = !!customData[perfilId];
@@ -27,24 +29,28 @@ export default function AdminPanel({
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const text = evt.target?.result as string;
         const parsed = parseJsonToData(text, perfilId.toUpperCase() as 'VO'|'VA');
         
         setCustomData((prev: any) => ({ ...prev, [perfilId]: parsed }));
         setDataVersion('custom');
-        alert(`¡Datos de ${title} cargados exitosamente!`);
+        await notify('Importación completada', `¡Datos de ${title} cargados exitosamente!`);
       } catch (err: any) {
-        alert("Error al cargar archivo: " + err.message);
+        await notify('Error al importar archivo', "Error al cargar archivo: " + err.message);
       }
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsText(file);
   };
 
-  const handleDelete = () => {
-    if (confirm(`¿Estás seguro de eliminar los datos personalizados de ${title}?`)) {
+  const handleDelete = async () => {
+    const accepted = await confirmAction(
+      'Eliminar versión personalizada',
+      `¿Estás seguro de eliminar los datos personalizados de ${title}?`
+    );
+    if (accepted) {
       setCustomData((prev: any) => {
         const newD = { ...prev };
         delete newD[perfilId];
