@@ -534,6 +534,9 @@ export default function App() {
     if (!pendingAutoScrollMomento) return;
     const timer = setTimeout(() => {
       scrollToMomento(pendingAutoScrollMomento, progressExpanded);
+      // Segunda corrección para alinear exactamente con el mismo punto
+      // al que llega el scroll manual de la barra de progreso, tras estabilizar layout.
+      setTimeout(() => scrollToMomento(pendingAutoScrollMomento, false), 360);
       setPendingAutoScrollMomento(null);
     }, 320);
     return () => clearTimeout(timer);
