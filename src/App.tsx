@@ -4,7 +4,7 @@ import {
   ChefHat, CheckCircle2, TrendingDown, Calendar,
   BookOpen, Zap, Shield, Lightbulb, BarChart3, ArrowLeft,
   Sun, Coffee, UtensilsCrossed, Moon, Apple, AlertTriangle,
-  Heart, ChevronDown, ChevronUp, ShoppingCart, ListChecks, FileText, Settings, X, KeyRound
+  Heart, ChevronDown, ChevronUp, ShoppingCart, FileText, Settings, X, KeyRound
 } from 'lucide-react';
 import MealSelector from './components/MealSelector';
 import EquivalenciasCard from './components/EquivalenciasCard';
@@ -243,9 +243,7 @@ export default function App() {
   const [momentosColapsados, setMomentosColapsados] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState<'plan' | 'equivalencias' | 'resumen' | 'compras'>('plan');
   const [progressExpanded, setProgressExpanded] = useState(false);
-  const [vistaFiltrada, setVistaFiltrada] = useState(() => {
-    try { return localStorage.getItem('vistaFiltrada') === 'true'; } catch { return false; }
-  });
+  const [momentosEnEdicion, setMomentosEnEdicion] = useState<Record<string, boolean>>({});
   const [comprasCheck, setComprasCheck] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem('comprasCheck');
@@ -489,10 +487,6 @@ export default function App() {
     localStorage.setItem('seleccionesDieta', JSON.stringify(selecciones));
   }, [selecciones]);
 
-  useEffect(() => {
-    localStorage.setItem('vistaFiltrada', String(vistaFiltrada));
-  }, [vistaFiltrada]);
-
   // Refs to handle auto-scrolling to each meal section
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -629,6 +623,7 @@ export default function App() {
   useEffect(() => {
     setProgressExpanded(false);
     setMomentosColapsados({});
+    setMomentosEnEdicion({});
   }, [tab, diaActivo, perfilActivo]);
 
   const listaCompras = useMemo(() => {
@@ -1437,15 +1432,6 @@ export default function App() {
                 {progresoDia}%
               </span>
 
-              {/* View Selected Only Filter */}
-              <button
-                className={`flex-shrink-0 p-1.5 sm:p-2 rounded-full transition-all duration-200 ${vistaFiltrada ? `bg-gradient-to-br ${ac.bgGradient} text-white shadow-sm scale-105` : `hover:${ac.bgLight} ${ac.text}`}`}
-                onClick={(e) => { e.stopPropagation(); setVistaFiltrada((v) => !v); }}
-                title={vistaFiltrada ? 'Desactivar filtro' : 'Mostrar solo comidas seleccionadas'}
-              >
-                <ListChecks className="w-4 h-4 sm:w-4 sm:h-4 text-inherit" />
-              </button>
-
               {/* Toggle expand */}
               <button
                 className={`flex-shrink-0 p-1 rounded-full hover:${ac.bgLight} transition-colors`}
@@ -1606,20 +1592,16 @@ export default function App() {
                 {perfilBase.momentos.map((momento) => {
                   const Icon = momentoIcons[momento.key] || UtensilsCrossed;
                   const done = momentoCompletado[momento.key];
-
-                  // Helper para filtrar comidas seleccionadas
-                  const filterMeals = (perfilId: string, meals: any[]) => {
-                    if (!vistaFiltrada) return meals;
-                    return meals.filter(m => selecciones[`${perfilId}-${diaActivo}-${momento.key}-${m.nombre}`]);
-                  };
-
-                  const mealsSingle = filterMeals(perfilActivo as string, perfilBase.plan[diaActivo]?.[momento.key] || []);
-                  const mealsVO = filterMeals('vo', perfilesData.vo.plan[diaActivo]?.[momento.key] || []);
-                  const mealsVA = filterMeals('va', perfilesData.va.plan[diaActivo]?.[momento.key] || []);
-
-                  // Si la vista está filtrada y no hay comidas seleccionadas en este momento para el perfil activo
-                  const isElegidoVacio = vistaFiltrada && (
-                    isAmbos ? (mealsVO.length === 0 && mealsVA.length === 0) : mealsSingle.length === 0
+                  const estaEnEdicion = Boolean(momentosEnEdicion[momento.key]);
+                  const mealsSingleAll = perfilBase.plan[diaActivo]?.[momento.key] || [];
+                  const mealsVOAll = perfilesData.vo.plan[diaActivo]?.[momento.key] || [];
+                  const mealsVAAll = perfilesData.va.plan[diaActivo]?.[momento.key] || [];
+                  const mealsSingleSeleccionadas = mealsSingleAll.filter(m => selecciones[`${perfilActivo}-${diaActivo}-${momento.key}-${m.nombre}`]);
+                  const mealsVOSeleccionadas = mealsVOAll.filter(m => selecciones[`vo-${diaActivo}-${momento.key}-${m.nombre}`]);
+                  const mealsVASeleccionadas = mealsVAAll.filter(m => selecciones[`va-${diaActivo}-${momento.key}-${m.nombre}`]);
+                  const isElegidoVacio = !estaEnEdicion && (isAmbos
+                    ? (mealsVOSeleccionadas.length === 0 && mealsVASeleccionadas.length === 0)
+                    : mealsSingleSeleccionadas.length === 0
                   );
 
                   return (
@@ -1629,13 +1611,13 @@ export default function App() {
                       ref={(el) => { mealSectionRefs.current[momento.key] = el; }}
                       className={`bg-white rounded-[28px] sm:rounded-3xl shadow-sm border overflow-hidden ${done ? ac.borderAccent : 'border-slate-100'}`}
                     >
-                      <button 
+                      <button
                         onClick={() => {
-                          if (!vistaFiltrada) {
+                          if (!estaEnEdicion) {
                             setMomentosColapsados(p => ({...p, [momento.key]: !p[momento.key]}));
                           }
                         }}
-                        className={`w-full flex items-center justify-between text-left p-4 sm:p-5 transition-colors focus:outline-none ${done ? 'bg-slate-50/50' : 'hover:bg-slate-50'} ${vistaFiltrada ? 'cursor-default' : ''}`}
+                        className={`w-full flex items-center justify-between text-left p-4 sm:p-5 transition-colors focus:outline-none ${done ? 'bg-slate-50/50' : 'hover:bg-slate-50'} ${estaEnEdicion ? 'cursor-default' : ''}`}
                       >
                         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                           <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center flex-shrink-0`}>
@@ -1649,7 +1631,7 @@ export default function App() {
                           )}
                           <span className="text-[10px] font-normal text-slate-400 ml-2 whitespace-nowrap">{momento.hora}</span>
                         </h3>
-                        {vistaFiltrada ? (
+                        {estaEnEdicion ? (
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 bg-gradient-to-br ${ac.bgGradient}`} />
                         ) : (
                           <motion.div animate={{ rotate: momentosColapsados[momento.key] ? -180 : 0 }} transition={{ type: "spring", damping: 20 }}>
@@ -1659,7 +1641,7 @@ export default function App() {
                       </button>
 
                       <AnimatePresence initial={false}>
-                        {(!momentosColapsados[momento.key] || vistaFiltrada) && (
+                        {(!momentosColapsados[momento.key] || estaEnEdicion) && (
                           <motion.div
                             key="content"
                             initial={{ height: 0, opacity: 0 }}
@@ -1671,14 +1653,21 @@ export default function App() {
                               {isElegidoVacio ? (
                                 <div className="text-center py-6 px-4 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
                                   <p className="text-slate-500 text-sm font-medium">Ningún platillo reservado</p>
-                                  <p className="text-slate-400 text-xs mt-1">Desactiva el filtro superior para ver las opciones disponibles y marcar tu comida.</p>
+                                  <p className="text-slate-400 text-xs mt-1">Elige tu comida para este horario.</p>
+                                  <button
+                                    onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [momento.key]: true }))}
+                                    className={`mt-3 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r ${ac.bgGradient} shadow-sm hover:opacity-95 active:scale-95 transition`}
+                                  >
+                                    <Zap className="w-3.5 h-3.5" />
+                                    Ir a elegir
+                                  </button>
                                 </div>
                               ) : (
                                 <>
                                   {!isAmbos && (
-                                    vistaFiltrada ? (
+                                    !estaEnEdicion ? (
                                       <div className="space-y-3">
-                                        {mealsSingle.map((meal, idx) => (
+                                        {mealsSingleSeleccionadas.map((meal, idx) => (
                                           <div key={idx} className={`p-4 rounded-xl border border-slate-100 bg-gradient-to-r ${ac.bgLight} to-transparent`}>
                                             <h4 className={`font-bold text-sm mb-1 ${ac.text}`}>{meal.nombre}</h4>
                                             <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
@@ -1687,27 +1676,37 @@ export default function App() {
                                             )}
                                           </div>
                                         ))}
+                                        <button
+                                          onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [momento.key]: true }))}
+                                          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${ac.text} ${ac.bgLight} border ${ac.border} hover:opacity-90 active:scale-95 transition`}
+                                        >
+                                          <Zap className="w-3.5 h-3.5" />
+                                          Cambiar opción
+                                        </button>
                                       </div>
                                     ) : (
                                       <MealSelector
                                         perfil={perfilActivo}
-                                        comidas={mealsSingle}
+                                        comidas={mealsSingleAll}
                                         dia={diaActivo}
                                         momento={momento.key}
                                         selecciones={selecciones}
-                                        onToggle={toggleSeleccion}
+                                        onToggle={(perfilId, dia, momentoKey, nombre) => {
+                                          toggleSeleccion(perfilId, dia, momentoKey, nombre);
+                                          setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
+                                        }}
                                         accentClasses={accentColors}
                                       />
                                     )
                                   )}
 
                                   {isAmbos && (
-                                    vistaFiltrada ? (
+                                    !estaEnEdicion ? (
                                       <div className="grid md:grid-cols-2 gap-4">
-                                        {(mealsVO.length > 0 || mealsVA.length === 0) && (
+                                        {(mealsVOSeleccionadas.length > 0 || mealsVASeleccionadas.length === 0) && (
                                           <div className="space-y-3">
                                             <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2">Para {perfilesData.vo.nombre}</div>
-                                            {mealsVO.map((meal, idx) => (
+                                            {mealsVOSeleccionadas.map((meal, idx) => (
                                               <div key={idx} className="p-4 rounded-xl border border-blue-50 bg-gradient-to-r from-blue-50 to-transparent">
                                                 <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
                                                 <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
@@ -1718,10 +1717,10 @@ export default function App() {
                                             ))}
                                           </div>
                                         )}
-                                        {(mealsVA.length > 0 || mealsVO.length === 0) && (
+                                        {(mealsVASeleccionadas.length > 0 || mealsVOSeleccionadas.length === 0) && (
                                           <div className="space-y-3">
                                             <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-2">Para {perfilesData.va.nombre}</div>
-                                            {mealsVA.map((meal, idx) => (
+                                            {mealsVASeleccionadas.map((meal, idx) => (
                                               <div key={idx} className="p-4 rounded-xl border border-rose-50 bg-gradient-to-r from-rose-50 to-transparent">
                                                 <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
                                                 <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
@@ -1732,6 +1731,15 @@ export default function App() {
                                             ))}
                                           </div>
                                         )}
+                                        <div className="md:col-span-2">
+                                          <button
+                                            onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [momento.key]: true }))}
+                                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold ${ac.text} ${ac.bgLight} border ${ac.border} hover:opacity-90 active:scale-95 transition`}
+                                          >
+                                            <Zap className="w-3.5 h-3.5" />
+                                            Cambiar opción
+                                          </button>
+                                        </div>
                                       </div>
                                     ) : (
                                       <div className="grid md:grid-cols-2 gap-4">
@@ -1739,11 +1747,14 @@ export default function App() {
                                           <h4 className="font-bold text-blue-800 text-xs mb-2">Para {perfilesData.vo.nombre}</h4>
                                           <MealSelector
                                             perfil="vo"
-                                            comidas={mealsVO}
+                                            comidas={mealsVOAll}
                                             dia={diaActivo}
                                             momento={momento.key}
                                             selecciones={selecciones}
-                                            onToggle={toggleSeleccion}
+                                            onToggle={(perfilId, dia, momentoKey, nombre) => {
+                                              toggleSeleccion(perfilId, dia, momentoKey, nombre);
+                                              setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
+                                            }}
                                             accentClasses={{
                                               bg: 'bg-blue-500', bgLight: 'bg-blue-50', bgGradient: 'from-blue-500 to-indigo-600',
                                               text: 'text-blue-600', border: 'border-blue-200', borderAccent: 'border-blue-500',
@@ -1755,11 +1766,14 @@ export default function App() {
                                           <h4 className="font-bold text-rose-800 text-xs mb-2">Para {perfilesData.va.nombre}</h4>
                                           <MealSelector
                                             perfil="va"
-                                            comidas={mealsVA}
+                                            comidas={mealsVAAll}
                                             dia={diaActivo}
                                             momento={momento.key}
                                             selecciones={selecciones}
-                                            onToggle={toggleSeleccion}
+                                            onToggle={(perfilId, dia, momentoKey, nombre) => {
+                                              toggleSeleccion(perfilId, dia, momentoKey, nombre);
+                                              setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
+                                            }}
                                             accentClasses={{
                                               bg: 'bg-rose-500', bgLight: 'bg-rose-50', bgGradient: 'from-rose-500 to-pink-600',
                                               text: 'text-rose-600', border: 'border-rose-200', borderAccent: 'border-rose-500',
