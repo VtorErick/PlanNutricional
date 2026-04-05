@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Loader2, ChevronRight, ChevronLeft,
@@ -305,8 +305,73 @@ export default function NutritionQuestionnaire({
     value: string;
   }>({ open: false, profile: null, field: null, value: '' });
   const [activePortionMoment, setActivePortionMoment] = useState('desayuno');
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const wakeLockReleaseTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => { if (geminiModel) setLocalModel(geminiModel); }, [geminiModel]);
+
+  const releaseScreenWakeLock = useCallback(async () => {
+    if (!wakeLockRef.current) return;
+    try {
+      await wakeLockRef.current.release();
+    } catch {
+      // Ignorar errores de liberación (p. ej. si ya se liberó automáticamente)
+    } finally {
+      wakeLockRef.current = null;
+    }
+  }, []);
+
+  const requestScreenWakeLock = useCallback(async () => {
+    if (typeof window === 'undefined' || !('wakeLock' in navigator)) return;
+    try {
+      const sentinel = await navigator.wakeLock.request('screen');
+      wakeLockRef.current = sentinel;
+      sentinel.addEventListener('release', () => {
+        wakeLockRef.current = null;
+      });
+    } catch {
+      // Algunos dispositivos/navegadores pueden bloquear Wake Lock
+    }
+  }, []);
+
+  useEffect(() => {
+    if (wakeLockReleaseTimeoutRef.current) {
+      window.clearTimeout(wakeLockReleaseTimeoutRef.current);
+      wakeLockReleaseTimeoutRef.current = null;
+    }
+
+    if (loading) {
+      void requestScreenWakeLock();
+      return;
+    }
+
+    wakeLockReleaseTimeoutRef.current = window.setTimeout(() => {
+      void releaseScreenWakeLock();
+      wakeLockReleaseTimeoutRef.current = null;
+    }, 10000);
+  }, [loading, requestScreenWakeLock, releaseScreenWakeLock]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && loading && !wakeLockRef.current) {
+        void requestScreenWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loading, requestScreenWakeLock]);
+
+  useEffect(() => {
+    return () => {
+      if (wakeLockReleaseTimeoutRef.current) {
+        window.clearTimeout(wakeLockReleaseTimeoutRef.current);
+      }
+      void releaseScreenWakeLock();
+    };
+  }, [releaseScreenWakeLock]);
 
   const steps = useMemo(() => buildSteps(targetProfile), [targetProfile]);
   const currentStep = steps[stepIdx] ?? steps[0];
