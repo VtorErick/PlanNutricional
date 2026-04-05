@@ -173,20 +173,50 @@ const momentoIcons: Record<string, any> = {
   cena: Moon,
 };
 
-const getPortionEmoji = (porciones: string) => {
-  const text = (porciones || '').toLowerCase();
-  if (text.includes('taza')) return '🥣';
-  if (text.includes('pieza') || text.includes('pza') || text.includes('unidad')) return '🍽️';
-  if (text.includes('rebanada') || text.includes('rodaja')) return '🍞';
-  if (text.includes('cda') || text.includes('cdita') || text.includes('cucharada')) return '🥄';
-  if (text.includes('vaso') || text.includes('ml') || text.includes('litro')) return '🥤';
-  if (text.includes('g') || text.includes('gram')) return '⚖️';
-  return '🍴';
-};
-
 const getPortionCantidad = (porciones: string) => {
   const match = (porciones || '').match(/(\d+(?:[.,]\d+)?)/);
   return match ? match[1] : '1';
+};
+
+const getGrupoEmoji = (grupo: string) => {
+  const key = grupo
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+  if (key.includes('verdura')) return '🥦';
+  if (key.includes('cereal')) return '🌾';
+  if (key.includes('prote')) return '🍗';
+  if (key.includes('leche') || key.includes('lacte')) return '🥛';
+  if (key.includes('grasa')) return '🥑';
+  if (key.includes('fruta')) return '🍎';
+  if (key.includes('leguminosa')) return '🫘';
+  return '🍴';
+};
+
+const parsePorcionesDetalle = (porciones: string) => {
+  const chunks = (porciones || '')
+    .split('|')
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+
+  const parsed = chunks
+    .map((chunk) => {
+      const m = chunk.match(/^([A-Za-zÁÉÍÓÚáéíóúÑñ\s]+)\s+(\d+(?:[.,]\d+)?)$/);
+      if (!m) return null;
+      return {
+        label: m[1].trim(),
+        cantidad: m[2].replace(',', '.'),
+      };
+    })
+    .filter((item): item is { label: string; cantidad: string } => Boolean(item));
+
+  if (parsed.length > 0) return parsed;
+
+  return [{
+    label: 'Porciones',
+    cantidad: getPortionCantidad(porciones),
+  }];
 };
 
 export default function App() {
@@ -1687,9 +1717,17 @@ export default function App() {
                                           <div key={idx} className={`p-4 rounded-xl border border-slate-100 bg-gradient-to-r ${ac.bgLight} to-transparent`}>
                                             <h4 className={`font-bold text-sm mb-1 ${ac.text}`}>{meal.nombre}</h4>
                                             <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
-                                            <div className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}>
-                                              <span>{getPortionEmoji(meal.porciones)}</span>
-                                              <span>{getPortionCantidad(meal.porciones)} porción(es)</span>
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                              {parsePorcionesDetalle(meal.porciones).map((item) => (
+                                                <span
+                                                  key={`${meal.nombre}-${item.label}-${item.cantidad}`}
+                                                  title={`${item.label} ${item.cantidad}`}
+                                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}
+                                                >
+                                                  <span>{getGrupoEmoji(item.label)}</span>
+                                                  <span>x{item.cantidad}</span>
+                                                </span>
+                                              ))}
                                             </div>
                                           </div>
                                         ))}
@@ -1727,9 +1765,17 @@ export default function App() {
                                               <div key={idx} className="p-4 rounded-xl border border-blue-50 bg-gradient-to-r from-blue-50 to-transparent">
                                                 <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
                                                 <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
-                                                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-bold">
-                                                  <span>{getPortionEmoji(meal.porciones)}</span>
-                                                  <span>{getPortionCantidad(meal.porciones)} porción(es)</span>
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                  {parsePorcionesDetalle(meal.porciones).map((item) => (
+                                                    <span
+                                                      key={`${meal.nombre}-${item.label}-${item.cantidad}`}
+                                                      title={`${item.label} ${item.cantidad}`}
+                                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-bold"
+                                                    >
+                                                      <span>{getGrupoEmoji(item.label)}</span>
+                                                      <span>x{item.cantidad}</span>
+                                                    </span>
+                                                  ))}
                                                 </div>
                                               </div>
                                             ))}
@@ -1742,9 +1788,17 @@ export default function App() {
                                               <div key={idx} className="p-4 rounded-xl border border-rose-50 bg-gradient-to-r from-rose-50 to-transparent">
                                                 <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
                                                 <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
-                                                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold">
-                                                  <span>{getPortionEmoji(meal.porciones)}</span>
-                                                  <span>{getPortionCantidad(meal.porciones)} porción(es)</span>
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                  {parsePorcionesDetalle(meal.porciones).map((item) => (
+                                                    <span
+                                                      key={`${meal.nombre}-${item.label}-${item.cantidad}`}
+                                                      title={`${item.label} ${item.cantidad}`}
+                                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold"
+                                                    >
+                                                      <span>{getGrupoEmoji(item.label)}</span>
+                                                      <span>x{item.cantidad}</span>
+                                                    </span>
+                                                  ))}
                                                 </div>
                                               </div>
                                             ))}
