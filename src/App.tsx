@@ -276,7 +276,8 @@ export default function App() {
       ? { label: 'Sobrepeso', color: 'bg-amber-500', pct: 70 }
       : { label: 'Obesidad', color: 'bg-rose-500', pct: 90 };
 
-    return { imc, ...status, pct: markerPct };
+    const labelAlign = markerPct >= 82 ? 'right' : markerPct <= 18 ? 'left' : 'center';
+    return { imc, ...status, pct: markerPct, labelAlign };
   };
 
   const formatProfileForCard = (perfilText: string) => {
@@ -1133,7 +1134,13 @@ export default function App() {
                   <div className="mb-3">
                     <div className="relative h-4 mb-1">
                       <span
-                        className="absolute -translate-x-1/2 text-[11px] text-blue-100 font-semibold whitespace-nowrap"
+                        className={`absolute text-[11px] text-blue-100 font-semibold whitespace-nowrap ${
+                          voImcData.labelAlign === 'right'
+                            ? '-translate-x-full'
+                            : voImcData.labelAlign === 'left'
+                            ? 'translate-x-0'
+                            : '-translate-x-1/2'
+                        }`}
                         style={{ left: `${voImcData.pct}%` }}
                       >
                         IMC {voImcData.imc} · {voImcData.label}
@@ -1196,7 +1203,13 @@ export default function App() {
                   <div className="mb-3">
                     <div className="relative h-4 mb-1">
                       <span
-                        className="absolute -translate-x-1/2 text-[11px] text-rose-50 font-semibold whitespace-nowrap"
+                        className={`absolute text-[11px] text-rose-50 font-semibold whitespace-nowrap ${
+                          vaImcData.labelAlign === 'right'
+                            ? '-translate-x-full'
+                            : vaImcData.labelAlign === 'left'
+                            ? 'translate-x-0'
+                            : '-translate-x-1/2'
+                        }`}
                         style={{ left: `${vaImcData.pct}%` }}
                       >
                         IMC {vaImcData.imc} · {vaImcData.label}
