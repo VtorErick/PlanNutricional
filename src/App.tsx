@@ -263,6 +263,7 @@ export default function App() {
   const [momentosColapsados, setMomentosColapsados] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState<'plan' | 'equivalencias' | 'resumen' | 'compras'>('plan');
   const [progressExpanded, setProgressExpanded] = useState(false);
+  const [pendingAutoScrollMomento, setPendingAutoScrollMomento] = useState<string | null>(null);
   const [momentosEnEdicion, setMomentosEnEdicion] = useState<Record<string, boolean>>({});
   const [comprasCheck, setComprasCheck] = useState<Record<string, boolean>>(() => {
     try {
@@ -529,6 +530,15 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!pendingAutoScrollMomento) return;
+    const timer = setTimeout(() => {
+      scrollToMomento(pendingAutoScrollMomento, progressExpanded);
+      setPendingAutoScrollMomento(null);
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [pendingAutoScrollMomento, progressExpanded, scrollToMomento]);
+
   const isAmbos = perfilActivo === 'ambos';
   const isVo = perfilActivo === 'vo';
   // perfilBase is used to extract days and general structure (both share identical days and moments)
@@ -556,9 +566,9 @@ export default function App() {
     setSelecciones((prev) => ({ ...prev, [key]: !prev[key] }));
 
     if (!wasCompleted && isNowCompleted && nextMomento) {
-      setTimeout(() => scrollToMomento(nextMomento, progressExpanded), 120);
+      setPendingAutoScrollMomento(nextMomento);
     }
-  }, [getNextMomentoKey, perfilesData.va, perfilesData.vo, progressExpanded, scrollToMomento, selecciones]);
+  }, [getNextMomentoKey, perfilesData.va, perfilesData.vo, selecciones]);
 
   const momentoCompletadoVo = useMemo(() => {
     if (!perfilActivo) return {};
