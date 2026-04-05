@@ -505,6 +505,11 @@ export default function App() {
   }, [diaActivo]);
 
   useEffect(() => {
+    // Al cambiar de día o pestaña, reiniciar la vista al inicio.
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [diaActivo, tab]);
+
+  useEffect(() => {
     localStorage.setItem('seleccionesDieta', JSON.stringify(selecciones));
   }, [selecciones]);
 
