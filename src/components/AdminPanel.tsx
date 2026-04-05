@@ -34,9 +34,9 @@ export default function AdminPanel({
         
         setCustomData((prev: any) => ({ ...prev, [perfilId]: parsed }));
         setDataVersion('custom');
-        alert(`¡Datos de ${title} cargados exitosamente!`);
+        alert(`¡Importación completada para ${title}!`);
       } catch (err: any) {
-        alert("Error al cargar archivo: " + err.message);
+        alert("Error al importar archivo: " + err.message);
       }
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -75,7 +75,7 @@ export default function AdminPanel({
         [`equivalencias${perfilId.toUpperCase()}`]: customData[perfilId][`equivalencias${perfilId.toUpperCase()}`],
         [`plan${perfilId.toUpperCase()}`]: customData[perfilId][`plan${perfilId.toUpperCase()}`]
       };
-      downloadJsonFile(`perfil-${perfilId}-personalizado.json`, JSON.stringify(dataToDownload, null, 2));
+      downloadJsonFile(`perfil-${perfilId}-personalizada.json`, JSON.stringify(dataToDownload, null, 2));
     } else {
       // Descargar datos originales
       downloadJsonFile(`perfil-${perfilId}.json`, rawDataText);
@@ -162,7 +162,7 @@ export default function AdminPanel({
               onClick={() => fileInputRef.current?.click()}
               className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 ${btnColor} text-white rounded-xl text-sm font-bold transition shadow-md active:scale-95`}
             >
-              <Upload className="w-4 h-4" /> Importa archivo JSON personalizado
+              <Upload className="w-4 h-4" /> Importa archivo JSON de versión personalizada
             </button>
           </div>
         )}
