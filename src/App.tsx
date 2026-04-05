@@ -912,18 +912,6 @@ export default function App() {
   if (!perfilActivo) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col relative">
-        {/* Acciones rápidas - Landing page */}
-        <div className="absolute top-14 sm:top-4 right-4 z-20 flex flex-col items-end gap-2">
-          <button 
-            onClick={() => setShowAdmin(true)} 
-            className="group flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur hover:bg-white text-slate-700 rounded-full shadow-md hover:shadow-lg border border-slate-200 transition-all active:scale-95"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="text-sm font-bold hidden sm:block">Panel de administración</span>
-            <span className="text-sm font-bold sm:hidden">Panel</span>
-          </button>
-          <span className="text-[10px] text-slate-500 bg-white/70 px-2 py-0.5 rounded-full hidden sm:block">💾 Backup y ⚙️ Ajustes</span>
-        </div>
         <div className="relative overflow-hidden">
           <div className="absolute inset-0">
             <img src="/images/hero.png" alt="" className="w-full h-full object-cover opacity-20" />
@@ -940,6 +928,15 @@ export default function App() {
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                 <span className="text-xs font-bold tracking-wide text-slate-700 uppercase">Bienvenido a su plan</span>
               </motion.div>
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowAdmin(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 backdrop-blur border border-slate-200 text-slate-700 font-semibold text-sm shadow-sm hover:shadow-md transition-all active:scale-95"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Panel de administración</span>
+                </button>
+              </div>
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-3 tracking-tight leading-[1.1]">
                 Nutrición inteligente,<br className="hidden sm:block"/>
                 <span className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 bg-clip-text text-transparent drop-shadow-sm">
@@ -1020,18 +1017,17 @@ export default function App() {
               initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.2 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('ambos'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="col-span-2 text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="col-span-2 h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-teal-400/20 rounded-full blur-2xl" />
-              <div className="relative flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-                  <Heart className="w-8 h-8 text-white" />
+              <div className="relative h-full flex flex-col">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+                  <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ambos</span>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Plan de Ambos</h2>
                   <p className="text-emerald-100 text-sm leading-relaxed">
-                    Ve y selecciona platillos para ambos perfiles de forma simultánea. ¡Ideal para planear y armar la lista del supermercado juntos!
+                    Ve y selecciona platillos de ambos perfiles en una sola vista para organizar comidas y compras fácilmente.
                   </p>
                 </div>
               </div>
@@ -1108,14 +1104,6 @@ export default function App() {
             <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center shadow-md flex-shrink-0 hidden sm:flex`}>
               <ChefHat className="w-4 h-4 text-white" />
             </div>
-            <div className="min-w-0">
-              <h1 className={`text-sm sm:text-base font-bold ${ac.text} truncate`}>
-                Plan de {isAmbos ? 'Ambos' : perfil.nombre}
-              </h1>
-              <p className="text-[11px] text-slate-500 truncate hidden sm:block">
-                {isAmbos ? 'Vista combinada de El y Ella' : perfil.perfil}
-              </p>
-            </div>
           </div>
           <div className="flex gap-1.5 flex-shrink-0 items-center">
             {(['vo', 'va', 'ambos'] as const).map((p) => (
@@ -1126,15 +1114,6 @@ export default function App() {
                 {p === 'ambos' ? 'Ambos' : perfilesData[p].nombre}
               </button>
             ))}
-            {/* Botón Admin más intuitivo - Main app */}
-            <button 
-              onClick={() => setShowAdmin(true)} 
-              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-gradient-to-r hover:from-violet-500 hover:to-indigo-600 hover:text-white text-slate-600 text-xs font-bold transition-all active:scale-95"
-              title="Crear plan con IA"
-            >
-              <span className="text-sm">🪄</span>
-              <span className="hidden sm:block">Nuevo plan IA</span>
-            </button>
           </div>
         </div>
       </motion.header>
