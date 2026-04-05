@@ -1682,18 +1682,25 @@ export default function App() {
                                         </button>
                                       </div>
                                     ) : (
-                                      <MealSelector
-                                        perfil={perfilActivo}
-                                        comidas={mealsSingleAll}
-                                        dia={diaActivo}
-                                        momento={momento.key}
-                                        selecciones={selecciones}
-                                        onToggle={(perfilId, dia, momentoKey, nombre) => {
-                                          toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                          setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
-                                        }}
-                                        accentClasses={accentColors}
-                                      />
+                                      <div className="space-y-3">
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
+                                          <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                                            Modo edición: cada platillo muestra nombre, descripción, porciones, etiquetas e ingredientes.
+                                          </p>
+                                        </div>
+                                        <MealSelector
+                                          perfil={perfilActivo}
+                                          comidas={mealsSingleAll}
+                                          dia={diaActivo}
+                                          momento={momento.key}
+                                          selecciones={selecciones}
+                                          onToggle={(perfilId, dia, momentoKey, nombre) => {
+                                            toggleSeleccion(perfilId, dia, momentoKey, nombre);
+                                            setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
+                                          }}
+                                          accentClasses={accentColors}
+                                        />
+                                      </div>
                                     )
                                   )}
 
@@ -1734,6 +1741,11 @@ export default function App() {
                                       </div>
                                     ) : (
                                       <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
+                                          <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                                            Modo edición: cada platillo muestra nombre, descripción, porciones, etiquetas e ingredientes.
+                                          </p>
+                                        </div>
                                         <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
                                           <h4 className="font-bold text-blue-800 text-xs mb-2">Para {perfilesData.vo.nombre}</h4>
                                           <MealSelector
