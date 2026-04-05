@@ -15,7 +15,9 @@ export function parseObjectToData(parsed: any, expectedPrefix: 'VO' | 'VA'): any
   if (!parsed[perfilKey] || !parsed[equivKey] || !parsed[planKey]) {
     const wrongPrefix = expectedPrefix === 'VO' ? 'VA' : 'VO';
     if (parsed[`perfil${wrongPrefix}`]) {
-      throw new Error(`Intentaste subir un archivo de V(${wrongPrefix.toLowerCase()}) en la sección de V(${expectedPrefix.toLowerCase()}). Sube el archivo correcto.`);
+      const expectedLabel = expectedPrefix === 'VO' ? 'El' : 'Ella';
+      const wrongLabel = wrongPrefix === 'VO' ? 'El' : 'Ella';
+      throw new Error(`Intentaste subir un archivo de ${wrongLabel} en la sección de ${expectedLabel}. Sube el archivo correcto.`);
     }
     throw new Error(`El archivo JSON no contiene las estructuras requeridas (${perfilKey}, ${equivKey}, ${planKey}).`);
   }
