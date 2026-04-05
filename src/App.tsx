@@ -282,11 +282,13 @@ export default function App() {
   const formatProfileForCard = (perfilText: string) => {
     return perfilText
       .replace(/\((?:sobrepeso|obesidad|saludable|normal|bajo(?:\s*peso)?)\)/gi, '')
+      .replace(/•?\s*IMC\s*[:\-]?\s*[\d]+(?:[.,]\d+)?\b/gi, '')
       .replace(/,\s*/g, ' • ')
       .replace(/:\s*/g, ' ')
       .replace(/•\s*(?:sobrepeso|obesidad|saludable|normal|bajo(?:\s*peso)?)\b/gi, '')
       .replace(/\(([^)]+)\)/g, '• $1')
       .replace(/\s{2,}/g, ' ')
+      .replace(/\s*•\s*•\s*/g, ' • ')
       .replace(/\s*•\s*$/g, '')
       .trim();
   };
