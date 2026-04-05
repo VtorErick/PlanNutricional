@@ -561,14 +561,16 @@ export default function App() {
       if (nextValue) {
         const nextMomentoKey = getNextMomentoKey(momento);
         if (nextMomentoKey) {
+          const isPrimerSalto = momento === perfilBase.momentos[0]?.key;
+          const autoScrollOffset = isPrimerSalto ? 130 : 90;
           if (isAmbos) {
             const voListo = hasSelectionForMomento(nextSelecciones, 'vo', momento);
             const vaListo = hasSelectionForMomento(nextSelecciones, 'va', momento);
             if (voListo && vaListo) {
-              setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded, 90), 250);
+              setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded, autoScrollOffset), 250);
             }
           } else {
-            setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded, 90), 250);
+            setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded, autoScrollOffset), 250);
           }
         }
       }
