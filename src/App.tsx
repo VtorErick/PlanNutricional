@@ -510,12 +510,12 @@ export default function App() {
   // Refs to handle auto-scrolling to each meal section
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean) => {
+  const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean, extraOffset = 0) => {
     const doScroll = () => {
       const el = mealSectionRefs.current[momentoKey];
       if (!el) return;
       // Offset = header (~56px) + dias (~48px) + progreso (~44px) + margen (12px)
-      const offset = 56 + 48 + 44 + 12;
+      const offset = 56 + 48 + 44 + 12 + extraOffset;
       const top = el.getBoundingClientRect().top + window.scrollY - offset;
       window.scrollTo({ top, behavior: 'smooth' });
     };
@@ -565,10 +565,10 @@ export default function App() {
             const voListo = hasSelectionForMomento(nextSelecciones, 'vo', momento);
             const vaListo = hasSelectionForMomento(nextSelecciones, 'va', momento);
             if (voListo && vaListo) {
-              setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded), 250);
+              setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded, 90), 250);
             }
           } else {
-            setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded), 250);
+            setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded, 90), 250);
           }
         }
       }
