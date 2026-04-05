@@ -3,7 +3,7 @@ import type { MealItem, MealTime } from '../data';
 // --- INFORMACIÓN PERSONAL Y METAS ---
 export const perfilVO = {
   id: 'vo',
-  nombre: 'V(o)',
+  nombre: 'El',
   edad: 32,
   descripcion: 'Plan diseñado para bajar de peso con horarios tarde-noche. Tu riesgo principal es llegar con hambre y rebotar a pan, galletas, cereal o dulce. Este plan mete proteína fuerte en cada comida y opciones dulces inteligentes.',
   perfil: '90 kg • 1.70 m • 32 años • IMC 31.1',

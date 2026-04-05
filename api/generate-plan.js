@@ -8,7 +8,7 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 
 1. perfil${prefix}: {
     id: "${lowerPrefix}",
-    nombre: "${prefix === 'VO' ? 'V(o)' : 'V(a)'}",
+    nombre: "${prefix === 'VO' ? 'El' : 'Ella'}",
   perfil: string (peso, altura, IMC calculado - SOLO incluir edad si se proporcionó en los datos),
     meta: string (usa los datos reales: peso meta si se proporcionó, objetivos del usuario, tiempo objetivo si se proporcionó),
     descripcion: string,
@@ -46,7 +46,7 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 3. plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
 
 REGLAS CRÍTICAS:
-- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'V(o)' : 'V(a)'}" - NO usar otros nombres
+- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'El' : 'Ella'}" - NO usar otros nombres
 - OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, leche (usar key 'leche' internamente pero mostrar como Lácteos en distribucionDiaria), proteina, grasas
 - OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
 - OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados

@@ -302,8 +302,8 @@ export default function NutritionQuestionnaire({
       <div className="space-y-2.5">
         <p className="text-center text-slate-500 text-sm mb-4">Selecciona para quién generas el plan</p>
         {([
-          ['vo',    '👨', 'Perfil V(o)',     'Plan individual masculino'],
-          ['va',    '👩', 'Perfil V(a)',     'Plan individual femenino' ],
+          ['vo',    '👨', 'Perfil El',     'Plan individual masculino'],
+          ['va',    '👩', 'Perfil Ella',     'Plan individual femenino' ],
           ['ambos', '👫', 'Ambos Perfiles', 'Plan completo para los dos'],
         ] as const).map(([val, emoji, title, sub]) => {
           const t = THEME[val];
@@ -666,7 +666,7 @@ export default function NutritionQuestionnaire({
           <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50">
             <p className="text-xs font-bold uppercase tracking-wider mb-2.5 text-slate-600">📋 Configuración del Plan</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
-              <span>Perfil: <strong>{targetProfile === 'ambos' ? 'Ambos' : targetProfile === 'vo' ? 'V(o)' : 'V(a)'}</strong></span>
+              <span>Perfil: <strong>{targetProfile === 'ambos' ? 'Ambos' : targetProfile === 'vo' ? 'El' : 'Ella'}</strong></span>
               <span>Porciones: <strong>{portionMode === 'auto' ? 'IA decide 🤖' : 'Manual 📋'}</strong></span>
               {portionSummary && <span className="col-span-2 text-slate-500">Resumen: {portionSummary}</span>}
               {vo.favoriteCuisineStyles && <span className="col-span-2 text-slate-500">Cocina: {vo.favoriteCuisineStyles}</span>}
@@ -681,7 +681,7 @@ export default function NutritionQuestionnaire({
             return (
               <div key={p} className={`p-4 rounded-2xl border ${t.border} ${t.light}`}>
                 <p className={`text-xs font-bold uppercase tracking-wider mb-2.5 ${t.text}`}>
-                  {p === 'vo' ? '👨 Perfil V(o)' : '👩 Perfil V(a)'}
+                  {p === 'vo' ? '👨 Perfil El' : '👩 Perfil Ella'}
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600">
                   {data.age && <span>Edad: <strong>{data.age} años</strong></span>}
@@ -820,7 +820,7 @@ export default function NutritionQuestionnaire({
   const isOptional  = type === 'salud' || type === 'medicos' || type === 'preferencias' || type === 'horarios' || type === 'portions' || type === 'cocina';
 
   const { label: stepLabel, Icon: StepIcon } = STEP_META[type];
-  const profileSuffix = currentStep.profile === 'vo' ? ' · V(o)' : currentStep.profile === 'va' ? ' · V(a)' : '';
+  const profileSuffix = currentStep.profile === 'vo' ? ' · El' : currentStep.profile === 'va' ? ' · Ella' : '';
 
   return (
     <div className="mt-4 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col">
