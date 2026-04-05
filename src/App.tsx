@@ -913,7 +913,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col relative">
         {/* Acciones rápidas - Landing page */}
-        <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+        <div className="absolute top-14 sm:top-4 right-4 z-20 flex flex-col items-end gap-2">
           <button 
             onClick={() => setShowAdmin(true)} 
             className="group flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur hover:bg-white text-slate-700 rounded-full shadow-md hover:shadow-lg border border-slate-200 transition-all active:scale-95"
@@ -968,8 +968,14 @@ export default function App() {
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">🛒 Lista de compras</span>
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">📱 Optimizado para móvil</span>
           </div>
-          <div className="mb-4 text-center">
+          <div className="mb-3 sm:mb-4 text-center">
             <p className="text-xs sm:text-sm text-slate-500 font-semibold tracking-wide uppercase">Selecciona un perfil para comenzar</p>
+          </div>
+          <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/70 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
+            <p className="text-[11px] sm:text-xs font-semibold text-violet-700 uppercase tracking-wide">Planes base de referencia</p>
+            <p className="text-xs sm:text-sm text-violet-900 font-medium leading-snug mt-1">
+              Para mejores resultados, lo ideal es generar un plan personalizado con IA.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 items-stretch">
             <motion.button
@@ -1014,7 +1020,7 @@ export default function App() {
               initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.2 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('ambos'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="sm:col-span-2 text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="col-span-2 text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-teal-400/20 rounded-full blur-2xl" />
