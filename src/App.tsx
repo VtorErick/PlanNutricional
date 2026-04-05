@@ -537,9 +537,44 @@ export default function App() {
   const diasDisponibles = perfilActivo ? Object.keys(perfilBase.plan) : [];
   const equivalencias = (perfilActivo && perfilActivo !== 'ambos') ? equivalenciasData[perfilActivo as 'vo' | 'va'] : [];
 
+  const getNextMomentoKey = useCallback((momentoKey: string) => {
+    const idx = perfilBase.momentos.findIndex((m) => m.key === momentoKey);
+    if (idx === -1 || idx >= perfilBase.momentos.length - 1) return null;
+    return perfilBase.momentos[idx + 1].key;
+  }, [perfilBase]);
+
+  const hasSelectionForMomento = useCallback((
+    currentSelecciones: Record<string, boolean>,
+    perfilId: 'vo' | 'va',
+    momentoKey: string
+  ) => {
+    const plan = perfilesData[perfilId].plan[diaActivo]?.[momentoKey] || [];
+    return plan.some((item) => currentSelecciones[`${perfilId}-${diaActivo}-${momentoKey}-${item.nombre}`]);
+  }, [perfilesData, diaActivo]);
+
   const toggleSeleccion = (perfilId: string, dia: string, momento: string, nombre: string) => {
     const key = `${perfilId}-${dia}-${momento}-${nombre}`;
-    setSelecciones((prev) => ({ ...prev, [key]: !prev[key] }));
+    setSelecciones((prev) => {
+      const nextValue = !prev[key];
+      const nextSelecciones = { ...prev, [key]: nextValue };
+
+      if (nextValue) {
+        const nextMomentoKey = getNextMomentoKey(momento);
+        if (nextMomentoKey) {
+          if (isAmbos) {
+            const voListo = hasSelectionForMomento(nextSelecciones, 'vo', momento);
+            const vaListo = hasSelectionForMomento(nextSelecciones, 'va', momento);
+            if (voListo && vaListo) {
+              setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded), 250);
+            }
+          } else {
+            setTimeout(() => scrollToMomento(nextMomentoKey, progressExpanded), 250);
+          }
+        }
+      }
+
+      return nextSelecciones;
+    });
   };
 
   const momentoCompletadoVo = useMemo(() => {
