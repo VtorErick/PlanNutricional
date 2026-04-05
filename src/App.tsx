@@ -1316,8 +1316,8 @@ export default function App() {
     iconColorPending: isAmbos ? 'text-emerald-400' : isVo ? 'text-blue-400' : 'text-rose-400',
     momentoIconBgDone: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
     momentoIconColorDone: isAmbos ? 'text-emerald-600' : isVo ? 'text-blue-600' : 'text-rose-600',
-    momentoIconBgPending: 'bg-slate-100 border border-slate-200',
-    momentoIconColorPending: 'text-slate-500',
+    momentoIconBgPending: 'bg-slate-100 border border-slate-300',
+    momentoIconColorPending: 'text-slate-600',
     headerBg: isAmbos ? 'bg-gradient-to-r from-emerald-600 to-teal-700' : isVo
       ? 'bg-gradient-to-r from-blue-600 to-indigo-700'
       : 'bg-gradient-to-r from-rose-500 to-pink-600',
@@ -1640,8 +1640,10 @@ export default function App() {
                               done ? ac.momentoIconColorDone : ac.momentoIconColorPending
                             }`} />
                           </div>
-                          <span className="truncate">{momento.label}</span>
-                          <span className="text-[10px] font-normal text-slate-400 ml-2 whitespace-nowrap">{momento.hora}</span>
+                          <div className="min-w-0 flex items-center gap-2">
+                            <span className="truncate leading-none">{momento.label}</span>
+                            <span className="text-[10px] font-normal text-slate-400 whitespace-nowrap leading-none">{momento.hora}</span>
+                          </div>
                         </h3>
                         {estaEnEdicion ? (
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 bg-gradient-to-br ${ac.bgGradient}`} />
