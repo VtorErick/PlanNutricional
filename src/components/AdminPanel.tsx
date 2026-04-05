@@ -140,15 +140,15 @@ export default function AdminPanel({
 
         {/* Opciones de carga */}
         {isCustomAvailable ? (
-          <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
-            <span className="text-sm font-medium text-slate-600">Usar versión:</span>
+          <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <span className="text-xs sm:text-sm font-medium text-slate-600 shrink-0">Usar versión:</span>
             <button 
               onClick={() => setDataVersion(dataVersion === 'original' ? 'custom' : 'original')}
-              className={`flex items-center gap-2 font-bold text-sm transition-colors ${dataVersion === 'custom' ? activeColor : 'text-slate-400'}`}
+              className={`flex items-center justify-end flex-wrap gap-1 sm:gap-2 font-bold text-xs sm:text-sm transition-colors ${dataVersion === 'custom' ? activeColor : 'text-slate-400'}`}
             >
               <span className={dataVersion === 'original' ? 'text-slate-700' : ''}>Original</span>
               {dataVersion === 'custom' ? <ToggleRight className={`w-6 h-6 ${activeColor}`} /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
-              <span className={dataVersion === 'custom' ? activeColor : ''}>Subida</span>
+              <span className={`${dataVersion === 'custom' ? activeColor : ''} whitespace-nowrap`}>Personalizada</span>
             </button>
           </div>
         ) : (
