@@ -258,6 +258,126 @@ export default function App() {
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null); // Para descarga de JSON
   
   const [showAdmin, setShowAdmin] = useState(false);
+  const voReady = dataVersions.vo === 'custom';
+  const vaReady = dataVersions.va === 'custom';
+  const hasCustomPlan = voReady || vaReady;
+
+  const getImcData = (perfilText: string) => {
+    const match = perfilText.match(/IMC\s*[:\-]?\s*([\d]+(?:[.,]\d+)?)/i);
+    const imc = match ? Number(match[1].replace(',', '.')) : null;
+    if (!imc || Number.isNaN(imc)) return null;
+    const markerPct = Math.min(95, Math.max(5, ((imc - 16) / (35 - 16)) * 100));
+
+    const status = imc < 18.5
+      ? { label: 'Bajo', color: 'bg-sky-500', pct: 15 }
+      : imc < 25
+      ? { label: 'Saludable', color: 'bg-emerald-500', pct: 45 }
+      : imc < 30
+      ? { label: 'Sobrepeso', color: 'bg-amber-500', pct: 70 }
+      : { label: 'Obesidad', color: 'bg-rose-500', pct: 90 };
+
+    return { imc, ...status, pct: markerPct };
+  };
+
+  const formatProfileForCard = (perfilText: string) => {
+    return perfilText
+      .replace(/\((?:sobrepeso|obesidad|saludable|normal|bajo(?:\s*peso)?)\)/gi, '')
+      .replace(/•?\s*IMC\s*[:\-]?\s*[\d]+(?:[.,]\d+)?\b/gi, '')
+      .replace(/,\s*/g, ' • ')
+      .replace(/:\s*/g, ' ')
+      .replace(/•\s*(?:sobrepeso|obesidad|saludable|normal|bajo(?:\s*peso)?)\b/gi, '')
+      .replace(/\(([^)]+)\)/g, '• $1')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\s*•\s*•\s*/g, ' • ')
+      .replace(/\s*•\s*$/g, '')
+      .trim();
+  };
+
+  const ambosInsights = useMemo(() => {
+    const normalize = (value: string) =>
+      value
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+
+    const extractPlanData = (plan: Profile['plan']) => {
+      const mealNames = new Set<string>();
+      const ingredients = new Set<string>();
+
+      Object.values(plan || {}).forEach((day) => {
+        Object.values(day || {}).forEach((meals) => {
+          if (!Array.isArray(meals)) return;
+          meals.forEach((meal: any) => {
+            if (meal?.nombre) mealNames.add(normalize(String(meal.nombre)));
+            if (Array.isArray(meal?.super)) {
+              meal.super.forEach((ingredient: string) => ingredients.add(normalize(String(ingredient))));
+            }
+          });
+        });
+      });
+
+      return { mealNames, ingredients };
+    };
+
+    const vo = extractPlanData(perfilesData.vo.plan);
+    const va = extractPlanData(perfilesData.va.plan);
+
+    const sharedMeals = [...vo.mealNames].filter((name) => va.mealNames.has(name)).length;
+    const commonIngredients = [...vo.ingredients].filter((item) => va.ingredients.has(item)).length;
+    const ingredientsUnion = new Set([...vo.ingredients, ...va.ingredients]).size;
+    const overlapPct = ingredientsUnion > 0 ? Math.round((commonIngredients / ingredientsUnion) * 100) : 0;
+
+    return {
+      sharedMeals,
+      overlapPct
+    };
+  }, [perfilesData.vo.plan, perfilesData.va.plan]);
+
+  const voImcData = getImcData(perfilesData.vo.perfil);
+  const vaImcData = getImcData(perfilesData.va.perfil);
+
+  const ambosButtonConfig = (() => {
+    if (voReady && vaReady) {
+      return {
+        label: 'Ver lista de compras conjunta',
+        onClick: () => {
+          setPerfilActivo('ambos');
+          setDiaActivo('Lunes');
+          setTab('compras');
+        },
+        style: 'bg-white text-emerald-700 hover:bg-emerald-50 border border-white/80'
+      };
+    }
+    if (voReady && !vaReady) {
+      return {
+        label: 'Generar perfil faltante: Ella',
+        onClick: () => {
+          setQuestionnaireTargetProfile('va');
+          setShowQuestionnaire(true);
+        },
+        style: 'bg-white/20 hover:bg-white/30 text-white border border-white/30 animate-pulse'
+      };
+    }
+    if (!voReady && vaReady) {
+      return {
+        label: 'Generar perfil faltante: El',
+        onClick: () => {
+          setQuestionnaireTargetProfile('vo');
+          setShowQuestionnaire(true);
+        },
+        style: 'bg-white/20 hover:bg-white/30 text-white border border-white/30 animate-pulse'
+      };
+    }
+    return {
+      label: 'Personalizar ambos con IA',
+      onClick: () => {
+        setQuestionnaireTargetProfile('ambos');
+        setShowQuestionnaire(true);
+      },
+      style: 'bg-white/20 hover:bg-white/30 text-white border border-white/30 animate-pulse'
+    };
+  })();
   const [geminiApiKey, setGeminiApiKey] = useState(() => {
     try { 
       // Intentar leer desde localStorage primero, luego desde .env
@@ -934,7 +1054,7 @@ export default function App() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 backdrop-blur border border-slate-200 text-slate-700 font-semibold text-sm shadow-sm hover:shadow-md transition-all active:scale-95"
                 >
                   <Settings className="w-4 h-4" />
-                  <span>Panel de administración</span>
+                  <span>Mi perfil</span>
                 </button>
               </div>
               <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-3 tracking-tight leading-[1.1]">
@@ -946,15 +1066,6 @@ export default function App() {
               <p className="text-sm md:text-lg text-slate-600 max-w-xl mx-auto font-medium leading-relaxed">
                 Elige tu plan individual o armen su lista de compras juntos de forma automática.
               </p>
-              <div className="mt-4">
-                <button
-                  onClick={() => setShowQuestionnaire(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-bold text-sm shadow-md hover:shadow-lg hover:from-violet-400 hover:to-indigo-500 transition-all active:scale-95"
-                >
-                  <span>✨</span>
-                  <span>Generar un plan con IA</span>
-                </button>
-              </div>
             </motion.div>
           </div>
         </div>
@@ -963,34 +1074,101 @@ export default function App() {
           <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">✅ Plan editable</span>
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">🛒 Lista de compras</span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">📱 Optimizado para móvil</span>
           </div>
           <div className="mb-3 sm:mb-4 text-center">
             <p className="text-xs sm:text-sm text-slate-500 font-semibold tracking-wide uppercase">Selecciona un perfil para comenzar</p>
           </div>
-          <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/70 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
-            <p className="text-[11px] sm:text-xs font-semibold text-violet-700 uppercase tracking-wide">Planes base de referencia</p>
-            <p className="text-xs sm:text-sm text-violet-900 font-medium leading-snug mt-1">
-              Para mejores resultados, lo ideal es generar un plan personalizado con IA.
-            </p>
-          </div>
+          {!hasCustomPlan && (
+            <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50/80 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
+              <p className="text-xs sm:text-sm text-sky-900 font-semibold leading-snug">
+                Selecciona un perfil para personalizar tu plan con IA.
+              </p>
+            </div>
+          )}
+          {voReady !== vaReady && (
+            <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/80 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm">
+              <p className="text-xs sm:text-sm text-violet-900 font-semibold leading-snug text-center">
+                {voReady ? '¡Genial! El plan de Él está listo. ¿Personalizamos el de Ella ahora?' : '¡Genial! El plan de Ella está listo. ¿Personalizamos el de Él ahora?'}
+              </p>
+              <div className="mt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuestionnaireTargetProfile(voReady ? 'va' : 'vo');
+                    setShowQuestionnaire(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors"
+                >
+                  <span>✨</span>
+                  <span>{voReady ? 'Generar plan de Ella' : 'Generar plan de Él'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+          {voReady && vaReady && (
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
+              <p className="text-xs sm:text-sm text-emerald-800 font-semibold leading-snug">
+                ✅ ¡Todo listo! Los planes personalizados para ambos han sido generados.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 items-stretch">
             <motion.button
               initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('vo'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-5 sm:p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
+              {voReady && (
+                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-emerald-500/95 text-white text-[10px] font-bold shadow-sm">
+                  ✅ Listo
+                </div>
+              )}
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl" />
               <div className="relative h-full flex flex-col">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">El</span>
                 </div>
-                <p className="text-blue-100 text-sm mb-3 leading-relaxed">{perfilesData.vo.perfil}</p>
-                <div className="flex items-center gap-2 text-blue-200 text-xs sm:text-sm mt-auto">
+                <p className="text-blue-100 text-sm mb-4 leading-relaxed min-h-[72px]">{formatProfileForCard(perfilesData.vo.perfil)}</p>
+                {voImcData && (
+                  <div className="mb-3 min-h-[70px]">
+                    <div className="h-4 mb-1 flex items-center justify-between text-[11px] text-blue-100 font-semibold">
+                      <span>IMC {voImcData.imc}</span>
+                      <span>{voImcData.label}</span>
+                    </div>
+                    <div className="relative h-1.5 rounded-full bg-white/25 overflow-hidden">
+                      <div
+                        className={`h-full ${voImcData.color}`}
+                        style={{ width: `${voImcData.pct}%` }}
+                      />
+                      <span
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white border border-blue-300/80"
+                        style={{ left: `${voImcData.pct}%` }}
+                      />
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-blue-100/90">
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-300" />Normal</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300" />Sobrepeso</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-300" />Obesidad</span>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-start gap-2 text-blue-200 text-xs sm:text-sm mt-auto mb-2 min-h-[88px]">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuestionnaireTargetProfile('vo');
+                    setShowQuestionnaire(true);
+                  }}
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${voReady ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border-white/35 shadow-[0_6px_20px_rgba(255,255,255,0.18)]' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
+                >
+                  <span>{voReady ? '✅' : '✨'}</span>
+                  <span>{voReady ? 'Actualizar El con IA' : 'Personalizar El con IA'}</span>
+                </button>
               </div>
             </motion.button>
 
@@ -998,18 +1176,58 @@ export default function App() {
               initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.15 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-600 via-rose-700 to-pink-800 p-5 sm:p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
+              {vaReady && (
+                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-emerald-500/95 text-white text-[10px] font-bold shadow-sm">
+                  ✅ Listo
+                </div>
+              )}
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-rose-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-400/20 rounded-full blur-2xl" />
               <div className="relative h-full flex flex-col">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ella</span>
                 </div>
-                <p className="text-rose-100 text-sm mb-3 leading-relaxed">{perfilesData.va.perfil}</p>
-                <div className="flex items-center gap-2 text-rose-200 text-xs sm:text-sm mt-auto">
+                <p className="text-rose-50 text-sm mb-4 leading-relaxed min-h-[72px]">{formatProfileForCard(perfilesData.va.perfil)}</p>
+                {vaImcData && (
+                  <div className="mb-3 min-h-[70px]">
+                    <div className="h-4 mb-1 flex items-center justify-between text-[11px] text-rose-50 font-semibold">
+                      <span>IMC {vaImcData.imc}</span>
+                      <span>{vaImcData.label}</span>
+                    </div>
+                    <div className="relative h-1.5 rounded-full bg-white/25 overflow-hidden">
+                      <div
+                        className={`h-full ${vaImcData.color}`}
+                        style={{ width: `${vaImcData.pct}%` }}
+                      />
+                      <span
+                        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white border border-rose-300/80"
+                        style={{ left: `${vaImcData.pct}%` }}
+                      />
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-rose-50/90">
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-300" />Normal</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-300" />Sobrepeso</span>
+                      <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-300" />Obesidad</span>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-start gap-2 text-rose-100 text-xs sm:text-sm mt-auto mb-2 min-h-[88px]">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuestionnaireTargetProfile('va');
+                    setShowQuestionnaire(true);
+                  }}
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${vaReady ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border-white/35 shadow-[0_6px_20px_rgba(255,255,255,0.18)]' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
+                >
+                  <span>{vaReady ? '✅' : '✨'}</span>
+                  <span>{vaReady ? 'Actualizar Ella con IA' : 'Personalizar Ella con IA'}</span>
+                </button>
               </div>
             </motion.button>
             
@@ -1029,7 +1247,28 @@ export default function App() {
                   <p className="text-emerald-100 text-sm leading-relaxed">
                     Ve y selecciona platillos de ambos perfiles en una sola vista para organizar comidas y compras fácilmente.
                   </p>
+                  <div className="mt-3 grid sm:grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-emerald-100/80">Adelanto IA</p>
+                      <p className="text-sm font-semibold text-white">{ambosInsights.sharedMeals} comidas compartidas detectadas</p>
+                    </div>
+                    <div className="rounded-xl border border-white/20 bg-white/10 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wide text-emerald-100/80">Sinergia</p>
+                      <p className="text-sm font-semibold text-white">{ambosInsights.overlapPct}% de ingredientes en común</p>
+                    </div>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    ambosButtonConfig.onClick();
+                  }}
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${ambosButtonConfig.style}`}
+                >
+                  <span>{voReady && vaReady ? '🛒' : '✨'}</span>
+                  <span>{ambosButtonConfig.label}</span>
+                </button>
               </div>
             </motion.button>
           </div>
