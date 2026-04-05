@@ -533,10 +533,8 @@ export default function App() {
   useEffect(() => {
     if (!pendingAutoScrollMomento) return;
     const timer = setTimeout(() => {
+      // Un solo desplazamiento para evitar rebote visual.
       scrollToMomento(pendingAutoScrollMomento, progressExpanded);
-      // Segunda corrección para alinear exactamente con el mismo punto
-      // al que llega el scroll manual de la barra de progreso, tras estabilizar layout.
-      setTimeout(() => scrollToMomento(pendingAutoScrollMomento, false), 360);
       setPendingAutoScrollMomento(null);
     }, 320);
     return () => clearTimeout(timer);
