@@ -156,11 +156,17 @@ const slideVariants = {
 };
 
 // ─── Compact slider ───────────────────────────────────────────────────────────
-function NumSlider({ label, unit, value, min, max, step = 1, onChange, required, accent }: {
+function NumSlider({ label, unit, value, min, max, step = 1, onChange, required, accent, minIcon, maxIcon }: {
   label: string; unit: string; value: string; min: number; max: number;
-  step?: number; onChange: (v: string) => void; required?: boolean; accent: string;
+  step?: number; onChange: (v: string) => void; required?: boolean; accent: string; minIcon?: string; maxIcon?: string;
 }) {
   const num = parseFloat(value) || min;
+  const [isSliding, setIsSliding] = useState(false);
+  const handleValueChange = (v: string) => {
+    setIsSliding(true);
+    onChange(v);
+    window.setTimeout(() => setIsSliding(false), 180);
+  };
   return (
     <div className="space-y-2">
       <div className="flex items-end justify-between">
@@ -168,11 +174,13 @@ function NumSlider({ label, unit, value, min, max, step = 1, onChange, required,
           {label}{required && <span className="text-rose-400 ml-1 font-bold">*</span>}
         </label>
         <div className="flex items-baseline gap-1">
-          <input
+          <motion.input
+            animate={{ scale: isSliding ? 1.08 : 1, color: isSliding ? accent : '#0f172a' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 18 }}
             type="number" min={min} max={max} step={step}
             value={value}
-            onChange={e => onChange(e.target.value)}
-            className="w-16 text-right text-2xl font-black text-slate-900 bg-transparent border-none outline-none tabular-nums"
+            onChange={e => handleValueChange(e.target.value)}
+            className="w-20 text-right text-3xl font-black bg-transparent border-none outline-none tabular-nums"
           />
           <span className="text-sm text-slate-400 font-medium pb-0.5">{unit}</span>
         </div>
@@ -180,12 +188,13 @@ function NumSlider({ label, unit, value, min, max, step = 1, onChange, required,
       <input
         type="range" min={min} max={max} step={step}
         value={num}
-        onChange={e => onChange(e.target.value)}
+        onChange={e => handleValueChange(e.target.value)}
         className="w-full h-2.5 rounded-full cursor-pointer appearance-none bg-slate-100"
         style={{ accentColor: accent }}
       />
       <div className="flex justify-between text-[10px] text-slate-400 font-medium">
-        <span>{min} {unit}</span><span>{max} {unit}</span>
+        <span className="flex items-center gap-1 opacity-40"><span>{minIcon}</span>{min} {unit}</span>
+        <span className="flex items-center gap-1 opacity-40">{max} {unit}<span>{maxIcon}</span></span>
       </div>
     </div>
   );
@@ -212,6 +221,16 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
   confirm:      { label: 'Confirmar',          Icon: Sparkles  },
 };
 
+const QUICK_TAGS = {
+  diagnostics: ['Diabetes', 'Hipertensión', 'SOP', 'Hipotiroidismo'],
+  medications: ['Metformina', 'Levotiroxina', 'Antihipertensivo'],
+  allergies: ['Lácteos', 'Gluten', 'Mariscos', 'Nueces'],
+  intolerances: ['Lactosa', 'Fructosa', 'Sorbitol'],
+  digestive: ['Reflujo', 'Distensión', 'Estreñimiento'],
+  favorites: ['Pollo', 'Arroz', 'Atún', 'Avena'],
+  disliked: ['Hígado', 'Brócoli', 'Coliflor'],
+};
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function NutritionQuestionnaire({
   onCancel, onGenerate, onViewPlan, loading, errorMessage, geminiModel, setGeminiModel, lastGeneratedData,
@@ -227,6 +246,7 @@ export default function NutritionQuestionnaire({
   const steps = useMemo(() => buildSteps(targetProfile), [targetProfile]);
   const currentStep = steps[stepIdx] ?? steps[0];
   const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
+  const stepsLeft = Math.max(steps.length - (stepIdx + 1), 0);
 
   const tc = THEME[currentStep.profile ?? targetProfile];
 
@@ -261,6 +281,15 @@ export default function NutritionQuestionnaire({
     if (type === 'fisica'   && profile) return !!person(profile).age && !!person(profile).currentWeightKg && !!person(profile).heightCm;
     if (type === 'objetivo' && profile) return person(profile).objectives.length > 0;
     return true;
+  };
+
+  const appendTag = (profile: 'vo' | 'va', field: keyof Person, tag: string) => {
+    const currentValue = String(person(profile)[field] ?? '').trim();
+    const values = currentValue.split(',').map(v => v.trim()).filter(Boolean);
+    if (!values.includes(tag)) {
+      const next = [...values, tag].join(', ');
+      setPerson(profile, { [field]: next } as Partial<Person>);
+    }
   };
 
   // ── Submit ───────────────────────────────────────────────────────────────
@@ -331,13 +360,13 @@ export default function NutritionQuestionnaire({
       return (
         <div className="space-y-5">
           <NumSlider label="Edad" unit="años" min={10} max={100} step={1} required
-            value={p.age} onChange={v => setPerson(profile, { age: v })} accent={tc.accent} />
+            value={p.age} onChange={v => setPerson(profile, { age: v })} accent={tc.accent} minIcon="👶" maxIcon="🧓" />
           <NumSlider label="Peso actual" unit="kg" min={25} max={200} step={0.5} required
-            value={p.currentWeightKg} onChange={v => setPerson(profile, { currentWeightKg: v })} accent={tc.accent} />
+            value={p.currentWeightKg} onChange={v => setPerson(profile, { currentWeightKg: v })} accent={tc.accent} minIcon="🏋️" maxIcon="🏋️‍♂️" />
           <NumSlider label="Estatura" unit="cm" min={100} max={220} required
-            value={p.heightCm} onChange={v => setPerson(profile, { heightCm: v })} accent={tc.accent} />
+            value={p.heightCm} onChange={v => setPerson(profile, { heightCm: v })} accent={tc.accent} minIcon="🧍" maxIcon="🧍‍♂️" />
           <NumSlider label="Peso meta" unit="kg" min={25} max={200} step={0.5}
-            value={p.targetWeightKg} onChange={v => setPerson(profile, { targetWeightKg: v })} accent={tc.accent} />
+            value={p.targetWeightKg} onChange={v => setPerson(profile, { targetWeightKg: v })} accent={tc.accent} minIcon="🎯" maxIcon="🏁" />
         </div>
       );
     }
@@ -360,9 +389,9 @@ export default function NutritionQuestionnaire({
                 <button key={obj.val}
                   onClick={toggleObjective}
                   className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 font-semibold text-sm transition-all duration-200 active:scale-[.98] ${
-                    isSelected ? `border-transparent ${tc.light} ${tc.text} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                    isSelected ? `${tc.border} ${tc.light} ${tc.text} shadow-sm border-[2.5px]` : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                   }`}>
-                  <span className="text-xl">{obj.emoji}</span>
+                  <span className="text-xl w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center">{obj.emoji}</span>
                   <span className="flex-1 text-left">{obj.val}</span>
                   {isSelected && <CheckCircle2 className="w-4 h-4 flex-shrink-0" />}
                 </button>
@@ -401,9 +430,17 @@ export default function NutritionQuestionnaire({
           </p>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">Condiciones médicas</label>
-            <textarea rows={2} placeholder="Diabetes, hipertensión..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+            <textarea rows={2} placeholder="Ej. Diabetes"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
               value={p.diagnostics} onChange={e => setPerson(profile, { diagnostics: e.target.value })} />
+            <div className="flex flex-wrap gap-2 pt-1">
+              {QUICK_TAGS.diagnostics.map(tag => (
+                <button key={tag} onClick={() => appendTag(profile, 'diagnostics', tag)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       );
@@ -419,22 +456,46 @@ export default function NutritionQuestionnaire({
           </p>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">Medicamentos</label>
-            <textarea rows={2} placeholder="Metformina, levotiroxina..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+            <textarea rows={2} placeholder="Ej. Metformina"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
               value={p.medications} onChange={e => setPerson(profile, { medications: e.target.value })} />
+            <div className="flex flex-wrap gap-2 pt-1">
+              {QUICK_TAGS.medications.map(tag => (
+                <button key={tag} onClick={() => appendTag(profile, 'medications', tag)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">Alergias</label>
-              <input placeholder="Lactosa, gluten..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              <input placeholder="Ej. Lácteos"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
                 value={p.allergies} onChange={e => setPerson(profile, { allergies: e.target.value })} />
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_TAGS.allergies.map(tag => (
+                  <button key={tag} onClick={() => appendTag(profile, 'allergies', tag)}
+                    className="px-2 py-1 rounded-full text-[10px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-slate-700">Intolerancias</label>
-              <input placeholder="Fructosa, sorbitol..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              <input placeholder="Ej. Lactosa"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
                 value={p.intolerances} onChange={e => setPerson(profile, { intolerances: e.target.value })} />
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_TAGS.intolerances.map(tag => (
+                  <button key={tag} onClick={() => appendTag(profile, 'intolerances', tag)}
+                    className="px-2 py-1 rounded-full text-[10px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -451,20 +512,44 @@ export default function NutritionQuestionnaire({
           </p>
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-slate-700">Síntomas digestivos</label>
-            <input placeholder="Gastritis, reflujo, estreñimiento..."
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+            <input placeholder="Ej. Reflujo"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
               value={p.digestiveSymptoms} onChange={e => setPerson(profile, { digestiveSymptoms: e.target.value })} />
+            <div className="flex flex-wrap gap-2 pt-1">
+              {QUICK_TAGS.digestive.map(tag => (
+                <button key={tag} onClick={() => appendTag(profile, 'digestiveSymptoms', tag)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+                  {tag}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500">Favoritos</label>
-              <input placeholder="Pollo, arroz..." className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
+              <input placeholder="Ej. Pollo" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
                 value={p.favoriteFoods} onChange={e => setPerson(profile, { favoriteFoods: e.target.value })} />
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_TAGS.favorites.map(tag => (
+                  <button key={tag} onClick={() => appendTag(profile, 'favoriteFoods', tag)}
+                    className="px-2 py-1 rounded-full text-[10px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500">Jamás incluir</label>
-              <input placeholder="Hígado, brócoli..." className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none"
+              <input placeholder="Ej. Hígado" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
                 value={p.dislikedFoods} onChange={e => setPerson(profile, { dislikedFoods: e.target.value })} />
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_TAGS.disliked.map(tag => (
+                  <button key={tag} onClick={() => appendTag(profile, 'dislikedFoods', tag)}
+                    className="px-2 py-1 rounded-full text-[10px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -484,9 +569,9 @@ export default function NutritionQuestionnaire({
                 return (
                   <button key={al.val} onClick={() => setPerson(profile, { activityLevel: al.val })}
                     className={`flex flex-col items-start gap-0.5 p-3 rounded-2xl border-2 transition-all active:scale-[.97] ${
-                      active ? `border-transparent ${tc.light} shadow-sm` : 'border-slate-200 bg-white hover:bg-slate-50'
+                      active ? `${tc.border} ${tc.light} shadow-sm border-[2.5px]` : 'border-slate-200 bg-white hover:bg-slate-50'
                     }`}>
-                    <span className="text-xl mb-0.5">{al.emoji}</span>
+                    <span className="text-xl mb-0.5 w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center">{al.emoji}</span>
                     <span className={`text-xs font-bold leading-tight ${active ? tc.text : 'text-slate-700'}`}>{al.val}</span>
                     <span className={`text-[10px] leading-tight ${active ? tc.text + ' opacity-60' : 'text-slate-400'}`}>{al.desc}</span>
                   </button>
@@ -825,9 +910,9 @@ export default function NutritionQuestionnaire({
   return (
     <div className="mt-4 rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       {/* Progress bar */}
-      <div className="h-1 bg-slate-100 flex-shrink-0">
+      <div className="h-2 bg-slate-100 flex-shrink-0">
         <motion.div
-          className={`h-full bg-gradient-to-r ${tc.grad}`}
+          className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500"
           animate={{ width: `${progress * 100}%` }}
           transition={{ type: 'spring', stiffness: 80, damping: 20 }}
         />
@@ -841,7 +926,9 @@ export default function NutritionQuestionnaire({
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-slate-800 leading-tight truncate">{stepLabel}{profileSuffix}</p>
-            <p className="text-[10px] text-slate-400">Paso {stepIdx + 1} / {steps.length}</p>
+            <p className="text-xs text-slate-500 font-medium">
+              Paso {stepIdx + 1} de {steps.length} · {stepsLeft <= 3 ? 'Ya casi terminamos' : `Solo ${stepsLeft} pasos más`}
+            </p>
           </div>
         </div>
         <button onClick={onCancel}
@@ -872,7 +959,7 @@ export default function NutritionQuestionnaire({
         <div className="flex items-center gap-2 px-4 pb-4 pt-2 flex-shrink-0 border-t border-slate-100">
           {showBack && (
             <button onClick={goBack}
-              className="flex items-center gap-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition active:scale-95 flex-shrink-0">
+              className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 transition active:scale-95 flex-shrink-0">
               <ChevronLeft className="w-4 h-4" />
               Atrás
             </button>
@@ -881,7 +968,7 @@ export default function NutritionQuestionnaire({
             <>
               {isOptional && (
                 <button onClick={advance}
-                  className="flex items-center gap-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-400 hover:bg-slate-50 transition active:scale-95">
+                  className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-slate-400 underline underline-offset-2 hover:text-slate-600 transition active:scale-95">
                   <SkipForward className="w-3.5 h-3.5" />
                   Saltar
                 </button>
