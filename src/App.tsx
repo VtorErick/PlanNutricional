@@ -263,6 +263,7 @@ export default function App() {
   const [momentosColapsados, setMomentosColapsados] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState<'plan' | 'equivalencias' | 'resumen' | 'compras'>('plan');
   const [progressExpanded, setProgressExpanded] = useState(false);
+  const [pendingAutoScrollMomento, setPendingAutoScrollMomento] = useState<string | null>(null);
   const [momentosEnEdicion, setMomentosEnEdicion] = useState<Record<string, boolean>>({});
   const [comprasCheck, setComprasCheck] = useState<Record<string, boolean>>(() => {
     try {
@@ -504,6 +505,11 @@ export default function App() {
   }, [diaActivo]);
 
   useEffect(() => {
+    // Al cambiar de día o pestaña, reiniciar la vista al inicio.
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [diaActivo, tab]);
+
+  useEffect(() => {
     localStorage.setItem('seleccionesDieta', JSON.stringify(selecciones));
   }, [selecciones]);
 
@@ -529,6 +535,17 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!pendingAutoScrollMomento) return;
+    const timer = setTimeout(() => {
+      // Espera de estabilización para llegar al mismo destino final
+      // sin disparar un segundo scroll animado (evita rebote).
+      scrollToMomento(pendingAutoScrollMomento, progressExpanded);
+      setPendingAutoScrollMomento(null);
+    }, 680);
+    return () => clearTimeout(timer);
+  }, [pendingAutoScrollMomento, progressExpanded, scrollToMomento]);
+
   const isAmbos = perfilActivo === 'ambos';
   const isVo = perfilActivo === 'vo';
   // perfilBase is used to extract days and general structure (both share identical days and moments)
@@ -537,10 +554,28 @@ export default function App() {
   const diasDisponibles = perfilActivo ? Object.keys(perfilBase.plan) : [];
   const equivalencias = (perfilActivo && perfilActivo !== 'ambos') ? equivalenciasData[perfilActivo as 'vo' | 'va'] : [];
 
-  const toggleSeleccion = (perfilId: string, dia: string, momento: string, nombre: string) => {
+  const getNextMomentoKey = useCallback((momentoKey: string) => {
+    const momentKeys = perfilBase.momentos.map((m) => m.key);
+    const currentIdx = momentKeys.indexOf(momentoKey);
+    if (currentIdx === -1 || currentIdx >= momentKeys.length - 1) return null;
+    return momentKeys[currentIdx + 1];
+  }, [perfilBase.momentos]);
+
+  const toggleSeleccion = useCallback((perfilId: string, dia: string, momento: string, nombre: string) => {
     const key = `${perfilId}-${dia}-${momento}-${nombre}`;
+    const profileData = perfilId === 'va' ? perfilesData.va : perfilesData.vo;
+    const comidasMomento = profileData.plan[dia]?.[momento] || [];
+    const nextMomento = getNextMomentoKey(momento);
+    const wasCompleted = comidasMomento.some((item) => selecciones[`${perfilId}-${dia}-${momento}-${item.nombre}`]);
+    const willSelectCurrentMeal = !selecciones[key];
+    const isNowCompleted = wasCompleted || willSelectCurrentMeal;
+
     setSelecciones((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+
+    if (!wasCompleted && isNowCompleted && nextMomento) {
+      setPendingAutoScrollMomento(nextMomento);
+    }
+  }, [getNextMomentoKey, perfilesData.va, perfilesData.vo, selecciones]);
 
   const momentoCompletadoVo = useMemo(() => {
     if (!perfilActivo) return {};
@@ -1296,8 +1331,8 @@ export default function App() {
     borderAccent: isAmbos ? 'border-emerald-500' : isVo ? 'border-blue-500' : 'border-rose-500',
     tagBg: isAmbos ? 'bg-emerald-100' : isVo ? 'bg-blue-100' : 'bg-rose-100',
     tagText: isAmbos ? 'text-emerald-700' : isVo ? 'text-blue-700' : 'text-rose-700',
-    progressBg: isAmbos ? 'bg-emerald-100' : isVo ? 'bg-blue-100' : 'bg-rose-100',
-    progressFill: isAmbos ? 'from-emerald-500 to-teal-500' : isVo ? 'from-blue-500 to-indigo-500' : 'from-rose-500 to-pink-500',
+    progressBg: isAmbos ? 'from-emerald-50 via-teal-50 to-emerald-100' : isVo ? 'from-blue-50 via-sky-50 to-indigo-100' : 'from-rose-50 via-pink-50 to-rose-100',
+    progressFill: isAmbos ? 'from-emerald-300 via-teal-400 to-emerald-600' : isVo ? 'from-sky-300 via-blue-400 to-indigo-600' : 'from-pink-300 via-rose-400 to-pink-600',
     btnActive: isAmbos 
       ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25'
       : isVo
@@ -1314,6 +1349,10 @@ export default function App() {
     iconDone: 'bg-white/20',
     iconPending: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
     iconColorPending: isAmbos ? 'text-emerald-400' : isVo ? 'text-blue-400' : 'text-rose-400',
+    momentoIconBgDone: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
+    momentoIconColorDone: isAmbos ? 'text-emerald-600' : isVo ? 'text-blue-600' : 'text-rose-600',
+    momentoIconBgPending: 'bg-slate-100 border border-slate-300',
+    momentoIconColorPending: 'text-slate-600',
     headerBg: isAmbos ? 'bg-gradient-to-r from-emerald-600 to-teal-700' : isVo
       ? 'bg-gradient-to-r from-blue-600 to-indigo-700'
       : 'bg-gradient-to-r from-rose-500 to-pink-600',
@@ -1423,9 +1462,9 @@ export default function App() {
               </div>
 
               {/* Progress bar */}
-              <div className={`flex-1 h-1.5 ${ac.progressBg} rounded-full overflow-hidden`}>
+              <div className={`flex-1 h-2 bg-gradient-to-r ${ac.progressBg} rounded-full overflow-hidden shadow-inner shadow-slate-200/70`}>
                 <motion.div
-                  className={`h-full bg-gradient-to-r ${ac.progressFill} rounded-full`}
+                  className={`h-full bg-gradient-to-r ${ac.progressFill} rounded-full shadow-[0_0_12px_rgba(15,23,42,0.25)]`}
                   animate={{ width: `${progresoDia}%` }}
                   transition={{ type: 'spring', stiffness: 80, damping: 15 }}
                 />
@@ -1618,7 +1657,7 @@ export default function App() {
                       layout
                       key={momento.key}
                       ref={(el) => { mealSectionRefs.current[momento.key] = el; }}
-                      className={`bg-white rounded-[28px] sm:rounded-3xl shadow-sm border overflow-hidden ${done ? ac.borderAccent : 'border-slate-100'}`}
+                      className={`bg-white rounded-[28px] sm:rounded-3xl shadow-[0_12px_28px_rgba(15,23,42,0.06)] hover:shadow-[0_16px_32px_rgba(15,23,42,0.08)] border border-white/70 overflow-hidden transition-shadow duration-300 ${done ? ac.borderAccent : ''}`}
                     >
                       <button
                         onClick={() => {
@@ -1629,16 +1668,17 @@ export default function App() {
                         className={`w-full flex items-center justify-between text-left p-4 sm:p-5 transition-colors focus:outline-none ${done ? 'bg-slate-50/50' : 'hover:bg-slate-50'} ${estaEnEdicion ? 'cursor-default' : ''}`}
                       >
                         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center flex-shrink-0`}>
-                            <Icon className="w-3.5 h-3.5 text-white" />
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            done ? ac.momentoIconBgDone : ac.momentoIconBgPending
+                          }`}>
+                            <Icon className={`w-3.5 h-3.5 ${
+                              done ? ac.momentoIconColorDone : ac.momentoIconColorPending
+                            }`} />
                           </div>
-                          <span className="truncate">{momento.label}</span>
-                          {done && (
-                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                              <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isVo ? 'text-blue-500' : 'text-rose-500'}`} />
-                            </motion.div>
-                          )}
-                          <span className="text-[10px] font-normal text-slate-400 ml-2 whitespace-nowrap">{momento.hora}</span>
+                          <div className="min-w-0 flex items-center gap-2">
+                            <span className="truncate leading-none">{momento.label}</span>
+                            <span className="text-[10px] font-normal text-slate-400 whitespace-nowrap leading-none">{momento.hora}</span>
+                          </div>
                         </h3>
                         {estaEnEdicion ? (
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 bg-gradient-to-br ${ac.bgGradient}`} />
@@ -1677,7 +1717,7 @@ export default function App() {
                                     !estaEnEdicion ? (
                                       <div className="space-y-3">
                                         {mealsSingleSeleccionadas.map((meal, idx) => (
-                                          <div key={idx} className={`p-4 rounded-xl border border-slate-100 bg-gradient-to-r ${ac.bgLight} to-transparent`}>
+                                          <div key={idx} className={`p-4 rounded-2xl border border-white/70 bg-gradient-to-br ${ac.bgLight} via-white to-white shadow-[0_10px_24px_rgba(15,23,42,0.06)]`}>
                                             <h4 className={`font-bold text-sm mb-1 ${ac.text}`}>{meal.nombre}</h4>
                                             <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1685,9 +1725,11 @@ export default function App() {
                                                 <span
                                                   key={`${meal.nombre}-${item.key}-${item.cantidad}`}
                                                   title={`${item.label} ${item.cantidad}`}
-                                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}
+                                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}
                                                 >
-                                                  <span>{item.icon}</span>
+                                                  <span className="w-5 h-5 rounded-full bg-white/70 flex items-center justify-center text-[12px] shadow-sm shadow-slate-200/50">
+                                                    {item.icon}
+                                                  </span>
                                                   <span>x{item.cantidad}</span>
                                                 </span>
                                               ))}
@@ -1726,13 +1768,13 @@ export default function App() {
                                           <>
                                             {mealsVOSeleccionadas.length > 0 ? (
                                               mealsVOSeleccionadas.map((meal, idx) => (
-                                                <div key={idx} className="p-4 rounded-xl border border-blue-50 bg-gradient-to-r from-blue-50 to-transparent">
+                                                <div key={idx} className="p-4 rounded-2xl border border-white/70 bg-gradient-to-br from-blue-50 via-white to-white shadow-[0_10px_24px_rgba(37,99,235,0.10)]">
                                                   <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
                                                   <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                                   <div className="mt-2 flex flex-wrap gap-1.5">
                                                     {porcionesVoMomento.map((item) => (
-                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-bold">
-                                                        <span>{item.icon}</span>
+                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold">
+                                                        <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[12px] shadow-sm shadow-blue-200/60">{item.icon}</span>
                                                         <span>x{item.cantidad}</span>
                                                       </span>
                                                     ))}
@@ -1780,13 +1822,13 @@ export default function App() {
                                           <>
                                             {mealsVASeleccionadas.length > 0 ? (
                                               mealsVASeleccionadas.map((meal, idx) => (
-                                                <div key={idx} className="p-4 rounded-xl border border-rose-50 bg-gradient-to-r from-rose-50 to-transparent">
+                                                <div key={idx} className="p-4 rounded-2xl border border-white/70 bg-gradient-to-br from-rose-50 via-white to-white shadow-[0_10px_24px_rgba(244,63,94,0.10)]">
                                                   <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
                                                   <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                                   <div className="mt-2 flex flex-wrap gap-1.5">
                                                     {porcionesVaMomento.map((item) => (
-                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold">
-                                                        <span>{item.icon}</span>
+                                                      <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[11px] font-bold">
+                                                        <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[12px] shadow-sm shadow-rose-200/60">{item.icon}</span>
                                                         <span>x{item.cantidad}</span>
                                                       </span>
                                                     ))}
