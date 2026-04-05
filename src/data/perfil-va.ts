@@ -3,7 +3,7 @@ import type { MealItem, MealTime } from '../data';
 // --- INFORMACIÓN PERSONAL Y METAS ---
 export const perfilVA = {
   id: 'va',
-  nombre: 'V(a)',
+  nombre: 'Ella',
   edad: 31,
   descripcion: 'Plan basado en la guía del nutriólogo con estructura de equivalentes. Frutas moderadas, verduras altas, grasas medidas. Adaptado para cuidar niveles de insulina.',
   perfil: '65 kg • 1.60 m • 31 años • IMC 25.4',
