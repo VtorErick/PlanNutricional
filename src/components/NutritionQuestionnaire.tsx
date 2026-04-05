@@ -815,7 +815,7 @@ export default function NutritionQuestionnaire({
                 <p className="mt-1 text-[11px] text-indigo-600">Completado: {progressPercent}%</p>
               </div>
 
-              <label className="text-sm font-semibold text-slate-700 block">Por momentos del día (acordeón)</label>
+              <label className="text-sm font-semibold text-slate-700 block">Por momentos del día</label>
               <div className="space-y-2">
                 {mKeys.map((momento, idx) => (
                   <div key={momento} className="rounded-2xl border border-slate-200 bg-slate-50/80 overflow-hidden">
