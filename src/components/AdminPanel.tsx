@@ -89,13 +89,13 @@ export default function AdminPanel({
   const activeColor = themeColor === 'blue' ? 'text-blue-600' : 'text-rose-600';
 
   return (
-    <div className={`p-5 rounded-2xl border ${borderColor} bg-gradient-to-br ${bgGradient} shadow-sm flex flex-col gap-4 relative overflow-hidden`}>
+    <div className={`p-4 sm:p-5 rounded-2xl border ${borderColor} bg-gradient-to-br ${bgGradient} shadow-sm hover:shadow-md transition-shadow flex flex-col gap-4 relative overflow-hidden`}>
       {isCustomAvailable && dataVersion === 'custom' && (
         <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/40 rounded-full blur-xl pointer-events-none" />
       )}
       
-      <div className="flex justify-between items-center z-10">
-        <h3 className={`font-bold text-lg ${textColor} flex items-center gap-2`}>
+      <div className="flex justify-between items-center gap-2 z-10">
+        <h3 className={`font-bold text-xl sm:text-lg ${textColor} flex items-center gap-2 flex-wrap`}>
           {title} 
           {isCustomAvailable && dataVersion === 'custom' && (
             <span className="flex items-center gap-1 text-[10px] bg-white px-2 py-1 rounded-full shadow-sm text-emerald-600 font-bold tracking-wide uppercase">
@@ -118,20 +118,20 @@ export default function AdminPanel({
 
       <div className="flex flex-col gap-3 z-10">
         {/* Opciones de descarga */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button 
             onClick={handlePdfDownload}
-            className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-700 transition active:scale-95 shadow-sm"
+            className="flex items-center justify-center gap-2 py-3 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-700 transition active:scale-95 shadow-sm"
           >
             <FileText className="w-4 h-4" />
-            <span className="text-xs sm:text-sm leading-tight text-center font-semibold">Imprime tu plan en PDF</span>
+            <span className="text-sm leading-tight text-center font-semibold">Imprime tu plan en PDF</span>
           </button>
           <button 
             onClick={handleJsonDownload}
-            className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-700 transition active:scale-95 shadow-sm"
+            className="flex items-center justify-center gap-2 py-3 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-700 transition active:scale-95 shadow-sm"
           >
             <FileJson className="w-4 h-4" />
-            <span className="text-xs sm:text-sm leading-tight text-center font-semibold">Exporta tu plan</span>
+            <span className="text-sm leading-tight text-center font-semibold">Exporta tu plan</span>
           </button>
         </div>
 
@@ -140,11 +140,11 @@ export default function AdminPanel({
 
         {/* Opciones de carga */}
         {isCustomAvailable ? (
-          <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span className="text-xs sm:text-sm font-medium text-slate-600 shrink-0">Usar versión:</span>
             <button 
               onClick={() => setDataVersion(dataVersion === 'original' ? 'custom' : 'original')}
-              className={`flex items-center justify-end flex-wrap gap-1 sm:gap-2 font-bold text-xs sm:text-sm transition-colors ${dataVersion === 'custom' ? activeColor : 'text-slate-400'}`}
+              className={`flex items-center justify-between sm:justify-end w-full sm:w-auto flex-wrap gap-1 sm:gap-2 font-bold text-sm transition-colors ${dataVersion === 'custom' ? activeColor : 'text-slate-400'}`}
             >
               <span className={dataVersion === 'original' ? 'text-slate-700' : ''}>Original</span>
               {dataVersion === 'custom' ? <ToggleRight className={`w-6 h-6 ${activeColor}`} /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
@@ -162,10 +162,10 @@ export default function AdminPanel({
             />
             <button 
               onClick={() => fileInputRef.current?.click()}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 ${btnColor} text-white rounded-xl font-bold transition shadow-md active:scale-95`}
+              className={`w-full flex items-center justify-center gap-2 py-3 px-4 ${btnColor} text-white rounded-xl font-bold transition shadow-md active:scale-95`}
             >
               <Upload className="w-4 h-4" />
-              <span className="text-xs sm:text-sm leading-tight text-center">Importa tu plan</span>
+              <span className="text-sm leading-tight text-center">Importa tu plan</span>
             </button>
           </div>
         )}

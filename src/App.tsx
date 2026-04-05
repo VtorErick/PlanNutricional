@@ -284,7 +284,7 @@ export default function App() {
     }
   });
 
-  const [adminTab, setAdminTab] = useState<'ai' | 'manual' | 'settings'>('ai');
+  const [adminTab, setAdminTab] = useState<'manual' | 'settings'>('manual');
 
   // Estado del cuestionario - persiste entre tabs del Admin Panel
   const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useState<TargetProfile>('ambos');
@@ -307,10 +307,9 @@ export default function App() {
   const [questionnaireManualPortions, setQuestionnaireManualPortions] = useState<Record<string, Record<string, number>>>({});
   const [questionnaireAdditionalNotes, setQuestionnaireAdditionalNotes] = useState('');
 
-  // Resetear cuestionario al salir del Panel de Admin
+  // Resetear cuestionario al salir de las vistas de configuración/generación
   useEffect(() => {
-    if (!showAdmin) {
-      // Salió del panel, resetear cuestionario
+    if (!showAdmin && !showQuestionnaire) {
       setQuestionnaireTargetProfile('ambos');
       setQuestionnaireStepIdx(0);
       setQuestionnaireVo({
@@ -331,16 +330,16 @@ export default function App() {
       setQuestionnaireManualPortions({});
       setQuestionnaireAdditionalNotes('');
     }
-  }, [showAdmin]);
+  }, [showAdmin, showQuestionnaire]);
 
-  // Limpiar lastGeneratedData cuando se abre el cuestionario de IA
+  // Limpiar estado de generación al abrir el cuestionario en paso inicial
   useEffect(() => {
-    if (showAdmin && adminTab === 'ai' && !questionnaireStepIdx) {
+    if (showQuestionnaire && !questionnaireStepIdx) {
       // Solo limpiar si está en paso 0 (cuestionario nuevo)
       setLastGeneratedData(null);
       setGenerationError('');
     }
-  }, [showAdmin, adminTab, questionnaireStepIdx]);
+  }, [showQuestionnaire, questionnaireStepIdx]);
 
   useEffect(() => {
     localStorage.setItem('geminiApiKey', geminiApiKey);
@@ -659,6 +658,63 @@ export default function App() {
     }
   }, [geminiApiKey, geminiModel]);
 
+  // ─── AI Generator View ─────────────────────────────────────────────────────
+  if (showQuestionnaire) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50">
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
+              <span className="text-white text-base">🪄</span>
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-slate-800 leading-tight">Generar plan con IA</h1>
+              <p className="text-[11px] text-slate-400 hidden sm:block">Completa el formulario para crear y aplicar un plan personalizado.</p>
+            </div>
+          </div>
+          <button onClick={() => setShowQuestionnaire(false)}
+            className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </header>
+
+        <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 pb-24">
+          <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <NutritionQuestionnaire
+              onCancel={() => setShowQuestionnaire(false)}
+              onGenerate={handleGenerateWithAi}
+              onViewPlan={(profile) => {
+                setShowQuestionnaire(false);
+                setPerfilActivo(profile);
+                setDiaActivo('Lunes');
+                setTab('plan');
+              }}
+              loading={generationLoading}
+              errorMessage={generationError}
+              geminiModel={geminiModel}
+              setGeminiModel={setGeminiModel}
+              lastGeneratedData={lastGeneratedData}
+              targetProfile={questionnaireTargetProfile}
+              setTargetProfile={setQuestionnaireTargetProfile}
+              stepIdx={questionnaireStepIdx}
+              setStepIdx={setQuestionnaireStepIdx}
+              vo={questionnaireVo}
+              setVo={setQuestionnaireVo}
+              va={questionnaireVa}
+              setVa={setQuestionnaireVa}
+              portionMode={questionnairePortionMode}
+              setPortionMode={setQuestionnairePortionMode}
+              manualPortions={questionnaireManualPortions}
+              setManualPortions={setQuestionnaireManualPortions}
+              additionalNotes={questionnaireAdditionalNotes}
+              setAdditionalNotes={setQuestionnaireAdditionalNotes}
+            />
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   // ─── Admin View ───────────────────────────────────────────────────────────
   if (showAdmin) {
     return (
@@ -671,7 +727,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-base font-bold text-slate-800 leading-tight">Panel de Administración</h1>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Configura la IA, gestiona datos y ajusta el motor</p>
+                  <p className="text-[11px] text-slate-400 hidden sm:block">Gestiona respaldos y configura el motor de IA</p>
             </div>
           </div>
           <button onClick={() => setShowAdmin(false)}
@@ -684,9 +740,8 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
             {([
-              { key: 'ai', label: 'Generador IA', shortLabel: 'Generar', emoji: '🪄' },
-              { key: 'settings', label: 'Ajustes IA', shortLabel: 'Ajustes', emoji: '⚙️' },
               { key: 'manual', label: 'Backup', shortLabel: 'Backup', emoji: '💾' },
+              { key: 'settings', label: 'Ajustes IA', shortLabel: 'Ajustes', emoji: '⚙️' },
             ] as const).map(t => (
               <button key={t.key} onClick={() => setAdminTab(t.key)}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 ${
@@ -848,42 +903,6 @@ export default function App() {
               </div>
             </section>
           )}
-
-          {/* ── AI GENERATOR TAB ── */}
-          {adminTab === 'ai' && (
-            <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <NutritionQuestionnaire
-                onCancel={() => setShowAdmin(false)}
-                onGenerate={handleGenerateWithAi}
-                onViewPlan={(profile) => {
-                  setShowAdmin(false);
-                  setPerfilActivo(profile);
-                  setDiaActivo('Lunes');
-                  setTab('plan');
-                }}
-                loading={generationLoading}
-                errorMessage={generationError}
-                geminiModel={geminiModel}
-                setGeminiModel={setGeminiModel}
-                lastGeneratedData={lastGeneratedData}
-                // Estados persistentes del cuestionario
-                targetProfile={questionnaireTargetProfile}
-                setTargetProfile={setQuestionnaireTargetProfile}
-                stepIdx={questionnaireStepIdx}
-                setStepIdx={setQuestionnaireStepIdx}
-                vo={questionnaireVo}
-                setVo={setQuestionnaireVo}
-                va={questionnaireVa}
-                setVa={setQuestionnaireVa}
-                portionMode={questionnairePortionMode}
-                setPortionMode={setQuestionnairePortionMode}
-                manualPortions={questionnaireManualPortions}
-                setManualPortions={setQuestionnaireManualPortions}
-                additionalNotes={questionnaireAdditionalNotes}
-                setAdditionalNotes={setQuestionnaireAdditionalNotes}
-              />
-            </section>
-          )}
         </main>
       </div>
     );
@@ -893,24 +912,12 @@ export default function App() {
   if (!perfilActivo) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col relative">
-        {/* Botón de Admin más intuitivo - Landing page */}
-        <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
-          <button 
-            onClick={() => setShowAdmin(true)} 
-            className="group flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur hover:bg-gradient-to-r hover:from-violet-500 hover:to-indigo-600 hover:text-white rounded-full text-slate-700 shadow-md hover:shadow-lg transition-all active:scale-95"
-          >
-            <span className="text-lg">🪄</span>
-            <span className="text-sm font-bold hidden sm:block">Crear plan con IA</span>
-            <span className="text-sm font-bold sm:hidden">IA</span>
-          </button>
-          <span className="text-[10px] text-slate-500 bg-white/70 px-2 py-0.5 rounded-full hidden sm:block">⚙️ Configura tu API key</span>
-        </div>
         <div className="relative overflow-hidden">
           <div className="absolute inset-0">
             <img src="/images/hero.png" alt="" className="w-full h-full object-cover opacity-20" />
             <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/30 to-white" />
           </div>
-          <div className="relative max-w-4xl mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-4 text-center">
+          <div className="relative max-w-4xl mx-auto px-4 md:px-6 pt-8 md:pt-12 pb-5 text-center">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }} 
@@ -921,40 +928,68 @@ export default function App() {
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                 <span className="text-xs font-bold tracking-wide text-slate-700 uppercase">Bienvenido a su plan</span>
               </motion.div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-3 tracking-tight leading-[1.1]">
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowAdmin(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/90 backdrop-blur border border-slate-200 text-slate-700 font-semibold text-sm shadow-sm hover:shadow-md transition-all active:scale-95"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Panel de administración</span>
+                </button>
+              </div>
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 mb-3 tracking-tight leading-[1.1]">
                 Nutrición inteligente,<br className="hidden sm:block"/>
                 <span className="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 bg-clip-text text-transparent drop-shadow-sm">
                   sin complicaciones.
                 </span>
               </h1>
               <p className="text-sm md:text-lg text-slate-600 max-w-xl mx-auto font-medium leading-relaxed">
-                Elige de forma individual o armen su lista de compras juntos de forma automática.
+                Elige tu plan individual o armen su lista de compras juntos de forma automática.
               </p>
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowQuestionnaire(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-bold text-sm shadow-md hover:shadow-lg hover:from-violet-400 hover:to-indigo-500 transition-all active:scale-95"
+                >
+                  <span>✨</span>
+                  <span>Generar un plan con IA</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         </div>
 
         <div className="flex-1 max-w-4xl mx-auto px-4 md:px-6 pb-12 w-full z-10 relative -mt-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">✅ Plan editable</span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">🛒 Lista de compras</span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white border border-slate-200 text-slate-600 shadow-sm">📱 Optimizado para móvil</span>
+          </div>
+          <div className="mb-3 sm:mb-4 text-center">
+            <p className="text-xs sm:text-sm text-slate-500 font-semibold tracking-wide uppercase">Selecciona un perfil para comenzar</p>
+          </div>
+          <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/70 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
+            <p className="text-[11px] sm:text-xs font-semibold text-violet-700 uppercase tracking-wide">Planes base de referencia</p>
+            <p className="text-xs sm:text-sm text-violet-900 font-medium leading-snug mt-1">
+              Para mejores resultados, lo ideal es generar un plan personalizado con IA.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 items-stretch">
             <motion.button
               initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('vo'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl" />
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-5">
-                  <span className="text-base font-semibold tracking-wide text-white">El</span>
+              <div className="relative h-full flex flex-col">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+                  <span className="text-sm sm:text-base font-semibold tracking-wide text-white">El</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Plan personalizado</h2>
-                <p className="text-blue-100 text-sm mb-4 leading-relaxed">{perfilesData.vo.perfil}</p>
-                <div className="flex items-center gap-2 text-blue-200 text-sm">
+                <p className="text-blue-100 text-sm mb-3 leading-relaxed">{perfilesData.vo.perfil}</p>
+                <div className="flex items-center gap-2 text-blue-200 text-xs sm:text-sm mt-auto">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
-                </div>
-                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white text-sm font-medium group-hover:bg-white/30 transition-colors">
-                  Ver plan →
                 </div>
               </div>
             </motion.button>
@@ -963,21 +998,17 @@ export default function App() {
               initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.15 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 via-rose-600 to-pink-700 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-rose-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-400/20 rounded-full blur-2xl" />
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-5">
-                  <span className="text-base font-semibold tracking-wide text-white">Ella</span>
+              <div className="relative h-full flex flex-col">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+                  <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ella</span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Plan personalizado</h2>
-                <p className="text-rose-100 text-sm mb-4 leading-relaxed">{perfilesData.va.perfil}</p>
-                <div className="flex items-center gap-2 text-rose-200 text-sm">
+                <p className="text-rose-100 text-sm mb-3 leading-relaxed">{perfilesData.va.perfil}</p>
+                <div className="flex items-center gap-2 text-rose-200 text-xs sm:text-sm mt-auto">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
-                </div>
-                <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white text-sm font-medium group-hover:bg-white/30 transition-colors">
-                  Ver plan →
                 </div>
               </div>
             </motion.button>
@@ -986,18 +1017,17 @@ export default function App() {
               initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.2 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               onClick={() => { setPerfilActivo('ambos'); setDiaActivo('Lunes'); setTab('plan'); }}
-              className="sm:col-span-2 text-left group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
+              className="col-span-2 h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 p-4 sm:p-5 md:p-7 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl" />
               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-teal-400/20 rounded-full blur-2xl" />
-              <div className="relative flex items-center gap-6">
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
-                  <Heart className="w-8 h-8 text-white" />
+              <div className="relative h-full flex flex-col">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+                  <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ambos</span>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">Plan de Ambos</h2>
                   <p className="text-emerald-100 text-sm leading-relaxed">
-                    Ve y selecciona platillos para ambos perfiles de forma simultánea. ¡Ideal para planear y armar la lista del supermercado juntos!
+                    Ve y selecciona platillos de ambos perfiles en una sola vista para organizar comidas y compras fácilmente.
                   </p>
                 </div>
               </div>
@@ -1074,14 +1104,6 @@ export default function App() {
             <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center shadow-md flex-shrink-0 hidden sm:flex`}>
               <ChefHat className="w-4 h-4 text-white" />
             </div>
-            <div className="min-w-0">
-              <h1 className={`text-sm sm:text-base font-bold ${ac.text} truncate`}>
-                Plan de {isAmbos ? 'Ambos' : perfil.nombre}
-              </h1>
-              <p className="text-[11px] text-slate-500 truncate hidden sm:block">
-                {isAmbos ? 'Vista combinada de El y Ella' : perfil.perfil}
-              </p>
-            </div>
           </div>
           <div className="flex gap-1.5 flex-shrink-0 items-center">
             {(['vo', 'va', 'ambos'] as const).map((p) => (
@@ -1092,15 +1114,6 @@ export default function App() {
                 {p === 'ambos' ? 'Ambos' : perfilesData[p].nombre}
               </button>
             ))}
-            {/* Botón Admin más intuitivo - Main app */}
-            <button 
-              onClick={() => setShowAdmin(true)} 
-              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-gradient-to-r hover:from-violet-500 hover:to-indigo-600 hover:text-white text-slate-600 text-xs font-bold transition-all active:scale-95"
-              title="Crear plan con IA"
-            >
-              <span className="text-sm">🪄</span>
-              <span className="hidden sm:block">Nuevo plan IA</span>
-            </button>
           </div>
         </div>
       </motion.header>
