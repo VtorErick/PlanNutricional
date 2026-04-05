@@ -533,10 +533,11 @@ export default function App() {
   useEffect(() => {
     if (!pendingAutoScrollMomento) return;
     const timer = setTimeout(() => {
-      // Un solo desplazamiento para evitar rebote visual.
+      // Espera de estabilización para llegar al mismo destino final
+      // sin disparar un segundo scroll animado (evita rebote).
       scrollToMomento(pendingAutoScrollMomento, progressExpanded);
       setPendingAutoScrollMomento(null);
-    }, 320);
+    }, 680);
     return () => clearTimeout(timer);
   }, [pendingAutoScrollMomento, progressExpanded, scrollToMomento]);
 
