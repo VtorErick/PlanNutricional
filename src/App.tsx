@@ -276,8 +276,7 @@ export default function App() {
       ? { label: 'Sobrepeso', color: 'bg-amber-500', pct: 70 }
       : { label: 'Obesidad', color: 'bg-rose-500', pct: 90 };
 
-    const labelAlign = markerPct >= 82 ? 'right' : markerPct <= 18 ? 'left' : 'center';
-    return { imc, ...status, pct: markerPct, labelAlign };
+    return { imc, ...status, pct: markerPct };
   };
 
   const formatProfileForCard = (perfilText: string) => {
@@ -1129,22 +1128,12 @@ export default function App() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">El</span>
                 </div>
-                <p className="text-blue-100 text-sm mb-4 leading-relaxed">{formatProfileForCard(perfilesData.vo.perfil)}</p>
+                <p className="text-blue-100 text-sm mb-4 leading-relaxed min-h-[72px]">{formatProfileForCard(perfilesData.vo.perfil)}</p>
                 {voImcData && (
-                  <div className="mb-3">
-                    <div className="relative h-4 mb-1">
-                      <span
-                        className={`absolute text-[11px] text-blue-100 font-semibold whitespace-nowrap ${
-                          voImcData.labelAlign === 'right'
-                            ? '-translate-x-full'
-                            : voImcData.labelAlign === 'left'
-                            ? 'translate-x-0'
-                            : '-translate-x-1/2'
-                        }`}
-                        style={{ left: `${voImcData.pct}%` }}
-                      >
-                        IMC {voImcData.imc} · {voImcData.label}
-                      </span>
+                  <div className="mb-3 min-h-[70px]">
+                    <div className="h-4 mb-1 flex items-center justify-between text-[11px] text-blue-100 font-semibold">
+                      <span>IMC {voImcData.imc}</span>
+                      <span>{voImcData.label}</span>
                     </div>
                     <div className="relative h-1.5 rounded-full bg-white/25 overflow-hidden">
                       <div
@@ -1163,7 +1152,7 @@ export default function App() {
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-blue-200 text-xs sm:text-sm mt-auto mb-2">
+                <div className="flex items-start gap-2 text-blue-200 text-xs sm:text-sm mt-auto mb-2 min-h-[88px]">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
                 </div>
                 <button
@@ -1198,22 +1187,12 @@ export default function App() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ella</span>
                 </div>
-                <p className="text-rose-50 text-sm mb-4 leading-relaxed">{formatProfileForCard(perfilesData.va.perfil)}</p>
+                <p className="text-rose-50 text-sm mb-4 leading-relaxed min-h-[72px]">{formatProfileForCard(perfilesData.va.perfil)}</p>
                 {vaImcData && (
-                  <div className="mb-3">
-                    <div className="relative h-4 mb-1">
-                      <span
-                        className={`absolute text-[11px] text-rose-50 font-semibold whitespace-nowrap ${
-                          vaImcData.labelAlign === 'right'
-                            ? '-translate-x-full'
-                            : vaImcData.labelAlign === 'left'
-                            ? 'translate-x-0'
-                            : '-translate-x-1/2'
-                        }`}
-                        style={{ left: `${vaImcData.pct}%` }}
-                      >
-                        IMC {vaImcData.imc} · {vaImcData.label}
-                      </span>
+                  <div className="mb-3 min-h-[70px]">
+                    <div className="h-4 mb-1 flex items-center justify-between text-[11px] text-rose-50 font-semibold">
+                      <span>IMC {vaImcData.imc}</span>
+                      <span>{vaImcData.label}</span>
                     </div>
                     <div className="relative h-1.5 rounded-full bg-white/25 overflow-hidden">
                       <div
@@ -1232,7 +1211,7 @@ export default function App() {
                     </div>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-rose-100 text-xs sm:text-sm mt-auto mb-2">
+                <div className="flex items-start gap-2 text-rose-100 text-xs sm:text-sm mt-auto mb-2 min-h-[88px]">
                   <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
                 </div>
                 <button
