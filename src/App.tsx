@@ -173,6 +173,22 @@ const momentoIcons: Record<string, any> = {
   cena: Moon,
 };
 
+const getPortionEmoji = (porciones: string) => {
+  const text = (porciones || '').toLowerCase();
+  if (text.includes('taza')) return '🥣';
+  if (text.includes('pieza') || text.includes('pza') || text.includes('unidad')) return '🍽️';
+  if (text.includes('rebanada') || text.includes('rodaja')) return '🍞';
+  if (text.includes('cda') || text.includes('cdita') || text.includes('cucharada')) return '🥄';
+  if (text.includes('vaso') || text.includes('ml') || text.includes('litro')) return '🥤';
+  if (text.includes('g') || text.includes('gram')) return '⚖️';
+  return '🍴';
+};
+
+const getPortionCantidad = (porciones: string) => {
+  const match = (porciones || '').match(/(\d+(?:[.,]\d+)?)/);
+  return match ? match[1] : '1';
+};
+
 export default function App() {
   // Siempre iniciar en home (null), no restaurar perfil de localStorage
   const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | 'ambos' | null>(null);
@@ -1670,7 +1686,11 @@ export default function App() {
                                         {mealsSingleSeleccionadas.map((meal, idx) => (
                                           <div key={idx} className={`p-4 rounded-xl border border-slate-100 bg-gradient-to-r ${ac.bgLight} to-transparent`}>
                                             <h4 className={`font-bold text-sm mb-1 ${ac.text}`}>{meal.nombre}</h4>
-                                            <p className="text-slate-600 text-xs font-medium leading-relaxed">{meal.porciones}</p>
+                                            <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
+                                            <div className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}>
+                                              <span>{getPortionEmoji(meal.porciones)}</span>
+                                              <span>{getPortionCantidad(meal.porciones)} porción(es)</span>
+                                            </div>
                                           </div>
                                         ))}
                                         <button
@@ -1682,25 +1702,18 @@ export default function App() {
                                         </button>
                                       </div>
                                     ) : (
-                                      <div className="space-y-3">
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                          <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                                            Modo edición: cada platillo muestra nombre, descripción, porciones, etiquetas e ingredientes.
-                                          </p>
-                                        </div>
-                                        <MealSelector
-                                          perfil={perfilActivo}
-                                          comidas={mealsSingleAll}
-                                          dia={diaActivo}
-                                          momento={momento.key}
-                                          selecciones={selecciones}
-                                          onToggle={(perfilId, dia, momentoKey, nombre) => {
-                                            toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                            setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
-                                          }}
-                                          accentClasses={accentColors}
-                                        />
-                                      </div>
+                                      <MealSelector
+                                        perfil={perfilActivo}
+                                        comidas={mealsSingleAll}
+                                        dia={diaActivo}
+                                        momento={momento.key}
+                                        selecciones={selecciones}
+                                        onToggle={(perfilId, dia, momentoKey, nombre) => {
+                                          toggleSeleccion(perfilId, dia, momentoKey, nombre);
+                                          setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
+                                        }}
+                                        accentClasses={accentColors}
+                                      />
                                     )
                                   )}
 
@@ -1713,7 +1726,11 @@ export default function App() {
                                             {mealsVOSeleccionadas.map((meal, idx) => (
                                               <div key={idx} className="p-4 rounded-xl border border-blue-50 bg-gradient-to-r from-blue-50 to-transparent">
                                                 <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
-                                                <p className="text-slate-600 text-xs font-medium leading-relaxed">{meal.porciones}</p>
+                                                <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
+                                                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-bold">
+                                                  <span>{getPortionEmoji(meal.porciones)}</span>
+                                                  <span>{getPortionCantidad(meal.porciones)} porción(es)</span>
+                                                </div>
                                               </div>
                                             ))}
                                           </div>
@@ -1724,7 +1741,11 @@ export default function App() {
                                             {mealsVASeleccionadas.map((meal, idx) => (
                                               <div key={idx} className="p-4 rounded-xl border border-rose-50 bg-gradient-to-r from-rose-50 to-transparent">
                                                 <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
-                                                <p className="text-slate-600 text-xs font-medium leading-relaxed">{meal.porciones}</p>
+                                                <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
+                                                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold">
+                                                  <span>{getPortionEmoji(meal.porciones)}</span>
+                                                  <span>{getPortionCantidad(meal.porciones)} porción(es)</span>
+                                                </div>
                                               </div>
                                             ))}
                                           </div>
@@ -1741,11 +1762,6 @@ export default function App() {
                                       </div>
                                     ) : (
                                       <div className="grid md:grid-cols-2 gap-4">
-                                        <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
-                                          <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                                            Modo edición: cada platillo muestra nombre, descripción, porciones, etiquetas e ingredientes.
-                                          </p>
-                                        </div>
                                         <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
                                           <h4 className="font-bold text-blue-800 text-xs mb-2">Para {perfilesData.vo.nombre}</h4>
                                           <MealSelector
