@@ -820,12 +820,12 @@ export default function App() {
             <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="text-center mb-6">
                 <h2 className="text-lg font-bold text-slate-800">💾 Backup y Restauración</h2>
-                <p className="text-sm text-slate-500">Descarga tu plan como respaldo o restaura una versión anterior desde archivo JSON.</p>
+                <p className="text-sm text-slate-500">Imprime o exporta tu plan como respaldo, e importa una versión personalizada desde archivo JSON cuando lo necesites.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AdminPanel
                   perfilId="vo"
-                  title="Datos El"
+                  title="Perfil VO (El)"
                   themeColor="blue"
                   rawDataText={rawData.vo}
                   customData={customData}
@@ -836,7 +836,7 @@ export default function App() {
                 />
                 <AdminPanel
                   perfilId="va"
-                  title="Datos Ella"
+                  title="Perfil VA (Ella)"
                   themeColor="rose"
                   rawDataText={rawData.va}
                   customData={customData}

@@ -99,7 +99,7 @@ export default function AdminPanel({
           {title} 
           {isCustomAvailable && dataVersion === 'custom' && (
             <span className="flex items-center gap-1 text-[10px] bg-white px-2 py-1 rounded-full shadow-sm text-emerald-600 font-bold tracking-wide uppercase">
-              <CheckCircle2 className="w-3 h-3" /> Personalizado
+              <CheckCircle2 className="w-3 h-3" /> Personalizada
             </span>
           )}
         </h3>
@@ -123,13 +123,13 @@ export default function AdminPanel({
             onClick={handlePdfDownload}
             className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition active:scale-95 shadow-sm"
           >
-            <FileText className="w-4 h-4" /> PDF
+            <FileText className="w-4 h-4" /> Imprime (PDF)
           </button>
           <button 
             onClick={handleJsonDownload}
             className="flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition active:scale-95 shadow-sm"
           >
-            <FileJson className="w-4 h-4" /> JSON
+            <FileJson className="w-4 h-4" /> Exporta (JSON)
           </button>
         </div>
 
@@ -146,7 +146,7 @@ export default function AdminPanel({
             >
               <span className={dataVersion === 'original' ? 'text-slate-700' : ''}>Original</span>
               {dataVersion === 'custom' ? <ToggleRight className={`w-6 h-6 ${activeColor}`} /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
-              <span className={dataVersion === 'custom' ? activeColor : ''}>Subida</span>
+              <span className={dataVersion === 'custom' ? activeColor : ''}>Personalizada</span>
             </button>
           </div>
         ) : (
@@ -162,7 +162,7 @@ export default function AdminPanel({
               onClick={() => fileInputRef.current?.click()}
               className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 ${btnColor} text-white rounded-xl text-sm font-bold transition shadow-md active:scale-95`}
             >
-              <Upload className="w-4 h-4" /> Subir archivo .json modificado
+              <Upload className="w-4 h-4" /> Importa archivo JSON personalizado
             </button>
           </div>
         )}
