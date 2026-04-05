@@ -284,7 +284,7 @@ export default function App() {
     }
   });
 
-  const [adminTab, setAdminTab] = useState<'ai' | 'manual' | 'settings'>('ai');
+  const [adminTab, setAdminTab] = useState<'manual' | 'settings'>('manual');
 
   // Estado del cuestionario - persiste entre tabs del Admin Panel
   const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useState<TargetProfile>('ambos');
@@ -307,10 +307,9 @@ export default function App() {
   const [questionnaireManualPortions, setQuestionnaireManualPortions] = useState<Record<string, Record<string, number>>>({});
   const [questionnaireAdditionalNotes, setQuestionnaireAdditionalNotes] = useState('');
 
-  // Resetear cuestionario al salir del Panel de Admin
+  // Resetear cuestionario al salir de las vistas de configuración/generación
   useEffect(() => {
-    if (!showAdmin) {
-      // Salió del panel, resetear cuestionario
+    if (!showAdmin && !showQuestionnaire) {
       setQuestionnaireTargetProfile('ambos');
       setQuestionnaireStepIdx(0);
       setQuestionnaireVo({
@@ -331,16 +330,16 @@ export default function App() {
       setQuestionnaireManualPortions({});
       setQuestionnaireAdditionalNotes('');
     }
-  }, [showAdmin]);
+  }, [showAdmin, showQuestionnaire]);
 
-  // Limpiar lastGeneratedData cuando se abre el cuestionario de IA
+  // Limpiar estado de generación al abrir el cuestionario en paso inicial
   useEffect(() => {
-    if (showAdmin && adminTab === 'ai' && !questionnaireStepIdx) {
+    if (showQuestionnaire && !questionnaireStepIdx) {
       // Solo limpiar si está en paso 0 (cuestionario nuevo)
       setLastGeneratedData(null);
       setGenerationError('');
     }
-  }, [showAdmin, adminTab, questionnaireStepIdx]);
+  }, [showQuestionnaire, questionnaireStepIdx]);
 
   useEffect(() => {
     localStorage.setItem('geminiApiKey', geminiApiKey);
@@ -659,6 +658,63 @@ export default function App() {
     }
   }, [geminiApiKey, geminiModel]);
 
+  // ─── AI Generator View ─────────────────────────────────────────────────────
+  if (showQuestionnaire) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50">
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
+              <span className="text-white text-base">🪄</span>
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-slate-800 leading-tight">Generar plan con IA</h1>
+              <p className="text-[11px] text-slate-400 hidden sm:block">Completa el formulario para crear y aplicar un plan personalizado.</p>
+            </div>
+          </div>
+          <button onClick={() => setShowQuestionnaire(false)}
+            className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </header>
+
+        <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 pb-24">
+          <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <NutritionQuestionnaire
+              onCancel={() => setShowQuestionnaire(false)}
+              onGenerate={handleGenerateWithAi}
+              onViewPlan={(profile) => {
+                setShowQuestionnaire(false);
+                setPerfilActivo(profile);
+                setDiaActivo('Lunes');
+                setTab('plan');
+              }}
+              loading={generationLoading}
+              errorMessage={generationError}
+              geminiModel={geminiModel}
+              setGeminiModel={setGeminiModel}
+              lastGeneratedData={lastGeneratedData}
+              targetProfile={questionnaireTargetProfile}
+              setTargetProfile={setQuestionnaireTargetProfile}
+              stepIdx={questionnaireStepIdx}
+              setStepIdx={setQuestionnaireStepIdx}
+              vo={questionnaireVo}
+              setVo={setQuestionnaireVo}
+              va={questionnaireVa}
+              setVa={setQuestionnaireVa}
+              portionMode={questionnairePortionMode}
+              setPortionMode={setQuestionnairePortionMode}
+              manualPortions={questionnaireManualPortions}
+              setManualPortions={setQuestionnaireManualPortions}
+              additionalNotes={questionnaireAdditionalNotes}
+              setAdditionalNotes={setQuestionnaireAdditionalNotes}
+            />
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   // ─── Admin View ───────────────────────────────────────────────────────────
   if (showAdmin) {
     return (
@@ -671,7 +727,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-base font-bold text-slate-800 leading-tight">Panel de Administración</h1>
-              <p className="text-[11px] text-slate-400 hidden sm:block">Configura la IA, gestiona datos y ajusta el motor</p>
+                  <p className="text-[11px] text-slate-400 hidden sm:block">Gestiona respaldos y configura el motor de IA</p>
             </div>
           </div>
           <button onClick={() => setShowAdmin(false)}
@@ -684,9 +740,8 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
             {([
-              { key: 'ai', label: 'Generador IA', shortLabel: 'Generar', emoji: '🪄' },
-              { key: 'settings', label: 'Ajustes IA', shortLabel: 'Ajustes', emoji: '⚙️' },
               { key: 'manual', label: 'Backup', shortLabel: 'Backup', emoji: '💾' },
+              { key: 'settings', label: 'Ajustes IA', shortLabel: 'Ajustes', emoji: '⚙️' },
             ] as const).map(t => (
               <button key={t.key} onClick={() => setAdminTab(t.key)}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 ${
@@ -848,42 +903,6 @@ export default function App() {
               </div>
             </section>
           )}
-
-          {/* ── AI GENERATOR TAB ── */}
-          {adminTab === 'ai' && (
-            <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <NutritionQuestionnaire
-                onCancel={() => setShowAdmin(false)}
-                onGenerate={handleGenerateWithAi}
-                onViewPlan={(profile) => {
-                  setShowAdmin(false);
-                  setPerfilActivo(profile);
-                  setDiaActivo('Lunes');
-                  setTab('plan');
-                }}
-                loading={generationLoading}
-                errorMessage={generationError}
-                geminiModel={geminiModel}
-                setGeminiModel={setGeminiModel}
-                lastGeneratedData={lastGeneratedData}
-                // Estados persistentes del cuestionario
-                targetProfile={questionnaireTargetProfile}
-                setTargetProfile={setQuestionnaireTargetProfile}
-                stepIdx={questionnaireStepIdx}
-                setStepIdx={setQuestionnaireStepIdx}
-                vo={questionnaireVo}
-                setVo={setQuestionnaireVo}
-                va={questionnaireVa}
-                setVa={setQuestionnaireVa}
-                portionMode={questionnairePortionMode}
-                setPortionMode={setQuestionnairePortionMode}
-                manualPortions={questionnaireManualPortions}
-                setManualPortions={setQuestionnaireManualPortions}
-                additionalNotes={questionnaireAdditionalNotes}
-                setAdditionalNotes={setQuestionnaireAdditionalNotes}
-              />
-            </section>
-          )}
         </main>
       </div>
     );
@@ -893,17 +912,24 @@ export default function App() {
   if (!perfilActivo) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex flex-col relative">
-        {/* Botón de Admin más intuitivo - Landing page */}
+        {/* Acciones rápidas - Landing page */}
         <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+          <button
+            onClick={() => setShowQuestionnaire(true)}
+            className="group flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-400 hover:to-indigo-500 text-white rounded-full shadow-md hover:shadow-lg transition-all active:scale-95"
+          >
+            <span className="text-base">🪄</span>
+            <span className="text-sm font-bold">Generar con IA</span>
+          </button>
           <button 
             onClick={() => setShowAdmin(true)} 
-            className="group flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur hover:bg-gradient-to-r hover:from-violet-500 hover:to-indigo-600 hover:text-white rounded-full text-slate-700 shadow-md hover:shadow-lg transition-all active:scale-95"
+            className="group flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur hover:bg-white text-slate-700 rounded-full shadow-md hover:shadow-lg border border-slate-200 transition-all active:scale-95"
           >
-            <span className="text-lg">🪄</span>
-            <span className="text-sm font-bold hidden sm:block">Crear plan con IA</span>
-            <span className="text-sm font-bold sm:hidden">IA</span>
+            <Settings className="w-4 h-4" />
+            <span className="text-sm font-bold hidden sm:block">Panel de administración</span>
+            <span className="text-sm font-bold sm:hidden">Panel</span>
           </button>
-          <span className="text-[10px] text-slate-500 bg-white/70 px-2 py-0.5 rounded-full hidden sm:block">⚙️ Configura tu API key</span>
+          <span className="text-[10px] text-slate-500 bg-white/70 px-2 py-0.5 rounded-full hidden sm:block">💾 Backup y ⚙️ Ajustes</span>
         </div>
         <div className="relative overflow-hidden">
           <div className="absolute inset-0">
@@ -930,6 +956,15 @@ export default function App() {
               <p className="text-sm md:text-lg text-slate-600 max-w-xl mx-auto font-medium leading-relaxed">
                 Elige tu plan individual o armen su lista de compras juntos de forma automática.
               </p>
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowQuestionnaire(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-bold text-sm shadow-md hover:shadow-lg hover:from-violet-400 hover:to-indigo-500 transition-all active:scale-95"
+                >
+                  <span>✨</span>
+                  <span>Generar un plan con IA</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         </div>
