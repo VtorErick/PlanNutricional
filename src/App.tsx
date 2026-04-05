@@ -263,8 +263,8 @@ export default function App() {
   const hasCustomPlan = voReady || vaReady;
 
   const getImcData = (perfilText: string) => {
-    const match = perfilText.match(/IMC\s*([\d.]+)/i);
-    const imc = match ? Number(match[1]) : null;
+    const match = perfilText.match(/IMC\s*[:\-]?\s*([\d]+(?:[.,]\d+)?)/i);
+    const imc = match ? Number(match[1].replace(',', '.')) : null;
     if (!imc || Number.isNaN(imc)) return null;
     const markerPct = Math.min(95, Math.max(5, ((imc - 16) / (35 - 16)) * 100));
 
@@ -281,10 +281,13 @@ export default function App() {
 
   const formatProfileForCard = (perfilText: string) => {
     return perfilText
+      .replace(/\((?:sobrepeso|obesidad|saludable|normal|bajo(?:\s*peso)?)\)/gi, '')
       .replace(/,\s*/g, ' • ')
       .replace(/:\s*/g, ' ')
+      .replace(/•\s*(?:sobrepeso|obesidad|saludable|normal|bajo(?:\s*peso)?)\b/gi, '')
       .replace(/\(([^)]+)\)/g, '• $1')
       .replace(/\s{2,}/g, ' ')
+      .replace(/\s*•\s*$/g, '')
       .trim();
   };
 
