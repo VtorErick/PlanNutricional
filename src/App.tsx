@@ -173,50 +173,24 @@ const momentoIcons: Record<string, any> = {
   cena: Moon,
 };
 
-const getPortionCantidad = (porciones: string) => {
-  const match = (porciones || '').match(/(\d+(?:[.,]\d+)?)/);
-  return match ? match[1] : '1';
-};
+const macroPortionCategories = [
+  { key: 'frutas', label: 'Frutas', icon: '🍎' },
+  { key: 'verduras', label: 'Verduras', icon: '🥦' },
+  { key: 'cereales', label: 'Cereales', icon: '🌾' },
+  { key: 'proteina', label: 'Proteína', icon: '🥩' },
+  { key: 'grasas', label: 'Grasas', icon: '🥑' },
+  { key: 'leche', label: 'Leche', icon: '🥛' },
+  { key: 'leguminosas', label: 'Leguminosas', icon: '🫘' },
+] as const;
 
-const getGrupoEmoji = (grupo: string) => {
-  const key = grupo
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim();
-  if (key.includes('verdura')) return '🥦';
-  if (key.includes('cereal')) return '🌾';
-  if (key.includes('prote')) return '🍗';
-  if (key.includes('leche') || key.includes('lacte')) return '🥛';
-  if (key.includes('grasa')) return '🥑';
-  if (key.includes('fruta')) return '🍎';
-  if (key.includes('leguminosa')) return '🫘';
-  return '🍴';
-};
-
-const parsePorcionesDetalle = (porciones: string) => {
-  const chunks = (porciones || '')
-    .split('|')
-    .map((chunk) => chunk.trim())
-    .filter(Boolean);
-
-  const parsed = chunks
-    .map((chunk) => {
-      const m = chunk.match(/^([A-Za-zÁÉÍÓÚáéíóúÑñ\s]+)\s+(\d+(?:[.,]\d+)?)$/);
-      if (!m) return null;
-      return {
-        label: m[1].trim(),
-        cantidad: m[2].replace(',', '.'),
-      };
-    })
-    .filter((item): item is { label: string; cantidad: string } => Boolean(item));
-
-  if (parsed.length > 0) return parsed;
-
-  return [{
-    label: 'Porciones',
-    cantidad: getPortionCantidad(porciones),
-  }];
+const getMomentMacroPortions = (profile: Profile, momentoKey: string) => {
+  const objetivoMomento = (profile.objetivosPorMomento?.[momentoKey] || {}) as Record<string, number>;
+  return macroPortionCategories
+    .map((cat) => ({
+      ...cat,
+      cantidad: objetivoMomento[cat.key] || 0,
+    }))
+    .filter((item) => item.cantidad > 0);
 };
 
 export default function App() {
@@ -1645,6 +1619,9 @@ export default function App() {
                   const mealsSingleSeleccionadas = mealsSingleAll.filter(m => selecciones[`${perfilActivo}-${diaActivo}-${momento.key}-${m.nombre}`]);
                   const mealsVOSeleccionadas = mealsVOAll.filter(m => selecciones[`vo-${diaActivo}-${momento.key}-${m.nombre}`]);
                   const mealsVASeleccionadas = mealsVAAll.filter(m => selecciones[`va-${diaActivo}-${momento.key}-${m.nombre}`]);
+                  const porcionesSingleMomento = !isAmbos && perfilActivo ? getMomentMacroPortions(perfilesData[perfilActivo], momento.key) : [];
+                  const porcionesVoMomento = getMomentMacroPortions(perfilesData.vo, momento.key);
+                  const porcionesVaMomento = getMomentMacroPortions(perfilesData.va, momento.key);
                   const isElegidoVacio = !estaEnEdicion && (isAmbos
                     ? (mealsVOSeleccionadas.length === 0 && mealsVASeleccionadas.length === 0)
                     : mealsSingleSeleccionadas.length === 0
@@ -1718,13 +1695,13 @@ export default function App() {
                                             <h4 className={`font-bold text-sm mb-1 ${ac.text}`}>{meal.nombre}</h4>
                                             <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                             <div className="mt-2 flex flex-wrap gap-1.5">
-                                              {parsePorcionesDetalle(meal.porciones).map((item) => (
+                                              {porcionesSingleMomento.map((item) => (
                                                 <span
-                                                  key={`${meal.nombre}-${item.label}-${item.cantidad}`}
+                                                  key={`${meal.nombre}-${item.key}-${item.cantidad}`}
                                                   title={`${item.label} ${item.cantidad}`}
                                                   className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}
                                                 >
-                                                  <span>{getGrupoEmoji(item.label)}</span>
+                                                  <span>{item.icon}</span>
                                                   <span>x{item.cantidad}</span>
                                                 </span>
                                               ))}
@@ -1766,13 +1743,13 @@ export default function App() {
                                                 <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
                                                 <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                                 <div className="mt-2 flex flex-wrap gap-1.5">
-                                                  {parsePorcionesDetalle(meal.porciones).map((item) => (
+                                                  {porcionesVoMomento.map((item) => (
                                                     <span
-                                                      key={`${meal.nombre}-${item.label}-${item.cantidad}`}
+                                                      key={`${meal.nombre}-${item.key}-${item.cantidad}`}
                                                       title={`${item.label} ${item.cantidad}`}
                                                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-bold"
                                                     >
-                                                      <span>{getGrupoEmoji(item.label)}</span>
+                                                      <span>{item.icon}</span>
                                                       <span>x{item.cantidad}</span>
                                                     </span>
                                                   ))}
@@ -1789,13 +1766,13 @@ export default function App() {
                                                 <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
                                                 <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                                 <div className="mt-2 flex flex-wrap gap-1.5">
-                                                  {parsePorcionesDetalle(meal.porciones).map((item) => (
+                                                  {porcionesVaMomento.map((item) => (
                                                     <span
-                                                      key={`${meal.nombre}-${item.label}-${item.cantidad}`}
+                                                      key={`${meal.nombre}-${item.key}-${item.cantidad}`}
                                                       title={`${item.label} ${item.cantidad}`}
                                                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-100 text-rose-700 text-[11px] font-bold"
                                                     >
-                                                      <span>{getGrupoEmoji(item.label)}</span>
+                                                      <span>{item.icon}</span>
                                                       <span>x{item.cantidad}</span>
                                                     </span>
                                                   ))}
