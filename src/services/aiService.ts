@@ -1,5 +1,36 @@
 // Función auxiliar para llamar directamente a Gemini API en desarrollo local
 export async function callGeminiDirectly(payload: any, apiKey: string, modelName: string) {
+  const alignCompanionMeals = (
+    referencePlan: Record<string, Record<string, any[]>> = {},
+    targetPlan: Record<string, Record<string, any[]>> = {}
+  ) => {
+    const alignedPlan: Record<string, Record<string, any[]>> = { ...targetPlan };
+
+    for (const [dia, momentosRef] of Object.entries(referencePlan)) {
+      const momentosTarget = alignedPlan[dia];
+      if (!momentosTarget) continue;
+
+      for (const [momentoKey, mealsRef] of Object.entries(momentosRef || {})) {
+        const mealsTarget = momentosTarget[momentoKey];
+        if (!Array.isArray(mealsRef) || !Array.isArray(mealsTarget)) continue;
+
+        momentosTarget[momentoKey] = mealsTarget.map((targetMeal, idx) => {
+          const refMeal = mealsRef[idx];
+          if (!refMeal) return targetMeal;
+          return {
+            ...targetMeal,
+            nombre: refMeal.nombre,
+            detalle: refMeal.detalle,
+            tags: refMeal.tags,
+            super: refMeal.super,
+          };
+        });
+      }
+    }
+
+    return alignedPlan;
+  };
+
   const buildSystemPrompt = (prefix: string) => {
     const lowerPrefix = prefix.toLowerCase();
     return `Eres un nutricionista clínico experto. Genera un plan semanal COMPLETO y VARIADO con comidas reales.
@@ -84,6 +115,7 @@ REGLAS CRÍTICAS:
   - **cookingTime**: Sugiere platillos que se puedan preparar dentro del tiempo disponible (ej: si 15 min, prioriza ensaladas, smoothies, wraps; si 1 hora, permite recetas más elaboradas).
   - **wakeTime/sleepTime**: Distribuye los momentos de comida considerando el horario de despertar y dormir. Si despierta tarde, ajusta el desayuno; si duerme temprano, evita cenas tardías.
   - **favoriteCuisineStyles**: Prioriza platillos de los estilos de cocina seleccionados (Mexicana, Italiana, Asiática, etc.).
+- **CRÍTICO PARA PAREJA (targetProfile='ambos'): si en questionnaire.companionPlan hay un plan de referencia, mantén las MISMAS preparaciones base por día/momento/índice (mismo nombre, ingredientes y técnica) y ajusta solo porciones/calorías/macros del perfil actual. Objetivo: cocinar una sola base por tiempo de comida.**
 - Responde SOLO con JSON válido, omitiendo el markdown block de json.`;
   };
 
@@ -175,7 +207,13 @@ REGLAS CRÍTICAS:
       await new Promise(r => setTimeout(r, 4500));
     }
     const ellaPayload = target === 'ambos' && payload.ella ? buildProfilePayload(payload.ella) : payload;
+    if (target === 'ambos' && elData?.planEL) {
+      ellaPayload.companionPlan = elData.planEL;
+    }
     ellaData = await generateForProfile('ELLA', ellaPayload);
+    if (target === 'ambos' && elData?.planEL && ellaData?.planELLA) {
+      ellaData.planELLA = alignCompanionMeals(elData.planEL, ellaData.planELLA);
+    }
   }
 
   return { elData, ellaData };

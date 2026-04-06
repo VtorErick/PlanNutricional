@@ -1,5 +1,33 @@
 const ALLOWED_ICONS = ['Apple', 'Carrot', 'Wheat', 'Bean', 'Milk', 'Beef', 'Droplets', 'Candy', 'AlertTriangle', 'Heart'];
 
+function alignCompanionMeals(referencePlan = {}, targetPlan = {}) {
+  const alignedPlan = { ...targetPlan };
+
+  for (const [dia, momentosRef] of Object.entries(referencePlan || {})) {
+    const momentosTarget = alignedPlan[dia];
+    if (!momentosTarget) continue;
+
+    for (const [momentoKey, mealsRef] of Object.entries(momentosRef || {})) {
+      const mealsTarget = momentosTarget[momentoKey];
+      if (!Array.isArray(mealsRef) || !Array.isArray(mealsTarget)) continue;
+
+      momentosTarget[momentoKey] = mealsTarget.map((targetMeal, idx) => {
+        const refMeal = mealsRef[idx];
+        if (!refMeal) return targetMeal;
+        return {
+          ...targetMeal,
+          nombre: refMeal.nombre,
+          detalle: refMeal.detalle,
+          tags: refMeal.tags,
+          super: refMeal.super
+        };
+      });
+    }
+  }
+
+  return alignedPlan;
+}
+
 function buildSystemPrompt(prefix) {
   const lowerPrefix = prefix.toLowerCase();
   return `Eres un nutricionista clínico experto. Genera un plan semanal COMPLETO y VARIADO con comidas reales.
@@ -71,6 +99,7 @@ REGLAS CRÍTICAS:
   - **cookingTime**: Sugiere platillos que se puedan preparar dentro del tiempo disponible (ej: si 15 min, prioriza ensaladas, smoothies, wraps; si 1 hora, permite recetas más elaboradas).
   - **wakeTime/sleepTime**: Distribuye los momentos de comida considerando el horario de despertar y dormir. Si despierta tarde, ajusta el desayuno; si duerme temprano, evita cenas tardías.
   - **favoriteCuisineStyles**: Prioriza platillos de los estilos de cocina seleccionados (Mexicana, Italiana, Asiática, etc.).
+  - **CRÍTICO PARA PAREJA (targetProfile='ambos'): si en questionnaire.companionPlan hay un plan de referencia, mantén las MISMAS preparaciones base por día/momento/índice (mismo nombre, ingredientes y técnica) y ajusta solo porciones/calorías/macros del perfil actual. Objetivo: cocinar una sola base por tiempo de comida.**
 - Responde SOLO con JSON válido, sin markdown \`\`\`json`;
 
 function buildUserPrompt(payload, prefix) {
@@ -306,7 +335,13 @@ export default async function handler(req, res) {
         await new Promise(r => setTimeout(r, 4500));
       }
       const payloadElla = target === 'ambos' && payload.ella ? { ...payload, ...payload.ella } : payload;
+      if (target === 'ambos' && elData?.planEL) {
+        payloadElla.companionPlan = elData.planEL;
+      }
       ellaData = await generateWithGemini(payloadElla, 'ELLA', apiKey, selectedModel);
+      if (target === 'ambos' && elData?.planEL && ellaData?.planELLA) {
+        ellaData.planELLA = alignCompanionMeals(elData.planEL, ellaData.planELLA);
+      }
     }
 
     return res.status(200).json({ elData, ellaData, modelUsed: selectedModel });
