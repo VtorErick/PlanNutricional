@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Upload, FileText, FileJson, Trash2, ToggleLeft, ToggleRight, CheckCircle2 } from 'lucide-react';
-import { downloadJsonFile, downloadDietPdf, parseJsonToData } from '../dataManager';
+import { downloadJsonFile, parseJsonToData } from '../dataManager';
+import { downloadDietPdf } from '../services/pdfService';
 
 interface AdminPanelProps {
   perfilId: 'el' | 'ella';

@@ -5,41 +5,9 @@ import {
 import { perfilEL, equivalenciasEL, planEL } from './data/perfil-el';
 import { perfilELLA, equivalenciasELLA, planELLA } from './data/perfil-ella';
 
-export interface MealItem {
-  nombre: string;
-  porciones: string;
-  detalle: string;
-  tags: string[];
-  super: string[];
-}
+import { Profile, Equivalencia } from './types';
 
-export interface MealTime {
-  key: string;
-  label: string;
-  hora: string;
-}
-
-export interface Profile {
-  id: string;
-  nombre: string;
-  edad: number;
-  descripcion: string;
-  perfil: string;
-  meta: string;
-  horariosTexto: string;
-  notaSalud?: string;
-  momentos: MealTime[];
-  objetivosPorMomento: Record<string, Record<string, number>>;
-  distribucionDiaria: { grupo: string; total: number; detalle: string }[];
-  resumenPersonal: string[];
-  plan: Record<string, Record<string, MealItem[]>>;
-}
-
-export interface Equivalencia {
-  titulo: string;
-  icon: any;
-  items: string[];
-}
+export * from './types';
 
 export const iconsMap: Record<string, any> = {
   Apple, Carrot, Wheat, Bean, Milk, Beef, Droplets, Candy, AlertTriangle, Heart,
