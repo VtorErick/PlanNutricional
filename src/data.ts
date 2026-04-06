@@ -4,6 +4,7 @@ import {
 
 import { perfilEL, equivalenciasEL, planEL } from './data/perfil-el';
 import { perfilELLA, equivalenciasELLA, planELLA } from './data/perfil-ella';
+import { enrichPlanWithNutrition } from './utils/nutrition';
 
 import { Profile, Equivalencia } from './types';
 
@@ -14,8 +15,8 @@ export const iconsMap: Record<string, any> = {
 };
 
 export const perfilesData: Record<string, Profile> = {
-  el: { ...perfilEL, plan: planEL } as Profile,
-  ella: { ...perfilELLA, plan: planELLA } as Profile,
+  el: { ...perfilEL, plan: enrichPlanWithNutrition(planEL) } as Profile,
+  ella: { ...perfilELLA, plan: enrichPlanWithNutrition(planELLA) } as Profile,
 };
 
 export const equivalenciasData: Record<string, Equivalencia[]> = {

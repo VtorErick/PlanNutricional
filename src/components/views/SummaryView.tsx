@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, Heart, Shield, TrendingDown, User } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
+import { estimateDailyCaloriesFromObjectives } from '../../utils/nutrition';
 
 const mealKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'] as const;
 const mealLabels = ['Des', 'C.AM', 'Com', 'C.PM', 'Cen'];
@@ -17,7 +18,7 @@ const categories = [
 ] as const;
 
 export default function SummaryView() {
-  const { perfilActivo, perfilesData, ac } = useDiet();
+  const { perfilActivo, perfilesData, ac, diaActivo, selecciones } = useDiet();
   const [ambosSubTab, setAmbosSubTab] = useState<'el' | 'ella'>('el');
 
   const isAmbos = perfilActivo === 'ambos';
@@ -87,6 +88,13 @@ export default function SummaryView() {
               }
             : ac;
 
+          const caloriasObjetivo = p.metaCaloricaKcalDia ?? estimateDailyCaloriesFromObjectives(p);
+          const planDia = p.plan[diaActivo] || {};
+          const caloriasDiaSeleccionado = Object.entries(planDia).reduce((accMomento, [momentoKey, meals]) => {
+            const selected = (meals || []).find((meal) => selecciones[`${p.id}-${diaActivo}-${momentoKey}-${meal.nombre}`]);
+            return accMomento + (selected?.caloriasKcal || 0);
+          }, 0);
+
           return (
             <div key={p.perfil} className={`space-y-4 ${hiddenClass}`}>
               {isAmbos && (
@@ -100,6 +108,25 @@ export default function SummaryView() {
                   Resumen de {p.nombre}
                 </h3>
               )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className={`rounded-2xl p-4 border ${dynamicAc.border} ${dynamicAc.bgLight}`}>
+                  <p className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+                    Meta calórica
+                  </p>
+                  <p className={`text-lg sm:text-xl font-black mt-1 ${dynamicAc.textDark}`}>
+                    {caloriasObjetivo} kcal/día
+                  </p>
+                </div>
+                <div className="rounded-2xl p-4 border border-slate-200 bg-slate-50">
+                  <p className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+                    Día seleccionado ({diaActivo})
+                  </p>
+                  <p className="text-lg sm:text-xl font-black mt-1 text-slate-800">
+                    {caloriasDiaSeleccionado} kcal
+                  </p>
+                </div>
+              </div>
 
               <div className="relative rounded-2xl overflow-hidden shadow-sm">
                 <img

@@ -8,6 +8,7 @@ export const perfilELLA = {
   descripcion: 'Plan basado en la guía del nutriólogo con estructura de equivalentes. Frutas moderadas, verduras altas, grasas medidas. Adaptado para cuidar niveles de insulina.',
   perfil: '65 kg • 1.60 m • 31 años • IMC 25.4',
   meta: 'Llegar a peso saludable (~58 kg) con control de insulina',
+  metaCaloricaKcalDia: 1500,
   horariosTexto: '8 am • Col. AM • 3 pm • Col. PM • 9–10 pm',
   momentos: [
     { key: 'desayuno', label: 'Desayuno', hora: '8:00 am' },

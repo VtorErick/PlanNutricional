@@ -4,6 +4,8 @@ export interface MealItem {
   detalle: string;
   tags: string[];
   super: string[];
+  caloriasKcal?: number;
+  proteinaG?: number;
 }
 
 export interface MealTime {
@@ -25,6 +27,7 @@ export interface Profile {
   objetivosPorMomento: Record<string, Record<string, number>>;
   distribucionDiaria: { grupo: string; total: number; detalle: string }[];
   resumenPersonal: string[];
+  metaCaloricaKcalDia?: number;
   plan: Record<string, Record<string, MealItem[]>>;
 }
 

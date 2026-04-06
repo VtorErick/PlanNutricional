@@ -59,9 +59,10 @@ REGLAS CRÍTICAS:
 - CRÍTICO: El perfil y meta deben reflejar los datos REALES del usuario. Si el usuario quiere "Perder grasa", NO describir su IMC como "bajo peso severo" - contextualiza correctamente basado en sus objetivos.
 - CRÍTICO: El peso meta debe ser razonable según el contexto. Si el usuario quiere ganar masa, el peso meta debe ser MAYOR que el actual. Si quiere perder grasa, debe ser MENOR o mantenerse.
 - Cada momento debe tener 3 opciones de comidas REALES y variadas usando ingredientes naturales
-- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
-- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar), caloriasKcal (number entero), proteinaG (number entero)
+- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar), caloriasKcal (number entero), proteinaG (number entero)
 - **CRÍTICO - CONSISTENCIA DE PORTIONES: Cada platillo sugerido DEBE cumplir EXACTAMENTE con los objetivosPorMomento del momento del día. Ejemplo real: si objetivosPorMomento.desayuno indica {cereales: 2, proteina: 2, grasas: 1, frutas: 1}, una opción válida sería: "Avena cocida (1 taza = 2 cereales), 2 huevos revueltos (2 proteínas), 1/4 aguacate (1 grasa), 1 plátano pequeño (1 fruta)". Otra opción: "2 tortillas de maíz (2 cereales), 90g pechuga de pollo (1 proteína) + 1 huevo (1 proteína), 10 almendras (1 grasa), 1 manzana (1 fruta)".**
+- **CRÍTICO - FORMATO NUTRICIONAL: caloriasKcal y proteinaG son obligatorios en cada comida. Deben ser números enteros (NO string, NO null). Ejemplo: "caloriasKcal": 420, "proteinaG": 32.**
 - **CRÍTICO: TODOS los datos del cuestionario deben ser considerados activamente:**
   - **trainingFrequency**: Si el usuario entrena 3-4 días o más, aumenta las porciones de proteína y cereales en días de entrenamiento, especialmente en la comida post-entreno.
   - **additionalNotes (planConfig.additionalNotes)**: Lee y aplica las notas adicionales del usuario (preferencias especiales, alimentos a evitar, objetivos específicos, etc.).
@@ -80,7 +81,7 @@ function buildUserPrompt(payload, prefix) {
       rootKeys: [`perfil${prefix}`, `equivalencias${prefix}`, `plan${prefix}`],
       fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
       momentsSource: 'questionnaire.planConfig.selectedMoments',
-      mealsRequiredKeys: ['nombre', 'porciones', 'detalle', 'tags', 'super']
+      mealsRequiredKeys: ['nombre', 'porciones', 'detalle', 'tags', 'super', 'caloriasKcal', 'proteinaG']
     }
   });
 }

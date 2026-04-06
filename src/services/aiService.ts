@@ -63,10 +63,10 @@ REGLAS CRÍTICAS:
 - Cada momento debe tener 3 opciones de comidas REALES y variadas usando ingredientes naturales
 - **PROHIBIDO: NO usar suplementos ni proteína en polvo en las comidas del plan. Usar solo alimentos reales como huevos, pollo, res, pescado, queso cottage, tofu, legumbres.**
 - La proteína en polvo solo puede aparecer en la sección de equivalencias como alternativa opcional, NUNCA en los platillos sugeridos.
-- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar), caloriasKcal (number entero), proteinaG (number entero)
 - **EJEMPLO DE ESTRUCTURA CORRECTA DEL PLAN:**
   plan${prefix}: {
-    "Lunes": { "desayuno": [{nombre, porciones, detalle, tags, super}, {nombre...}, {nombre...}], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
+    "Lunes": { "desayuno": [{nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG}, {nombre...}, {nombre...}], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
     "Martes": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
     "Miércoles": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
     "Jueves": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
@@ -75,6 +75,7 @@ REGLAS CRÍTICAS:
     "Domingo": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] }
   }
 - **CRÍTICO - CONSISTENCIA DE PORTIONES:** Cada platillo sugerido DEBE cumplir EXACTAMENTE con los objetivosPorMomento del momento del día. Ejemplo real: si objetivosPorMomento.desayuno indica {cereales: 2, proteina: 2, grasas: 1, frutas: 1}, una opción válida sería: "Avena cocida (1 taza = 2 cereales), 2 huevos revueltos (2 proteínas), 1/4 aguacate (1 grasa), 1 plátano pequeño (1 fruta)". Otra opción: "2 tortillas de maíz (2 cereales), 90g pechuga de pollo (1 proteína) + 1 huevo (1 proteína), 10 almendras (1 grasa), 1 manzana (1 fruta)".**
+- **CRÍTICO - FORMATO NUTRICIONAL:** caloriasKcal y proteinaG son obligatorios en cada comida. Deben ser números enteros (NO string, NO null). Ejemplo: "caloriasKcal": 420, "proteinaG": 32.
 - **CRÍTICO: TODOS los datos del cuestionario deben ser considerados activamente:**
   - **trainingFrequency**: Si el usuario entrena 3-4 días o más, aumenta las porciones de proteína y cereales en días de entrenamiento, especialmente en la comida post-entreno.
   - **additionalNotes (planConfig.additionalNotes)**: Lee y aplica las notas adicionales del usuario (preferencias especiales, alimentos a evitar, objetivos específicos, etc.).
@@ -94,7 +95,7 @@ REGLAS CRÍTICAS:
         rootKeys: [`perfil${prefix}`, `equivalencias${prefix}`, `plan${prefix}`],
         fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
         momentsSource: 'questionnaire.planConfig.selectedMoments',
-        mealsRequiredKeys: ['nombre', 'porciones', 'detalle', 'tags', 'super']
+        mealsRequiredKeys: ['nombre', 'porciones', 'detalle', 'tags', 'super', 'caloriasKcal', 'proteinaG']
       }
     });
   };

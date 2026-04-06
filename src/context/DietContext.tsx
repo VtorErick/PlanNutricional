@@ -8,6 +8,7 @@ import { parseObjectToData } from '../dataManager';
 import { callGeminiDirectly } from '../services/aiService';
 import { showAppAlert, showAppConfirm } from '../utils/appDialogs';
 import type { QuestionnairePayload, TargetProfile } from '../components/NutritionQuestionnaire';
+import { enrichPlanWithNutrition } from '../utils/nutrition';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
 export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen';
@@ -180,10 +181,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   // ─── Computed: Profiles & Equivalences ─────────────────────────────
   const perfilesData: Record<string, Profile> = useMemo(() => ({
     el: dataVersions.el === 'custom' && customData.el?.perfilEL
-      ? { ...customData.el.perfilEL, plan: customData.el.planEL }
+      ? { ...customData.el.perfilEL, plan: enrichPlanWithNutrition(customData.el.planEL || {}) }
       : origPerfilesData.el,
     ella: dataVersions.ella === 'custom' && customData.ella?.perfilELLA
-      ? { ...customData.ella.perfilELLA, plan: customData.ella.planELLA }
+      ? { ...customData.ella.perfilELLA, plan: enrichPlanWithNutrition(customData.ella.planELLA || {}) }
       : origPerfilesData.ella,
   }), [dataVersions, customData]);
 
