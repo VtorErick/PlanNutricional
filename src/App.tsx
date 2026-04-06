@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import {
-  ChefHat, Calendar, BookOpen, ShoppingCart, Lightbulb, X, AlertTriangle
+  ChefHat, Calendar, BookOpen, ShoppingCart, Lightbulb, Flame, X, AlertTriangle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -15,6 +15,7 @@ import PlanView from './components/views/PlanView';
 import ShoppingView from './components/views/ShoppingView';
 import SummaryView from './components/views/SummaryView';
 import EquivalenciasView from './components/views/EquivalenciasView';
+import CalorieMonitoringView from './components/views/CalorieMonitoringView';
 import NutritionQuestionnaire from './components/NutritionQuestionnaire';
 
 export default function App() {
@@ -146,6 +147,7 @@ export default function App() {
   const tabItems = [
     { key: 'plan' as const, label: 'Mi Plan', shortLabel: 'Plan', icon: Calendar },
     { key: 'equivalencias' as const, label: 'Equivalencias', shortLabel: 'Extras', icon: BookOpen },
+    { key: 'calorias' as const, label: 'Calorías', shortLabel: 'Kcal', icon: Flame },
     { key: 'compras' as const, label: 'Compras', shortLabel: 'Compras', icon: ShoppingCart },
     { key: 'resumen' as const, label: 'Resumen', shortLabel: 'Resumen', icon: Lightbulb },
   ];
@@ -188,12 +190,12 @@ export default function App() {
 
         {/* ── Mobile Bottom Tab Nav */}
         <div className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-2 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 shadow-[0_-4px_30px_rgba(0,0,0,0.04)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div className="flex justify-around items-center max-w-sm mx-auto pt-1.5 pb-1.5">
+          <div className="flex justify-around items-center max-w-md mx-auto pt-1.5 pb-1.5">
             {tabItems.map((t) => {
               const active = tab === t.key;
               return (
                 <button key={t.key} onClick={() => setTab(t.key)}
-                  className={`relative flex flex-col items-center justify-center gap-1 w-[72px] py-1 transition-all duration-200 active:scale-95 ${active ? staticColors.text : 'text-slate-400 hover:text-slate-500'}`}>
+                  className={`relative flex flex-col items-center justify-center gap-1 w-[64px] py-1 transition-all duration-200 active:scale-95 ${active ? staticColors.text : 'text-slate-400 hover:text-slate-500'}`}>
                   <div className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300 ${active ? `bg-gradient-to-br ${staticColors.bgGradientLight} shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border ${staticColors.borderLight}` : 'bg-transparent'}`}>
                     <t.icon className={`w-[18px] h-[18px] ${active ? `fill-current opacity-20 absolute` : ''}`} />
                     <t.icon className="w-[18px] h-[18px] relative z-10" strokeWidth={active ? 2.5 : 2} />
@@ -209,6 +211,7 @@ export default function App() {
         <AnimatePresence mode="wait">
           {tab === 'plan' && <PlanView />}
           {tab === 'equivalencias' && <EquivalenciasView />}
+          {tab === 'calorias' && <CalorieMonitoringView />}
           {tab === 'resumen' && <SummaryView />}
           {tab === 'compras' && <ShoppingView />}
         </AnimatePresence>

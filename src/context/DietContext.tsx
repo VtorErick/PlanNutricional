@@ -11,7 +11,7 @@ import type { QuestionnairePayload, TargetProfile } from '../components/Nutritio
 import { enrichPlanWithNutrition } from '../utils/nutrition';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
-export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen';
+export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias';
 
 // ─── Context Interface ───────────────────────────────────────────────
 interface DietContextType {

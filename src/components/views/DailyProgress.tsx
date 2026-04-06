@@ -86,6 +86,27 @@ export default function DailyProgress() {
     return perfilActivo === 'ella' ? getProfileTarget('ella') : getProfileTarget('el');
   }, [perfilesData, isAmbos, perfilActivo]);
 
+  const energyRatio = metaCalorica > 0 ? totals.kcal / metaCalorica : 0;
+  const energyStatus: 'low' | 'near' | 'high' = energyRatio < 0.85 ? 'low' : energyRatio <= 1.1 ? 'near' : 'high';
+
+  const statusPalette = (isAmbos || perfilActivo === 'ambos')
+    ? {
+        low: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+        near: 'bg-emerald-100 border-emerald-300 text-emerald-800',
+        high: 'bg-teal-100 border-teal-300 text-teal-800',
+      }
+    : perfilActivo === 'ella'
+      ? {
+          low: 'bg-rose-50 border-rose-200 text-rose-700',
+          near: 'bg-rose-100 border-rose-300 text-rose-800',
+          high: 'bg-pink-100 border-pink-300 text-pink-800',
+        }
+      : {
+          low: 'bg-blue-50 border-blue-200 text-blue-700',
+          near: 'bg-blue-100 border-blue-300 text-blue-800',
+          high: 'bg-indigo-100 border-indigo-300 text-indigo-800',
+        };
+
   return (
     <motion.div
       key={`progress-${perfilActivo}`}
@@ -118,7 +139,7 @@ export default function DailyProgress() {
               </button>
             );
           })}
-          <div className="ml-auto flex-shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight">
+          <div className={`ml-auto flex-shrink-0 rounded-2xl border px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold leading-tight ${statusPalette[energyStatus]}`}>
             <div className="whitespace-nowrap">
               <span>{totals.kcal} kcal</span>
               <span className="mx-1 text-slate-300">·</span>
@@ -126,7 +147,7 @@ export default function DailyProgress() {
               <span className="mx-1 text-slate-300">·</span>
               <span>{totals.fat}g G</span>
             </div>
-            <div className="mt-0.5 text-slate-500 font-semibold whitespace-nowrap">
+            <div className="mt-0.5 font-semibold whitespace-nowrap opacity-85">
               Meta: {metaCalorica} kcal
             </div>
           </div>
