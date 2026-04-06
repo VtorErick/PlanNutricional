@@ -99,19 +99,32 @@ export function enrichPlanWithNutrition(plan: Record<string, Record<string, Meal
 }
 
 export function estimateDailyCaloriesFromObjectives(profile: Profile): number {
+  return estimateDailyMacroTargetsFromObjectives(profile).kcal;
+}
+
+export function estimateDailyMacroTargetsFromObjectives(profile: Profile): { kcal: number; proteinG: number; fatG: number } {
   const objetivos = profile.objetivosPorMomento || {};
   let kcal = 0;
+  let protein = 0;
+  let fat = 0;
 
   for (const grupos of Object.values(objetivos)) {
     for (const [groupKey, amount] of Object.entries(grupos || {})) {
       const normalized = PORTION_KEY_ALIASES[groupKey.toLowerCase()];
       const exchange = normalized ? EXCHANGE_VALUES[normalized] : null;
       if (!exchange) continue;
-      kcal += exchange.kcal * (Number(amount) || 0);
+      const n = Number(amount) || 0;
+      kcal += exchange.kcal * n;
+      protein += exchange.protein * n;
+      fat += exchange.fat * n;
     }
   }
 
-  return Math.round(kcal);
+  return {
+    kcal: Math.round(kcal),
+    proteinG: Math.round(protein),
+    fatG: Math.round(fat),
+  };
 }
 
 export function sumSelectedMealCalories(meals: MealItem[]): number {
