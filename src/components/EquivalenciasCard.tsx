@@ -4,10 +4,11 @@ import type { Equivalencia } from '../data';
 interface EquivalenciasCardProps {
   equivalencia: Equivalencia;
   delay?: number;
+  compact?: boolean;
   accentClasses: Record<string, string>;
 }
 
-export default function EquivalenciasCard({ equivalencia, delay = 0, accentClasses }: EquivalenciasCardProps) {
+export default function EquivalenciasCard({ equivalencia, delay = 0, compact, accentClasses }: EquivalenciasCardProps) {
   const Icon = equivalencia.icon;
 
   return (
