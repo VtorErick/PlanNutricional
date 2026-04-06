@@ -10,8 +10,10 @@ import MealSelector from './components/MealSelector';
 import EquivalenciasCard from './components/EquivalenciasCard';
 import AdminPanel from './components/AdminPanel';
 import NutritionQuestionnaire, { QuestionnairePayload, TargetProfile } from './components/NutritionQuestionnaire';
-import { perfilesData as origPerfilesData, equivalenciasData as origEquivData, rawData, iconsMap, Profile, Equivalencia } from './data';
-import { downloadDaySelectionPdf, parseObjectToData } from './dataManager';
+import { perfilEL, equivalenciasEL, planEL } from './data/perfil-el';
+import { perfilELLA, equivalenciasELLA, planELLA } from './data/perfil-ella';
+import { Profile, Equivalencia, iconsMap, perfilesData as origPerfilesData, equivalenciasData as origEquivData, rawData } from './data';
+import { parseObjectToData, downloadDaySelectionPdf } from './dataManager';
 import { showAppAlert, showAppConfirm } from './utils/appDialogs';
 
 // Función auxiliar para llamar directamente a Gemini API en desarrollo local
@@ -24,7 +26,7 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 
 1. perfil${prefix}: {
     id: "${lowerPrefix}",
-    nombre: "${prefix === 'VO' ? 'El' : 'Ella'}",
+    nombre: "${prefix === 'EL' ? 'El' : 'Ella'}",
     perfil: string (edad, peso, altura, IMC),
     meta: string,
     descripcion: string,
@@ -32,11 +34,11 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
     horariosTexto: string,
     momentos: [{ key: "desayuno", label: "Desayuno", hora: "8:00 am" }, { key: "colacion_am", label: "Colación mañana", hora: "..." }, { key: "comida", label: "Comida", hora: "..." }, { key: "colacion_pm", label: "Colación tarde", hora: "..." }, { key: "cena", label: "Cena", hora: "..." }],
     objetivosPorMomento: {
-      desayuno: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
-      colacion_am: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
-      comida: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
-      colacion_pm: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
-      cena: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number }
+      desayuno: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
+      colacion_am: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
+      comida: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
+      colacion_pm: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
+      cena: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number }
     },
     distribucionDiaria: [
       { grupo: "Frutas", total: number, detalle: "ej: 1 en desayuno + 1 en colación" },
@@ -44,7 +46,7 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
       { grupo: "Cereales", total: number, detalle: "ej: 1 desayuno + 1 comida" },
       { grupo: "Proteína", total: number, detalle: "ej: 3 desayuno + 4 comida" },
       { grupo: "Grasas", total: number, detalle: "ej: 2 desayuno + 2 col. AM" },
-      { grupo: "Leche", total: number, detalle: "ej: 1 en cena" },
+      { grupo: "lacteos", total: number, detalle: "ej: 1 en cena" },
       { grupo: "Leguminosas", total: number, detalle: "ej: 3 veces por semana" }
     ],
     resumenPersonal: string[] (5-7 puntos clave específicos del plan),
@@ -56,18 +58,38 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
    
    Categorías requeridas: Frutas, Verduras, Cereales, Proteínas, Grasas, Leguminosas, Lácteos, y opcionalmente "Alimentos libres", "Antojos saludables", "Notas especiales"
    
-   EJEMPLO de items para Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 plátano pequeño (100g)"]
-   EJEMPLO de items para Verduras: ["1 taza de brócoli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morrón (100g)", "1 taza de pepino rallado (150g)"]
+   IMPORTANTE: Las equivalencias deben reflejar ingredientes REALES usados en los platillos del plan. Ejemplos de items:
+   - Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 plátano pequeño (100g)", "1 taza de frutos rojos (150g)", "1 taza de melón picado (180g)"]
+   - Verduras: ["1 taza de brócoli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morrón (100g)", "1 taza de pepino rallado (150g)", "1 taza de champiñones (100g)", "1/2 aguacate mediano (75g)"]
+   - Cereales: ["1 rebanada de pan integral (30g)", "1 tortilla de maíz (30g)", "1/2 taza de avena cocida (100g)", "1/2 taza de arroz integral cocido (90g)", "1/2 taza de quinoa cocida (90g)"]
+   - Proteínas: ["30g de pechuga de pollo cocida", "30g de carne de res magra cocida", "30g de pescado blanco cocido", "1 huevo entero (50g)", "2 claras de huevo", "1/4 taza de queso cottage (60g)", "30g de atún en agua", "2 rebanadas de jamón de pavo (30g)", "1/2 taza de tofu firme (75g)", "1 scoop de proteína en polvo (30g) - OPCIONAL"]
+   - Grasas: ["1 cucharadita de aceite de oliva (5ml)", "1/4 de aguacate mediano (30g)", "10 almendras (15g)", "6 nueces (15g)", "1 cucharada de semillas de chía (10g)", "1 cucharadita de crema de cacahuate (10g)"]
+   - Leguminosas: ["1/2 taza de frijoles cocidos (90g)", "1/2 taza de lentejas cocidas (90g)", "1/2 taza de garbanzos cocidos (90g)"]
+   - Lácteos: ["1 taza de leche descremada (240ml)", "1 taza de yogurt natural sin azúcar (200g)", "30g de queso panela o bajo en grasa", "1/4 taza de queso cottage (60g)"]
 
 3. plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
 
 REGLAS CRÍTICAS:
-- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'El' : 'Ella'}" - NO usar otros nombres
-- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, leche, proteina, grasas
+- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'EL' ? 'El' : 'Ella'}" - NO usar otros nombres
+- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas
 - OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
 - OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados
-- Cada momento debe tener 3 opciones de comidas REALES y variadas
+- CRÍTICO: El perfil y meta deben reflejar los datos REALES del usuario. Si el usuario quiere "Perder grasa", NO describir su IMC como "bajo peso severo" - contextualiza correctamente basado en sus objetivos.
+- CRÍTICO: El peso meta debe ser razonable según el contexto. Si el usuario quiere ganar masa, el peso meta debe ser MAYOR que el actual. Si quiere perder grasa, debe ser MENOR o mantenerse.
+- Cada momento debe tener 3 opciones de comidas REALES y variadas usando ingredientes naturales
+- **PROHIBIDO: NO usar suplementos ni proteína en polvo en las comidas del plan. Usar solo alimentos reales como huevos, pollo, res, pescado, queso cottage, tofu, legumbres.**
+- La proteína en polvo solo puede aparecer en la sección de equivalencias como alternativa opcional, NUNCA en los platillos sugeridos.
 - Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+- **CRÍTICO - CONSISTENCIA DE PORTIONES: Cada platillo sugerido DEBE cumplir EXACTAMENTE con los objetivosPorMomento del momento del día. Ejemplo real: si objetivosPorMomento.desayuno indica {cereales: 2, proteina: 2, grasas: 1, frutas: 1}, una opción válida sería: "Avena cocida (1 taza = 2 cereales), 2 huevos revueltos (2 proteínas), 1/4 aguacate (1 grasa), 1 plátano pequeño (1 fruta)". Otra opción: "2 tortillas de maíz (2 cereales), 90g pechuga de pollo (1 proteína) + 1 huevo (1 proteína), 10 almendras (1 grasa), 1 manzana (1 fruta)".**
+- **CRÍTICO: TODOS los datos del cuestionario deben ser considerados activamente:**
+  - **trainingFrequency**: Si el usuario entrena 3-4 días o más, aumenta las porciones de proteína y cereales en días de entrenamiento, especialmente en la comida post-entreno.
+  - **additionalNotes (planConfig.additionalNotes)**: Lee y aplica las notas adicionales del usuario (preferencias especiales, alimentos a evitar, objetivos específicos, etc.).
+  - **portionMode**: Si es 'manual', usa EXACTAMENTE las porciones de manualPortions sin modificar. Si es 'auto', calcula porciones nutricionalmente apropiadas basadas en el perfil del usuario.
+  - **objectiveTimeline**: Ajusta la distribución de porciones y calorías para alcanzar la meta en el tiempo objetivo indicado (ej: 12 semanas).
+  - **cookingTime**: Sugiere platillos que se puedan preparar dentro del tiempo disponible (ej: si 15 min, prioriza ensaladas, smoothies, wraps; si 1 hora, permite recetas más elaboradas).
+  - **wakeTime/sleepTime**: Distribuye los momentos de comida considerando el horario de despertar y dormir. Si despierta tarde, ajusta el desayuno; si duerme temprano, evita cenas tardías.
+  - **favoriteCuisineStyles**: Prioriza platillos de los estilos de cocina seleccionados (Mexicana, Italiana, Asiática, etc.).
 - Responde SOLO con JSON válido, sin markdown \`\`\`json`;
   };
 
@@ -136,8 +158,8 @@ REGLAS CRÍTICAS:
   };
 
   const target = payload?.targetProfile || 'ambos';
-  let voData = null;
-  let vaData = null;
+  let elData = null;
+  let ellaData = null;
 
   // Preparar payloads por perfil
   const buildProfilePayload = (profileData: any) => ({
@@ -148,21 +170,21 @@ REGLAS CRÍTICAS:
     routine: profileData?.routine,
   });
 
-  if (target === 'vo' || target === 'ambos') {
-    const voPayload = target === 'ambos' && payload.vo ? buildProfilePayload(payload.vo) : payload;
-    voData = await generateForProfile('VO', voPayload);
+  if (target === 'el' || target === 'ambos') {
+    const elPayload = target === 'ambos' && payload.el ? buildProfilePayload(payload.el) : payload;
+    elData = await generateForProfile('EL', elPayload);
   }
 
-  if (target === 'va' || target === 'ambos') {
+  if (target === 'ella' || target === 'ambos') {
     // Delay para evitar rate limit
     if (target === 'ambos') {
       await new Promise(r => setTimeout(r, 4500));
     }
-    const vaPayload = target === 'ambos' && payload.va ? buildProfilePayload(payload.va) : payload;
-    vaData = await generateForProfile('VA', vaPayload);
+    const ellaPayload = target === 'ambos' && payload.ella ? buildProfilePayload(payload.ella) : payload;
+    ellaData = await generateForProfile('ELLA', ellaPayload);
   }
 
-  return { voData, vaData };
+  return { elData, ellaData };
 }
 
 const momentoIcons: Record<string, any> = {
@@ -179,7 +201,7 @@ const macroPortionCategories = [
   { key: 'cereales', label: 'Cereales', icon: '🌾' },
   { key: 'proteina', label: 'Proteína', icon: '🥩' },
   { key: 'grasas', label: 'Grasas', icon: '🥑' },
-  { key: 'leche', label: 'Leche', icon: '🥛' },
+  { key: 'lacteos', label: 'lacteos', icon: '🥛' },
   { key: 'leguminosas', label: 'Leguminosas', icon: '🫘' },
 ] as const;
 
@@ -195,13 +217,13 @@ const getMomentMacroPortions = (profile: Profile, momentoKey: string) => {
 
 export default function App() {
   // Siempre iniciar en home (null), no restaurar perfil de localStorage
-  const [perfilActivo, setPerfilActivo] = useState<'vo' | 'va' | 'ambos' | null>(null);
+  const [perfilActivo, setPerfilActivo] = useState<'el' | 'ella' | 'ambos' | null>(null);
 
-  const [dataVersions, setDataVersions] = useState<{ vo: 'original' | 'custom', va: 'original' | 'custom' }>(() => {
+  const [dataVersions, setDataVersions] = useState<{ el: 'original' | 'custom', ella: 'original' | 'custom' }>(() => {
     try {
       const saved = localStorage.getItem('dataVersions');
-      return saved ? JSON.parse(saved) : { vo: 'original', va: 'original' };
-    } catch { return { vo: 'original', va: 'original' }; }
+      return saved ? JSON.parse(saved) : { el: 'original', ella: 'original' };
+    } catch { return { el: 'original', ella: 'original' }; }
   });
 
   const [customData, setCustomData] = useState<any>(() => {
@@ -221,12 +243,12 @@ export default function App() {
 
   const perfilesData: Record<string, Profile> = useMemo(() => {
     return {
-      vo: dataVersions.vo === 'custom' && customData.vo?.perfilVO 
-          ? { ...customData.vo.perfilVO, plan: customData.vo.planVO } 
-          : origPerfilesData.vo,
-      va: dataVersions.va === 'custom' && customData.va?.perfilVA 
-          ? { ...customData.va.perfilVA, plan: customData.va.planVA } 
-          : origPerfilesData.va,
+      el: dataVersions.el === 'custom' && customData.el?.perfilEL 
+          ? { ...customData.el.perfilEL, plan: customData.el.planEL } 
+          : origPerfilesData.el,
+      ella: dataVersions.ella === 'custom' && customData.ella?.perfilELLA 
+          ? { ...customData.ella.perfilELLA, plan: customData.ella.planELLA } 
+          : origPerfilesData.ella,
     };
   }, [dataVersions, customData, origPerfilesData]);
 
@@ -245,8 +267,8 @@ export default function App() {
       });
     };
     return {
-      vo: dataVersions.vo === 'custom' && customData.vo?.equivalenciasVO ? mapEquiv(customData.vo.equivalenciasVO) : origEquivData.vo,
-      va: dataVersions.va === 'custom' && customData.va?.equivalenciasVA ? mapEquiv(customData.va.equivalenciasVA) : origEquivData.va,
+      el: dataVersions.el === 'custom' && customData.el?.equivalenciasEL ? mapEquiv(customData.el.equivalenciasEL) : origEquivData.el,
+      ella: dataVersions.ella === 'custom' && customData.ella?.equivalenciasELLA ? mapEquiv(customData.ella.equivalenciasELLA) : origEquivData.ella,
     };
   }, [dataVersions, customData, origEquivData]);
   const [diaActivo, setDiaActivo] = useState(() => {
@@ -271,16 +293,16 @@ export default function App() {
       return saved ? JSON.parse(saved) : {};
     } catch { return {}; }
   });
-  const [ambosSubTab, setAmbosSubTab] = useState<'vo' | 'va'>('vo');
+  const [ambosSubTab, setAmbosSubTab] = useState<'el' | 'ella'>('el');
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [generationLoading, setGenerationLoading] = useState(false);
   const [generationError, setGenerationError] = useState('');
-  const [lastGeneratedData, setLastGeneratedData] = useState<any>(null); // Para descarga de JSON
+  const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
   
   const [showAdmin, setShowAdmin] = useState(false);
-  const voReady = dataVersions.vo === 'custom';
-  const vaReady = dataVersions.va === 'custom';
-  const hasCustomPlan = voReady || vaReady;
+  const elReady = dataVersions.el === 'custom';
+  const ellaReady = dataVersions.ella === 'custom';
+  const hasCustomPlan = elReady || ellaReady;
   const notify = useCallback((title: string, message: string) => showAppAlert({ title, message }), []);
   const confirmAction = useCallback((title: string, message: string) => showAppConfirm({ title, message }), []);
 
@@ -342,25 +364,25 @@ export default function App() {
       return { mealNames, ingredients };
     };
 
-    const vo = extractPlanData(perfilesData.vo.plan);
-    const va = extractPlanData(perfilesData.va.plan);
+    const el = extractPlanData(perfilesData.el.plan);
+    const ella = extractPlanData(perfilesData.ella.plan);
 
-    const sharedMeals = [...vo.mealNames].filter((name) => va.mealNames.has(name)).length;
-    const commonIngredients = [...vo.ingredients].filter((item) => va.ingredients.has(item)).length;
-    const ingredientsUnion = new Set([...vo.ingredients, ...va.ingredients]).size;
+    const sharedMeals = [...el.mealNames].filter((name) => ella.mealNames.has(name)).length;
+    const commonIngredients = [...el.ingredients].filter((item) => ella.ingredients.has(item)).length;
+    const ingredientsUnion = new Set([...el.ingredients, ...ella.ingredients]).size;
     const overlapPct = ingredientsUnion > 0 ? Math.round((commonIngredients / ingredientsUnion) * 100) : 0;
 
     return {
       sharedMeals,
       overlapPct
     };
-  }, [perfilesData.vo.plan, perfilesData.va.plan]);
+  }, [perfilesData.el.plan, perfilesData.ella.plan]);
 
-  const voImcData = getImcData(perfilesData.vo.perfil);
-  const vaImcData = getImcData(perfilesData.va.perfil);
+  const elImcData = getImcData(perfilesData.el.perfil);
+  const ellaImcData = getImcData(perfilesData.ella.perfil);
 
   const ambosButtonConfig = (() => {
-    if (voReady && vaReady) {
+    if (elReady && ellaReady) {
       return {
         label: 'Ver lista de compras conjunta',
         onClick: () => {
@@ -371,21 +393,21 @@ export default function App() {
         style: 'bg-white text-emerald-700 hover:bg-emerald-50 border border-white/80'
       };
     }
-    if (voReady && !vaReady) {
+    if (elReady && !ellaReady) {
       return {
         label: 'Generar perfil faltante: Ella',
         onClick: () => {
-          setQuestionnaireTargetProfile('va');
+          setQuestionnaireTargetProfile('ella');
           setShowQuestionnaire(true);
         },
         style: 'bg-white/20 hover:bg-white/30 text-white border border-white/30 animate-pulse'
       };
     }
-    if (!voReady && vaReady) {
+    if (!elReady && ellaReady) {
       return {
         label: 'Generar perfil faltante: El',
         onClick: () => {
-          setQuestionnaireTargetProfile('vo');
+          setQuestionnaireTargetProfile('el');
           setShowQuestionnaire(true);
         },
         style: 'bg-white/20 hover:bg-white/30 text-white border border-white/30 animate-pulse'
@@ -431,14 +453,14 @@ export default function App() {
   // Estado del cuestionario - persiste entre tabs del Admin Panel
   const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useState<TargetProfile>('ambos');
   const [questionnaireStepIdx, setQuestionnaireStepIdx] = useState(0);
-  const [questionnaireVo, setQuestionnaireVo] = useState<any>({
+  const [questionnaireEl, setQuestionnaireEl] = useState<any>({
     age: '', currentWeightKg: '70', heightCm: '165', targetWeightKg: '',
     objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
     medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
     dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
     wakeTime: '', sleepTime: '', trainingFrequency: ''
   });
-  const [questionnaireVa, setQuestionnaireVa] = useState<any>({
+  const [questionnaireElla, setQuestionnaireElla] = useState<any>({
     age: '', currentWeightKg: '60', heightCm: '160', targetWeightKg: '',
     objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
     medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
@@ -454,14 +476,14 @@ export default function App() {
     if (!showAdmin && !showQuestionnaire) {
       setQuestionnaireTargetProfile('ambos');
       setQuestionnaireStepIdx(0);
-      setQuestionnaireVo({
+      setQuestionnaireEl({
         age: '', currentWeightKg: '70', heightCm: '165', targetWeightKg: '',
         objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
         medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
         dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
         wakeTime: '', sleepTime: '', trainingFrequency: ''
       });
-      setQuestionnaireVa({
+      setQuestionnaireElla({
         age: '', currentWeightKg: '60', heightCm: '160', targetWeightKg: '',
         objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
         medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
@@ -547,12 +569,12 @@ export default function App() {
   }, [pendingAutoScrollMomento, progressExpanded, scrollToMomento]);
 
   const isAmbos = perfilActivo === 'ambos';
-  const isVo = perfilActivo === 'vo';
+  const isEl = perfilActivo === 'el';
   // perfilBase is used to extract days and general structure (both share identical days and moments)
-  const perfilBase = perfilActivo && perfilActivo !== 'ambos' ? perfilesData[perfilActivo as 'vo' | 'va'] : perfilesData.vo;
+  const perfilBase = perfilActivo && perfilActivo !== 'ambos' ? perfilesData[perfilActivo as 'el' | 'ella'] : perfilesData.el;
   const perfil = perfilBase;
   const diasDisponibles = perfilActivo ? Object.keys(perfilBase.plan) : [];
-  const equivalencias = (perfilActivo && perfilActivo !== 'ambos') ? equivalenciasData[perfilActivo as 'vo' | 'va'] : [];
+  const equivalencias = (perfilActivo && perfilActivo !== 'ambos') ? equivalenciasData[perfilActivo as 'el' | 'ella'] : [];
 
   const getNextMomentoKey = useCallback((momentoKey: string) => {
     const momentKeys = perfilBase.momentos.map((m) => m.key);
@@ -563,36 +585,52 @@ export default function App() {
 
   const toggleSeleccion = useCallback((perfilId: string, dia: string, momento: string, nombre: string) => {
     const key = `${perfilId}-${dia}-${momento}-${nombre}`;
-    const profileData = perfilId === 'va' ? perfilesData.va : perfilesData.vo;
+    const profileData = perfilId === 'ella' ? perfilesData.ella : perfilesData.el;
     const comidasMomento = profileData.plan[dia]?.[momento] || [];
     const nextMomento = getNextMomentoKey(momento);
     const wasCompleted = comidasMomento.some((item) => selecciones[`${perfilId}-${dia}-${momento}-${item.nombre}`]);
     const willSelectCurrentMeal = !selecciones[key];
     const isNowCompleted = wasCompleted || willSelectCurrentMeal;
 
-    setSelecciones((prev) => ({ ...prev, [key]: !prev[key] }));
+    setSelecciones((prev) => {
+      const next = { ...prev };
+      
+      // Si estamos seleccionando (no deseleccionando), limpiar otras selecciones del mismo tiempo
+      if (willSelectCurrentMeal) {
+        comidasMomento.forEach((item) => {
+          const otherKey = `${perfilId}-${dia}-${momento}-${item.nombre}`;
+          if (otherKey !== key && next[otherKey]) {
+            delete next[otherKey];
+          }
+        });
+      }
+      
+      // Toggle la selección actual
+      next[key] = !prev[key];
+      return next;
+    });
 
     if (!wasCompleted && isNowCompleted && nextMomento) {
       setPendingAutoScrollMomento(nextMomento);
     }
-  }, [getNextMomentoKey, perfilesData.va, perfilesData.vo, selecciones]);
+  }, [getNextMomentoKey, perfilesData.ella, perfilesData.el, selecciones]);
 
-  const momentoCompletadoVo = useMemo(() => {
+  const momentoCompletadoEl = useMemo(() => {
     if (!perfilActivo) return {};
     const result: Record<string, boolean> = {};
-    perfilesData.vo.momentos.forEach((m) => {
-      const comidas = perfilesData.vo.plan[diaActivo]?.[m.key] || [];
-      result[m.key] = comidas.some((item) => selecciones[`vo-${diaActivo}-${m.key}-${item.nombre}`]);
+    perfilesData.el.momentos.forEach((m) => {
+      const comidas = perfilesData.el.plan[diaActivo]?.[m.key] || [];
+      result[m.key] = comidas.some((item) => selecciones[`el-${diaActivo}-${m.key}-${item.nombre}`]);
     });
     return result;
   }, [diaActivo, perfilActivo, selecciones]);
 
-  const momentoCompletadoVa = useMemo(() => {
+  const momentoCompletadoElla = useMemo(() => {
     if (!perfilActivo) return {};
     const result: Record<string, boolean> = {};
-    perfilesData.va.momentos.forEach((m) => {
-      const comidas = perfilesData.va.plan[diaActivo]?.[m.key] || [];
-      result[m.key] = comidas.some((item) => selecciones[`va-${diaActivo}-${m.key}-${item.nombre}`]);
+    perfilesData.ella.momentos.forEach((m) => {
+      const comidas = perfilesData.ella.plan[diaActivo]?.[m.key] || [];
+      result[m.key] = comidas.some((item) => selecciones[`ella-${diaActivo}-${m.key}-${item.nombre}`]);
     });
     return result;
   }, [diaActivo, perfilActivo, selecciones]);
@@ -604,25 +642,25 @@ export default function App() {
       // Visual checks at the top-level indicate completion only when both profiles complete the meal
       const result: Record<string, boolean> = {};
       perfilBase.momentos.forEach((m) => {
-        result[m.key] = momentoCompletadoVo[m.key] && momentoCompletadoVa[m.key];
+        result[m.key] = momentoCompletadoEl[m.key] && momentoCompletadoElla[m.key];
       });
       return result;
     }
-    return isVo ? momentoCompletadoVo : momentoCompletadoVa;
-  }, [isAmbos, isVo, momentoCompletadoVo, momentoCompletadoVa, perfilBase]);
+    return isEl ? momentoCompletadoEl : momentoCompletadoElla;
+  }, [isAmbos, isEl, momentoCompletadoEl, momentoCompletadoElla, perfilBase]);
 
   const progresoDia = useMemo(() => {
     if (!perfilActivo) return 0;
     if (isAmbos) {
-      const cVo = Object.values(momentoCompletadoVo).filter(Boolean).length;
-      const cVa = Object.values(momentoCompletadoVa).filter(Boolean).length;
-      const total = perfilesData.vo.momentos.length * 2;
-      return Math.round(((cVo + cVa) / total) * 100);
+      const cEl = Object.values(momentoCompletadoEl).filter(Boolean).length;
+      const cElla = Object.values(momentoCompletadoElla).filter(Boolean).length;
+      const total = perfilesData.el.momentos.length * 2;
+      return Math.round(((cEl + cElla) / total) * 100);
     }
     const total = perfilBase.momentos.length;
     const completados = Object.values(momentoCompletado).filter(Boolean).length;
     return Math.round((completados / total) * 100);
-  }, [perfilActivo, isAmbos, perfilBase, momentoCompletado, momentoCompletadoVo, momentoCompletadoVa]);
+  }, [perfilActivo, isAmbos, perfilBase, momentoCompletado, momentoCompletadoEl, momentoCompletadoElla]);
   const handleDownloadDayPdf = useCallback(() => {
     if (!perfilActivo) return;
 
@@ -630,19 +668,19 @@ export default function App() {
       downloadDaySelectionPdf(
         diaActivo, 
         [
-          { perfilData: perfilesData.vo, color: [37, 99, 235], planObj: perfilesData.vo.plan, perfilId: 'vo' },
-          { perfilData: perfilesData.va, color: [225, 29, 72], planObj: perfilesData.va.plan, perfilId: 'va' }
+          { perfilData: perfilesData.el, color: [37, 99, 235], planObj: perfilesData.el.plan, perfilId: 'el' },
+          { perfilData: perfilesData.ella, color: [225, 29, 72], planObj: perfilesData.ella.plan, perfilId: 'ella' }
         ],
         selecciones
       );
     } else {
-      const isVA = perfilActivo === 'va';
+      const isElla = perfilActivo === 'ella';
       downloadDaySelectionPdf(
         diaActivo, 
         [
           { 
             perfilData: perfilesData[perfilActivo], 
-            color: isVA ? [225, 29, 72] : [37, 99, 235], 
+            color: isElla ? [225, 29, 72] : [37, 99, 235], 
             planObj: perfilesData[perfilActivo].plan, 
             perfilId: perfilActivo 
           }
@@ -653,7 +691,7 @@ export default function App() {
   }, [perfilActivo, diaActivo, perfilesData, selecciones]);
 
   const completadosCount = isAmbos 
-    ? Object.values(momentoCompletadoVo).filter(Boolean).length + Object.values(momentoCompletadoVa).filter(Boolean).length
+    ? Object.values(momentoCompletadoEl).filter(Boolean).length + Object.values(momentoCompletadoElla).filter(Boolean).length
     : Object.values(momentoCompletado).filter(Boolean).length;
     
   const totalMomentosProgress = isAmbos ? perfilBase.momentos.length * 2 : perfilBase.momentos.length;
@@ -677,7 +715,7 @@ export default function App() {
 
       const nombre = nParts.join('-'); // in case nombre had a dash
       
-      const perfilObj = perfilesData[p as 'vo' | 'va'];
+      const perfilObj = perfilesData[p as 'el' | 'ella'];
       if (!perfilObj) return;
 
       const comidas = perfilObj.plan[d]?.[m] || [];
@@ -767,13 +805,13 @@ export default function App() {
       }
 
       // Validar que tengamos datos
-      if (!json.voData && !json.vaData) {
+      if (!json.elData && !json.ellaData) {
         throw new Error('La respuesta no contiene datos del plan. Intenta de nuevo.');
       }
 
       console.log('=== DATOS GENERADOS POR IA ===');
-      console.log('voData:', json.voData ? 'EXISTS' : 'null', json.voData ? Object.keys(json.voData) : '');
-      console.log('vaData:', json.vaData ? 'EXISTS' : 'null', json.vaData ? Object.keys(json.vaData) : '');
+      console.log('elData:', json.elData ? 'EXISTS' : 'null', json.elData ? Object.keys(json.elData) : '');
+      console.log('ellaData:', json.ellaData ? 'EXISTS' : 'null', json.ellaData ? Object.keys(json.ellaData) : '');
       
       // Guardar datos crudos para descarga
       setLastGeneratedData(json);
@@ -782,15 +820,15 @@ export default function App() {
         const updated = { ...prev };
 
         try {
-          if (json.voData) {
-            console.log('Parseando voData...');
-            updated.vo = parseObjectToData(json.voData, 'VO');
-            console.log('voData parseado correctamente');
+          if (json.elData) {
+            console.log('Parseando elData...');
+            updated.el = parseObjectToData(json.elData, 'EL');
+            console.log('elData parseado correctamente');
           }
-          if (json.vaData) {
-            console.log('Parseando vaData...');
-            updated.va = parseObjectToData(json.vaData, 'VA');
-            console.log('vaData parseado correctamente');
+          if (json.ellaData) {
+            console.log('Parseando ellaData...');
+            updated.ella = parseObjectToData(json.ellaData, 'ELLA');
+            console.log('ellaData parseado correctamente');
           }
         } catch (parseErr: any) {
           console.error('Error parseando datos de IA:', parseErr);
@@ -801,8 +839,8 @@ export default function App() {
       });
 
       setDataVersions((prev) => ({
-        vo: json.voData ? 'custom' : prev.vo,
-        va: json.vaData ? 'custom' : prev.va,
+        el: json.elData ? 'custom' : prev.el,
+        ella: json.ellaData ? 'custom' : prev.ella,
       }));
 
       setShowQuestionnaire(false);
@@ -855,10 +893,10 @@ export default function App() {
               setTargetProfile={setQuestionnaireTargetProfile}
               stepIdx={questionnaireStepIdx}
               setStepIdx={setQuestionnaireStepIdx}
-              vo={questionnaireVo}
-              setVo={setQuestionnaireVo}
-              va={questionnaireVa}
-              setVa={setQuestionnaireVa}
+              el={questionnaireEl}
+              setEl={setQuestionnaireEl}
+              ella={questionnaireElla}
+              setElla={setQuestionnaireElla}
               portionMode={questionnairePortionMode}
               setPortionMode={setQuestionnairePortionMode}
               manualPortions={questionnaireManualPortions}
@@ -1036,28 +1074,28 @@ export default function App() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <AdminPanel
-                  perfilId="vo"
+                  perfilId="el"
                   title="Datos El"
                   themeColor="blue"
-                  rawDataText={rawData.vo}
+                  rawDataText={rawData.el}
                   customData={customData}
                   setCustomData={setCustomData}
-                  dataVersion={dataVersions.vo}
-                  setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, vo: ver }))}
-                  perfilesDataObj={origPerfilesData.vo}
+                  dataVersion={dataVersions.el}
+                  setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, el: ver }))}
+                  perfilesDataObj={origPerfilesData.el}
                   notify={notify}
                   confirmAction={confirmAction}
                 />
                 <AdminPanel
-                  perfilId="va"
+                  perfilId="ella"
                   title="Datos Ella"
                   themeColor="rose"
-                  rawDataText={rawData.va}
+                  rawDataText={rawData.ella}
                   customData={customData}
                   setCustomData={setCustomData}
-                  dataVersion={dataVersions.va}
-                  setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, va: ver }))}
-                  perfilesDataObj={origPerfilesData.va}
+                  dataVersion={dataVersions.ella}
+                  setDataVersion={(ver) => setDataVersions(prev => ({ ...prev, ella: ver }))}
+                  perfilesDataObj={origPerfilesData.ella}
                   notify={notify}
                   confirmAction={confirmAction}
                 />
@@ -1126,27 +1164,27 @@ export default function App() {
               </p>
             </div>
           )}
-          {voReady !== vaReady && (
+          {elReady !== ellaReady && (
             <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/80 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm">
               <p className="text-xs sm:text-sm text-violet-900 font-semibold leading-snug text-center">
-                {voReady ? '¡Genial! El plan de Él está listo. ¿Personalizamos el de Ella ahora?' : '¡Genial! El plan de Ella está listo. ¿Personalizamos el de Él ahora?'}
+                {elReady ? '¡Genial! El plan de El está listo. ¿Personalizamos el de Ella ahora?' : '¡Genial! El plan de Ella está listo. ¿Personalizamos el de El ahora?'}
               </p>
               <div className="mt-2 text-center">
                 <button
                   type="button"
                   onClick={() => {
-                    setQuestionnaireTargetProfile(voReady ? 'va' : 'vo');
+                    setQuestionnaireTargetProfile(elReady ? 'ella' : 'el');
                     setShowQuestionnaire(true);
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors"
                 >
                   <span>✨</span>
-                  <span>{voReady ? 'Generar plan de Ella' : 'Generar plan de Él'}</span>
+                  <span>{elReady ? 'Generar plan de Ella' : 'Generar plan de El'}</span>
                 </button>
               </div>
             </div>
           )}
-          {voReady && vaReady && (
+          {elReady && ellaReady && (
             <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-3 py-2.5 sm:px-4 sm:py-3 text-center shadow-sm">
               <p className="text-xs sm:text-sm text-emerald-800 font-semibold leading-snug">
                 ✅ ¡Todo listo! Los planes personalizados para ambos han sido generados.
@@ -1157,35 +1195,36 @@ export default function App() {
             <motion.button
               initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.1 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { setPerfilActivo('vo'); setDiaActivo('Lunes'); setTab('plan'); }}
+              onClick={() => { setPerfilActivo('el'); setDiaActivo('Lunes'); setTab('plan'); }}
               className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-5 sm:p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
-              {voReady && (
+              {elReady && (
                 <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-emerald-500/95 text-white text-[10px] font-bold shadow-sm">
                   ✅ Listo
                 </div>
               )}
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-400/20 rounded-full blur-2xl" />
-              <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl" />
-              <div className="relative h-full flex flex-col">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
+              <div className="flex flex-col h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-lg">
+                    <span className="text-2xl">👨</span>
+                  </div>
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">El</span>
                 </div>
-                <p className="text-blue-100 text-sm mb-4 leading-relaxed min-h-[72px]">{formatProfileForCard(perfilesData.vo.perfil)}</p>
-                {voImcData && (
+                <p className="text-blue-100 text-sm mb-4 leading-relaxed min-h-[72px]">{formatProfileForCard(perfilesData.el.perfil)}</p>
+                {elImcData && (
                   <div className="mb-3 min-h-[70px]">
                     <div className="h-4 mb-1 flex items-center justify-between text-[11px] text-blue-100 font-semibold">
-                      <span>IMC {voImcData.imc}</span>
-                      <span>{voImcData.label}</span>
+                      <span>IMC {elImcData.imc}</span>
+                      <span>{elImcData.label}</span>
                     </div>
                     <div className="relative h-1.5 rounded-full bg-white/25 overflow-hidden">
                       <div
-                        className={`h-full ${voImcData.color}`}
-                        style={{ width: `${voImcData.pct}%` }}
+                        className={`h-full ${elImcData.color}`}
+                        style={{ width: `${elImcData.pct}%` }}
                       />
                       <span
                         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white border border-blue-300/80"
-                        style={{ left: `${voImcData.pct}%` }}
+                        style={{ left: `${elImcData.pct}%` }}
                       />
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-blue-100/90">
@@ -1196,19 +1235,19 @@ export default function App() {
                   </div>
                 )}
                 <div className="flex items-start gap-2 text-blue-200 text-xs sm:text-sm mt-auto mb-2 min-h-[88px]">
-                  <TrendingDown className="w-4 h-4" /><span>{perfilesData.vo.meta}</span>
+                  <TrendingDown className="w-4 h-4" /><span>{perfilesData.el.meta}</span>
                 </div>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setQuestionnaireTargetProfile('vo');
+                    setQuestionnaireTargetProfile('el');
                     setShowQuestionnaire(true);
                   }}
-                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${voReady ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border-white/35 shadow-[0_6px_20px_rgba(255,255,255,0.18)]' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${elReady ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border-white/35 shadow-[0_6px_20px_rgba(255,255,255,0.18)]' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
                 >
-                  <span>{voReady ? '✅' : '✨'}</span>
-                  <span>{voReady ? 'Actualizar El con IA' : 'Personalizar El con IA'}</span>
+                  <span>{elReady ? '✅' : '✨'}</span>
+                  <span>{elReady ? 'Actualizar El con IA' : 'Personalizar El con IA'}</span>
                 </button>
               </div>
             </motion.button>
@@ -1216,10 +1255,10 @@ export default function App() {
             <motion.button
               initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30, delay: 0.15 }}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              onClick={() => { setPerfilActivo('va'); setDiaActivo('Lunes'); setTab('plan'); }}
+              onClick={() => { setPerfilActivo('ella'); setDiaActivo('Lunes'); setTab('plan'); }}
               className="h-full text-left group relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-600 via-rose-700 to-pink-800 p-5 sm:p-6 md:p-8 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer border-0"
             >
-              {vaReady && (
+              {ellaReady && (
                 <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-emerald-500/95 text-white text-[10px] font-bold shadow-sm">
                   ✅ Listo
                 </div>
@@ -1230,21 +1269,21 @@ export default function App() {
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center mb-4">
                   <span className="text-sm sm:text-base font-semibold tracking-wide text-white">Ella</span>
                 </div>
-                <p className="text-rose-50 text-sm mb-4 leading-relaxed min-h-[72px]">{formatProfileForCard(perfilesData.va.perfil)}</p>
-                {vaImcData && (
+                <p className="text-rose-50 text-sm mb-4 leading-relaxed min-h-[72px]">{formatProfileForCard(perfilesData.ella.perfil)}</p>
+                {ellaImcData && (
                   <div className="mb-3 min-h-[70px]">
                     <div className="h-4 mb-1 flex items-center justify-between text-[11px] text-rose-50 font-semibold">
-                      <span>IMC {vaImcData.imc}</span>
-                      <span>{vaImcData.label}</span>
+                      <span>IMC {ellaImcData.imc}</span>
+                      <span>{ellaImcData.label}</span>
                     </div>
                     <div className="relative h-1.5 rounded-full bg-white/25 overflow-hidden">
                       <div
-                        className={`h-full ${vaImcData.color}`}
-                        style={{ width: `${vaImcData.pct}%` }}
+                        className={`h-full ${ellaImcData.color}`}
+                        style={{ width: `${ellaImcData.pct}%` }}
                       />
                       <span
                         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-white border border-rose-300/80"
-                        style={{ left: `${vaImcData.pct}%` }}
+                        style={{ left: `${ellaImcData.pct}%` }}
                       />
                     </div>
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-rose-50/90">
@@ -1255,19 +1294,19 @@ export default function App() {
                   </div>
                 )}
                 <div className="flex items-start gap-2 text-rose-100 text-xs sm:text-sm mt-auto mb-2 min-h-[88px]">
-                  <TrendingDown className="w-4 h-4" /><span>{perfilesData.va.meta}</span>
+                  <TrendingDown className="w-4 h-4" /><span>{perfilesData.ella.meta}</span>
                 </div>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setQuestionnaireTargetProfile('va');
+                    setQuestionnaireTargetProfile('ella');
                     setShowQuestionnaire(true);
                   }}
-                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${vaReady ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border-white/35 shadow-[0_6px_20px_rgba(255,255,255,0.18)]' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
+                  className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${ellaReady ? 'bg-white/20 backdrop-blur-md text-white hover:bg-white/30 border-white/35 shadow-[0_6px_20px_rgba(255,255,255,0.18)]' : 'bg-white/20 hover:bg-white/30 text-white border-white/30 animate-pulse'}`}
                 >
-                  <span>{vaReady ? '✅' : '✨'}</span>
-                  <span>{vaReady ? 'Actualizar Ella con IA' : 'Personalizar Ella con IA'}</span>
+                  <span>{ellaReady ? '✅' : '✨'}</span>
+                  <span>{ellaReady ? 'Actualizar Ella con IA' : 'Personalizar Ella con IA'}</span>
                 </button>
               </div>
             </motion.button>
@@ -1307,7 +1346,7 @@ export default function App() {
                   }}
                   className={`mt-4 inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors ${ambosButtonConfig.style}`}
                 >
-                  <span>{voReady && vaReady ? '🛒' : '✨'}</span>
+                  <span>{elReady && ellaReady ? '🛒' : '✨'}</span>
                   <span>{ambosButtonConfig.label}</span>
                 </button>
               </div>
@@ -1320,40 +1359,40 @@ export default function App() {
 
   // ─── Main app ────────────────────────────────────────────────────────────────
   const ac = {
-    color500: isAmbos ? '#10b981' : isVo ? '#3b82f6' : '#f43f5e',
-    bg: isAmbos ? 'bg-emerald-500' : isVo ? 'bg-blue-500' : 'bg-rose-500',
-    bgLight: isAmbos ? 'bg-emerald-50' : isVo ? 'bg-blue-50' : 'bg-rose-50',
-    bgGradient: isAmbos ? 'from-emerald-500 to-teal-600' : isVo ? 'from-blue-500 to-indigo-600' : 'from-rose-500 to-pink-600',
-    bgGradientLight: isAmbos ? 'from-emerald-50 to-teal-50' : isVo ? 'from-blue-50 to-indigo-50' : 'from-rose-50 to-pink-50',
-    text: isAmbos ? 'text-emerald-600' : isVo ? 'text-blue-600' : 'text-rose-600',
-    textDark: isAmbos ? 'text-emerald-900' : isVo ? 'text-blue-900' : 'text-rose-900',
-    border: isAmbos ? 'border-emerald-200' : isVo ? 'border-blue-200' : 'border-rose-200',
-    borderAccent: isAmbos ? 'border-emerald-500' : isVo ? 'border-blue-500' : 'border-rose-500',
-    tagBg: isAmbos ? 'bg-emerald-100' : isVo ? 'bg-blue-100' : 'bg-rose-100',
-    tagText: isAmbos ? 'text-emerald-700' : isVo ? 'text-blue-700' : 'text-rose-700',
-    progressBg: isAmbos ? 'from-emerald-50 via-teal-50 to-emerald-100' : isVo ? 'from-blue-50 via-sky-50 to-indigo-100' : 'from-rose-50 via-pink-50 to-rose-100',
-    progressFill: isAmbos ? 'from-emerald-300 via-teal-400 to-emerald-600' : isVo ? 'from-sky-300 via-blue-400 to-indigo-600' : 'from-pink-300 via-rose-400 to-pink-600',
+    color500: isAmbos ? '#10b981' : isEl ? '#3b82f6' : '#f43f5e',
+    bg: isAmbos ? 'bg-emerald-500' : isEl ? 'bg-blue-500' : 'bg-rose-500',
+    bgLight: isAmbos ? 'bg-emerald-50' : isEl ? 'bg-blue-50' : 'bg-rose-50',
+    bgGradient: isAmbos ? 'from-emerald-500 to-teal-600' : isEl ? 'from-blue-500 to-indigo-600' : 'from-rose-500 to-pink-600',
+    bgGradientLight: isAmbos ? 'from-emerald-50 to-teal-50' : isEl ? 'from-blue-50 to-indigo-50' : 'from-rose-50 to-pink-50',
+    text: isAmbos ? 'text-emerald-600' : isEl ? 'text-blue-600' : 'text-rose-600',
+    textDark: isAmbos ? 'text-emerald-900' : isEl ? 'text-blue-900' : 'text-rose-900',
+    border: isAmbos ? 'border-emerald-200' : isEl ? 'border-blue-200' : 'border-rose-200',
+    borderAccent: isAmbos ? 'border-emerald-500' : isEl ? 'border-blue-500' : 'border-rose-500',
+    tagBg: isAmbos ? 'bg-emerald-100' : isEl ? 'bg-blue-100' : 'bg-rose-100',
+    tagText: isAmbos ? 'text-emerald-700' : isEl ? 'text-blue-700' : 'text-rose-700',
+    progressBg: isAmbos ? 'from-emerald-50 via-teal-50 to-emerald-100' : isEl ? 'from-blue-50 via-sky-50 to-indigo-100' : 'from-rose-50 via-pink-50 to-rose-100',
+    progressFill: isAmbos ? 'from-emerald-300 via-teal-400 to-emerald-600' : isEl ? 'from-sky-300 via-blue-400 to-indigo-600' : 'from-pink-300 via-rose-400 to-pink-600',
     btnActive: isAmbos 
       ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25'
-      : isVo
+      : isEl
       ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
       : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25',
     btnInactive: 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200',
-    dot: isAmbos ? 'bg-emerald-500' : isVo ? 'bg-blue-500' : 'bg-rose-500',
+    dot: isAmbos ? 'bg-emerald-500' : isEl ? 'bg-blue-500' : 'bg-rose-500',
     cardDone: isAmbos 
       ? 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-400 shadow-emerald-200'
-      : isVo
+      : isEl
       ? 'bg-gradient-to-br from-blue-500 to-indigo-600 border-blue-400 shadow-blue-200'
       : 'bg-gradient-to-br from-rose-500 to-pink-600 border-rose-400 shadow-rose-200',
     cardPending: 'bg-white border-slate-200 shadow-sm',
     iconDone: 'bg-white/20',
-    iconPending: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
-    iconColorPending: isAmbos ? 'text-emerald-400' : isVo ? 'text-blue-400' : 'text-rose-400',
-    momentoIconBgDone: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isVo ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
-    momentoIconColorDone: isAmbos ? 'text-emerald-600' : isVo ? 'text-blue-600' : 'text-rose-600',
+    iconPending: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isEl ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
+    iconColorPending: isAmbos ? 'text-emerald-400' : isEl ? 'text-blue-400' : 'text-rose-400',
+    momentoIconBgDone: isAmbos ? 'bg-emerald-50 border border-emerald-100' : isEl ? 'bg-blue-50 border border-blue-100' : 'bg-rose-50 border border-rose-100',
+    momentoIconColorDone: isAmbos ? 'text-emerald-600' : isEl ? 'text-blue-600' : 'text-rose-600',
     momentoIconBgPending: 'bg-slate-100 border border-slate-300',
     momentoIconColorPending: 'text-slate-600',
-    headerBg: isAmbos ? 'bg-gradient-to-r from-emerald-600 to-teal-700' : isVo
+    headerBg: isAmbos ? 'bg-gradient-to-r from-emerald-600 to-teal-700' : isEl
       ? 'bg-gradient-to-r from-blue-600 to-indigo-700'
       : 'bg-gradient-to-r from-rose-500 to-pink-600',
   };
@@ -1390,7 +1429,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex gap-1.5 flex-shrink-0 items-center">
-            {(['vo', 'va', 'ambos'] as const).map((p) => (
+            {(['el', 'ella', 'ambos'] as const).map((p) => (
               <button key={p}
                 onClick={() => { setPerfilActivo(p); setDiaActivo('Lunes'); setTab('plan'); }}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${perfilActivo === p ? ac.btnActive : ac.btnInactive}`}
@@ -1635,19 +1674,19 @@ export default function App() {
                 {perfilBase.momentos.map((momento) => {
                   const Icon = momentoIcons[momento.key] || UtensilsCrossed;
                   const done = momentoCompletado[momento.key];
-                  const estaEnEdicionVo = Boolean(momentosEnEdicion[`${momento.key}-vo`]);
-                  const estaEnEdicionVa = Boolean(momentosEnEdicion[`${momento.key}-va`]);
+                  const estaEnEdicionEl = Boolean(momentosEnEdicion[`${momento.key}-el`]);
+                  const estaEnEdicionElla = Boolean(momentosEnEdicion[`${momento.key}-ella`]);
                   const estaEnEdicionSingle = Boolean(momentosEnEdicion[momento.key]);
-                  const estaEnEdicion = isAmbos ? (estaEnEdicionVo || estaEnEdicionVa) : estaEnEdicionSingle;
+                  const estaEnEdicion = isAmbos ? (estaEnEdicionEl || estaEnEdicionElla) : estaEnEdicionSingle;
                   const mealsSingleAll = perfilBase.plan[diaActivo]?.[momento.key] || [];
-                  const mealsVOAll = perfilesData.vo.plan[diaActivo]?.[momento.key] || [];
-                  const mealsVAAll = perfilesData.va.plan[diaActivo]?.[momento.key] || [];
+                  const mealsElAll = perfilesData.el.plan[diaActivo]?.[momento.key] || [];
+                  const mealsEllaAll = perfilesData.ella.plan[diaActivo]?.[momento.key] || [];
                   const mealsSingleSeleccionadas = mealsSingleAll.filter(m => selecciones[`${perfilActivo}-${diaActivo}-${momento.key}-${m.nombre}`]);
-                  const mealsVOSeleccionadas = mealsVOAll.filter(m => selecciones[`vo-${diaActivo}-${momento.key}-${m.nombre}`]);
-                  const mealsVASeleccionadas = mealsVAAll.filter(m => selecciones[`va-${diaActivo}-${momento.key}-${m.nombre}`]);
+                  const mealsElSeleccionadas = mealsElAll.filter(m => selecciones[`el-${diaActivo}-${momento.key}-${m.nombre}`]);
+                  const mealsEllaSeleccionadas = mealsEllaAll.filter(m => selecciones[`ella-${diaActivo}-${momento.key}-${m.nombre}`]);
                   const porcionesSingleMomento = !isAmbos && perfilActivo ? getMomentMacroPortions(perfilesData[perfilActivo], momento.key) : [];
-                  const porcionesVoMomento = getMomentMacroPortions(perfilesData.vo, momento.key);
-                  const porcionesVaMomento = getMomentMacroPortions(perfilesData.va, momento.key);
+                  const porcionesElMomento = getMomentMacroPortions(perfilesData.el, momento.key);
+                  const porcionesEllaMomento = getMomentMacroPortions(perfilesData.ella, momento.key);
                   const isElegidoVacio = !estaEnEdicion && !isAmbos && (
                     mealsSingleSeleccionadas.length === 0
                   );
@@ -1751,6 +1790,7 @@ export default function App() {
                                         dia={diaActivo}
                                         momento={momento.key}
                                         selecciones={selecciones}
+                                        porciones={porcionesSingleMomento}
                                         onToggle={(perfilId, dia, momentoKey, nombre) => {
                                           toggleSeleccion(perfilId, dia, momentoKey, nombre);
                                           setMomentosEnEdicion((prev) => ({ ...prev, [momentoKey]: false }));
@@ -1763,16 +1803,16 @@ export default function App() {
                                   {isAmbos && (
                                     <div className="grid md:grid-cols-2 gap-4">
                                       <div className="space-y-3">
-                                        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2">Para {perfilesData.vo.nombre}</div>
-                                        {!estaEnEdicionVo ? (
+                                        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-2">Para {perfilesData.el.nombre}</div>
+                                        {!estaEnEdicionEl ? (
                                           <>
-                                            {mealsVOSeleccionadas.length > 0 ? (
-                                              mealsVOSeleccionadas.map((meal, idx) => (
+                                            {mealsElSeleccionadas.length > 0 ? (
+                                              mealsElSeleccionadas.map((meal, idx) => (
                                                 <div key={idx} className="p-4 rounded-2xl border border-white/70 bg-gradient-to-br from-blue-50 via-white to-white shadow-[0_10px_24px_rgba(37,99,235,0.10)]">
                                                   <h4 className="font-bold text-sm mb-1 text-blue-800">{meal.nombre}</h4>
                                                   <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                                   <div className="mt-2 flex flex-wrap gap-1.5">
-                                                    {porcionesVoMomento.map((item) => (
+                                                    {porcionesElMomento.map((item) => (
                                                       <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold">
                                                         <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[12px] shadow-sm shadow-blue-200/60">{item.icon}</span>
                                                         <span>x{item.cantidad}</span>
@@ -1787,24 +1827,25 @@ export default function App() {
                                               </div>
                                             )}
                                             <button
-                                              onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [`${momento.key}-vo`]: true }))}
+                                              onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [`${momento.key}-el`]: true }))}
                                               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 active:scale-95 transition"
                                             >
                                               <Zap className="w-3.5 h-3.5" />
-                                              {mealsVOSeleccionadas.length > 0 ? 'Cambiar opción para él' : 'Ir a elegir para él'}
+                                              {mealsElSeleccionadas.length > 0 ? 'Cambiar opción para el' : 'Ir a elegir para el'}
                                             </button>
                                           </>
                                         ) : (
                                           <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
                                             <MealSelector
-                                              perfil="vo"
-                                              comidas={mealsVOAll}
+                                              perfil="el"
+                                              comidas={mealsElAll}
                                               dia={diaActivo}
                                               momento={momento.key}
                                               selecciones={selecciones}
+                                              porciones={porcionesElMomento}
                                               onToggle={(perfilId, dia, momentoKey, nombre) => {
                                                 toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                                setMomentosEnEdicion((prev) => ({ ...prev, [`${momentoKey}-vo`]: false }));
+                                                setMomentosEnEdicion((prev) => ({ ...prev, [`${momentoKey}-el`]: false }));
                                               }}
                                               accentClasses={{
                                                 bg: 'bg-blue-500', bgLight: 'bg-blue-50', bgGradient: 'from-blue-500 to-indigo-600',
@@ -1817,16 +1858,16 @@ export default function App() {
                                       </div>
 
                                       <div className="space-y-3">
-                                        <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-2">Para {perfilesData.va.nombre}</div>
-                                        {!estaEnEdicionVa ? (
+                                        <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider mb-2">Para {perfilesData.ella.nombre}</div>
+                                        {!estaEnEdicionElla ? (
                                           <>
-                                            {mealsVASeleccionadas.length > 0 ? (
-                                              mealsVASeleccionadas.map((meal, idx) => (
+                                            {mealsEllaSeleccionadas.length > 0 ? (
+                                              mealsEllaSeleccionadas.map((meal, idx) => (
                                                 <div key={idx} className="p-4 rounded-2xl border border-white/70 bg-gradient-to-br from-rose-50 via-white to-white shadow-[0_10px_24px_rgba(244,63,94,0.10)]">
                                                   <h4 className="font-bold text-sm mb-1 text-rose-800">{meal.nombre}</h4>
                                                   <p className="text-slate-600 text-xs leading-relaxed">{meal.detalle}</p>
                                                   <div className="mt-2 flex flex-wrap gap-1.5">
-                                                    {porcionesVaMomento.map((item) => (
+                                                    {porcionesEllaMomento.map((item) => (
                                                       <span key={`${meal.nombre}-${item.key}-${item.cantidad}`} title={`${item.label} ${item.cantidad}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[11px] font-bold">
                                                         <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[12px] shadow-sm shadow-rose-200/60">{item.icon}</span>
                                                         <span>x{item.cantidad}</span>
@@ -1841,24 +1882,25 @@ export default function App() {
                                               </div>
                                             )}
                                             <button
-                                              onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [`${momento.key}-va`]: true }))}
+                                              onClick={() => setMomentosEnEdicion((prev) => ({ ...prev, [`${momento.key}-ella`]: true }))}
                                               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 active:scale-95 transition"
                                             >
                                               <Zap className="w-3.5 h-3.5" />
-                                              {mealsVASeleccionadas.length > 0 ? 'Cambiar opción para ella' : 'Ir a elegir para ella'}
+                                              {mealsEllaSeleccionadas.length > 0 ? 'Cambiar opción para ella' : 'Ir a elegir para ella'}
                                             </button>
                                           </>
                                         ) : (
                                           <div className="p-3 bg-rose-50/50 rounded-xl border border-rose-100">
                                             <MealSelector
-                                              perfil="va"
-                                              comidas={mealsVAAll}
+                                              perfil="ella"
+                                              comidas={mealsEllaAll}
                                               dia={diaActivo}
                                               momento={momento.key}
                                               selecciones={selecciones}
+                                              porciones={porcionesEllaMomento}
                                               onToggle={(perfilId, dia, momentoKey, nombre) => {
                                                 toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                                setMomentosEnEdicion((prev) => ({ ...prev, [`${momentoKey}-va`]: false }));
+                                                setMomentosEnEdicion((prev) => ({ ...prev, [`${momentoKey}-ella`]: false }));
                                               }}
                                               accentClasses={{
                                                 bg: 'bg-rose-500', bgLight: 'bg-rose-50', bgGradient: 'from-rose-500 to-pink-600',
@@ -1925,23 +1967,23 @@ export default function App() {
               {isAmbos ? (
                 <>
                   <div className="lg:hidden flex bg-slate-100 p-1.5 rounded-xl mb-2 mx-auto max-w-xs shadow-inner w-full">
-                    <button onClick={() => setAmbosSubTab('vo')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'vo' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{perfilesData.vo.nombre}</button>
-                    <button onClick={() => setAmbosSubTab('va')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'va' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'}`}>{perfilesData.va.nombre}</button>
+                    <button onClick={() => setAmbosSubTab('el')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'el' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{perfilesData.el.nombre}</button>
+                    <button onClick={() => setAmbosSubTab('ella')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'ella' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'}`}>{perfilesData.ella.nombre}</button>
                   </div>
                   <div className="grid lg:grid-cols-2 gap-8">
-                    <div className={`${ambosSubTab === 'vo' ? 'block' : 'hidden lg:block'}`}>
-                      <h3 className="text-sm font-bold text-blue-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.vo.nombre}</h3>
+                    <div className={`${ambosSubTab === 'el' ? 'block' : 'hidden lg:block'}`}>
+                      <h3 className="text-sm font-bold text-blue-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.el.nombre}</h3>
                       <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
-                        {equivalenciasData.vo.map((eq, idx) => (
-                          <EquivalenciasCard key={'vo'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-blue-50', text: 'text-blue-600', tagBg: 'bg-blue-100', tagText: 'text-blue-700'}} />
+                        {equivalenciasData.el.map((eq, idx) => (
+                          <EquivalenciasCard key={'el'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-blue-50', text: 'text-blue-600', tagBg: 'bg-blue-100', tagText: 'text-blue-700'}} />
                         ))}
                       </div>
                     </div>
-                    <div className={`${ambosSubTab === 'va' ? 'block' : 'hidden lg:block'}`}>
-                      <h3 className="text-sm font-bold text-rose-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.va.nombre}</h3>
+                    <div className={`${ambosSubTab === 'ella' ? 'block' : 'hidden lg:block'}`}>
+                      <h3 className="text-sm font-bold text-rose-800 mb-3 px-1 uppercase tracking-wider">Equivalencias de {perfilesData.ella.nombre}</h3>
                       <div className="grid sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">
-                        {equivalenciasData.va.map((eq, idx) => (
-                          <EquivalenciasCard key={'va'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-rose-50', text: 'text-rose-600', tagBg: 'bg-rose-100', tagText: 'text-rose-700'}} />
+                        {equivalenciasData.ella.map((eq, idx) => (
+                          <EquivalenciasCard key={'ella'+idx} equivalencia={eq} delay={idx * 0.05} accentClasses={{...ac, bgLight: 'bg-rose-50', text: 'text-rose-600', tagBg: 'bg-rose-100', tagText: 'text-rose-700'}} />
                         ))}
                       </div>
                     </div>
@@ -1966,15 +2008,15 @@ export default function App() {
               
               {isAmbos && (
                 <div className="lg:hidden flex bg-slate-100 p-1.5 rounded-xl mb-4 mx-auto max-w-xs shadow-inner w-full">
-                  <button onClick={() => setAmbosSubTab('vo')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'vo' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{perfilesData.vo.nombre}</button>
-                  <button onClick={() => setAmbosSubTab('va')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'va' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'}`}>{perfilesData.va.nombre}</button>
+                  <button onClick={() => setAmbosSubTab('el')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'el' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>{perfilesData.el.nombre}</button>
+                  <button onClick={() => setAmbosSubTab('ella')} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${ambosSubTab === 'ella' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'}`}>{perfilesData.ella.nombre}</button>
                 </div>
               )}
 
               <div className={isAmbos ? "grid lg:grid-cols-2 gap-8" : "space-y-10"}>
-                {(isAmbos ? [perfilesData.vo, perfilesData.va] : [perfil!]).map((p, pIdx) => {
+                {(isAmbos ? [perfilesData.el, perfilesData.ella] : [perfil!]).map((p, pIdx) => {
                   const isFirst = pIdx === 0;
-                  const pfKey = isFirst ? 'vo' : 'va';
+                  const pfKey = isFirst ? 'el' : 'ella';
                   const hiddenClass = isAmbos ? (ambosSubTab === pfKey ? 'block' : 'hidden lg:block') : 'block';
                   const dynamicAc = isAmbos ? {
                     ...ac,
@@ -2011,7 +2053,7 @@ export default function App() {
                             { key: 'cereales', label: 'Cereales', icon: '🌾', color: 'text-amber-500', bg: 'bg-amber-50' },
                             { key: 'proteina', label: 'Proteína', icon: '🥩', color: 'text-red-500', bg: 'bg-red-50' },
                             { key: 'grasas', label: 'Grasas', icon: '🥑', color: 'text-lime-500', bg: 'bg-lime-50' },
-                            { key: 'leche', label: 'Leche', icon: '🥛', color: 'text-blue-500', bg: 'bg-blue-50' },
+                            { key: 'lacteos', label: 'lacteos', icon: '🥛', color: 'text-blue-500', bg: 'bg-blue-50' },
                             { key: 'leguminosas', label: 'Leguminosas', icon: '🫘', color: 'text-amber-700', bg: 'bg-amber-100' },
                           ].map(cat => {
                             const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
@@ -2060,7 +2102,7 @@ export default function App() {
                                 { key: 'cereales', label: 'Cereales', icon: '🌾' },
                                 { key: 'proteina', label: 'Proteína', icon: '🥩' },
                                 { key: 'grasas', label: 'Grasas', icon: '🥑' },
-                                { key: 'leche', label: 'Leche', icon: '🥛' },
+                                { key: 'lacteos', label: 'lacteos', icon: '🥛' },
                                 { key: 'leguminosas', label: 'Leguminosas', icon: '🫘' },
                               ].map((cat) => {
                                 const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
@@ -2191,7 +2233,7 @@ export default function App() {
                               {item.usos.map((uso, idx) => (
                                 <li key={idx} className={`flex gap-2 text-xs relative rounded-lg p-2 items-center ${isChecked ? 'bg-slate-100/50' : 'bg-slate-50'}`}>
                                   <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${
-                                    uso.perfil === 'vo' ? 'bg-blue-100/80 text-blue-700' : 'bg-rose-100/80 text-rose-700'
+                                    uso.perfil === 'el' ? 'bg-blue-100/80 text-blue-700' : 'bg-rose-100/80 text-rose-700'
                                   }`}>{uso.perfil}</span>
                                   <span className={`font-medium leading-snug break-words ${isChecked ? 'text-slate-400' : 'text-slate-600'}`}>{uso.texto}</span>
                                 </li>

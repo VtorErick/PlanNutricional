@@ -2,8 +2,8 @@ import {
   Apple, Carrot, Wheat, Bean, Milk, Beef, Droplets, Candy, AlertTriangle, Heart,
 } from 'lucide-react';
 
-import { perfilVO, equivalenciasVO, planVO } from './data/perfil-vo';
-import { perfilVA, equivalenciasVA, planVA } from './data/perfil-va';
+import { perfilEL, equivalenciasEL, planEL } from './data/perfil-el';
+import { perfilELLA, equivalenciasELLA, planELLA } from './data/perfil-ella';
 
 export interface MealItem {
   nombre: string;
@@ -46,16 +46,16 @@ export const iconsMap: Record<string, any> = {
 };
 
 export const perfilesData: Record<string, Profile> = {
-  vo: { ...perfilVO, plan: planVO } as Profile,
-  va: { ...perfilVA, plan: planVA } as Profile,
+  el: { ...perfilEL, plan: planEL } as Profile,
+  ella: { ...perfilELLA, plan: planELLA } as Profile,
 };
 
 export const equivalenciasData: Record<string, Equivalencia[]> = {
-  vo: equivalenciasVO.map((eq: any) => ({ ...eq, icon: iconsMap[eq.icon] })),
-  va: equivalenciasVA.map((eq: any) => ({ ...eq, icon: iconsMap[eq.icon] })),
+  el: equivalenciasEL.map((eq: any) => ({ ...eq, icon: iconsMap[eq.icon] })),
+  ella: equivalenciasELLA.map((eq: any) => ({ ...eq, icon: iconsMap[eq.icon] })),
 };
 
 export const rawData = {
-  vo: JSON.stringify({ perfilVO, equivalenciasVO, planVO }, null, 2),
-  va: JSON.stringify({ perfilVA, equivalenciasVA, planVA }, null, 2)
+  el: JSON.stringify({ perfilEL, equivalenciasEL, planEL }, null, 2),
+  ella: JSON.stringify({ perfilELLA, equivalenciasELLA, planELLA }, null, 2)
 };

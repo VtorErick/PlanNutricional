@@ -10,6 +10,7 @@ interface MealSelectorProps {
   selecciones: Record<string, boolean>;
   onToggle: (perfil: string, dia: string, momento: string, nombre: string) => void;
   accentClasses: Record<string, string>;
+  porciones?: { key: string; label: string; icon: string; cantidad: number }[];
 }
 
 export default function MealSelector({
@@ -20,6 +21,7 @@ export default function MealSelector({
   selecciones,
   onToggle,
   accentClasses,
+  porciones = [],
 }: MealSelectorProps) {
   return (
     <div className="grid gap-3">
@@ -66,13 +68,30 @@ export default function MealSelector({
               </div>
 
               <div className="pt-1">
-                {/* Porciones */}
-                <div className={`flex items-center gap-3 text-xs bg-white rounded-[16px] p-3 border ${esSeleccionada ? accentClasses.border : 'border-slate-100'} shadow-sm`}>
-                  <div className={`w-7 h-7 rounded-[10px] ${accentClasses.bgLight} flex items-center justify-center flex-shrink-0`}>
-                    <Utensils className={`w-3.5 h-3.5 ${accentClasses.text}`} />
+                {/* Porciones - mostrar con iconos como en version lectura cuando está seleccionado */}
+                {esSeleccionada && porciones.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {porciones.map((item) => (
+                      <span
+                        key={`${comida.nombre}-${item.key}-${item.cantidad}`}
+                        title={`${item.label} ${item.cantidad}`}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-[11px] font-bold`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-white/70 flex items-center justify-center text-[12px] shadow-sm shadow-slate-200/50">
+                          {item.icon}
+                        </span>
+                        <span>x{item.cantidad}</span>
+                      </span>
+                    ))}
                   </div>
-                  <span className="text-slate-700 font-medium tracking-tight leading-relaxed">{comida.porciones}</span>
-                </div>
+                ) : (
+                  <div className={`flex items-center gap-3 text-xs bg-white rounded-[16px] p-3 border ${esSeleccionada ? accentClasses.border : 'border-slate-100'} shadow-sm`}>
+                    <div className={`w-7 h-7 rounded-[10px] ${accentClasses.bgLight} flex items-center justify-center flex-shrink-0`}>
+                      <Utensils className={`w-3.5 h-3.5 ${accentClasses.text}`} />
+                    </div>
+                    <span className="text-slate-700 font-medium tracking-tight leading-relaxed">{comida.porciones}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
@@ -85,20 +104,6 @@ export default function MealSelector({
                         className={`inline-flex items-center px-2.5 py-1 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-[9px] uppercase tracking-widest font-extrabold`}
                       >
                         {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Ingredients */}
-                {comida.super.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {comida.super.map((ing) => (
-                      <span
-                        key={ing}
-                        className="inline-block px-2.5 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-semibold tracking-tight"
-                      >
-                        {ing}
                       </span>
                     ))}
                   </div>

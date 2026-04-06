@@ -4,7 +4,7 @@ import { Download, Upload, FileText, FileJson, Trash2, ToggleLeft, ToggleRight, 
 import { downloadJsonFile, downloadDietPdf, parseJsonToData } from '../dataManager';
 
 interface AdminPanelProps {
-  perfilId: 'vo' | 'va';
+  perfilId: 'el' | 'ella';
   title: string;
   themeColor: 'blue' | 'rose';
   rawDataText: string;
@@ -12,7 +12,7 @@ interface AdminPanelProps {
   setCustomData: React.Dispatch<React.SetStateAction<any>>;
   dataVersion: 'original' | 'custom';
   setDataVersion: (ver: 'original' | 'custom') => void;
-  perfilesDataObj: any; // the original data to use for PDF generating if original is chosen
+  perfilesDataObj: any;
   notify: (title: string, message: string) => Promise<void>;
   confirmAction: (title: string, message: string) => Promise<boolean>;
 }
@@ -32,7 +32,7 @@ export default function AdminPanel({
     reader.onload = async (evt) => {
       try {
         const text = evt.target?.result as string;
-        const parsed = parseJsonToData(text, perfilId.toUpperCase() as 'VO'|'VA');
+        const parsed = parseJsonToData(text, perfilId.toUpperCase() as 'EL'|'ELLA');
         
         setCustomData((prev: any) => ({ ...prev, [perfilId]: parsed }));
         setDataVersion('custom');
@@ -64,13 +64,11 @@ export default function AdminPanel({
     const dataToUse = dataVersion === 'custom' && customData[perfilId] 
       ? customData[perfilId][`perfil${perfilId.toUpperCase()}`] 
       : perfilesDataObj;
-    // For original the plan is embedded as perfilesDataObj.plan
-    // For custom, parseTsToData returns it as planVO / planVA 
     const planToUse = dataVersion === 'custom' && customData[perfilId] 
       ? customData[perfilId][`plan${perfilId.toUpperCase()}`] 
       : perfilesDataObj.plan;
       
-    downloadDietPdf(dataToUse, planToUse, perfilId === 'va');
+    downloadDietPdf(dataToUse, planToUse, perfilId === 'ella');
   };
 
   const handleJsonDownload = () => {

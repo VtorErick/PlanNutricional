@@ -8,7 +8,7 @@ import {
 import { downloadJsonFile } from '../dataManager';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-export type TargetProfile = 'vo' | 'va' | 'ambos';
+export type TargetProfile = 'el' | 'ella' | 'ambos';
 export type PortionMode = 'manual' | 'auto';
 
 export interface QuestionnairePayload {
@@ -21,8 +21,8 @@ export interface QuestionnairePayload {
     manualPortions: Record<string, Record<string, number>>;
     additionalNotes: string;
   };
-  vo?: any;
-  va?: any;
+  el?: any;
+  ella?: any;
   profileContext?: any;
   healthContext?: any;
   preferences?: any;
@@ -44,10 +44,10 @@ interface Props {
   setTargetProfile: (p: TargetProfile) => void;
   stepIdx: number;
   setStepIdx: (i: number | ((prev: number) => number)) => void;
-  vo: any;
-  setVo: (v: any | ((prev: any) => any)) => void;
-  va: any;
-  setVa: (v: any | ((prev: any) => any)) => void;
+  el: any;
+  setEl: (v: any | ((prev: any) => any)) => void;
+  ella: any;
+  setElla: (v: any | ((prev: any) => any)) => void;
   portionMode: 'auto' | 'manual';
   setPortionMode: (m: 'auto' | 'manual') => void;
   manualPortions: Record<string, Record<string, number>>;
@@ -125,11 +125,11 @@ type StepType = 'who' | 'fisica' | 'objetivo' | 'salud' | 'medicos' | 'preferenc
 
 interface WizardStep {
   type: StepType;
-  profile?: 'vo' | 'va';
+  profile?: 'el' | 'ella';
 }
 
 function buildSteps(tp: TargetProfile): WizardStep[] {
-  const personSteps = (p: 'vo' | 'va'): WizardStep[] => [
+  const personSteps = (p: 'el' | 'ella'): WizardStep[] => [
     { type: 'fisica',       profile: p },
     { type: 'objetivo',     profile: p },
     { type: 'salud',        profile: p },
@@ -140,7 +140,7 @@ function buildSteps(tp: TargetProfile): WizardStep[] {
   ];
   const steps: WizardStep[] = [{ type: 'who' }];
   if (tp === 'ambos') {
-    steps.push(...personSteps('vo'), ...personSteps('va'));
+    steps.push(...personSteps('el'), ...personSteps('ella'));
   } else {
     steps.push(...personSteps(tp));
   }
@@ -202,8 +202,8 @@ function NumSlider({ label, unit, value, min, max, step = 1, onChange, required,
 
 // ─── Theme by profile ─────────────────────────────────────────────────────────
 const THEME = {
-  vo:    { accent: '#3b82f6', light: 'bg-blue-50',    text: 'text-blue-600',   border: 'border-blue-200',   grad: 'from-blue-500 to-indigo-600'   },
-  va:    { accent: '#f43f5e', light: 'bg-rose-50',    text: 'text-rose-600',   border: 'border-rose-200',   grad: 'from-rose-500 to-pink-600'     },
+  el:    { accent: '#3b82f6', light: 'bg-blue-50',    text: 'text-blue-600',   border: 'border-blue-200',   grad: 'from-blue-500 to-indigo-600'   },
+  ella:    { accent: '#f43f5e', light: 'bg-rose-50',    text: 'text-rose-600',   border: 'border-rose-200',   grad: 'from-rose-500 to-pink-600'     },
   ambos: { accent: '#10b981', light: 'bg-emerald-50', text: 'text-emerald-600',border: 'border-emerald-200',grad: 'from-emerald-500 to-teal-600'  },
 };
 
@@ -233,7 +233,7 @@ const QUICK_TAGS = {
 
 const TRAINING_FREQUENCY_CHIPS = ['1-2 días', '3-4 días', '5+ días', 'Diario'];
 const CUISINE_STYLE_OPTIONS = ['Mexicana', 'Italiana', 'Asiática', 'Mediterránea', 'Casera', 'Vegetariana'];
-const COOKING_TIME_OPTIONS = ['15 min', '30 min', '45 min', '1 hora'];
+const COOKING_TIME_OPTIONS = ['5-10 min', '15 min', '20 min', '30 min', '45 min', '1 hora', '1.5 horas', '+2 horas (meal prep)'];
 
 function parseTimeToParts(value: string) {
   if (!value || !value.includes(':')) return { hour: 7, minute: 0 };
@@ -293,14 +293,14 @@ function TimeWheelPicker({
 export default function NutritionQuestionnaire({
   onCancel, onGenerate, onViewPlan, loading, errorMessage, geminiModel, setGeminiModel, lastGeneratedData,
   // Estados persistentes
-  targetProfile, setTargetProfile, stepIdx, setStepIdx, vo, setVo, va, setVa,
+  targetProfile, setTargetProfile, stepIdx, setStepIdx, el, setEl, ella, setElla,
   portionMode, setPortionMode, manualPortions, setManualPortions, additionalNotes, setAdditionalNotes
 }: Props) {
   const [direction, setDirection] = useState(1);
   const [localModel, setLocalModel] = useState(geminiModel || 'gemini-2.0-flash');
   const [timePickerState, setTimePickerState] = useState<{
     open: boolean;
-    profile: 'vo' | 'va' | null;
+    profile: 'el' | 'ella' | null;
     field: 'wakeTime' | 'sleepTime' | null;
     value: string;
   }>({ open: false, profile: null, field: null, value: '' });
@@ -381,10 +381,10 @@ export default function NutritionQuestionnaire({
   const tc = THEME[currentStep.profile ?? targetProfile];
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-  const person  = (p: 'vo' | 'va') => p === 'vo' ? vo : va;
-  const setPerson = (p: 'vo' | 'va', u: Partial<Person>) => {
-    if (p === 'vo') setVo((prev: any) => ({ ...prev, ...u }));
-    else            setVa((prev: any) => ({ ...prev, ...u }));
+  const person  = (p: 'el' | 'ella') => p === 'el' ? el : ella;
+  const setPerson = (p: 'el' | 'ella', u: Partial<Person>) => {
+    if (p === 'el') setEl((prev: any) => ({ ...prev, ...u }));
+    else            setElla((prev: any) => ({ ...prev, ...u }));
   };
 
   const advance = () => {
@@ -413,7 +413,7 @@ export default function NutritionQuestionnaire({
     return true;
   };
 
-  const appendTag = (profile: 'vo' | 'va', field: keyof Person, tag: string) => {
+  const appendTag = (profile: 'el' | 'ella', field: keyof Person, tag: string) => {
     const currentValue = String(person(profile)[field] ?? '').trim();
     const values = currentValue.split(',').map(v => v.trim()).filter(Boolean);
     if (!values.includes(tag)) {
@@ -422,7 +422,7 @@ export default function NutritionQuestionnaire({
     }
   };
 
-  const openTimePicker = (profile: 'vo' | 'va', field: 'wakeTime' | 'sleepTime', currentValue: string) => {
+  const openTimePicker = (profile: 'el' | 'ella', field: 'wakeTime' | 'sleepTime', currentValue: string) => {
     setTimePickerState({
       open: true,
       profile,
@@ -444,16 +444,16 @@ export default function NutritionQuestionnaire({
   };
 
   const selectedCuisineStyles = useMemo(() => {
-    return String(vo.favoriteCuisineStyles || '')
+    return String(el.favoriteCuisineStyles || '')
       .split(',')
       .map(v => v.trim())
       .filter(Boolean);
-  }, [vo.favoriteCuisineStyles]);
+  }, [el.favoriteCuisineStyles]);
 
   const setCuisineStyles = (styles: string[]) => {
     const joined = styles.join(', ');
-    setVo((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
-    setVa((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+    setEl((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+    setElla((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
   };
 
   const toggleCuisineStyle = (style: string) => {
@@ -486,9 +486,9 @@ export default function NutritionQuestionnaire({
     };
 
     if (targetProfile === 'ambos') {
-      await onGenerate({ ...base, vo: buildPP(vo), va: buildPP(va) });
+      await onGenerate({ ...base, el: buildPP(el), ella: buildPP(ella) });
     } else {
-      const p = targetProfile === 'vo' ? vo : va;
+      const p = targetProfile === 'el' ? el : ella;
       await onGenerate({ ...base, ...buildPP(p) });
     }
   };
@@ -502,8 +502,8 @@ export default function NutritionQuestionnaire({
       <div className="space-y-2.5">
         <p className="text-center text-slate-500 text-sm mb-4">Selecciona para quién generas el plan</p>
         {([
-          ['vo',    '👨', 'Perfil El',     'Plan individual masculino'],
-          ['va',    '👩', 'Perfil Ella',     'Plan individual femenino' ],
+          ['el',    '👨', 'Perfil El',     'Plan individual masculino'],
+          ['ella',    '👩', 'Perfil Ella',     'Plan individual femenino' ],
           ['ambos', '👫', 'Ambos Perfiles', 'Plan completo para los dos'],
         ] as const).map(([val, emoji, title, sub]) => {
           const t = THEME[val];
@@ -515,10 +515,10 @@ export default function NutritionQuestionnaire({
               }`}>
               <span className="text-2xl">{emoji}</span>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-slate-800'}`}>{title}</p>
+                <p className="text-sm font-bold leading-tight ${active ? t.text : 'text-slate-800'}">{title}</p>
                 <p className={`text-[11px] mt-0.5 ${active ? t.text + ' opacity-70' : 'text-slate-400'}`}>{sub}</p>
               </div>
-              {active && <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${t.text}`} />}
+              {active && <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
             </button>
           );
         })}
@@ -1009,11 +1009,11 @@ export default function NutritionQuestionnaire({
             </label>
             <div className="flex flex-wrap gap-2">
               {COOKING_TIME_OPTIONS.map(time => {
-                const active = vo.cookingTime === time;
+                const active = el.cookingTime === time;
                 return (
                   <button
                     key={time}
-                    onClick={() => { setVo((prev: any) => ({ ...prev, cookingTime: time })); setVa((prev: any) => ({ ...prev, cookingTime: time })); }}
+                    onClick={() => { setEl((prev: any) => ({ ...prev, cookingTime: time })); setElla((prev: any) => ({ ...prev, cookingTime: time })); }}
                     className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all active:scale-[.98] ${
                       active ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-white text-slate-600'
                     }`}
@@ -1043,7 +1043,7 @@ export default function NutritionQuestionnaire({
 
     /* ── CONFIRM ── */
     if (type === 'confirm') {
-      const profiles: ('vo' | 'va')[] = targetProfile === 'ambos' ? ['vo', 'va'] : [targetProfile];
+      const profiles: ('el' | 'ella')[] = targetProfile === 'ambos' ? ['el', 'ella'] : [targetProfile];
       
       // Calcular totales de porciones si es modo manual
       const portionSummary = portionMode === 'manual' ? Object.entries(manualPortions).map(([group, moments]) => {
@@ -1059,11 +1059,11 @@ export default function NutritionQuestionnaire({
           <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider mb-2.5 text-slate-600">📋 Configuración del Plan</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
-              <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400" />Perfil: <strong>{targetProfile === 'ambos' ? 'Ambos' : targetProfile === 'vo' ? 'El' : 'Ella'}</strong></span>
+              <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400" />Perfil: <strong>{targetProfile === 'ambos' ? 'Ambos' : targetProfile === 'el' ? 'El' : 'Ella'}</strong></span>
               <span className="flex items-center gap-1.5"><Settings2 className="w-3.5 h-3.5 text-slate-400" />Porciones: <strong>{portionMode === 'auto' ? 'IA decide 🤖' : 'Manual 📋'}</strong></span>
               {portionSummary && <span className="col-span-2 text-slate-500 flex items-center gap-1.5"><Activity className="w-3.5 h-3.5" />Resumen: {portionSummary}</span>}
-              {vo.favoriteCuisineStyles && <span className="col-span-2 text-slate-500 flex items-center gap-1.5"><ChefHat className="w-3.5 h-3.5" />Cocina: {vo.favoriteCuisineStyles}</span>}
-              {vo.cookingTime && <span className="col-span-2 text-slate-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />Tiempo cocina: {vo.cookingTime}</span>}
+              {el.favoriteCuisineStyles && <span className="col-span-2 text-slate-500 flex items-center gap-1.5"><ChefHat className="w-3.5 h-3.5" />Cocina: {el.favoriteCuisineStyles}</span>}
+              {el.cookingTime && <span className="col-span-2 text-slate-500 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />Tiempo cocina: {el.cookingTime}</span>}
               {additionalNotes && <span className="col-span-2 text-slate-500 truncate">Notas: {additionalNotes}</span>}
             </div>
             <div className="h-px bg-slate-200" />
@@ -1075,7 +1075,7 @@ export default function NutritionQuestionnaire({
             return (
               <div key={p} className={`p-4 rounded-2xl border ${t.border} ${t.light}`}>
                 <p className={`text-xs font-bold uppercase tracking-wider mb-2.5 ${t.text}`}>
-                  {p === 'vo' ? '👨 Perfil El' : '👩 Perfil Ella'}
+                  {p === 'el' ? '👨 Perfil El' : '👩 Perfil Ella'}
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600">
                   {data.age && <span className="flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-slate-400" />Edad: <strong>{data.age} años</strong></span>}
@@ -1216,7 +1216,7 @@ export default function NutritionQuestionnaire({
   const isOptional  = type === 'salud' || type === 'medicos' || type === 'preferencias' || type === 'horarios' || type === 'portions' || type === 'cocina';
 
   const { label: stepLabel, Icon: StepIcon } = STEP_META[type];
-  const profileSuffix = currentStep.profile === 'vo' ? ' · El' : currentStep.profile === 'va' ? ' · Ella' : '';
+  const profileSuffix = currentStep.profile === 'el' ? ' · El' : currentStep.profile === 'ella' ? ' · Ella' : '';
 
   return (
     <>

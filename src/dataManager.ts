@@ -6,17 +6,17 @@ import { Profile, Equivalencia, MealItem } from './data';
  * Parsea un JSON limpio y valida su estructura básica
  * Ahora es más permisivo para aceptar estructuras generadas por IA
  */
-export function parseObjectToData(parsed: any, expectedPrefix: 'VO' | 'VA'): any {
+export function parseObjectToData(parsed: any, expectedPrefix: 'EL' | 'ELLA'): any {
   const perfilKey = `perfil${expectedPrefix}`;
   const equivKey = `equivalencias${expectedPrefix}`;
   const planKey = `plan${expectedPrefix}`;
 
   // Verificar que tenga las raíces esperadas
   if (!parsed[perfilKey] || !parsed[equivKey] || !parsed[planKey]) {
-    const wrongPrefix = expectedPrefix === 'VO' ? 'VA' : 'VO';
+    const wrongPrefix = expectedPrefix === 'EL' ? 'ELLA' : 'EL';
     if (parsed[`perfil${wrongPrefix}`]) {
-      const expectedLabel = expectedPrefix === 'VO' ? 'El' : 'Ella';
-      const wrongLabel = wrongPrefix === 'VO' ? 'El' : 'Ella';
+      const expectedLabel = expectedPrefix === 'EL' ? 'El' : 'Ella';
+      const wrongLabel = wrongPrefix === 'EL' ? 'El' : 'Ella';
       throw new Error(`Intentaste subir un archivo de ${wrongLabel} en la sección de ${expectedLabel}. Sube el archivo correcto.`);
     }
     throw new Error(`El archivo JSON no contiene las estructuras requeridas (${perfilKey}, ${equivKey}, ${planKey}).`);
@@ -63,7 +63,7 @@ export function parseObjectToData(parsed: any, expectedPrefix: 'VO' | 'VA'): any
   return parsed;
 }
 
-export function parseJsonToData(jsonString: string, expectedPrefix: 'VO' | 'VA'): any {
+export function parseJsonToData(jsonString: string, expectedPrefix: 'EL' | 'ELLA'): any {
   let parsed: any;
   try {
     parsed = JSON.parse(jsonString);

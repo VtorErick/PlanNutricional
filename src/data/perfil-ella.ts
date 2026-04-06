@@ -1,8 +1,8 @@
 import type { MealItem, MealTime } from '../data';
 
 // --- INFORMACIÓN PERSONAL Y METAS ---
-export const perfilVA = {
-  id: 'va',
+export const perfilELLA = {
+  id: 'ella',
   nombre: 'Ella',
   edad: 31,
   descripcion: 'Plan basado en la guía del nutriólogo con estructura de equivalentes. Frutas moderadas, verduras altas, grasas medidas. Adaptado para cuidar niveles de insulina.',
@@ -17,11 +17,11 @@ export const perfilVA = {
     { key: 'cena', label: 'Cena', hora: '9:00–10:00 pm' },
   ],
   objetivosPorMomento: {
-    desayuno: { frutas: 0, verduras: 2, cereales: 1, leguminosas: 0, leche: 0, proteina: 3, grasas: 2 },
-    colacion_am: { frutas: 1, verduras: 0, cereales: 1, leguminosas: 0, leche: 0, proteina: 0, grasas: 2 },
-    comida: { frutas: 0, verduras: 2, cereales: 1, leguminosas: 0, leche: 0, proteina: 4, grasas: 2 },
-    colacion_pm: { frutas: 0, verduras: 0, cereales: 0, leguminosas: 0, leche: 0, proteina: 0, grasas: 0 },
-    cena: { frutas: 1, verduras: 0, cereales: 1, leguminosas: 0, leche: 1, proteina: 0, grasas: 2 },
+    desayuno: { frutas: 0, verduras: 2, cereales: 1, leguminosas: 0, lacteos: 0, proteina: 3, grasas: 2 },
+    colacion_am: { frutas: 1, verduras: 0, cereales: 1, leguminosas: 0, lacteos: 0, proteina: 0, grasas: 2 },
+    comida: { frutas: 0, verduras: 2, cereales: 1, leguminosas: 0, lacteos: 0, proteina: 4, grasas: 2 },
+    colacion_pm: { frutas: 0, verduras: 0, cereales: 0, leguminosas: 0, lacteos: 0, proteina: 0, grasas: 0 },
+    cena: { frutas: 1, verduras: 0, cereales: 1, leguminosas: 0, lacteos: 1, proteina: 0, grasas: 2 },
   },
   distribucionDiaria: [
     { grupo: 'Frutas', total: 2, detalle: '1 en colación de la mañana + 1 en cena' },
@@ -29,7 +29,7 @@ export const perfilVA = {
     { grupo: 'Cereales', total: 4, detalle: '1 desayuno + 1 col. AM + 1 comida + 1 cena' },
     { grupo: 'Proteína (carne/queso/huevo)', total: 7, detalle: '3 desayuno + 4 comida' },
     { grupo: 'Grasas', total: 8, detalle: '2 desayuno + 2 col. mañana + 2 comida + 2 cena' },
-    { grupo: 'Leche', total: 1, detalle: '1 en cena' },
+    { grupo: 'lacteos', total: 1, detalle: '1 en cena' },
   ],
   resumenPersonal: [
     'Plan del nutriólogo con equivalentes claros por grupo. Verduras altas para saciedad, fruta controlada, y grasas siempre medidas.',
@@ -41,7 +41,7 @@ export const perfilVA = {
 };
 
 // --- EQUIVALENCIAS PARA EL NUTRIÓLOGO ---
-export const equivalenciasVA = [
+export const equivalenciasELLA = [
   {
     titulo: 'Frutas permitidas (1 porción al día)',
     icon: 'Apple',
@@ -112,7 +112,7 @@ export const equivalenciasVA = [
       'Frijol, lenteja, garbanzo, chícharo, soya',
       'Cantidad: media taza por vez',
       'Frecuencia: máximo 3 veces por semana',
-      'Leche deslactosada light: 1 taza (opcional)',
+      'lacteos deslactosada light: 1 taza (opcional)',
       'Yogurt natural sin azúcar o yogurt griego',
       '⚠️ Las leguminosas son excelentes para control de insulina por su fibra',
     ],
@@ -132,7 +132,7 @@ export const equivalenciasVA = [
 ];
 
 // --- PLAN DE COMIDAS (AGREGAR O QUITAR ELEMENTOS AQUÍ) ---
-export const planVA: Record<string, Record<string, MealItem[]>> = {
+export const planELLA: Record<string, Record<string, MealItem[]>> = {
   Lunes: {
     desayuno: [
       {
@@ -229,24 +229,24 @@ export const planVA: Record<string, Record<string, MealItem[]>> = {
     cena: [
       {
         nombre: 'Licuado de avena y nuez',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light o descremada (1 Leche). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light o descremada (1 lacteos). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
         tags: ['rápido', 'liquido', 'dulce'],
-        super: ['leche light', 'plátano', 'avena', 'nueces'],
+        super: ['lacteos light', 'plátano', 'avena', 'nueces'],
       },
       {
         nombre: 'Tazón de yogurt con amaranto',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 taza de yogurt natural sin azúcar (1 Leche). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 taza de yogurt natural sin azúcar (1 lacteos). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
         tags: ['fresco', 'crujiente'],
         super: ['yogurt natural', 'fresas', 'amaranto', 'almendras'],
       },
       {
         nombre: 'Tostadas con crema de cacahuate',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light (1 Leche). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light (1 lacteos). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
         tags: ['antojo', 'reconfortante'],
-        super: ['leche light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
+        super: ['lacteos light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
       },
     ],
   },
@@ -346,24 +346,24 @@ export const planVA: Record<string, Record<string, MealItem[]>> = {
     cena: [
       {
         nombre: 'Licuado de avena y nuez',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light o descremada (1 Leche). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light o descremada (1 lacteos). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
         tags: ['rápido', 'liquido', 'dulce'],
-        super: ['leche light', 'plátano', 'avena', 'nueces'],
+        super: ['lacteos light', 'plátano', 'avena', 'nueces'],
       },
       {
         nombre: 'Tazón de yogurt con amaranto',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 taza de yogurt natural sin azúcar (1 Leche). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 taza de yogurt natural sin azúcar (1 lacteos). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
         tags: ['fresco', 'crujiente'],
         super: ['yogurt natural', 'fresas', 'amaranto', 'almendras'],
       },
       {
         nombre: 'Tostadas con crema de cacahuate',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light (1 Leche). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light (1 lacteos). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
         tags: ['antojo', 'reconfortante'],
-        super: ['leche light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
+        super: ['lacteos light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
       },
     ],
   },
@@ -463,24 +463,24 @@ export const planVA: Record<string, Record<string, MealItem[]>> = {
     cena: [
       {
         nombre: 'Licuado de avena y nuez',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light o descremada (1 Leche). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light o descremada (1 lacteos). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
         tags: ['rápido', 'liquido', 'dulce'],
-        super: ['leche light', 'plátano', 'avena', 'nueces'],
+        super: ['lacteos light', 'plátano', 'avena', 'nueces'],
       },
       {
         nombre: 'Tazón de yogurt con amaranto',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 taza de yogurt natural sin azúcar (1 Leche). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 taza de yogurt natural sin azúcar (1 lacteos). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
         tags: ['fresco', 'crujiente'],
         super: ['yogurt natural', 'fresas', 'amaranto', 'almendras'],
       },
       {
         nombre: 'Tostadas con crema de cacahuate',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light (1 Leche). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light (1 lacteos). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
         tags: ['antojo', 'reconfortante'],
-        super: ['leche light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
+        super: ['lacteos light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
       },
     ],
   },
@@ -580,24 +580,24 @@ export const planVA: Record<string, Record<string, MealItem[]>> = {
     cena: [
       {
         nombre: 'Licuado de avena y nuez',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light o descremada (1 Leche). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light o descremada (1 lacteos). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
         tags: ['rápido', 'liquido', 'dulce'],
-        super: ['leche light', 'plátano', 'avena', 'nueces'],
+        super: ['lacteos light', 'plátano', 'avena', 'nueces'],
       },
       {
         nombre: 'Tazón de yogurt con amaranto',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 taza de yogurt natural sin azúcar (1 Leche). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 taza de yogurt natural sin azúcar (1 lacteos). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
         tags: ['fresco', 'crujiente'],
         super: ['yogurt natural', 'fresas', 'amaranto', 'almendras'],
       },
       {
         nombre: 'Tostadas con crema de cacahuate',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light (1 Leche). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light (1 lacteos). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
         tags: ['antojo', 'reconfortante'],
-        super: ['leche light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
+        super: ['lacteos light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
       },
     ],
   },
@@ -697,24 +697,24 @@ export const planVA: Record<string, Record<string, MealItem[]>> = {
     cena: [
       {
         nombre: 'Licuado de avena y nuez',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light o descremada (1 Leche). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light o descremada (1 lacteos). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
         tags: ['rápido', 'liquido', 'dulce'],
-        super: ['leche light', 'plátano', 'avena', 'nueces'],
+        super: ['lacteos light', 'plátano', 'avena', 'nueces'],
       },
       {
         nombre: 'Tazón de yogurt con amaranto',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 taza de yogurt natural sin azúcar (1 Leche). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 taza de yogurt natural sin azúcar (1 lacteos). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
         tags: ['fresco', 'crujiente'],
         super: ['yogurt natural', 'fresas', 'amaranto', 'almendras'],
       },
       {
         nombre: 'Tostadas con crema de cacahuate',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light (1 Leche). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light (1 lacteos). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
         tags: ['antojo', 'reconfortante'],
-        super: ['leche light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
+        super: ['lacteos light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
       },
     ],
   },
@@ -814,24 +814,24 @@ export const planVA: Record<string, Record<string, MealItem[]>> = {
     cena: [
       {
         nombre: 'Licuado de avena y nuez',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light o descremada (1 Leche). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light o descremada (1 lacteos). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
         tags: ['rápido', 'liquido', 'dulce'],
-        super: ['leche light', 'plátano', 'avena', 'nueces'],
+        super: ['lacteos light', 'plátano', 'avena', 'nueces'],
       },
       {
         nombre: 'Tazón de yogurt con amaranto',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 taza de yogurt natural sin azúcar (1 Leche). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 taza de yogurt natural sin azúcar (1 lacteos). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
         tags: ['fresco', 'crujiente'],
         super: ['yogurt natural', 'fresas', 'amaranto', 'almendras'],
       },
       {
         nombre: 'Tostadas con crema de cacahuate',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light (1 Leche). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light (1 lacteos). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
         tags: ['antojo', 'reconfortante'],
-        super: ['leche light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
+        super: ['lacteos light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
       },
     ],
   },
@@ -931,24 +931,24 @@ export const planVA: Record<string, Record<string, MealItem[]>> = {
     cena: [
       {
         nombre: 'Licuado de avena y nuez',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light o descremada (1 Leche). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light o descremada (1 lacteos). 1/2 plátano (1 Fruta). 1/3 taza de avena cruda (1 Cereal). 6 nueces (2 Grasa). Licuado con hielo.',
         tags: ['rápido', 'liquido', 'dulce'],
-        super: ['leche light', 'plátano', 'avena', 'nueces'],
+        super: ['lacteos light', 'plátano', 'avena', 'nueces'],
       },
       {
         nombre: 'Tazón de yogurt con amaranto',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 taza de yogurt natural sin azúcar (1 Leche). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 taza de yogurt natural sin azúcar (1 lacteos). 1 taza de fresas o moras (1 Fruta). 1/2 taza de amaranto (1 Cereal). 10 almendras (2 Grasa).',
         tags: ['fresco', 'crujiente'],
         super: ['yogurt natural', 'fresas', 'amaranto', 'almendras'],
       },
       {
         nombre: 'Tostadas con crema de cacahuate',
-        porciones: 'Fruta 1 | Cereales 1 | Leche 1 | Grasas 2',
-        detalle: '1 vaso de leche light (1 Leche). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
+        porciones: 'Fruta 1 | Cereales 1 | lacteos 1 | Grasas 2',
+        detalle: '1 vaso de lacteos light (1 lacteos). 1 tostada horneada dulce o pan de caja (1 Cereal). 1 cda de crema de cacahuate (2 Grasa). 1 manzana o pera (1 Fruta).',
         tags: ['antojo', 'reconfortante'],
-        super: ['leche light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
+        super: ['lacteos light', 'tostada horneada', 'crema de cacahuate', 'manzana'],
       },
     ],
   },

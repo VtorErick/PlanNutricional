@@ -8,7 +8,7 @@
 }
 
 /* Profile color themes */
-[data-profile="vo"] {
+[data-profile="el"] {
   --accent-50: #eff6ff;
   --accent-100: #dbeafe;
   --accent-200: #bfdbfe;
@@ -18,13 +18,12 @@
   --accent-600: #2563eb;
   --accent-700: #1d4ed8;
   --accent-800: #1e40af;
-  --accent-900: #1e3a5f;
+  --accent-900: #1e3a8a;
   --accent-gradient: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  --accent-gradient-soft: linear-gradient(135deg, #eff6ff, #dbeafe);
   --accent-gradient-dark: linear-gradient(135deg, #1e3a5f, #1e40af);
 }
 
-[data-profile="va"] {
+[data-profile="ella"] {
   --accent-50: #fff1f2;
   --accent-100: #ffe4e6;
   --accent-200: #fecdd3;

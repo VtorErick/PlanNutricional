@@ -8,7 +8,7 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 
 1. perfil${prefix}: {
     id: "${lowerPrefix}",
-    nombre: "${prefix === 'VO' ? 'El' : 'Ella'}",
+    nombre: "${prefix === 'EL' ? 'El' : 'Ella'}",
   perfil: string (peso, altura, IMC calculado - SOLO incluir edad si se proporcionó en los datos),
     meta: string (usa los datos reales: peso meta si se proporcionó, objetivos del usuario, tiempo objetivo si se proporcionó),
     descripcion: string,
@@ -16,11 +16,11 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
     horariosTexto: string,
     momentos: [{ key: "desayuno", label: "Desayuno", hora: "8:00 am" }, { key: "colacion_am", label: "Colación mañana", hora: "..." }, { key: "comida", label: "Comida", hora: "..." }, { key: "colacion_pm", label: "Colación tarde", hora: "..." }, { key: "cena", label: "Cena", hora: "..." }],
     objetivosPorMomento: {
-      desayuno: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
-      colacion_am: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
-      comida: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
-      colacion_pm: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number },
-      cena: { frutas: number, verduras: number, cereales: number, leguminosas: number, leche: number, proteina: number, grasas: number }
+      desayuno: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
+      colacion_am: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
+      comida: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
+      colacion_pm: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
+      cena: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number }
     },
     distribucionDiaria: [
       { grupo: "Frutas", total: number, detalle: "ej: 1 en desayuno + 1 en colación" },
@@ -40,20 +40,36 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
    
    Categorías requeridas: Frutas, Verduras, Cereales, Proteínas, Grasas, Leguminosas, Lácteos, y opcionalmente "Alimentos libres", "Antojos saludables", "Notas especiales"
    
-   EJEMPLO de items para Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 plátano pequeño (100g)"]
-   EJEMPLO de items para Verduras: ["1 taza de brócoli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morrón (100g)", "1 taza de pepino rallado (150g)"]
+   IMPORTANTE: Las equivalencias deben reflejar ingredientes REALES usados en los platillos del plan. Ejemplos de items:
+   - Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 plátano pequeño (100g)", "1 taza de frutos rojos (150g)", "1 taza de melón picado (180g)"]
+   - Verduras: ["1 taza de brócoli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morrón (100g)", "1 taza de pepino rallado (150g)", "1 taza de champiñones (100g)", "1/2 aguacate mediano (75g)"]
+   - Cereales: ["1 rebanada de pan integral (30g)", "1 tortilla de maíz (30g)", "1/2 taza de avena cocida (100g)", "1/2 taza de arroz integral cocido (90g)", "1/2 taza de quinoa cocida (90g)"]
+   - Proteínas: ["30g de pechuga de pollo cocida", "30g de carne de res magra cocida", "30g de pescado blanco cocido", "1 huevo entero (50g)", "2 claras de huevo", "1/4 taza de queso cottage (60g)", "30g de atún en agua", "2 rebanadas de jamón de pavo (30g)", "1/2 taza de tofu firme (75g)", "1 scoop de proteína en polvo (30g) - OPCIONAL"]
+   - Grasas: ["1 cucharadita de aceite de oliva (5ml)", "1/4 de aguacate mediano (30g)", "10 almendras (15g)", "6 nueces (15g)", "1 cucharada de semillas de chía (10g)", "1 cucharadita de crema de cacahuate (10g)"]
+   - Leguminosas: ["1/2 taza de frijoles cocidos (90g)", "1/2 taza de lentejas cocidas (90g)", "1/2 taza de garbanzos cocidos (90g)"]
+   - Lácteos: ["1 taza de leche descremada (240ml)", "1 taza de yogurt natural sin azúcar (200g)", "30g de queso panela o bajo en grasa", "1/4 taza de queso cottage (60g)"]
 
 3. plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
 
 REGLAS CRÍTICAS:
-- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'VO' ? 'El' : 'Ella'}" - NO usar otros nombres
-- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, leche (usar key 'leche' internamente pero mostrar como Lácteos en distribucionDiaria), proteina, grasas
+- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'EL' ? 'El' : 'Ella'}" - NO usar otros nombres
+- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas
 - OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
 - OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados
 - CRÍTICO: El perfil y meta deben reflejar los datos REALES del usuario. Si el usuario quiere "Perder grasa", NO describir su IMC como "bajo peso severo" - contextualiza correctamente basado en sus objetivos.
 - CRÍTICO: El peso meta debe ser razonable según el contexto. Si el usuario quiere ganar masa, el peso meta debe ser MAYOR que el actual. Si quiere perder grasa, debe ser MENOR o mantenerse.
-- Cada momento debe tener 3 opciones de comidas REALES y variadas
+- Cada momento debe tener 3 opciones de comidas REALES y variadas usando ingredientes naturales
 - Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar)
+- **CRÍTICO - CONSISTENCIA DE PORTIONES: Cada platillo sugerido DEBE cumplir EXACTAMENTE con los objetivosPorMomento del momento del día. Ejemplo real: si objetivosPorMomento.desayuno indica {cereales: 2, proteina: 2, grasas: 1, frutas: 1}, una opción válida sería: "Avena cocida (1 taza = 2 cereales), 2 huevos revueltos (2 proteínas), 1/4 aguacate (1 grasa), 1 plátano pequeño (1 fruta)". Otra opción: "2 tortillas de maíz (2 cereales), 90g pechuga de pollo (1 proteína) + 1 huevo (1 proteína), 10 almendras (1 grasa), 1 manzana (1 fruta)".**
+- **CRÍTICO: TODOS los datos del cuestionario deben ser considerados activamente:**
+  - **trainingFrequency**: Si el usuario entrena 3-4 días o más, aumenta las porciones de proteína y cereales en días de entrenamiento, especialmente en la comida post-entreno.
+  - **additionalNotes (planConfig.additionalNotes)**: Lee y aplica las notas adicionales del usuario (preferencias especiales, alimentos a evitar, objetivos específicos, etc.).
+  - **portionMode**: Si es 'manual', usa EXACTAMENTE las porciones de manualPortions sin modificar. Si es 'auto', calcula porciones nutricionalmente apropiadas basadas en el perfil del usuario.
+  - **objectiveTimeline**: Ajusta la distribución de porciones y calorías para alcanzar la meta en el tiempo objetivo indicado (ej: 12 semanas).
+  - **cookingTime**: Sugiere platillos que se puedan preparar dentro del tiempo disponible (ej: si 15 min, prioriza ensaladas, smoothies, wraps; si 1 hora, permite recetas más elaboradas).
+  - **wakeTime/sleepTime**: Distribuye los momentos de comida considerando el horario de despertar y dormir. Si despierta tarde, ajusta el desayuno; si duerme temprano, evita cenas tardías.
+  - **favoriteCuisineStyles**: Prioriza platillos de los estilos de cocina seleccionados (Mexicana, Italiana, Asiática, etc.).
 - Responde SOLO con JSON válido, sin markdown \`\`\`json`;
 
 function buildUserPrompt(payload, prefix) {
@@ -268,31 +284,31 @@ export default async function handler(req, res) {
 
     const target = payload?.targetProfile;
 
-    if (!target || !['vo', 'va', 'ambos'].includes(target)) {
-      return res.status(400).json({ error: 'targetProfile inválido. Debe ser: vo, va, o ambos.' });
+    if (!target || !['el', 'ella', 'ambos'].includes(target)) {
+      return res.status(400).json({ error: 'targetProfile inválido. Debe ser: el, ella, o ambos.' });
     }
 
     const models = await listAvailableModels(apiKey);
     const selectedModel = pickBestModel(models, preferredModel);
 
-    let voData = null;
-    let vaData = null;
+    let elData = null;
+    let ellaData = null;
 
-    if (target === 'vo' || target === 'ambos') {
-      const payloadVO = target === 'ambos' && payload.vo ? { ...payload, ...payload.vo } : payload;
-      voData = await generateWithGemini(payloadVO, 'VO', apiKey, selectedModel);
+    if (target === 'el' || target === 'ambos') {
+      const payloadEl = target === 'ambos' && payload.el ? { ...payload, ...payload.el } : payload;
+      elData = await generateWithGemini(payloadEl, 'EL', apiKey, selectedModel);
     }
 
-    if (target === 'va' || target === 'ambos') {
+    if (target === 'ella' || target === 'ambos') {
       if (target === 'ambos') {
         // Delay preventivo para no golpear el límite de peticiones (Rate Limit) de la API simultáneamente
         await new Promise(r => setTimeout(r, 4500));
       }
-      const payloadVA = target === 'ambos' && payload.va ? { ...payload, ...payload.va } : payload;
-      vaData = await generateWithGemini(payloadVA, 'VA', apiKey, selectedModel);
+      const payloadElla = target === 'ambos' && payload.ella ? { ...payload, ...payload.ella } : payload;
+      ellaData = await generateWithGemini(payloadElla, 'ELLA', apiKey, selectedModel);
     }
 
-    return res.status(200).json({ voData, vaData, modelUsed: selectedModel });
+    return res.status(200).json({ elData, ellaData, modelUsed: selectedModel });
   } catch (error) {
     console.error('Error en handler:', error);
     return res.status(500).json({ error: error?.message || 'No se pudo generar el plan con IA.' });
