@@ -164,7 +164,7 @@ export default function App() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-4">
 
         {/* Health note */}
-        {perfil.notaSalud && (
+        {tab === 'resumen' && perfil.notaSalud && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className="flex items-start gap-3 p-3.5 bg-amber-50 rounded-2xl border border-amber-200">
             <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
