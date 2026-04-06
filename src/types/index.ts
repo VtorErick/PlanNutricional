@@ -6,6 +6,7 @@ export interface MealItem {
   super: string[];
   caloriasKcal?: number;
   proteinaG?: number;
+  grasasG?: number;
 }
 
 export interface MealTime {

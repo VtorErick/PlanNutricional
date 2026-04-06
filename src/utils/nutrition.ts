@@ -1,13 +1,13 @@
 import type { MealItem, Profile } from '../types';
 
-const EXCHANGE_VALUES: Record<string, { kcal: number; protein: number }> = {
-  frutas: { kcal: 60, protein: 0.5 },
-  verduras: { kcal: 25, protein: 1 },
-  cereales: { kcal: 70, protein: 2 },
-  leguminosas: { kcal: 120, protein: 8 },
-  lacteos: { kcal: 95, protein: 7 },
-  proteina: { kcal: 75, protein: 7 },
-  grasas: { kcal: 45, protein: 0 },
+const EXCHANGE_VALUES: Record<string, { kcal: number; protein: number; fat: number }> = {
+  frutas: { kcal: 60, protein: 0.5, fat: 0 },
+  verduras: { kcal: 25, protein: 1, fat: 0 },
+  cereales: { kcal: 70, protein: 2, fat: 1 },
+  leguminosas: { kcal: 120, protein: 8, fat: 1 },
+  lacteos: { kcal: 95, protein: 7, fat: 3 },
+  proteina: { kcal: 75, protein: 7, fat: 3 },
+  grasas: { kcal: 45, protein: 0, fat: 5 },
 };
 
 const PORTION_KEY_ALIASES: Record<string, string> = {
@@ -27,9 +27,9 @@ const PORTION_KEY_ALIASES: Record<string, string> = {
   grasa: 'grasas',
 };
 
-export function estimateMealNutritionFromPortions(portionsText: string): { caloriasKcal: number; proteinaG: number } {
+export function estimateMealNutritionFromPortions(portionsText: string): { caloriasKcal: number; proteinaG: number; grasasG: number } {
   if (!portionsText || /libre/i.test(portionsText)) {
-    return { caloriasKcal: 35, proteinaG: 1 };
+    return { caloriasKcal: 35, proteinaG: 1, grasasG: 0 };
   }
 
   const entries = portionsText
@@ -39,6 +39,7 @@ export function estimateMealNutritionFromPortions(portionsText: string): { calor
 
   let kcal = 0;
   let protein = 0;
+  let fat = 0;
 
   for (const entry of entries) {
     const match = entry.match(/([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s*(\d+)/);
@@ -51,11 +52,13 @@ export function estimateMealNutritionFromPortions(portionsText: string): { calor
     const exchange = EXCHANGE_VALUES[key];
     kcal += exchange.kcal * amount;
     protein += exchange.protein * amount;
+    fat += exchange.fat * amount;
   }
 
   return {
     caloriasKcal: Math.max(35, Math.round(kcal || 0)),
     proteinaG: Math.max(0, Math.round(protein || 0)),
+    grasasG: Math.max(0, Math.round(fat || 0)),
   };
 }
 
@@ -66,6 +69,9 @@ export function ensureMealNutrition(meal: MealItem): MealItem {
       proteinaG: typeof meal.proteinaG === 'number' && Number.isFinite(meal.proteinaG)
         ? Math.round(meal.proteinaG)
         : meal.proteinaG,
+      grasasG: typeof meal.grasasG === 'number' && Number.isFinite(meal.grasasG)
+        ? Math.round(meal.grasasG)
+        : meal.grasasG,
       caloriasKcal: Math.round(meal.caloriasKcal),
     };
   }
@@ -75,6 +81,7 @@ export function ensureMealNutrition(meal: MealItem): MealItem {
     ...meal,
     caloriasKcal: estimated.caloriasKcal,
     proteinaG: typeof meal.proteinaG === 'number' ? Math.round(meal.proteinaG) : estimated.proteinaG,
+    grasasG: typeof meal.grasasG === 'number' ? Math.round(meal.grasasG) : estimated.grasasG,
   };
 }
 
@@ -109,4 +116,12 @@ export function estimateDailyCaloriesFromObjectives(profile: Profile): number {
 
 export function sumSelectedMealCalories(meals: MealItem[]): number {
   return meals.reduce((acc, meal) => acc + (meal.caloriasKcal || 0), 0);
+}
+
+export function sumSelectedMealProtein(meals: MealItem[]): number {
+  return meals.reduce((acc, meal) => acc + (meal.proteinaG || 0), 0);
+}
+
+export function sumSelectedMealFat(meals: MealItem[]): number {
+  return meals.reduce((acc, meal) => acc + (meal.grasasG || 0), 0);
 }

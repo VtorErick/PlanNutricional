@@ -11,6 +11,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
+import { sumSelectedMealCalories, sumSelectedMealFat, sumSelectedMealProtein } from '../../utils/nutrition';
 
 const momentoIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
@@ -28,6 +29,9 @@ export default function DailyProgress() {
     diasDisponibles,
     diaActivo,
     setDiaActivo,
+    perfilesData,
+    selecciones,
+    isAmbos,
     perfilBase: perfil,
     momentoCompletado,
     progresoDia,
@@ -36,6 +40,33 @@ export default function DailyProgress() {
     scrollToMomento,
     ac,
   } = useDiet();
+
+  const totals = React.useMemo(() => {
+    const sumForProfile = (perfilId: 'el' | 'ella') => {
+      const planDia = perfilesData[perfilId]?.plan?.[diaActivo] || {};
+      const selectedMeals = Object.entries(planDia).flatMap(([momentoKey, meals]) =>
+        (meals || []).filter((meal) => selecciones[`${perfilId}-${diaActivo}-${momentoKey}-${meal.nombre}`])
+      );
+      return {
+        kcal: sumSelectedMealCalories(selectedMeals),
+        protein: sumSelectedMealProtein(selectedMeals),
+        fat: sumSelectedMealFat(selectedMeals),
+      };
+    };
+
+    if (isAmbos || perfilActivo === 'ambos') {
+      const el = sumForProfile('el');
+      const ella = sumForProfile('ella');
+      return {
+        kcal: el.kcal + ella.kcal,
+        protein: el.protein + ella.protein,
+        fat: el.fat + ella.fat,
+      };
+    }
+
+    const perfilId = perfilActivo === 'ella' ? 'ella' : 'el';
+    return sumForProfile(perfilId);
+  }, [diaActivo, perfilesData, selecciones, isAmbos, perfilActivo]);
 
   return (
     <motion.div
@@ -69,6 +100,13 @@ export default function DailyProgress() {
               </button>
             );
           })}
+          <div className="ml-auto flex-shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight whitespace-nowrap">
+            <span>{totals.kcal} kcal</span>
+            <span className="mx-1 text-slate-300">·</span>
+            <span>{totals.protein}g prot</span>
+            <span className="mx-1 text-slate-300">·</span>
+            <span>{totals.fat}g grasa</span>
+          </div>
         </div>
       </div>
 
