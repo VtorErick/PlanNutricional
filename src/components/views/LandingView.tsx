@@ -11,53 +11,53 @@ const IMC_MAX = 45;
 function ImcBar({ imc, label }: { imc: number; label: string }) {
   const pct = Math.min(100, Math.max(0, ((imc - IMC_MIN) / (IMC_MAX - IMC_MIN)) * 100));
   const barColor =
-    imc < 18.5 ? '#38bdf8' : imc < 25 ? '#34d399' : imc < 30 ? '#fbbf24' : '#f87171';
+    imc < 18.5 ? '#38bdf8' : imc < 25 ? '#34d399' : imc < 30 ? '#fbbf24' : '#fb7185';
   const badgeCls =
     imc < 18.5
-      ? 'bg-sky-400/20 text-sky-100'
+      ? 'bg-sky-400/20 text-sky-50 border border-sky-200/20'
       : imc < 25
-        ? 'bg-emerald-400/20 text-emerald-100'
+        ? 'bg-emerald-400/20 text-emerald-50 border border-emerald-200/20'
         : imc < 30
-          ? 'bg-amber-400/20 text-amber-100'
-          : 'bg-rose-400/20 text-rose-100';
+          ? 'bg-amber-400/20 text-amber-50 border border-amber-200/20'
+          : 'bg-rose-400/20 text-rose-50 border border-rose-200/20';
 
   return (
     <div className="w-full space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">IMC</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-white/85">IMC</span>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-white tabular-nums">{imc.toFixed(1)}</span>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${badgeCls}`}>
+          <span className="text-sm font-bold text-white tabular-nums drop-shadow-sm">{imc.toFixed(1)}</span>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm ${badgeCls}`}>
             {label}
           </span>
         </div>
       </div>
-      <div className="relative h-2 w-full rounded-full overflow-hidden bg-white/10">
+      <div className="relative h-2.5 w-full rounded-full overflow-hidden bg-white/15 ring-1 ring-white/10 shadow-inner">
         <div
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(to right, #38bdf8 0% 8.6%, #34d399 8.6% 31%, #fbbf24 31% 48.3%, #f87171 48.3% 100%)',
-            opacity: 0.22,
+              'linear-gradient(to right, #38bdf8 0% 8.6%, #34d399 8.6% 31%, #fbbf24 31% 48.3%, #fb7185 48.3% 100%)',
+            opacity: 0.24,
           }}
         />
         <motion.div
-          className="absolute inset-y-0 left-0 rounded-full"
+          className="absolute inset-y-0 left-0 rounded-full shadow-[0_0_18px_rgba(255,255,255,0.15)]"
           style={{ backgroundColor: barColor }}
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.85, ease: 'easeOut', delay: 0.4 }}
         />
         <motion.div
-          className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white shadow"
+          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border border-white/70 shadow-[0_2px_10px_rgba(255,255,255,0.45)]"
           initial={{ left: 0 }}
-          animate={{ left: `calc(${pct}% - 5px)` }}
+          animate={{ left: `calc(${pct}% - 6px)` }}
           transition={{ duration: 0.85, ease: 'easeOut', delay: 0.4 }}
         />
       </div>
       <div className="flex justify-between">
         {['16', '18.5', '25', '30', '45'].map((v) => (
-          <span key={v} className="text-[9px] text-white/20 tabular-nums">{v}</span>
+          <span key={v} className="text-[9px] text-white/70 tabular-nums">{v}</span>
         ))}
       </div>
     </div>
@@ -76,11 +76,11 @@ function BioChip({
 }) {
   if (!value) return null;
   return (
-    <div className="inline-flex items-center gap-1 bg-white/10 rounded-lg px-2 py-1">
-      <Icon className="w-3 h-3 text-white/40 shrink-0" />
-      <span className="text-[11px] font-semibold text-white/90 tabular-nums">
+    <div className="inline-flex items-center gap-1 bg-white/12 border border-white/12 rounded-xl px-2 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-sm">
+      <Icon className="w-3 h-3 text-white shrink-0" />
+      <span className="text-[11px] font-semibold text-white tabular-nums">
         {value}
-        <span className="font-normal text-white/45 ml-0.5">{unit}</span>
+        <span className="font-normal text-white/90 ml-0.5">{unit}</span>
       </span>
     </div>
   );
@@ -91,27 +91,61 @@ function BioChip({
 function PlanButton({
   label,
   onClick,
-  tint, // 'blue' | 'rose' | 'emerald'
+  tint,
 }: {
   label: string;
   onClick: (e: React.MouseEvent) => void;
   tint: 'blue' | 'rose' | 'emerald';
 }) {
   const cls = {
-    blue: 'bg-white/20 hover:bg-white/30 border-white/30 text-white',
-    rose: 'bg-white/20 hover:bg-white/30 border-white/30 text-white',
-    emerald: 'bg-white/20 hover:bg-white/30 border-white/30 text-white',
+    blue: 'border-blue-200/20 bg-white/10 hover:bg-white/16 shadow-[0_8px_24px_rgba(29,78,216,0.22)] hover:shadow-[0_12px_30px_rgba(29,78,216,0.32)]',
+    rose: 'border-rose-200/20 bg-white/10 hover:bg-white/16 shadow-[0_8px_24px_rgba(190,24,93,0.22)] hover:shadow-[0_12px_30px_rgba(190,24,93,0.32)]',
+    emerald: 'border-emerald-200/20 bg-white/10 hover:bg-white/16 shadow-[0_8px_24px_rgba(5,150,105,0.22)] hover:shadow-[0_12px_30px_rgba(5,150,105,0.32)]',
   }[tint];
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border backdrop-blur-sm text-[11px] font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${cls}`}
-    >
-      <Sparkles className="w-3 h-3" />
-      {label}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`
+          relative overflow-hidden group
+          inline-flex items-center gap-1.5 px-3 py-1.5
+          rounded-full border backdrop-blur-md
+          text-[11px] font-semibold text-white
+          transition-all duration-200
+          hover:scale-[1.03] active:scale-95
+          ${cls}
+        `}
+      >
+        {/* glow suave */}
+        <span className="absolute inset-0 rounded-full bg-white/10 blur-md opacity-60 pointer-events-none" />
+
+        {/* shimmer */}
+        <span className="absolute inset-0 overflow-hidden rounded-full pointer-events-none">
+          <span className="absolute top-0 left-[-75%] h-full w-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-[-20deg] shimmer" />
+        </span>
+
+        {/* contenido */}
+        <Sparkles className="w-3 h-3 relative z-10" />
+        <span className="relative z-10">{label}</span>
+      </button>
+
+      <style jsx>{`
+        .shimmer {
+          animation: shimmer 2.5s infinite;
+        }
+
+        @keyframes shimmer {
+          0% {
+            left: -75%;
+          }
+          100% {
+            left: 125%;
+          }
+        }
+      `}</style>
+    </>
   );
 }
 
@@ -186,9 +220,9 @@ export default function LandingView() {
       label: 'El',
       emoji: '🧍‍♂️',
       ready: elReady,
-      gradient: 'from-blue-600 via-blue-700 to-indigo-800',
-      shadowHover: 'hover:shadow-blue-500/20',
-      metaCls: 'text-blue-100/75',
+      gradient: 'from-[#2563eb] via-[#1d4ed8] to-[#172554]',
+      shadowHover: 'hover:shadow-[0_22px_60px_rgba(37,99,235,0.28)]',
+      metaCls: 'text-blue-50/80',
       bgImg: '/images/hero.png',
       imc: elImc,
       bio: elBio,
@@ -201,9 +235,9 @@ export default function LandingView() {
       label: 'Ella',
       emoji: '🧍‍♀️',
       ready: ellaReady,
-      gradient: 'from-rose-500 via-rose-600 to-pink-700',
-      shadowHover: 'hover:shadow-rose-500/20',
-      metaCls: 'text-rose-100/75',
+      gradient: 'from-[#ec4899] via-[#db2777] to-[#831843]',
+      shadowHover: 'hover:shadow-[0_22px_60px_rgba(236,72,153,0.28)]',
+      metaCls: 'text-rose-50/80',
       bgImg: '/images/meal-prep.png',
       imc: ellaImc,
       bio: ellaBio,
@@ -217,21 +251,44 @@ export default function LandingView() {
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
       {/* Ambient BG */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-100 via-white to-emerald-50/30" />
-        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-200/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 left-0 w-80 h-80 bg-emerald-200/10 rounded-full blur-3xl" />
-      </div>
 
-      <div className="relative z-10 flex flex-col flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+      {/* base gradient (profundidad suave) */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.10),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#f3f6fb_48%,_#edf7f1_100%)]" />
+
+      {/* blobs grandes (color ambiental) */}
+      <div className="absolute -top-24 -left-16 w-[28rem] h-[28rem] rounded-full bg-sky-300/20 blur-3xl" />
+      <div className="absolute top-[10%] -right-20 w-[26rem] h-[26rem] rounded-full bg-emerald-300/20 blur-3xl" />
+      <div className="absolute bottom-[-8rem] left-[18%] w-[30rem] h-[30rem] rounded-full bg-violet-300/10 blur-3xl" />
+
+      {/* grid MUY sutil (look moderno) */}
+      <div
+        className="absolute inset-0 opacity-[0.15]"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(148,163,184,0.10) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(148,163,184,0.10) 1px, transparent 1px)
+          `,
+          backgroundSize: '36px 36px',
+          maskImage: 'radial-gradient(circle at center, black 50%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(circle at center, black 50%, transparent 100%)',
+        }}
+      />
+
+      {/* viñeta ligera (enfoca al centro) */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_60%,_rgba(15,23,42,0.04)_100%)]" />
+
+    </div>
+
+      <div className="relative z-10 flex flex-col flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8" >
 
         {/* Top bar */}
         <div className="flex items-center justify-between pt-5 pb-4">
           <motion.div
             initial={{ opacity: 0, x: -14 }}
             animate={{ opacity: 1, x: 0 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white rounded-full shadow-sm border border-slate-200/60"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/85 backdrop-blur-sm rounded-full shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70"
           >
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.65)]" />
             <span className="text-[11px] font-semibold tracking-wide text-slate-600 uppercase">
               Bienvenido a su plan
             </span>
@@ -240,7 +297,7 @@ export default function LandingView() {
             initial={{ opacity: 0, x: 14 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setShowAdmin(true)}
-            className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white shadow-sm border border-slate-200/60 text-slate-600 text-xs font-medium hover:bg-slate-50 transition-all"
+            className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-sm shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 text-slate-600 text-xs font-medium hover:bg-white transition-all"
           >
             <Settings className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
             Respalda/Exporta tu plan
@@ -253,7 +310,7 @@ export default function LandingView() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
           className="text-center pb-5"
-        >
+        > 
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight mb-2">
             Nutrición inteligente,{' '}
             <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
@@ -264,10 +321,10 @@ export default function LandingView() {
             Elige tu plan individual o armen su lista de compras juntos de forma automática.
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-slate-200/50 text-[11px] font-medium text-slate-600">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-white/70 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600">
               <ChefHat className="w-3.5 h-3.5 text-emerald-500" /> Plan editable
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-slate-200/50 text-[11px] font-medium text-slate-600">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-white/70 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600">
               <ShoppingBasket className="w-3.5 h-3.5 text-blue-500" /> Lista de compras
             </div>
           </div>
@@ -280,32 +337,46 @@ export default function LandingView() {
           transition={{ delay: 0.14 }}
           className="space-y-2 pb-4"
         >
-          <div className="rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-2.5 text-center">
-            <p className="text-xs text-sky-800 font-semibold">
-              Selecciona un perfil para personalizar tu plan con IA.
+        {!elReady && !ellaReady && (
+          <div className="rounded-2xl border border-violet-200/80 bg-violet-50/85 shadow-[0_10px_30px_rgba(139,92,246,0.08)] px-4 py-2.5 backdrop-blur-sm">
+            <p className="text-xs font-semibold text-slate-500 text-center leading-relaxed">
+              Aún no hay planes generados. <br />Comienza con{' '}
+              <Sparkles className="w-3 h-3 inline mx-1" />
+              <span className="font-bold italic text-base">Personalizar mi plan</span>.
+              <span className="block text-[11px] font-medium text-slate-400 mt-1">
+                También puedes personalizar ambos para obtener más comidas compartidas.
+              </span>
             </p>
           </div>
-          {elReady !== ellaReady && (
-            <div className="rounded-2xl border border-violet-200 bg-violet-50/80 px-4 py-2.5 flex items-center justify-between gap-3">
-              <p className="text-xs text-violet-900 font-semibold">
-                {elReady ? '¡Plan de El listo! ¿Personalizamos el de Ella?' : '¡Plan de Ella listo! ¿Personalizamos el de El?'}
-              </p>
-              <button
-                type="button"
-                onClick={() => { setQuestionnaireTargetProfile(elReady ? 'ella' : 'el'); setShowQuestionnaire(true); }}
-                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold transition-colors"
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Generar
-              </button>
-            </div>
-          )}
-          {elReady && ellaReady && (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-2.5 text-center">
-              <p className="text-xs text-emerald-800 font-semibold">
-                ✅ ¡Todo listo! Los planes personalizados para ambos han sido generados.
-              </p>
-            </div>
-          )}
+        )}
+
+        {elReady !== ellaReady && (
+          <div className="rounded-2xl border border-violet-200/80 bg-violet-50/85 shadow-[0_10px_30px_rgba(139,92,246,0.08)] px-4 py-2.5 backdrop-blur-sm">
+            <p className="text-xs font-semibold text-slate-500 text-center leading-relaxed">
+              <Sparkles className="w-3 h-3 inline mr-1" />
+              <span className="font-bold italic text-base">{elReady ? 'El' : 'Ella'}</span>{' '}
+              ya tiene un plan listo. <br />Ahora puedes generar el de{' '}
+              <span className="font-bold italic text-base">{elReady ? 'Ella' : 'El'}</span>{' '}
+              desde <Sparkles className="w-3 h-3 inline mx-1" />
+              <span className="font-bold italic text-base">Personalizar mi plan</span>.
+              <span className="block text-[11px] font-medium text-slate-400 mt-1">
+                O personaliza ambos para obtener más comidas compartidas.
+              </span>
+            </p>
+          </div>
+        )}
+
+        {elReady && ellaReady && (
+          <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/85 shadow-[0_10px_30px_rgba(16,185,129,0.08)] px-4 py-2.5 backdrop-blur-sm">
+            <p className="text-xs font-semibold text-emerald-700 text-center leading-relaxed">
+              Los planes de <span className="font-bold italic text-base">El</span> y{' '}
+              <span className="font-bold italic text-base">Ella</span> ya están listos.
+              <span className="block text-[11px] font-medium text-emerald-600/80 mt-1">
+                Si quieres más comidas compartidas, puedes volver a personalizar ambos.
+              </span>
+            </p>
+          </div>
+        )}  
         </motion.div>
 
         {/* ── Cards ─────────────────────────────────────────────────────────── */}
@@ -325,20 +396,21 @@ export default function LandingView() {
                 tabIndex={0}
                 onClick={p.onCard}
                 onKeyDown={onKey(p.onCard)}
-                className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${p.gradient} shadow-lg hover:shadow-xl ${p.shadowHover} transition-all duration-300 cursor-pointer flex flex-col`}
+                className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${p.gradient} shadow-[0_18px_44px_rgba(15,23,42,0.16)] hover:shadow-[0_24px_56px_rgba(15,23,42,0.2)] ${p.shadowHover} transition-all duration-300 cursor-pointer flex flex-col ring-1 ring-white/10`}
               >
                 {/* BG texture */}
                 <div
                   className="absolute inset-0 bg-cover bg-center opacity-[0.07] mix-blend-luminosity"
                   style={{ backgroundImage: `url('${p.bgImg}')` }}
                 />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_transparent_42%)] pointer-events-none" />
                 {/* Shimmer */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/8 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
 
                 {/* Ready badge */}
                 {p.ready && (
-                  <div className="absolute top-3.5 right-3.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/20 backdrop-blur-sm text-white text-[10px] font-bold">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                  <div className="absolute top-3.5 right-3.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/18 backdrop-blur-md border border-white/10 text-white text-[10px] font-bold shadow-[0_8px_20px_rgba(0,0,0,0.16)]">
+                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
                     Listo
                   </div>
                 )}
@@ -346,35 +418,42 @@ export default function LandingView() {
                 {/* ── Card body ──────────────────────────────────────────── */}
                 <div className="relative z-10 p-5 flex flex-col flex-1 gap-4">
 
-                  {/* Row 1: avatar + name + biometrics */}
+                  {/* Header */}
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0 text-2xl">
+                    <div className="w-11 h-11 rounded-2xl bg-white/14 border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_10px_24px_rgba(0,0,0,0.12)] flex items-center justify-center shrink-0 text-[22px] backdrop-blur-sm">
                       {p.emoji}
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-2xl font-bold text-white leading-none mb-1">{p.label}</h3>
-                      {(p.bio.weight || p.bio.height || p.bio.age) && (
-                        <div className="flex flex-wrap gap-1.5">
-                          <BioChip icon={Scale} value={p.bio.weight} unit="kg" />
-                          <BioChip icon={Ruler} value={p.bio.height} unit="m" />
-                          <BioChip icon={Calendar} value={p.bio.age} unit="años" />
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <h3 className="text-2xl font-bold text-white leading-none tracking-tight drop-shadow-sm whitespace-nowrap">
+                          {p.label}
+                        </h3>
+
+                        {(p.bio.weight || p.bio.height || p.bio.age) && (
+                          <div className="flex flex-wrap justify-end gap-1.5">
+                            <BioChip icon={Scale} value={p.bio.weight} unit="kg" />
+                            <BioChip icon={Ruler} value={p.bio.height} unit="m" />
+                            <BioChip icon={Calendar} value={p.bio.age} unit="años" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   {/* Divider */}
-                  <div className="border-t border-white/10" />
+                  <div className="border-t border-white/18" />
 
-                  {/* Row 2: IMC bar */}
-                  {p.imc && <ImcBar imc={p.imc.imc} label={p.imc.label} />}
+                  {/* Content area estilo similar a Ambos */}
+                  <div className="flex flex-col gap-4 flex-1">
+                    {p.imc && <ImcBar imc={p.imc.imc} label={p.imc.label} />}
 
-                  {/* Row 3: meta goal */}
-                  <p className={`text-xs ${p.metaCls} font-medium leading-relaxed line-clamp-3 flex-1`}>
-                    {p.meta}
-                  </p>
+                    <p className={`text-sm ${p.metaCls} font-medium leading-relaxed text-white/90 line-clamp-3`}>
+                      {p.meta}
+                    </p>
+                  </div>
 
-                  {/* Row 4: CTA button — always same style */}
+                  {/* Button abajo igual que Ambos */}
                   <PlanButton
                     label={p.ready ? 'Actualizar mi plan' : 'Personalizar mi plan'}
                     tint={p.id === 'el' ? 'blue' : 'rose'}
@@ -398,69 +477,76 @@ export default function LandingView() {
             tabIndex={0}
             onClick={() => { setPerfilActivo('ambos'); setDiaActivo('Lunes'); setTab('plan'); }}
             onKeyDown={onKey(() => { setPerfilActivo('ambos'); setDiaActivo('Lunes'); setTab('plan'); })}
-            className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 shadow-lg hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300 cursor-pointer"
+            className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#10b981] via-[#059669] to-[#0f766e] shadow-[0_18px_44px_rgba(15,23,42,0.16)] hover:shadow-[0_24px_56px_rgba(15,23,42,0.2)] hover:shadow-[0_22px_60px_rgba(16,185,129,0.24)] transition-all duration-300 cursor-pointer ring-1 ring-white/10"
           >
-            {/* Main page hero image as BG (blended) */}
+            {/* BG */}
             <div
               className="absolute inset-0 bg-cover bg-center opacity-[0.09] mix-blend-luminosity"
               style={{ backgroundImage: "url('/images/hero.png')" }}
             />
-            {/* + meal-prep texture blended on top */}
             <div
               className="absolute inset-0 bg-cover bg-center opacity-[0.05] mix-blend-overlay"
               style={{ backgroundImage: "url('/images/meal-prep.png')" }}
             />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_transparent_44%)] pointer-events-none" />
+
             {/* Shimmer */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/6 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
 
-            <div className="relative z-10 p-5 flex flex-col sm:flex-row sm:items-center gap-5">
+            {/* CONTENT */}
+            <div className="relative z-10 p-6 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-5 items-center">
 
-              {/* Left: avatar + name + button */}
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-2xl">
-                  👫
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <h3 className="text-2xl font-bold text-white leading-none">Ambos</h3>
-                  {/* Button always → questionnaire, stopPropagation prevents card nav */}
-                  <PlanButton
-                    label={elReady && ellaReady ? 'Actualizar mi plan' : 'Personalizar mi plan'}
-                    tint="emerald"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setQuestionnaireTargetProfile('ambos');
-                      setShowQuestionnaire(true);
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Center: description */}
-              <p className="flex-1 text-xs text-emerald-100/75 font-medium leading-relaxed">
-                Combina los planes de ambos en una sola vista y genera una lista de compras
-                conjunta con un clic.
-              </p>
-
-              {/* Right: stats */}
-              <div className="flex gap-3 shrink-0">
-                {[
-                  { val: String(ambos.shared), label: 'Compartidas', sub: 'comidas' },
-                  { val: `${ambos.pct}%`, label: 'Sinergia', sub: 'ingredientes' },
-                ].map(({ val, label, sub }) => (
-                  <div
-                    key={label}
-                    className="flex flex-col items-center bg-white/10 border border-white/15 rounded-2xl px-4 py-3 min-w-[76px]"
-                  >
-                    <span className="text-[9px] text-emerald-100/45 font-bold uppercase tracking-widest mb-1">
-                      {label}
-                    </span>
-                    <span className="text-2xl font-bold text-white tabular-nums leading-none">
-                      {val}
-                    </span>
-                    <span className="text-[9px] text-emerald-100/35 mt-0.5">{sub}</span>
+              {/* Left side */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white/14 border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_10px_24px_rgba(0,0,0,0.12)] flex items-center justify-center text-[22px] backdrop-blur-sm shrink-0">
+                    👫
                   </div>
-                ))}
+                  <h3 className="text-2xl font-bold text-white tracking-tight drop-shadow-sm whitespace-nowrap">
+                    Ambos
+                  </h3>
+                </div>
+
+                <p className="text-sm text-white/90 font-medium leading-relaxed max-w-xl">
+                  Combina los planes de ambos en una sola vista y genera una lista de compras conjunta con un clic.
+                </p>
               </div>
+
+              {/* Right side */}
+              <div className="flex flex-col items-start md:items-end gap-3">
+                <PlanButton
+                  label={elReady && ellaReady ? 'Actualizar mi plan' : 'Personalizar mi plan'}
+                  tint="emerald"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuestionnaireTargetProfile('ambos');
+                    setShowQuestionnaire(true);
+                  }}
+                />
+
+                <div className="flex flex-wrap md:flex-nowrap justify-start md:justify-end gap-3">
+                  {[
+                    { val: String(ambos.shared), label: 'Compartidas', sub: 'comidas' },
+                    { val: `${ambos.pct}%`, label: 'Sinergia', sub: 'ingredientes' },
+                  ].map(({ val, label, sub }) => (
+                    <div
+                      key={label}
+                      className="flex flex-col items-center bg-white/10 border border-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_rgba(0,0,0,0.08)] rounded-2xl px-4 py-3 min-w-[96px] backdrop-blur-sm"
+                    >
+                      <span className="text-[9px] text-emerald-50/70 font-bold uppercase tracking-widest mb-1">
+                        {label}
+                      </span>
+                      <span className="text-2xl font-bold text-white tabular-nums leading-none drop-shadow-sm">
+                        {val}
+                      </span>
+                      <span className="text-[9px] text-emerald-50/55 mt-0.5">
+                        {sub}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           </motion.div>
         </div>
