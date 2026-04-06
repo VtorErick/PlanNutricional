@@ -11,7 +11,12 @@ import {
   Moon,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
-import { sumSelectedMealCalories, sumSelectedMealFat, sumSelectedMealProtein } from '../../utils/nutrition';
+import {
+  estimateDailyCaloriesFromObjectives,
+  sumSelectedMealCalories,
+  sumSelectedMealFat,
+  sumSelectedMealProtein,
+} from '../../utils/nutrition';
 
 const momentoIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
@@ -68,6 +73,19 @@ export default function DailyProgress() {
     return sumForProfile(perfilId);
   }, [diaActivo, perfilesData, selecciones, isAmbos, perfilActivo]);
 
+  const metaCalorica = React.useMemo(() => {
+    const getProfileTarget = (perfilId: 'el' | 'ella') => {
+      const profile = perfilesData[perfilId];
+      return profile?.metaCaloricaKcalDia ?? estimateDailyCaloriesFromObjectives(profile);
+    };
+
+    if (isAmbos || perfilActivo === 'ambos') {
+      return getProfileTarget('el') + getProfileTarget('ella');
+    }
+
+    return perfilActivo === 'ella' ? getProfileTarget('ella') : getProfileTarget('el');
+  }, [perfilesData, isAmbos, perfilActivo]);
+
   return (
     <motion.div
       key={`progress-${perfilActivo}`}
@@ -100,12 +118,17 @@ export default function DailyProgress() {
               </button>
             );
           })}
-          <div className="ml-auto flex-shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight whitespace-nowrap">
-            <span>{totals.kcal} kcal</span>
-            <span className="mx-1 text-slate-300">·</span>
-            <span>{totals.protein}g prot</span>
-            <span className="mx-1 text-slate-300">·</span>
-            <span>{totals.fat}g grasa</span>
+          <div className="ml-auto flex-shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold text-slate-700 leading-tight">
+            <div className="whitespace-nowrap">
+              <span>{totals.kcal} kcal</span>
+              <span className="mx-1 text-slate-300">·</span>
+              <span>{totals.protein}g P</span>
+              <span className="mx-1 text-slate-300">·</span>
+              <span>{totals.fat}g G</span>
+            </div>
+            <div className="mt-0.5 text-slate-500 font-semibold whitespace-nowrap">
+              Meta: {metaCalorica} kcal
+            </div>
           </div>
         </div>
       </div>
