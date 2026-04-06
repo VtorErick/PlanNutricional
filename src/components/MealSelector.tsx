@@ -68,8 +68,8 @@ export default function MealSelector({
               </div>
 
               <div className="pt-1">
-                {/* Porciones - mostrar con iconos como en version lectura cuando está seleccionado */}
-                {esSeleccionada && porciones.length > 0 ? (
+                {/* Porciones - mostrar con iconos siempre que haya porciones disponibles */}
+                {porciones.length > 0 ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {porciones.map((item) => (
                       <span
