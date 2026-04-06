@@ -77,7 +77,16 @@ body {
   display: none;
 }
 
-/* Mobile safe area */
+/* Shimmer animation for PlanButton */
+@keyframes shimmer {
+  0% { left: -75%; }
+  100% { left: 125%; }
+}
+
+.shimmer {
+  animation: shimmer 2.5s infinite;
+}
+
 @supports (padding: env(safe-area-inset-bottom)) {
   body {
     padding-bottom: env(safe-area-inset-bottom);

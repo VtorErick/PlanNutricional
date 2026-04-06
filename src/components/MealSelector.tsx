@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Utensils, Tag, CheckCircle2 } from 'lucide-react';
+import { Utensils } from 'lucide-react';
 import type { MealItem } from '../data';
 
 interface MealSelectorProps {
@@ -27,50 +27,76 @@ export default function MealSelector({
     <div className="grid gap-3">
       {comidas.map((comida, idx) => {
         const esSeleccionada = selecciones[`${perfil}-${dia}-${momento}-${comida.nombre}`];
+
         return (
-          <motion.div
+          <motion.button
             key={comida.nombre}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            whileTap={{ scale: 0.97 }}
+            type="button"
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            whileTap={{ scale: 0.985 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30, delay: idx * 0.04 }}
             onClick={() => onToggle(perfil, dia, momento, comida.nombre)}
-            className={`relative overflow-hidden rounded-[24px] sm:rounded-3xl transition-all duration-300 cursor-pointer group ${
+            className={`relative overflow-hidden rounded-[22px] sm:rounded-[26px] transition-all duration-300 text-left w-full group ${
               esSeleccionada
-                ? `${accentClasses.bgLight} border-[2.5px] ${accentClasses.borderAccent} shadow-[0_8px_30px_rgb(0,0,0,0.04)]`
-                : 'bg-white border border-slate-100/80 shadow-sm hover:border-slate-200 hover:shadow-md'
+                ? `${accentClasses.bgLight} border-2 ${accentClasses.borderAccent} shadow-[0_8px_28px_rgb(0,0,0,0.05)]`
+                : 'bg-white border border-slate-100/90 shadow-sm hover:border-slate-200 hover:shadow-md'
             }`}
           >
-            <div className="relative p-5 sm:p-6 space-y-3">
+            {esSeleccionada && (
+              <div className="absolute inset-x-0 top-0 h-1 bg-white/30 pointer-events-none" />
+            )}
+
+            <div className="relative p-4 sm:p-5 space-y-3">
               {/* Header */}
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <h4 className="font-bold text-slate-800 text-sm tracking-tight leading-snug">
-                    {comida.nombre}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">{comida.detalle}</p>
-                </div>
-                <div
-                  className={`w-7 h-7 rounded-full border-[2.5px] flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-                    esSeleccionada
-                      ? `${accentClasses.bg} ${accentClasses.borderAccent} scale-110`
-                      : 'border-slate-200 group-hover:border-slate-300 bg-slate-50'
-                  }`}
-                >
-                  {esSeleccionada && (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }}>
-                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </motion.div>
-                  )}
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 className="font-black text-slate-800 text-[15px] sm:text-base tracking-tight leading-snug break-words">
+                      {comida.nombre}
+                    </h4>
+
+                    <div
+                      className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                        esSeleccionada
+                          ? `${accentClasses.bg} ${accentClasses.borderAccent} scale-105`
+                          : 'border-slate-200 group-hover:border-slate-300 bg-slate-50'
+                      }`}
+                    >
+                      {esSeleccionada && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        >
+                          <svg
+                            className="w-4 h-4 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={3}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1.5 font-medium leading-relaxed break-words">
+                    {comida.detalle}
+                  </p>
                 </div>
               </div>
 
-              <div className="pt-1">
-                {/* Porciones - mostrar con iconos siempre que haya porciones disponibles */}
+              {/* Porciones */}
+              <div className="pt-0.5">
                 {porciones.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5">
                     {porciones.map((item) => (
                       <span
                         key={`${comida.nombre}-${item.key}-${item.cantidad}`}
@@ -85,32 +111,40 @@ export default function MealSelector({
                     ))}
                   </div>
                 ) : (
-                  <div className={`flex items-center gap-3 text-xs bg-white rounded-[16px] p-3 border ${esSeleccionada ? accentClasses.border : 'border-slate-100'} shadow-sm`}>
-                    <div className={`w-7 h-7 rounded-[10px] ${accentClasses.bgLight} flex items-center justify-center flex-shrink-0`}>
-                      <Utensils className={`w-3.5 h-3.5 ${accentClasses.text}`} />
+                  <div
+                    className={`flex items-center gap-3 text-xs rounded-[16px] p-3 border shadow-sm ${
+                      esSeleccionada
+                        ? `bg-white/80 ${accentClasses.border}`
+                        : 'bg-white border-slate-100'
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-[12px] ${accentClasses.bgLight} flex items-center justify-center flex-shrink-0`}
+                    >
+                      <Utensils className={`w-4 h-4 ${accentClasses.text}`} />
                     </div>
-                    <span className="text-slate-700 font-medium tracking-tight leading-relaxed">{comida.porciones}</span>
+                    <span className="text-slate-700 font-medium tracking-tight leading-relaxed break-words">
+                      {comida.porciones}
+                    </span>
                   </div>
                 )}
               </div>
 
-              <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
-                {/* Tags */}
-                {comida.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {comida.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-[9px] uppercase tracking-widest font-extrabold`}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Tags */}
+              {comida.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
+                  {comida.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className={`inline-flex items-center px-2.5 py-1 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-[9px] uppercase tracking-widest font-extrabold`}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          </motion.div>
+          </motion.button>
         );
       })}
     </div>

@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Settings, X, KeyRound, Zap } from 'lucide-react';
+import { Settings, X, KeyRound, Zap, Sparkles, ChevronDown, ShieldCheck } from 'lucide-react';
 import AdminPanel from '../AdminPanel';
-import { showAppAlert, showAppConfirm } from '../../utils/appDialogs';
-import { perfilesData as origPerfilesData, rawData } from '../../data';
 import { useDiet } from '../../context/DietContext';
+import { perfilesData as origPerfilesData, rawData } from '../../data';
 
 export default function AdminLayout() {
   const {
@@ -12,42 +11,101 @@ export default function AdminLayout() {
     geminiModel, setGeminiModel,
     customData, setCustomData,
     dataVersions, setDataVersions,
-    notify, confirmAction
+    notify,
   } = useDiet();
+
   const [adminTab, setAdminTab] = useState<'manual' | 'settings'>('manual');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const hasSavedKey = !!localStorage.getItem('geminiApiKey');
+  const usingCustomKey = !!geminiApiKey || hasSavedKey;
+
+  const modelOptions = [
+    {
+      val: 'gemini-2.0-flash',
+      label: 'Recomendado',
+      techLabel: 'Gemini 2.0 Flash',
+      desc: 'Equilibrio entre velocidad y buenos resultados.',
+      badge: 'Ideal',
+      badgeColor: 'bg-blue-100 text-blue-700',
+    },
+    {
+      val: 'gemini-2.5-flash',
+      label: 'Más rápido',
+      techLabel: 'Gemini 2.5 Flash',
+      desc: 'Genera respuestas rápido y con buen rendimiento.',
+      badge: 'Rápido',
+      badgeColor: 'bg-emerald-100 text-emerald-700',
+    },
+    {
+      val: 'gemini-1.5-flash',
+      label: 'Básico',
+      techLabel: 'Gemini 1.5 Flash',
+      desc: 'Opción ligera para uso sencillo.',
+      badge: 'Simple',
+      badgeColor: 'bg-slate-100 text-slate-700',
+    },
+    {
+      val: 'gemini-1.5-pro',
+      label: 'Más detallado',
+      techLabel: 'Gemini 1.5 Pro',
+      desc: 'Puede dedicar más análisis, aunque tarda un poco más.',
+      badge: 'Detallado',
+      badgeColor: 'bg-violet-100 text-violet-700',
+    },
+    {
+      val: 'gemini-2.5-pro',
+      label: 'Máxima calidad',
+      techLabel: 'Gemini 2.5 Pro',
+      desc: 'La opción más potente para resultados más elaborados.',
+      badge: 'Premium',
+      badgeColor: 'bg-amber-100 text-amber-700',
+    },
+  ];
+
+  const recommendedModel = 'gemini-2.0-flash';
+  const advancedInputValue = geminiApiKey || localStorage.getItem('geminiApiKey') || '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
-      {/* Admin Header */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
             <Settings className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-800 leading-tight">Panel de Administración</h1>
-            <p className="text-[11px] text-slate-400 hidden sm:block">Gestiona respaldos y configura el motor de IA</p>
+            <h1 className="text-base font-bold text-slate-800 leading-tight">Configuración</h1>
+            <p className="text-[11px] text-slate-400 hidden sm:block">
+              Respalda tus planes y ajusta la generación automática
+            </p>
           </div>
         </div>
-        <button onClick={() => setShowAdmin(false)}
-          className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+
+        <button
+          onClick={() => setShowAdmin(false)}
+          className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
+        >
           <X className="w-5 h-5" />
         </button>
       </header>
 
-      {/* Admin Tab Bar */}
+      {/* Tabs */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
         <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
           {([
-            { key: 'manual', label: 'Backup', shortLabel: 'Backup', emoji: '💾' },
-            { key: 'settings', label: 'Ajustes IA', shortLabel: 'Ajustes', emoji: '⚙️' },
-          ] as const).map(t => (
-            <button key={t.key} onClick={() => setAdminTab(t.key)}
+            { key: 'manual', label: 'Respaldo', shortLabel: 'Respaldo', emoji: '💾' },
+            { key: 'settings', label: 'Generación', shortLabel: 'Generación', emoji: '✨' },
+          ] as const).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setAdminTab(t.key)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 ${
                 adminTab === t.key
                   ? 'bg-white text-slate-800 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-              }`}>
+              }`}
+            >
               <span className="block text-sm mb-0.5">{t.emoji}</span>
               <span className="hidden sm:block">{t.label}</span>
               <span className="sm:hidden">{t.shortLabel}</span>
@@ -61,110 +119,221 @@ export default function AdminLayout() {
         {/* ── SETTINGS TAB ── */}
         {adminTab === 'settings' && (
           <div className="space-y-5 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="text-center pb-2">
-              <h2 className="text-lg font-bold text-slate-800">⚙️ Ajustes de Inteligencia Artificial</h2>
-              <p className="text-sm text-slate-500">Configura tu clave y el modelo de Gemini a utilizar.</p>
+
+            <div className="text-center pb-1">
+              <h2 className="text-xl font-bold text-slate-800">Generación automática de planes</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Aquí eliges cómo quieres que la app genere o actualice tus planes.
+              </p>
             </div>
 
-            {/* API Key */}
+            {/* Simple mode */}
             <section className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                  <KeyRound className="w-5 h-5 text-orange-600" />
+              <div className="flex items-start gap-3 mb-5">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Clave de API Gemini</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Se guarda en tu navegador. Evita el límite de solicitudes compartido (Error 429).
+                  <h3 className="text-base font-bold text-slate-800">Modo recomendado</h3>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    La opción más simple para la mayoría de las personas.
                   </p>
                 </div>
               </div>
-              <div className="relative mb-3">
-                <input
-                  type="password"
-                  id="admin-api-key"
-                  placeholder="Ingresa tu API key de Gemini (AIzaSy...)"
-                  value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-10 text-slate-700 font-mono text-sm outline-none focus:ring-2 focus:ring-orange-400 transition"
-                />
-                {geminiApiKey && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-bold">✓</span>
-                )}
+
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 mb-4">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">
+                      Usa la configuración recomendada
+                    </p>
+                    <p className="text-xs text-emerald-700/90 mt-1 leading-relaxed">
+                      Esta opción ya deja lista la app para generar planes de forma normal,
+                      sin que tengas que entender claves, modelos o configuraciones técnicas.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={async () => {
-                    if (geminiApiKey) {
-                      // Guardar la nueva API key
-                      localStorage.setItem('geminiApiKey', geminiApiKey);
-                      setGeminiApiKey(''); // Limpiar input para mostrar botón de cargar default
-                      await notify('Configuración guardada', '✅ API Key guardada exitosamente');
-                    } else {
-                      // Cargar la predeterminada del .env
-                      const envKey = (import.meta as any).env?.GEMINI_API_KEY || '';
-                      localStorage.setItem('geminiApiKey', envKey);
-                      setGeminiApiKey(envKey);
-                      if (envKey) {
-                        await notify('Configuración actualizada', '✅ API Key predeterminada cargada desde configuración');
-                      } else {
-                        await notify('Configuración actualizada', '🗑️ API Key eliminada (no hay predeterminada en .env)');
-                      }
-                    }
+                    const envKey = (import.meta as any).env?.GEMINI_API_KEY || '';
+                    localStorage.setItem('geminiApiKey', envKey);
+                    setGeminiApiKey(envKey);
+                    setGeminiModel(recommendedModel);
+
+                    await notify(
+                      'Configuración lista',
+                      '✅ La app quedó configurada con la opción recomendada'
+                    );
                   }}
-                  className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98] shadow-md"
+                  className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-2xl transition-all active:scale-[0.98] shadow-md"
                 >
-                  {geminiApiKey ? '💾 Guardar API Key' : '🔄 Cargar predeterminada'}
+                  Usar configuración recomendada
                 </button>
-                {geminiApiKey && (
-                  <span className="text-xs text-emerald-600 font-medium flex items-center gap-1 bg-emerald-50 px-3 py-2 rounded-lg">
-                    ✅ Configurada
-                  </span>
-                )}
+
+                <div className="flex items-center justify-center px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-slate-600 font-medium">
+                  Modelo actual: {modelOptions.find((m) => m.val === geminiModel)?.label || 'Recomendado'}
+                </div>
               </div>
             </section>
 
-            {/* Model Select */}
+            {/* Select mode */}
             <section className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
                   <Zap className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Motor de Gemini</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Selecciona qué versión de Gemini usará el generador de planes.</p>
+                  <h3 className="text-base font-bold text-slate-800">Velocidad o calidad</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Puedes elegir cómo prefieres que responda la generación automática.
+                  </p>
                 </div>
               </div>
-              <p className="text-xs font-bold text-slate-600 mb-2">Selecciona tu modelo preferido (ya hay uno preseleccionado):</p>
+
               <div className="grid gap-2">
-                {[
-                  { val: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', badge: '⚡ Más reciente', desc: 'Versión más nueva y rápida de 2.5', badgeColor: 'bg-emerald-100 text-emerald-700' },
-                  { val: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: 'Recomendado', desc: 'Velocidad óptima y calidad alta', badgeColor: 'bg-blue-100 text-blue-700' },
-                  { val: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito', desc: 'Ideal para cuentas sin cuota pagada', badgeColor: 'bg-slate-100 text-slate-700' },
-                  { val: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', badge: '🧠 Pro', desc: 'Razonamiento complejo, más lento', badgeColor: 'bg-violet-100 text-violet-700' },
-                  { val: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', badge: '🚀 Máx. potencia', desc: 'El modelo más avanzado disponible', badgeColor: 'bg-amber-100 text-amber-700' },
-                ].map(m => (
-                  <button key={m.val} type="button" onClick={() => setGeminiModel(m.val)}
+                {modelOptions.map((m) => (
+                  <button
+                    key={m.val}
+                    type="button"
+                    onClick={() => setGeminiModel(m.val)}
                     className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all ${
                       geminiModel === m.val
                         ? 'border-indigo-400 bg-indigo-50 shadow-sm'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
-                    }`}>
-                    <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                      geminiModel === m.val ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 bg-white'
-                    }`}>
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                        geminiModel === m.val ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 bg-white'
+                      }`}
+                    >
                       {geminiModel === m.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-bold text-slate-800">{m.label}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>{m.badge}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>
+                          {m.badge}
+                        </span>
                       </div>
-                      <p className="text-xs text-slate-400">{m.desc}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{m.desc}</p>
                     </div>
                   </button>
                 ))}
               </div>
+            </section>
+
+            {/* Advanced section */}
+            <section className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="w-full flex items-center justify-between p-5 md:p-6 text-left hover:bg-slate-50 transition-colors"
+              >
+                <div className="min-w-0 pr-4">
+                  <h3 className="text-base font-bold text-slate-800">Opciones avanzadas</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Solo si ya sabes lo que estás haciendo o quieres usar tu propia configuración.
+                  </p>
+                </div>
+                <ChevronDown
+                  className={`w-5 h-5 text-slate-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {showAdvanced && (
+                <div className="px-5 md:px-6 pb-6 border-t border-slate-100 space-y-5">
+                  <div className="pt-5">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
+                        <KeyRound className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-slate-800">Clave personal de acceso</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Esto es opcional. Solo úsalo si alguien te indicó que pegaras una clave aquí.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 mb-3">
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Para la mayoría de usuarios, no hace falta tocar esta parte.
+                        La app puede funcionar con la configuración recomendada.
+                      </p>
+                    </div>
+
+                    <div className="relative mb-3">
+                      <input
+                        type="password"
+                        id="admin-api-key"
+                        placeholder="Pega aquí tu clave si te la compartieron"
+                        value={geminiApiKey}
+                        onChange={(e) => setGeminiApiKey(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-10 text-slate-700 text-sm outline-none focus:ring-2 focus:ring-orange-400 transition"
+                      />
+                      {usingCustomKey && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-bold">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={async () => {
+                          if (geminiApiKey) {
+                            localStorage.setItem('geminiApiKey', geminiApiKey);
+                            await notify('Guardado', '✅ Tu clave personal quedó guardada en este navegador');
+                          } else {
+                            const envKey = (import.meta as any).env?.GEMINI_API_KEY || '';
+                            localStorage.setItem('geminiApiKey', envKey);
+                            setGeminiApiKey(envKey);
+
+                            if (envKey) {
+                              await notify('Configuración actualizada', '✅ Se restauró la configuración predeterminada');
+                            } else {
+                              await notify('Configuración actualizada', '🗑️ Se eliminó la clave personalizada');
+                            }
+                          }
+                        }}
+                        className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98] shadow-md"
+                      >
+                        {geminiApiKey ? 'Guardar clave personal' : 'Restaurar configuración predeterminada'}
+                      </button>
+
+                      {usingCustomKey && (
+                        <button
+                          onClick={async () => {
+                            localStorage.removeItem('geminiApiKey');
+                            setGeminiApiKey('');
+                            await notify('Configuración limpiada', '✅ Se quitó la clave personalizada de este navegador');
+                          }}
+                          className="sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98]"
+                        >
+                          Quitar clave
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800 mb-2">Nombre técnico del motor</h4>
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3">
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Opción actual: <span className="font-semibold text-slate-800">
+                          {modelOptions.find((m) => m.val === geminiModel)?.techLabel || geminiModel}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
           </div>
         )}
@@ -173,9 +342,12 @@ export default function AdminLayout() {
         {adminTab === 'manual' && (
           <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="text-center mb-6">
-              <h2 className="text-lg font-bold text-slate-800">💾 Backup y Restauración</h2>
-              <p className="text-sm text-slate-500">Descarga tu plan como respaldo o restaura una versión anterior desde archivo JSON.</p>
+              <h2 className="text-lg font-bold text-slate-800">💾 Respaldo y restauración</h2>
+              <p className="text-sm text-slate-500">
+                Guarda una copia de tus planes o recupera una versión anterior desde un archivo JSON.
+              </p>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <AdminPanel
                 perfilId="el"
@@ -188,7 +360,7 @@ export default function AdminLayout() {
                 setDataVersion={(ver: string) => setDataVersions((prev: any) => ({ ...prev, el: ver }))}
                 perfilesDataObj={origPerfilesData.el}
                 notify={notify}
-                confirmAction={confirmAction}
+                confirmAction={() => Promise.resolve(true)}
               />
               <AdminPanel
                 perfilId="ella"
@@ -201,7 +373,7 @@ export default function AdminLayout() {
                 setDataVersion={(ver: string) => setDataVersions((prev: any) => ({ ...prev, ella: ver }))}
                 perfilesDataObj={origPerfilesData.ella}
                 notify={notify}
-                confirmAction={confirmAction}
+                confirmAction={() => Promise.resolve(true)}
               />
             </div>
           </section>
