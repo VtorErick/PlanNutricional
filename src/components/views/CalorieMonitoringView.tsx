@@ -8,6 +8,7 @@ const STATUS_LABELS = {
   near: 'Cerca de meta',
   high: 'Meta excedida',
 } as const;
+type StatusKey = keyof typeof STATUS_LABELS;
 
 export default function CalorieMonitoringView() {
   const { perfilActivo, perfilesData, selecciones, diasDisponibles, isAmbos, diaActivo } = useDiet();
@@ -48,7 +49,7 @@ export default function CalorieMonitoringView() {
     };
   }, { kcal: 0, proteinG: 0, fatG: 0 });
 
-  const daySummaries = diasDisponibles.map((dia) => {
+  const daySummaries: Array<{ dia: string; kcal: number; ratio: number; status: StatusKey }> = diasDisponibles.map((dia) => {
     const kcal = profileIds.reduce((accProfiles, profileId) => {
       const dayPlan = perfilesData[profileId]?.plan?.[dia] || {};
       const dayKcal = Object.entries(dayPlan).reduce((acc, [momentoKey, meals]) => {
@@ -59,12 +60,12 @@ export default function CalorieMonitoringView() {
     }, 0);
 
     const ratio = metaCaloricaTotal > 0 ? kcal / metaCaloricaTotal : 0;
-    const status = ratio < 0.85 ? 'low' : ratio <= 1.1 ? 'near' : 'high';
+    const status: StatusKey = ratio < 0.85 ? 'low' : ratio <= 1.1 ? 'near' : 'high';
 
     return { dia, kcal, ratio, status };
   });
 
-  const paletteByProfile = isAmbos || perfilActivo === 'ambos'
+  const paletteByProfile: Record<StatusKey, string> = isAmbos || perfilActivo === 'ambos'
     ? {
         low: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         near: 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -82,7 +83,7 @@ export default function CalorieMonitoringView() {
           high: 'bg-indigo-100 text-indigo-800 border-indigo-300',
         };
 
-  const barColorByProfile = isAmbos || perfilActivo === 'ambos'
+  const barColorByProfile: Record<StatusKey, string> = isAmbos || perfilActivo === 'ambos'
     ? { low: 'bg-emerald-300', near: 'bg-emerald-500', high: 'bg-teal-600' }
     : perfilActivo === 'ella'
       ? { low: 'bg-rose-300', near: 'bg-rose-500', high: 'bg-pink-600' }
