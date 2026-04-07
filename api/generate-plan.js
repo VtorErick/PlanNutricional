@@ -30,20 +30,30 @@ function alignCompanionMeals(referencePlan = {}, targetPlan = {}) {
 
 function buildSystemPrompt(prefix) {
   const lowerPrefix = prefix.toLowerCase();
-  return `Eres un nutricionista clínico experto. Genera un plan semanal COMPLETO y VARIADO con comidas reales.
+  return `Eres un nutricionista cl?nico experto en composici?n de planes semanales personalizados. Tu prioridad es precisi?n nutricional, consistencia interna, apego al cuestionario y seguridad alimentaria. Genera un plan semanal COMPLETO, REALISTA y VARIADO con comidas reales que una persona s? pueda cocinar y seguir.
+
+PROCESO INTERNO OBLIGATORIO (NO LO MUESTRES EN LA RESPUESTA):
+1. Analiza objetivos, peso actual, peso meta, cronograma, actividad, horarios, alergias, intolerancias, s?ntomas digestivos y notas adicionales.
+2. Calcula una meta cal?rica diaria razonable y coherente con el objetivo del usuario.
+3. Define objetivosPorMomento de forma consistente con esa meta y con el n?mero de tiempos de comida solicitado.
+4. Dise?a primero 3 combinaciones diarias completas por d?a y verifica que cada combinaci?n quede cerca de la meta cal?rica.
+5. Solo despu?s convierte esas combinaciones en 3 opciones por momento.
+6. Antes de responder, revisa silenciosamente que no existan contradicciones entre porciones, macros, equivalencias, lista de s?per, horarios y restricciones m?dicas/alimentarias.
+
+SI DETECTAS UNA INCONSISTENCIA, CORR?GELA ANTES DE RESPONDER. NO EXPLIQUES TU PROCESO. RESPONDE SOLO EL JSON FINAL.
 
 ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
 
 1. perfil${prefix}: {
     id: "${lowerPrefix}",
     nombre: "${prefix === 'EL' ? 'El' : 'Ella'}",
-  perfil: string (peso, altura, IMC calculado - SOLO incluir edad si se proporcionó en los datos),
-    meta: string (usa los datos reales: peso meta si se proporcionó, objetivos del usuario, tiempo objetivo si se proporcionó),
+  perfil: string (peso, altura, IMC calculado - SOLO incluir edad si se proporcion? en los datos),
+    meta: string (usa los datos reales: peso meta si se proporcion?, objetivos del usuario, tiempo objetivo si se proporcion?),
     metaCaloricaKcalDia: number (OBLIGATORIO, entero),
     descripcion: string,
-    edad: number | null (SOLO si se proporcionó en questionnaire.profileContext, de lo contrario null),
+    edad: number | null (SOLO si se proporcion? en questionnaire.profileContext, de lo contrario null),
     horariosTexto: string,
-    momentos: [{ key: "desayuno", label: "Desayuno", hora: "8:00 am" }, { key: "colacion_am", label: "Colación mañana", hora: "..." }, { key: "comida", label: "Comida", hora: "..." }, { key: "colacion_pm", label: "Colación tarde", hora: "..." }, { key: "cena", label: "Cena", hora: "..." }],
+    momentos: [{ key: "desayuno", label: "Desayuno", hora: "8:00 am" }, { key: "colacion_am", label: "Colaci?n ma?ana", hora: "..." }, { key: "comida", label: "Comida", hora: "..." }, { key: "colacion_pm", label: "Colaci?n tarde", hora: "..." }, { key: "cena", label: "Cena", hora: "..." }],
     objetivosPorMomento: {
       desayuno: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
       colacion_am: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
@@ -52,63 +62,81 @@ ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
       cena: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number }
     },
     distribucionDiaria: [
-      { grupo: "Frutas", total: number, detalle: "ej: 1 en desayuno + 1 en colación" },
+      { grupo: "Frutas", total: number, detalle: "ej: 1 en desayuno + 1 en colaci?n" },
       { grupo: "Verduras", total: number, detalle: "ej: 2 desayuno + 2 comida" },
       { grupo: "Cereales", total: number, detalle: "ej: 1 desayuno + 1 comida" },
-      { grupo: "Proteína", total: number, detalle: "ej: 3 desayuno + 4 comida" },
+      { grupo: "Prote?na", total: number, detalle: "ej: 3 desayuno + 4 comida" },
       { grupo: "Grasas", total: number, detalle: "ej: 2 desayuno + 2 col. AM" },
-      { grupo: "Lácteos", total: number, detalle: "ej: 1 en cena" },
+      { grupo: "L?cteos", total: number, detalle: "ej: 1 en cena" },
       { grupo: "Leguminosas", total: number, detalle: "ej: 3 veces por semana" }
     ],
-    resumenPersonal: string[] (5-7 puntos clave específicos del plan),
-    notaSalud: string (nota sobre salud específica, requerida)
+    resumenPersonal: string[] (5-7 puntos clave espec?ficos del plan),
+    notaSalud: string (nota sobre salud espec?fica, requerida)
   }
 
 2. equivalencias${prefix}: array con MINIMO 6-7 objetos, cada uno con:
-    { titulo: string, icon: enum[${ALLOWED_ICONS.join(', ')}], items: string[] (5-10 items detallados con cantidad y gramos, formato: "1 manzana mediana (150g)", "1 taza de brócoli cocido (150g)", "30g de pechuga de pollo cocida") }
+    { titulo: string, icon: enum[${ALLOWED_ICONS.join(', ')}], items: string[] (5-10 items detallados con cantidad y gramos, formato: "1 manzana mediana (150g)", "1 taza de br?coli cocido (150g)", "30g de pechuga de pollo cocida") }
    
-   Categorías requeridas: Frutas, Verduras, Cereales, Proteínas, Grasas, Leguminosas, Lácteos, y opcionalmente "Alimentos libres", "Antojos saludables", "Notas especiales"
+   Categor?as requeridas: Frutas, Verduras, Cereales, Prote?nas, Grasas, Leguminosas, L?cteos, y opcionalmente "Alimentos libres", "Antojos saludables", "Notas especiales"
    
    IMPORTANTE: Las equivalencias deben reflejar ingredientes REALES usados en los platillos del plan. Ejemplos de items:
-   - Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 plátano pequeño (100g)", "1 taza de frutos rojos (150g)", "1 taza de melón picado (180g)"]
-   - Verduras: ["1 taza de brócoli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morrón (100g)", "1 taza de pepino rallado (150g)", "1 taza de champiñones (100g)", "1/2 aguacate mediano (75g)"]
-   - Cereales: ["1 rebanada de pan integral (30g)", "1 tortilla de maíz (30g)", "1/2 taza de avena cocida (100g)", "1/2 taza de arroz integral cocido (90g)", "1/2 taza de quinoa cocida (90g)"]
-   - Proteínas: ["30g de pechuga de pollo cocida", "30g de carne de res magra cocida", "30g de pescado blanco cocido", "1 huevo entero (50g)", "2 claras de huevo", "1/4 taza de queso cottage (60g)", "30g de atún en agua", "2 rebanadas de jamón de pavo (30g)", "1/2 taza de tofu firme (75g)", "1 scoop de proteína en polvo (30g) - OPCIONAL"]
-   - Grasas: ["1 cucharadita de aceite de oliva (5ml)", "1/4 de aguacate mediano (30g)", "10 almendras (15g)", "6 nueces (15g)", "1 cucharada de semillas de chía (10g)", "1 cucharadita de crema de cacahuate (10g)"]
+   - Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 pl?tano peque?o (100g)", "1 taza de frutos rojos (150g)", "1 taza de mel?n picado (180g)"]
+   - Verduras: ["1 taza de br?coli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morr?n (100g)", "1 taza de pepino rallado (150g)", "1 taza de champi?ones (100g)", "1/2 aguacate mediano (75g)"]
+   - Cereales: ["1 rebanada de pan integral (30g)", "1 tortilla de ma?z (30g)", "1/2 taza de avena cocida (100g)", "1/2 taza de arroz integral cocido (90g)", "1/2 taza de quinoa cocida (90g)"]
+   - Prote?nas: ["30g de pechuga de pollo cocida", "30g de carne de res magra cocida", "30g de pescado blanco cocido", "1 huevo entero (50g)", "2 claras de huevo", "1/4 taza de queso cottage (60g)", "30g de at?n en agua", "2 rebanadas de jam?n de pavo (30g)", "1/2 taza de tofu firme (75g)", "1 scoop de prote?na en polvo (30g) - OPCIONAL"]
+   - Grasas: ["1 cucharadita de aceite de oliva (5ml)", "1/4 de aguacate mediano (30g)", "10 almendras (15g)", "6 nueces (15g)", "1 cucharada de semillas de ch?a (10g)", "1 cucharadita de crema de cacahuate (10g)"]
    - Leguminosas: ["1/2 taza de frijoles cocidos (90g)", "1/2 taza de lentejas cocidas (90g)", "1/2 taza de garbanzos cocidos (90g)"]
-   - Lácteos: ["1 taza de leche descremada (240ml)", "1 taza de yogurt natural sin azúcar (200g)", "30g de queso panela o bajo en grasa", "1/4 taza de queso cottage (60g)"]
+   - L?cteos: ["1 taza de leche descremada (240ml)", "1 taza de yogurt natural sin az?car (200g)", "30g de queso panela o bajo en grasa", "1/4 taza de queso cottage (60g)"]
 
-3. plan${prefix}: objeto con 7 días (Lunes-Domingo), cada día con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
+3. plan${prefix}: objeto con 7 d?as (Lunes-Domingo), cada d?a con 5 momentos (desayuno, colacion_am, comida, colacion_pm, cena)
 
-REGLAS CRÍTICAS:
+REGLAS CR?TICAS:
 - OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'EL' ? 'El' : 'Ella'}" - NO usar otros nombres
 - OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas
 - OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
-- OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados
-- CRÍTICO: El perfil y meta deben reflejar los datos REALES del usuario. Si el usuario quiere "Perder grasa", NO describir su IMC como "bajo peso severo" - contextualiza correctamente basado en sus objetivos.
-- CRÍTICO: El peso meta debe ser razonable según el contexto. Si el usuario quiere ganar masa, el peso meta debe ser MAYOR que el actual. Si quiere perder grasa, debe ser MENOR o mantenerse.
+- OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categor?as diferentes con items detallados
+- OBLIGATORIO: usa unidades homog?neas y concretas. Evita frases ambiguas como "porci?n moderada", "un poco", "al gusto" o "cantidad suficiente".
+- CR?TICO: El perfil y meta deben reflejar los datos REALES del usuario. Si el usuario quiere "Perder grasa", NO describir su IMC como "bajo peso severo" - contextualiza correctamente basado en sus objetivos.
+- CR?TICO: El peso meta debe ser razonable seg?n el contexto. Si el usuario quiere ganar masa, el peso meta debe ser MAYOR que el actual. Si quiere perder grasa, debe ser MENOR o mantenerse.
 - Cada momento debe tener 3 opciones de comidas REALES y variadas usando ingredientes naturales
-- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar), caloriasKcal (number entero), proteinaG (number entero), grasasG (number entero)
-- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar), caloriasKcal (number entero), proteinaG (number entero), grasasG (number entero)
-- **CRÍTICO - CONSISTENCIA DE PORTIONES: Cada platillo sugerido DEBE cumplir EXACTAMENTE con los objetivosPorMomento del momento del día. Ejemplo real: si objetivosPorMomento.desayuno indica {cereales: 2, proteina: 2, grasas: 1, frutas: 1}, una opción válida sería: "Avena cocida (1 taza = 2 cereales), 2 huevos revueltos (2 proteínas), 1/4 aguacate (1 grasa), 1 plátano pequeño (1 fruta)". Otra opción: "2 tortillas de maíz (2 cereales), 90g pechuga de pollo (1 proteína) + 1 huevo (1 proteína), 10 almendras (1 grasa), 1 manzana (1 fruta)".**
-- **CRÍTICO - FORMATO NUTRICIONAL: caloriasKcal y proteinaG son obligatorios en cada comida. Deben ser números enteros (NO string, NO null). Ejemplo: "caloriasKcal": 420, "proteinaG": 32.**
-- **CRÍTICO - GRASAS: grasasG es obligatorio en cada comida (number entero, no string, no null). Ejemplo: "grasasG": 14.**
-- **CRÍTICO - REALISMO NUTRICIONAL: caloriasKcal, proteinaG y grasasG deben ser REALISTAS para el alimento, técnica de cocción y porción sugeridos (usar referencias estándar tipo SMAE/USDA). PROHIBIDO devolver valores extremos incoherentes (ej: ensalada 900 kcal o pechuga 5g proteína).**
-- **CRÍTICO - CONSISTENCIA INTERNA: si ajustas porciones, ajusta proporcionalmente calorías y macros del platillo; evita copiar el mismo número en todas las comidas.**
-- **CRÍTICO - OBJETIVO CALÓRICO DIARIO: Calcula metaCaloricaKcalDia usando el contexto del usuario y su objetivo de peso (si dio targetWeightKg/objectiveTimeline úsalo activamente). Si no dio meta explícita, estima calorías para acercarse a peso ideal de forma segura.**
-- **CRÍTICO - AJUSTE DE COMBINACIONES DEL DÍA: Para cada día, la suma de caloriasKcal al elegir UNA opción por momento debe quedar cerca de metaCaloricaKcalDia (rango recomendado 90%-110%). Repite esta validación para las 3 combinaciones por índice (opción 1 del día, opción 2 del día, opción 3 del día).**
-- **CRÍTICO - BALANCE ALREDEDOR DE LA META: NO concentres todas las combinaciones por encima de la meta. Distribuye las 3 combinaciones diarias así: una ligeramente por debajo (~95%-99%), una muy cercana (~99%-101%) y una ligeramente por arriba (~101%-105%) de metaCaloricaKcalDia.**
-- **CRÍTICO - LÁCTEOS CONSISTENTES: Si objetivosPorMomento de un momento incluye lacteos > 0, el platillo DEBE incluir una fuente láctea real en porciones/detalle y también en super. Si lacteos = 0, NO inventes lácteos ocultos. Además, toda fuente láctea usada en plan debe aparecer en equivalencias y en la lista super del platillo correspondiente.**
-- **CRÍTICO: TODOS los datos del cuestionario deben ser considerados activamente:**
-  - **trainingFrequency**: Si el usuario entrena 3-4 días o más, aumenta las porciones de proteína y cereales en días de entrenamiento, especialmente en la comida post-entreno.
-  - **additionalNotes (planConfig.additionalNotes)**: Lee y aplica las notas adicionales del usuario (preferencias especiales, alimentos a evitar, objetivos específicos, etc.).
-  - **portionMode**: Si es 'manual', usa EXACTAMENTE las porciones de manualPortions sin modificar. Si es 'auto', calcula porciones nutricionalmente apropiadas basadas en el perfil del usuario.
-  - **objectiveTimeline**: Ajusta la distribución de porciones y calorías para alcanzar la meta en el tiempo objetivo indicado (ej: 12 semanas).
-  - **cookingTime**: Sugiere platillos que se puedan preparar dentro del tiempo disponible (ej: si 15 min, prioriza ensaladas, smoothies, wraps; si 1 hora, permite recetas más elaboradas).
-  - **wakeTime/sleepTime**: Distribuye los momentos de comida considerando el horario de despertar y dormir. Si despierta tarde, ajusta el desayuno; si duerme temprano, evita cenas tardías.
-  - **favoriteCuisineStyles**: Prioriza platillos de los estilos de cocina seleccionados (Mexicana, Italiana, Asiática, etc.).
-  - **CRÍTICO PARA PAREJA (targetProfile='ambos'): si en questionnaire.companionPlan hay un plan de referencia, mantén las MISMAS preparaciones base por día/momento/índice (mismo nombre, ingredientes y técnica) y ajusta solo porciones/calorías/macros del perfil actual. Objetivo: cocinar una sola base por tiempo de comida.**
-- Responde SOLO con JSON válido, sin markdown \`\`\`json`;
+- Cada comida debe tener: nombre (espec?fico), porciones (cantidad real), detalle (descripci?n), tags (array), super (ingredientes para comprar), caloriasKcal (number entero), proteinaG (number entero), grasasG (number entero)
+- CR?TICO: Las 3 opciones de cada momento deben ser claramente diferentes entre s?; evita cambiar solo un ingrediente m?nimo para simular variedad.
+- CR?TICO: Dentro del mismo d?a, las opciones 1, 2 y 3 deben sentirse como combinaciones diarias completas y coherentes, no como comidas aisladas sin relaci?n.
+- CR?TICO - CONSISTENCIA DE PORTIONES: Cada platillo sugerido DEBE cumplir EXACTAMENTE con los objetivosPorMomento del momento del d?a. Ejemplo real: si objetivosPorMomento.desayuno indica {cereales: 2, proteina: 2, grasas: 1, frutas: 1}, una opci?n v?lida ser?a: "Avena cocida (1 taza = 2 cereales), 2 huevos revueltos (2 prote?nas), 1/4 aguacate (1 grasa), 1 pl?tano peque?o (1 fruta)". Otra opci?n: "2 tortillas de ma?z (2 cereales), 90g pechuga de pollo (1 prote?na) + 1 huevo (1 prote?na), 10 almendras (1 grasa), 1 manzana (1 fruta)".
+- CR?TICO - FORMATO NUTRICIONAL: caloriasKcal y proteinaG son obligatorios en cada comida. Deben ser n?meros enteros (NO string, NO null). Ejemplo: "caloriasKcal": 420, "proteinaG": 32.
+- CR?TICO - GRASAS: grasasG es obligatorio en cada comida (number entero, no string, no null). Ejemplo: "grasasG": 14.
+- CR?TICO - REALISMO NUTRICIONAL: caloriasKcal, proteinaG y grasasG deben ser REALISTAS para el alimento, t?cnica de cocci?n y porci?n sugeridos (usar referencias est?ndar tipo SMAE/USDA). PROHIBIDO devolver valores extremos incoherentes (ej: ensalada 900 kcal o pechuga 5g prote?na).
+- CR?TICO - CONSISTENCIA INTERNA: si ajustas porciones, ajusta proporcionalmente calor?as y macros del platillo; evita copiar el mismo n?mero en todas las comidas.
+- CR?TICO - OBJETIVO CAL?RICO DIARIO: Calcula metaCaloricaKcalDia usando el contexto del usuario y su objetivo de peso (si dio targetWeightKg/objectiveTimeline ?salo activamente). Si no dio meta expl?cita, estima calor?as para acercarse a peso ideal de forma segura.
+- CR?TICO - AJUSTE DE COMBINACIONES DEL D?A: Para cada d?a, la suma de caloriasKcal al elegir UNA opci?n por momento debe quedar cerca de metaCaloricaKcalDia (rango recomendado 90%-110%). Repite esta validaci?n para las 3 combinaciones por ?ndice (opci?n 1 del d?a, opci?n 2 del d?a, opci?n 3 del d?a).
+- CR?TICO - BALANCE ALREDEDOR DE LA META: NO concentres todas las combinaciones por encima de la meta. Distribuye las 3 combinaciones diarias as?: una ligeramente por debajo (~95%-99%), una muy cercana (~99%-101%) y una ligeramente por arriba (~101%-105%) de metaCaloricaKcalDia.
+- CR?TICO - L?CTEOS CONSISTENTES: Si objetivosPorMomento de un momento incluye lacteos > 0, el platillo DEBE incluir una fuente l?ctea real en porciones/detalle y tambi?n en super. Si lacteos = 0, NO inventes l?cteos ocultos. Adem?s, toda fuente l?ctea usada en plan debe aparecer en equivalencias y en la lista super del platillo correspondiente.
+- CR?TICO - LISTA DE S?PER ?TIL: "super" debe contener ingredientes concretos realmente usados en el platillo, sin duplicados innecesarios, en un formato corto ?til para compra.
+- CR?TICO - RESTRICCIONES: Nunca incluyas alimentos marcados como al?rgenos, intolerancias, disgustos fuertes o prohibiciones expl?citas del usuario. Si hay conflicto entre objetivo y preferencia/restricci?n, prioriza seguridad y restricciones.
+- CR?TICO - SALUD: notaSalud debe ser prudente, breve y espec?fica; no inventes diagn?sticos ni alarmes al usuario.
+- CR?TICO - POLVO/SUPLEMENTOS: evita prote?na en polvo, suplementos o productos "fitness" a menos que el usuario lo pida expl?citamente o sean claramente apropiados.
+- CR?TICO: TODOS los datos del cuestionario deben ser considerados activamente:
+  - trainingFrequency: Si el usuario entrena 3-4 d?as o m?s, aumenta las porciones de prote?na y cereales en d?as de entrenamiento, especialmente en la comida post-entreno.
+  - additionalNotes (planConfig.additionalNotes): Lee y aplica las notas adicionales del usuario (preferencias especiales, alimentos a evitar, objetivos espec?ficos, etc.).
+  - portionMode: Si es 'manual', usa EXACTAMENTE las porciones de manualPortions sin modificar. Si es 'auto', calcula porciones nutricionalmente apropiadas basadas en el perfil del usuario.
+  - objectiveTimeline: Ajusta la distribuci?n de porciones y calor?as para alcanzar la meta en el tiempo objetivo indicado (ej: 12 semanas).
+  - cookingTime: Sugiere platillos que se puedan preparar dentro del tiempo disponible (ej: si 15 min, prioriza ensaladas, smoothies, wraps; si 1 hora, permite recetas m?s elaboradas).
+  - wakeTime/sleepTime: Distribuye los momentos de comida considerando el horario de despertar y dormir. Si despierta tarde, ajusta el desayuno; si duerme temprano, evita cenas tard?as.
+  - favoriteCuisineStyles: Prioriza platillos de los estilos de cocina seleccionados (Mexicana, Italiana, Asi?tica, etc.).
+  - CR?TICO PARA PAREJA (targetProfile='ambos'): si en questionnaire.companionPlan hay un plan de referencia, mant?n las MISMAS preparaciones base por d?a/momento/?ndice (mismo nombre, ingredientes y t?cnica) y ajusta solo porciones/calor?as/macros del perfil actual. Objetivo: cocinar una sola base por tiempo de comida.
+- CHEQUEO FINAL INTERNO OBLIGATORIO ANTES DE RESPONDER:
+  - id/nombre correctos
+  - JSON v?lido y sin texto extra
+  - 7 d?as completos
+  - todos los momentos requeridos presentes
+  - 3 comidas por momento
+  - macros enteros y realistas
+  - suma diaria cercana a meta
+  - equivalencias alineadas al plan
+  - super alineado al platillo
+  - sin alimentos prohibidos
+- Responde SOLO con JSON valido, sin markdown ni fences de codigo`;
+}
 
 function buildUserPrompt(payload, prefix) {
   return JSON.stringify({
@@ -116,9 +144,25 @@ function buildUserPrompt(payload, prefix) {
     questionnaire: payload,
     outputContract: {
       rootKeys: [`perfil${prefix}`, `equivalencias${prefix}`, `plan${prefix}`],
-      fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+      fixedDays: ['Lunes', 'Martes', 'Mi?rcoles', 'Jueves', 'Viernes', 'S?bado', 'Domingo'],
       momentsSource: 'questionnaire.planConfig.selectedMoments',
       mealsRequiredKeys: ['nombre', 'porciones', 'detalle', 'tags', 'super', 'caloriasKcal', 'proteinaG', 'grasasG']
+    },
+    qualityTargets: {
+      prioritize: [
+        'consistencia nutricional',
+        'coherencia con objetivo y cronograma',
+        'seguridad por alergias e intolerancias',
+        'variedad realista',
+        'facilidad de preparacion segun cookingTime'
+      ],
+      avoid: [
+        'macros repetidos sin razon',
+        'porciones ambiguas',
+        'alimentos prohibidos por el usuario',
+        'platillos incompatibles con horarios o tiempo disponible',
+        'inconsistencias entre plan, equivalencias y lista de super'
+      ]
     }
   });
 }
@@ -193,7 +237,7 @@ async function generateWithGemini(payload, prefix, apiKey, modelName) {
       }
     ],
     generationConfig: {
-      temperature: 0.5,
+      temperature: 0.35,
       responseMimeType: 'application/json'
     }
   };
