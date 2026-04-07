@@ -105,6 +105,23 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   await page.getByTestId('admin-export-json-el').click();
   const jsonDownload = await customJsonDownload;
   expect(jsonDownload.suggestedFilename()).toBe('perfil-el-personalizado.json');
+
+  await page.locator('button[title="Eliminar version personalizada"]').first().click();
+  await expect(page.getByRole('button', { name: /Cancelar/i })).toBeVisible();
+  await page.getByRole('button', { name: /Cancelar/i }).click();
+
+  const customJsonDownloadAfterCancel = page.waitForEvent('download');
+  await page.getByTestId('admin-export-json-el').click();
+  const jsonDownloadAfterCancel = await customJsonDownloadAfterCancel;
+  expect(jsonDownloadAfterCancel.suggestedFilename()).toBe('perfil-el-personalizado.json');
+
+  await page.locator('button[title="Eliminar version personalizada"]').first().click();
+  await page.getByRole('button', { name: /Confirmar/i }).click();
+
+  const originalJsonDownload = page.waitForEvent('download');
+  await page.getByTestId('admin-export-json-el').click();
+  const originalDownload = await originalJsonDownload;
+  expect(originalDownload.suggestedFilename()).toBe('perfil-el.json');
 });
 
 test('combined mobile navigation renders every major view with populated data', async ({ page }) => {

@@ -3,7 +3,7 @@ import { Settings, X, KeyRound, Zap, Sparkles, ChevronDown, ShieldCheck, Moon, S
 import AdminPanel from '../AdminPanel';
 import { useDiet } from '../../context/DietContext';
 import { getRawDataText, perfilesData as origPerfilesData } from '../../data';
-import { getEnvGeminiApiKey, persistGeminiApiKey } from '../../utils/geminiKey';
+import { persistGeminiApiKey } from '../../utils/geminiKey';
 import { clearAppStorage } from '../../utils/appStorage';
 
 export default function AdminLayout() {
@@ -40,7 +40,6 @@ export default function AdminLayout() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [apiKeyDraft, setApiKeyDraft] = useState(geminiApiKey);
 
-  const envKey = getEnvGeminiApiKey();
   const usingCustomKey = !!geminiApiKey.trim();
 
   const modelOptions = [
@@ -110,17 +109,20 @@ export default function AdminLayout() {
       syncModel: true,
     });
 
-    if (envKey && status?.ok) {
-      await notify('Configuración actualizada', `Se restauró la clave del entorno. Modelo sugerido: ${status.selectedModel}`);
+    if (status?.ok && status.keySource === 'env') {
+      await notify('Configuración actualizada', `Se restauró la clave del servidor. Modelo sugerido: ${status.selectedModel}`);
       return;
     }
 
-    if (envKey) {
-      await notify('Configuración actualizada', status?.error || 'Se restauró la clave del entorno, pero no se pudo validar Gemini.');
+    if (status?.ok) {
+      await notify('Configuración actualizada', `Se restauró la configuración del servidor. Modelo sugerido: ${status.selectedModel}`);
       return;
     }
 
-    await notify('Configuración actualizada', 'Se eliminó la clave personalizada y no hay una clave del entorno disponible.');
+    await notify(
+      'Configuración actualizada',
+      status?.error || 'Se eliminó la clave personalizada y no hay una configuración de servidor disponible.'
+    );
   };
 
   const resetAppState = async () => {
@@ -297,9 +299,9 @@ export default function AdminLayout() {
 
                     await notify(
                       'Configuración lista',
-                      envKey
-                        ? `La app quedó usando la clave del entorno. Modelo sugerido: ${status?.selectedModel || recommendedModel}`
-                        : 'La app quedó con el modelo recomendado, pero no hay clave del entorno disponible'
+                      status?.ok
+                        ? `La app quedó usando la configuración del servidor. Modelo sugerido: ${status?.selectedModel || recommendedModel}`
+                        : status?.error || 'La app quedó con el modelo recomendado, pero el servidor no pudo validar Gemini.'
                     );
                   }}
                   className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-2xl transition-all active:scale-[0.98] shadow-md"
@@ -513,7 +515,7 @@ export default function AdminLayout() {
                 setDataVersion={(ver: string) => setDataVersions((prev: any) => ({ ...prev, el: ver }))}
                 perfilesDataObj={origPerfilesData.el}
                 notify={notify}
-                confirmAction={() => Promise.resolve(true)}
+                confirmAction={confirmAction}
               />
               <AdminPanel
                 perfilId="ella"
@@ -526,7 +528,7 @@ export default function AdminLayout() {
                 setDataVersion={(ver: string) => setDataVersions((prev: any) => ({ ...prev, ella: ver }))}
                 perfilesDataObj={origPerfilesData.ella}
                 notify={notify}
-                confirmAction={() => Promise.resolve(true)}
+                confirmAction={confirmAction}
               />
             </div>
 

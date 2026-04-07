@@ -15,38 +15,6 @@ const ALLOWED_ICONS = [
   'Heart',
 ];
 
-function alignCompanionMeals(
-  referencePlan: Record<string, Record<string, any[]>> = {},
-  targetPlan: Record<string, Record<string, any[]>> = {}
-) {
-  const alignedPlan: Record<string, Record<string, any[]>> = { ...targetPlan };
-
-  for (const [day, referenceMoments] of Object.entries(referencePlan)) {
-    const targetMoments = alignedPlan[day];
-    if (!targetMoments) continue;
-
-    for (const [momentKey, referenceMeals] of Object.entries(referenceMoments || {})) {
-      const targetMeals = targetMoments[momentKey];
-      if (!Array.isArray(referenceMeals) || !Array.isArray(targetMeals)) continue;
-
-      targetMoments[momentKey] = targetMeals.map((targetMeal, index) => {
-        const referenceMeal = referenceMeals[index];
-        if (!referenceMeal) return targetMeal;
-
-        return {
-          ...targetMeal,
-          nombre: referenceMeal.nombre,
-          detalle: referenceMeal.detalle,
-          tags: referenceMeal.tags,
-          super: referenceMeal.super,
-        };
-      });
-    }
-  }
-
-  return alignedPlan;
-}
-
 function sanitizePromptPayload(payload: any) {
   if (!payload || typeof payload !== 'object') return payload;
 
@@ -292,10 +260,6 @@ export async function callGeminiDirectly(payload: any, apiKey: string, modelName
   }
 
   if (target === 'ella' || target === 'ambos') {
-    if (target === 'ambos') {
-      await new Promise((resolve) => setTimeout(resolve, 4500));
-    }
-
     const ellaPayload =
       target === 'ambos' ? buildScopedPayload(payload, payload?.ella) : payload;
 
@@ -304,10 +268,6 @@ export async function callGeminiDirectly(payload: any, apiKey: string, modelName
     }
 
     ellaData = await generateForProfile('ELLA', ellaPayload);
-
-    if (target === 'ambos' && elData?.planEL && ellaData?.planELLA) {
-      ellaData.planELLA = alignCompanionMeals(elData.planEL, ellaData.planELLA);
-    }
   }
 
   return { elData, ellaData };

@@ -1,4 +1,4 @@
-import { getEnvGeminiApiKey } from '../utils/geminiKey';
+import { DEFAULT_GEMINI_MODEL } from '../utils/geminiKey';
 
 export interface GeminiStatusResponse {
   ok: boolean;
@@ -128,17 +128,16 @@ function buildUserMessage({
 async function fetchGeminiStatusDirect(
   options: FetchGeminiStatusOptions = {}
 ): Promise<GeminiStatusResponse> {
-  const envApiKey = getEnvGeminiApiKey();
   const customApiKey = options.customApiKey?.trim() || '';
-  const apiKey = customApiKey || envApiKey;
-  const keySource: 'custom' | 'env' = customApiKey ? 'custom' : 'env';
-  const envModel = ((import.meta as any).env?.GEMINI_MODEL || 'gemini-2.5-flash').trim();
+  const apiKey = customApiKey;
+  const keySource: 'custom' | 'env' = 'custom';
+  const envModel = DEFAULT_GEMINI_MODEL;
 
   if (!apiKey) {
     return {
       ok: false,
       error:
-        'No hay una API key configurada. Agrega tu GEMINI_API_KEY local o una clave personalizada.',
+        'No hay una clave personalizada disponible en el navegador. Usa la API del servidor o pega tu propia clave.',
       keySource,
       envModel,
       selectedModel: '',
@@ -212,9 +211,7 @@ async function fetchGeminiStatusDirect(
 export async function fetchGeminiStatus(
   options: FetchGeminiStatusOptions = {}
 ): Promise<GeminiStatusResponse> {
-  const shouldBypassServerRoute = Boolean((import.meta as any).env?.DEV);
-
-  if (shouldBypassServerRoute) {
+  if (options.customApiKey?.trim()) {
     return fetchGeminiStatusDirect(options);
   }
 
@@ -254,8 +251,14 @@ export async function fetchGeminiStatus(
       };
     }
   } catch {
-    // Fall back to direct validation in local Vite dev when /api is unavailable.
+    // Fall back to direct validation only for user-supplied API keys.
   }
 
-  return fetchGeminiStatusDirect(options);
+  return {
+    ok: false,
+    error:
+      'No fue posible validar Gemini desde el servidor. Si quieres probar en cliente, pega una clave personalizada.',
+    selectedModel: '',
+    availableModels: [],
+  };
 }

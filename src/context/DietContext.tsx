@@ -15,7 +15,7 @@ import {
   type MealEditorDraft,
 } from '../utils/mealEditing';
 import { normalizeProfileSummary } from '../utils/profileSummary';
-import { getEnvGeminiApiKey, getStoredGeminiApiKey, persistGeminiApiKey } from '../utils/geminiKey';
+import { getStoredGeminiApiKey, persistGeminiApiKey } from '../utils/geminiKey';
 import { fetchGeminiStatus, type GeminiStatusResponse } from '../services/geminiStatusService';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
@@ -1081,13 +1081,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       };
       let json: any;
       let usedDirectApi = false;
-      const shouldBypassServerRoute = Boolean((import.meta as any).env?.DEV);
 
       try {
-        if (shouldBypassServerRoute) {
-          throw new Error('SERVER_UNAVAILABLE');
-        }
-
         const res = await fetch('/api/generate-plan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1105,13 +1100,13 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
           serverErr.message?.includes('NetworkError');
 
         if (isServerUnavailable) {
-          const envApiKey = getEnvGeminiApiKey();
-          if (!envApiKey && !customApiKey) {
-            throw new Error('En desarrollo local, configura tu GEMINI_API_KEY en el archivo .env o en el panel de Administración (Ajustes IA) para generar planes con IA.');
+          if (!customApiKey) {
+            throw new Error(
+              'No fue posible contactar la API del servidor. Para seguir desde el navegador, pega una clave personalizada en el panel de Administración.'
+            );
           }
           usedDirectApi = true;
-          const keyToUse = customApiKey || envApiKey;
-          json = await callGeminiDirectly(payloadWithKey, keyToUse, geminiModel);
+          json = await callGeminiDirectly(payloadWithKey, customApiKey, geminiModel);
         } else {
           throw serverErr;
         }

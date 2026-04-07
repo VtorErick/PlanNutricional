@@ -11,35 +11,6 @@ const ALLOWED_ICONS = [
   'Heart',
 ];
 
-function alignCompanionMeals(referencePlan = {}, targetPlan = {}) {
-  const alignedPlan = { ...targetPlan };
-
-  for (const [day, referenceMoments] of Object.entries(referencePlan || {})) {
-    const targetMoments = alignedPlan[day];
-    if (!targetMoments) continue;
-
-    for (const [momentKey, referenceMeals] of Object.entries(referenceMoments || {})) {
-      const targetMeals = targetMoments[momentKey];
-      if (!Array.isArray(referenceMeals) || !Array.isArray(targetMeals)) continue;
-
-      targetMoments[momentKey] = targetMeals.map((targetMeal, index) => {
-        const referenceMeal = referenceMeals[index];
-        if (!referenceMeal) return targetMeal;
-
-        return {
-          ...targetMeal,
-          nombre: referenceMeal.nombre,
-          detalle: referenceMeal.detalle,
-          tags: referenceMeal.tags,
-          super: referenceMeal.super,
-        };
-      });
-    }
-  }
-
-  return alignedPlan;
-}
-
 function sanitizePromptPayload(payload) {
   if (!payload || typeof payload !== 'object') return payload;
 
@@ -411,20 +382,12 @@ export default async function handler(req, res) {
     }
 
     if (target === 'ella' || target === 'ambos') {
-      if (target === 'ambos') {
-        await new Promise((resolve) => setTimeout(resolve, 4500));
-      }
-
       const payloadElla = target === 'ambos' ? buildScopedPayload(payload, payload.ella) : payload;
       if (target === 'ambos' && elData?.planEL) {
         payloadElla.companionPlan = elData.planEL;
       }
 
       ellaData = await generateWithGemini(payloadElla, 'ELLA', apiKey, selectedModel);
-
-      if (target === 'ambos' && elData?.planEL && ellaData?.planELLA) {
-        ellaData.planELLA = alignCompanionMeals(elData.planEL, ellaData.planELLA);
-      }
     }
 
     return res.status(200).json({ elData, ellaData, modelUsed: selectedModel });

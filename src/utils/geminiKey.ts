@@ -1,8 +1,5 @@
 const GEMINI_API_KEY_STORAGE_KEY = 'geminiApiKey';
-
-export function getEnvGeminiApiKey() {
-  return ((import.meta as any).env?.GEMINI_API_KEY || '').trim();
-}
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 
 export function getStoredGeminiApiKey() {
   try {
