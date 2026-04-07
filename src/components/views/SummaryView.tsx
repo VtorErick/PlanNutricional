@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, Heart, Shield, TrendingDown, User } from 'lucide-react';
+import { AlertTriangle, BarChart3, Heart, Shield, TrendingDown, User } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
 
@@ -38,30 +38,43 @@ export default function SummaryView() {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="w-full flex flex-col"
     >
-      {isAmbos && (
-        <div className={`lg:hidden flex p-1.5 rounded-2xl mb-4 mx-auto max-w-xs shadow-inner w-full ${isDarkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
-          <button
-            onClick={() => setAmbosSubTab('el')}
-            className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
-              ambosSubTab === 'el'
-                ? `${elAccent.bgLight} shadow-sm ${elAccent.text}`
-                : isDarkMode ? 'text-slate-400' : 'text-slate-500'
-            }`}
-          >
-            {perfilesData.el.nombre}
-          </button>
-          <button
-            onClick={() => setAmbosSubTab('ella')}
-            className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
-              ambosSubTab === 'ella'
-                ? `${ellaAccent.bgLight} shadow-sm ${ellaAccent.text}`
-                : isDarkMode ? 'text-slate-400' : 'text-slate-500'
-            }`}
-          >
-            {perfilesData.ella.nombre}
-          </button>
+      <section className={`mb-4 rounded-[28px] border p-4 shadow-sm ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-200 bg-white'}`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-11 h-11 rounded-[18px] bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center shadow-sm`}>
+              <BarChart3 className="w-5 h-5 text-white" />
+            </div>
+            <h2 className={`text-xl font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+              Resumen
+            </h2>
+          </div>
+
+          {isAmbos && (
+            <div className={`flex w-full rounded-2xl p-1 sm:w-auto sm:min-w-[200px] ${isDarkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
+              <button
+                onClick={() => setAmbosSubTab('el')}
+                className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
+                  ambosSubTab === 'el'
+                    ? `${elAccent.bgLight} shadow-sm ${elAccent.text}`
+                    : isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                {perfilesData.el.nombre}
+              </button>
+              <button
+                onClick={() => setAmbosSubTab('ella')}
+                className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
+                  ambosSubTab === 'ella'
+                    ? `${ellaAccent.bgLight} shadow-sm ${ellaAccent.text}`
+                    : isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                {perfilesData.ella.nombre}
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </section>
 
       <div className={isAmbos ? 'grid lg:grid-cols-2 gap-6' : 'space-y-8'}>
         {(isAmbos ? [perfilesData.el, perfilesData.ella] : [perfil]).map((p, pIdx) => {
@@ -195,6 +208,41 @@ export default function SummaryView() {
                       </p>
                     </div>
                   </div>
+
+                  {p.detallesPerfil && (
+                    <div
+                      className={`mb-4 rounded-2xl border p-4 ${
+                        isDarkMode
+                          ? 'border-slate-800 bg-slate-900/80'
+                          : 'border-slate-100 bg-slate-50/80'
+                      }`}
+                    >
+                      <h3
+                        className={`mb-2 flex items-center gap-2 text-xs sm:text-sm font-bold ${
+                          isDarkMode ? 'text-slate-100' : 'text-slate-800'
+                        }`}
+                      >
+                        <Shield className={`w-3.5 h-3.5 ${dynamicAc.text}`} />
+                        Detalles del perfil
+                      </h3>
+                      <p className={`text-xs sm:text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                        {p.detallesPerfil}
+                      </p>
+                    </div>
+                  )}
+
+                  {p.notaSalud && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3.5 dark:border-amber-900/60 dark:bg-amber-950/40"
+                    >
+                      <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                      <p className="text-xs font-medium leading-relaxed text-amber-800 dark:text-amber-100 sm:text-sm">
+                        {p.notaSalud}
+                      </p>
+                    </motion.div>
+                  )}
 
                   <h3 className={`font-bold mb-3 flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                     <BarChart3 className={`w-4 h-4 ${dynamicAc.text}`} />

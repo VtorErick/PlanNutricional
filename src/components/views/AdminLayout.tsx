@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Settings, X, KeyRound, Zap, Sparkles, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Settings, X, KeyRound, Zap, Sparkles, ChevronDown, ShieldCheck, Moon, Sun } from 'lucide-react';
 import AdminPanel from '../AdminPanel';
 import { useDiet } from '../../context/DietContext';
 import { perfilesData as origPerfilesData, rawData } from '../../data';
@@ -29,6 +29,8 @@ export default function AdminLayout() {
     setQuestionnairePortionMode,
     setQuestionnaireManualPortions,
     setQuestionnaireAdditionalNotes,
+    isDarkMode,
+    setIsDarkMode,
     confirmAction,
     notify,
   } = useDiet();
@@ -201,12 +203,28 @@ export default function AdminLayout() {
           </div>
         </div>
 
-        <button
-          onClick={() => setShowAdmin(false)}
-          className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-300 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-bold transition-colors ${
+              isDarkMode
+                ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+            title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <span className="hidden sm:inline">{isDarkMode ? 'Claro' : 'Oscuro'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowAdmin(false)}
+            className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-300 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
       {/* Tabs */}

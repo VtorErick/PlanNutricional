@@ -12,6 +12,7 @@ import {
   Sun,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
+import { buildProfileInspectionText, extractProfileMetrics } from '../../utils/profileSummary';
 
 // Constants
 const IMC_MIN = 16;
@@ -158,8 +159,7 @@ function PlanButton({
 
 // Helpers
 function getImcData(text: string) {
-  const m = text.match(/IMC\s*[:\-]?\s*([\d]+(?:[.,]\d+)?)/i);
-  const imc = m ? Number(m[1].replace(',', '.')) : null;
+  const { imc } = extractProfileMetrics(text);
   if (!imc || isNaN(imc)) return null;
 
   const label =
@@ -169,10 +169,12 @@ function getImcData(text: string) {
 }
 
 function getBio(text: string) {
+  const metrics = extractProfileMetrics(text);
+
   return {
-    weight: text.match(/(\d+)\s*kg/i)?.[1] ?? null,
-    height: text.match(/(\d+(?:\.\d+)?)\s*m(?!\w)/i)?.[1] ?? null,
-    age: text.match(/(\d+)\s*años/i)?.[1] ?? null,
+    weight: metrics.weightKg,
+    height: metrics.heightM,
+    age: metrics.age,
   };
 }
 
@@ -233,10 +235,18 @@ export default function LandingView() {
     return { shared, pct: union > 0 ? Math.round((common / union) * 100) : 0 };
   }, [profilesData.el.plan, profilesData.ella.plan]);
 
-  const elImc = getImcData(profilesData.el.perfil);
-  const ellaImc = getImcData(profilesData.ella.perfil);
-  const elBio = getBio(profilesData.el.perfil);
-  const ellaBio = getBio(profilesData.ella.perfil);
+  const elProfileText = buildProfileInspectionText(
+    profilesData.el.perfil,
+    profilesData.el.detallesPerfil
+  );
+  const ellaProfileText = buildProfileInspectionText(
+    profilesData.ella.perfil,
+    profilesData.ella.detallesPerfil
+  );
+  const elImc = getImcData(elProfileText);
+  const ellaImc = getImcData(ellaProfileText);
+  const elBio = getBio(elProfileText);
+  const ellaBio = getBio(ellaProfileText);
 
   const onKey = (fn: () => void) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -348,35 +358,41 @@ export default function LandingView() {
 
       <div className="relative z-10 flex flex-col flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8">
         {/* Top bar */}
-        <div className="flex items-center justify-between gap-3 pt-5 pb-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 pt-5 pb-4 px-1 sm:px-0 bg-transparent border-transparent shadow-none">
           <motion.div
             initial={{ opacity: 0, x: -14 }}
             animate={{ opacity: 1, x: 0 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/85 backdrop-blur-sm rounded-full shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 dark:bg-slate-900/85 dark:border-slate-800"
+            className="min-w-0 flex items-center gap-2"
           >
-            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.65)]" />
-            <span className="text-[11px] font-semibold tracking-wide text-slate-600 uppercase dark:text-slate-300">
-              Bienvenido a su plan
-            </span>
+            <ChefHat className="w-4 h-4 text-emerald-500" />
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              INICIO
+            </p>
           </motion.div>
 
           <motion.button
             initial={{ opacity: 0, x: 14 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsDarkMode((prev) => !prev)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-sm shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 text-slate-600 text-[11px] font-medium hover:bg-white transition-all shrink-0 dark:bg-slate-900/85 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+            className="inline-flex h-10 w-10 sm:h-auto sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/75 text-slate-600 text-[11px] font-bold hover:bg-white transition-all shrink-0 sm:px-3 sm:py-2 dark:border-slate-800 dark:bg-slate-950/70 dark:text-slate-200 dark:hover:bg-slate-900"
+            title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            type="button"
           >
-            {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             <span className="hidden sm:inline">{isDarkMode ? 'Claro' : 'Oscuro'}</span>
+            <span className="sr-only">{isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}</span>
           </motion.button>
 
           <motion.button
             initial={{ opacity: 0, x: 14 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsAdminOpen(true)}
-            className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-sm shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 text-slate-600 text-[11px] font-medium hover:bg-white transition-all shrink-0 dark:bg-slate-900/85 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+            className="group inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/75 px-3.5 py-2 text-[0px] font-bold hover:bg-white transition-all shrink-0 dark:border-slate-800 dark:bg-slate-950/70 dark:hover:bg-slate-900"
+            title="Ajustes avanzados"
+            type="button"
           >
-            <Settings className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
+            <Settings className="w-4 h-4 text-slate-600 dark:text-slate-200 group-hover:rotate-45 transition-transform duration-300" />
+            <span className="whitespace-nowrap text-[11px] text-slate-600 dark:text-slate-200">Ajustes avanzados</span>
             Opciones de respaldo y restauración
           </motion.button>
         </div>

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  AlertTriangle,
   BookOpen,
   Calendar,
   ChefHat,
@@ -195,6 +194,15 @@ export default function App() {
     { key: 'resumen' as const, label: 'Resumen', shortLabel: 'Resumen', icon: Lightbulb },
   ];
 
+  const tabIconColors: Record<(typeof tabItems)[number]['key'], string> = {
+    plan: 'text-blue-500 dark:text-sky-300',
+    equivalencias: 'text-emerald-500 dark:text-emerald-300',
+    suplementos: 'text-fuchsia-500 dark:text-pink-300',
+    calorias: 'text-orange-500 dark:text-amber-300',
+    compras: 'text-teal-500 dark:text-teal-300',
+    resumen: 'text-violet-500 dark:text-violet-300',
+  };
+
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
@@ -205,19 +213,6 @@ export default function App() {
       <AnimatePresence>{activeTab === 'plan' && <DailyProgress />}</AnimatePresence>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-4">
-        {activeTab === 'resumen' && profile.notaSalud && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-3 p-3.5 bg-amber-50 rounded-2xl border border-amber-200 dark:bg-amber-950/40 dark:border-amber-900/60"
-          >
-            <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <p className="text-xs sm:text-sm text-amber-800 font-medium leading-relaxed dark:text-amber-100">
-              {profile.notaSalud}
-            </p>
-          </motion.div>
-        )}
-
         <div className="hidden sm:block">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -235,7 +230,7 @@ export default function App() {
                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-700/60'
                 }`}
               >
-                <tabItem.icon className="w-4 h-4 flex-shrink-0" />
+                <tabItem.icon className={`w-4 h-4 flex-shrink-0 ${tabIconColors[tabItem.key]}`} />
                 <span>{tabItem.label}</span>
               </button>
             ))}
@@ -268,10 +263,10 @@ export default function App() {
                     }`}
                   >
                     <tabItem.icon
-                      className={`w-[18px] h-[18px] ${active ? 'fill-current opacity-20 absolute' : ''}`}
+                      className={`w-[18px] h-[18px] ${tabIconColors[tabItem.key]} ${active ? 'fill-current opacity-20 absolute' : ''}`}
                     />
                     <tabItem.icon
-                      className="w-[18px] h-[18px] relative z-10"
+                      className={`w-[18px] h-[18px] relative z-10 ${tabIconColors[tabItem.key]}`}
                       strokeWidth={active ? 2.5 : 2}
                     />
                   </div>

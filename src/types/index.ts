@@ -1,3 +1,19 @@
+export interface MealOriginalSnapshot {
+  nombre: string;
+  porciones: string;
+  detalle: string;
+  tags: string[];
+  super: string[];
+  caloriasKcal?: number;
+  proteinaG?: number;
+  grasasG?: number;
+}
+
+export interface MealEditMeta {
+  isEdited: boolean;
+  original: MealOriginalSnapshot;
+}
+
 export interface MealItem {
   nombre: string;
   porciones: string;
@@ -7,6 +23,7 @@ export interface MealItem {
   caloriasKcal?: number;
   proteinaG?: number;
   grasasG?: number;
+  editMeta?: MealEditMeta;
 }
 
 export interface MealTime {
@@ -31,6 +48,7 @@ export interface Profile {
   edad: number;
   descripcion: string;
   perfil: string;
+  detallesPerfil?: string;
   meta: string;
   horariosTexto: string;
   notaSalud?: string;

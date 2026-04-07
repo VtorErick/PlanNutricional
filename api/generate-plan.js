@@ -85,6 +85,7 @@ Debes responder SOLO con JSON válido y seguir exactamente esta estructura:
   id: "${lowerPrefix}",
   nombre: "${prefix === 'EL' ? 'El' : 'Ella'}",
   perfil: string,
+  detallesPerfil: string,
   meta: string,
   metaCaloricaKcalDia: number,
   descripcion: string,
@@ -131,6 +132,9 @@ Debes responder SOLO con JSON válido y seguir exactamente esta estructura:
 
 Reglas críticas:
 - No cambies id ni nombre.
+- "perfil" debe ser SIEMPRE un resumen compacto en una sola linea con este formato: "<peso> kg • <altura> m • <edad> años • IMC <valor>". Ejemplo valido: "67 kg • 1.60 m • 32 años • IMC 26.2".
+- No pongas parrafos, explicaciones clinicas ni texto narrativo dentro de "perfil".
+- Usa "detallesPerfil" para guardar el analisis narrativo completo del caso, incluyendo contexto corporal, actividad, hallazgos del PDF, riesgos y consideraciones relevantes.
 - Cada comida debe incluir: nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG.
 - Las calorías y macros deben ser enteros realistas.
 - Las equivalencias deben alinearse con los ingredientes usados en el plan.
@@ -155,6 +159,24 @@ function buildUserPrompt(payload, prefix) {
       ],
       fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
       momentsSource: 'questionnaire.planConfig.selectedMoments',
+      profileRequiredKeys: [
+        'perfil',
+        'detallesPerfil',
+        'meta',
+        'metaCaloricaKcalDia',
+        'descripcion',
+        'edad',
+        'horariosTexto',
+        'notaSalud',
+        'momentos',
+        'objetivosPorMomento',
+        'distribucionDiaria',
+        'resumenPersonal',
+      ],
+      profileFormat: {
+        perfil: '<peso> kg • <altura> m • <edad> años • IMC <valor>',
+        detallesPerfil: 'Resumen narrativo del caso y contexto clinico.',
+      },
       mealsRequiredKeys: [
         'nombre',
         'porciones',

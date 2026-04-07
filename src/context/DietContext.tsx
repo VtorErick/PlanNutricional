@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useMemo, useRef, useEffect, ReactNode, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Profile, Equivalencia, MealItem, MealTime, SupplementRecommendation } from '../types';
+import { Profile, Equivalencia, MealEditMeta, MealItem, MealOriginalSnapshot, MealTime, SupplementRecommendation } from '../types';
 import { perfilesData as origPerfilesData, equivalenciasData as origEquivData, supplementsData as origSupplementsData, iconsMap } from '../data';
 import { AccentColors, getAccentColors } from '../utils/theme';
 import { Heart } from 'lucide-react';
@@ -9,6 +9,12 @@ import { callGeminiDirectly } from '../services/aiService';
 import { showAppAlert, showAppConfirm } from '../utils/appDialogs';
 import type { QuestionnairePayload, TargetProfile } from '../components/NutritionQuestionnaire';
 import { enrichPlanWithNutrition } from '../utils/nutrition';
+import {
+  applyMealDraftToPlan,
+  restoreMealInPlan,
+  type MealEditorDraft,
+} from '../utils/mealEditing';
+import { normalizeProfileSummary } from '../utils/profileSummary';
 import { getEnvGeminiApiKey, getStoredGeminiApiKey, persistGeminiApiKey } from '../utils/geminiKey';
 import { fetchGeminiStatus, type GeminiStatusResponse } from '../services/geminiStatusService';
 
@@ -197,6 +203,54 @@ function normalizeMealItem(value: unknown, fallback?: MealItem): MealItem | null
       typeof value.grasasG === 'number' && Number.isFinite(value.grasasG)
         ? Math.round(value.grasasG)
         : fallback?.grasasG,
+    editMeta: normalizeMealEditMeta(value.editMeta, fallback?.editMeta),
+  };
+}
+
+function normalizeMealOriginalSnapshot(
+  value: unknown,
+  fallback?: MealOriginalSnapshot
+): MealOriginalSnapshot | undefined {
+  if (!isPlainObject(value)) return fallback ? { ...fallback } : undefined;
+
+  const nombre = sanitizeStringValue(value.nombre, fallback?.nombre ?? '');
+  if (!nombre) {
+    return fallback ? { ...fallback } : undefined;
+  }
+
+  return {
+    nombre,
+    porciones: sanitizeStringValue(value.porciones, fallback?.porciones ?? ''),
+    detalle: sanitizeStringValue(value.detalle, fallback?.detalle ?? ''),
+    tags: sanitizeStringArray(value.tags, fallback?.tags ?? []),
+    super: sanitizeStringArray(value.super, fallback?.super ?? []),
+    caloriasKcal:
+      typeof value.caloriasKcal === 'number' && Number.isFinite(value.caloriasKcal)
+        ? Math.round(value.caloriasKcal)
+        : fallback?.caloriasKcal,
+    proteinaG:
+      typeof value.proteinaG === 'number' && Number.isFinite(value.proteinaG)
+        ? Math.round(value.proteinaG)
+        : fallback?.proteinaG,
+    grasasG:
+      typeof value.grasasG === 'number' && Number.isFinite(value.grasasG)
+        ? Math.round(value.grasasG)
+        : fallback?.grasasG,
+  };
+}
+
+function normalizeMealEditMeta(
+  value: unknown,
+  fallback?: MealEditMeta
+): MealEditMeta | undefined {
+  if (!isPlainObject(value)) return fallback ? { ...fallback } : undefined;
+
+  const original = normalizeMealOriginalSnapshot(value.original, fallback?.original);
+  if (!original) return fallback ? { ...fallback } : undefined;
+
+  return {
+    isEdited: value.isEdited === true || fallback?.isEdited === true,
+    original,
   };
 }
 
@@ -298,13 +352,20 @@ function normalizeProfileData(
   plan: Record<string, Record<string, MealItem[]>>
 ): Profile {
   const source = isPlainObject(value) ? value : {};
+  const profileSummary = normalizeProfileSummary({
+    perfil: sanitizeStringValue(source.perfil, fallback.perfil),
+    detallesPerfil: sanitizeStringValue(source.detallesPerfil, fallback.detallesPerfil ?? ''),
+    fallbackPerfil: fallback.perfil,
+    fallbackDetallesPerfil: fallback.detallesPerfil ?? '',
+  });
 
   return {
     id: sanitizeStringValue(source.id, fallback.id),
     nombre: sanitizeStringValue(source.nombre, fallback.nombre),
     edad: sanitizeNumberValue(source.edad, fallback.edad),
     descripcion: sanitizeStringValue(source.descripcion, fallback.descripcion),
-    perfil: sanitizeStringValue(source.perfil, fallback.perfil),
+    perfil: profileSummary.perfil,
+    detallesPerfil: profileSummary.detallesPerfil,
     meta: sanitizeStringValue(source.meta, fallback.meta),
     horariosTexto: sanitizeStringValue(source.horariosTexto, fallback.horariosTexto),
     notaSalud: sanitizeStringValue(source.notaSalud, fallback.notaSalud ?? ''),
@@ -466,6 +527,23 @@ interface DietContextType {
   selecciones: Record<string, boolean>;
   setSelecciones: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   toggleSeleccion: (perfilId: string, dia: string, momentoKey: string, nombre: string) => void;
+  editMealRecipe: (
+    perfilId: 'el' | 'ella',
+    meal: MealItem,
+    draft: MealEditorDraft
+  ) => {
+    updatedMeal: MealItem;
+    affectedCount: number;
+    affectedLabels: string[];
+  };
+  restoreMealRecipe: (
+    perfilId: 'el' | 'ella',
+    meal: MealItem
+  ) => {
+    restoredMeal: MealItem;
+    affectedCount: number;
+    affectedLabels: string[];
+  };
   comprasCheck: Record<string, boolean>;
   setComprasCheck: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 
@@ -756,6 +834,122 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       setPendingAutoScrollMomento(nextMomento);
     }
   }, [getNextMomentoKey, perfilesData.ella, perfilesData.el, selecciones]);
+
+  const editMealRecipe = useCallback((
+    perfilId: 'el' | 'ella',
+    meal: MealItem,
+    draft: MealEditorDraft
+  ) => {
+    const profileData = perfilesData[perfilId];
+    const { nextPlan, updatedMeal, occurrences, selectionRenames } = applyMealDraftToPlan(
+      profileData,
+      meal,
+      draft
+    );
+    const profileBucketKey = perfilId;
+    const planKey = perfilId === 'ella' ? 'planELLA' : 'planEL';
+
+    setCustomData((prev: any) => {
+      const previousBucket =
+        isPlainObject(prev?.[profileBucketKey]) ? { ...prev[profileBucketKey] } : {};
+
+      return {
+        ...prev,
+        [profileBucketKey]: {
+          ...previousBucket,
+          [planKey]: nextPlan,
+        },
+      };
+    });
+
+    setDataVersions((prev) => ({
+      ...prev,
+      [perfilId]: 'custom',
+    }));
+
+    if (selectionRenames.length > 0) {
+      setSelecciones((prev) => {
+        const next = { ...prev };
+
+        selectionRenames.forEach(({ dia, momento, previousName, nextName }) => {
+          const previousKey = `${perfilId}-${dia}-${momento}-${previousName}`;
+          const nextKey = `${perfilId}-${dia}-${momento}-${nextName}`;
+
+          if (next[previousKey]) {
+            delete next[previousKey];
+            next[nextKey] = true;
+          }
+        });
+
+        return next;
+      });
+    }
+
+    return {
+      updatedMeal,
+      affectedCount: occurrences.length,
+      affectedLabels: occurrences.map(
+        (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel}`
+      ),
+    };
+  }, [perfilesData, setCustomData, setDataVersions, setSelecciones]);
+
+  const restoreMealRecipe = useCallback((
+    perfilId: 'el' | 'ella',
+    meal: MealItem
+  ) => {
+    const profileData = perfilesData[perfilId];
+    const { nextPlan, restoredMeal, occurrences, selectionRenames } = restoreMealInPlan(
+      profileData,
+      meal
+    );
+    const profileBucketKey = perfilId;
+    const planKey = perfilId === 'ella' ? 'planELLA' : 'planEL';
+
+    setCustomData((prev: any) => {
+      const previousBucket =
+        isPlainObject(prev?.[profileBucketKey]) ? { ...prev[profileBucketKey] } : {};
+
+      return {
+        ...prev,
+        [profileBucketKey]: {
+          ...previousBucket,
+          [planKey]: nextPlan,
+        },
+      };
+    });
+
+    setDataVersions((prev) => ({
+      ...prev,
+      [perfilId]: 'custom',
+    }));
+
+    if (selectionRenames.length > 0) {
+      setSelecciones((prev) => {
+        const next = { ...prev };
+
+        selectionRenames.forEach(({ dia, momento, previousName, nextName }) => {
+          const previousKey = `${perfilId}-${dia}-${momento}-${previousName}`;
+          const nextKey = `${perfilId}-${dia}-${momento}-${nextName}`;
+
+          if (next[previousKey]) {
+            delete next[previousKey];
+            next[nextKey] = true;
+          }
+        });
+
+        return next;
+      });
+    }
+
+    return {
+      restoredMeal,
+      affectedCount: occurrences.length,
+      affectedLabels: occurrences.map(
+        (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel}`
+      ),
+    };
+  }, [perfilesData, setCustomData, setDataVersions, setSelecciones]);
 
   // ─── Scroll logic ──────────────────────────────────────────────────
   const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean) => {
@@ -1114,7 +1308,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     showAdmin, setShowAdmin,
     showQuestionnaire, setShowQuestionnaire,
     diaActivo, setDiaActivo, diasDisponibles,
-    selecciones, setSelecciones, toggleSeleccion,
+    selecciones, setSelecciones, toggleSeleccion, editMealRecipe, restoreMealRecipe,
     comprasCheck, setComprasCheck,
     dataVersions, setDataVersions,
     customData, setCustomData,
