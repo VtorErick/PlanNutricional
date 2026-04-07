@@ -104,6 +104,12 @@ test('combined mobile navigation renders every major view with populated data', 
   await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Martes'] });
   await page.goto('/miplan?profile=ambos');
 
+  const fullPlanDownload = page.waitForEvent('download');
+  await page.getByTestId('header-pdf-button').click();
+  await page.getByRole('button', { name: /PDF plan completo/i }).click();
+  const download = await fullPlanDownload;
+  expect(download.suggestedFilename()).toBe('Plan_Nutricional_Ambos.pdf');
+
   await page.getByTestId('mobile-tab-equivalencias').click();
   await expect(page.getByRole('heading', { name: /Equivalencias/i })).toBeVisible();
   await saveDocScreenshot(page, 'equivalencias-mobile.png');

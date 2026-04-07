@@ -2,15 +2,19 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { MealItem } from '../types';
 
-/**
- * Generates and downloads a formatted PDF from the provided plan data.
- */
-export function downloadDietPdf(
+type DietPdfEntry = {
+  perfilData: any;
+  planObj: Record<string, Record<string, MealItem[]>>;
+  isVA: boolean;
+};
+
+function appendDietPlan(
+  doc: any,
   perfilData: any,
   planObj: Record<string, Record<string, MealItem[]>>,
-  isVA: boolean
+  isVA: boolean,
+  startOnNewPage = false
 ) {
-  const doc = new jsPDF() as any;
   const color: [number, number, number] = isVA ? [225, 29, 72] : [37, 99, 235];
 
   const drawHeader = (pdfDoc: any, title: string, subtitle: string, meta: string) => {
@@ -36,7 +40,11 @@ export function downloadDietPdf(
   const dias = Object.keys(planObj);
 
   dias.forEach((dia, dayIndex) => {
-    if (dayIndex > 0) doc.addPage();
+    if (startOnNewPage || dayIndex > 0) {
+      doc.addPage();
+      startOnNewPage = false;
+    }
+
     drawHeader(doc, `Plan Nutricional: ${perfilData.nombre}`, perfilData.perfil, perfilData.meta);
 
     let startY = 46;
@@ -101,8 +109,34 @@ export function downloadDietPdf(
       startY = (doc as any).lastAutoTable.finalY + 10;
     });
   });
+}
+
+/**
+ * Generates and downloads a formatted PDF from the provided plan data.
+ */
+export function downloadDietPdf(
+  perfilData: any,
+  planObj: Record<string, Record<string, MealItem[]>>,
+  isVA: boolean
+) {
+  const doc = new jsPDF() as any;
+  appendDietPlan(doc, perfilData, planObj, isVA);
 
   doc.save(`Plan_Nutricional_${perfilData.nombre}.pdf`);
+}
+
+export function downloadCombinedDietPdf(entries: DietPdfEntry[]) {
+  if (entries.length === 0) {
+    throw new Error('No hay perfiles disponibles para exportar.');
+  }
+
+  const doc = new jsPDF() as any;
+
+  entries.forEach((entry, index) => {
+    appendDietPlan(doc, entry.perfilData, entry.planObj, entry.isVA, index > 0);
+  });
+
+  doc.save('Plan_Nutricional_Ambos.pdf');
 }
 
 /**

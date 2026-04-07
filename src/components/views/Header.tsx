@@ -23,15 +23,15 @@ export default function Header() {
   React.useEffect(() => {
     if (!showPdfMenu) return;
 
-    const handlePointerDown = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Node)) return;
       if (pdfMenuRef.current?.contains(target)) return;
       setShowPdfMenu(false);
     };
 
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [showPdfMenu]);
 
   const handleDownloadDayPdf = React.useCallback(async () => {
@@ -67,11 +67,13 @@ export default function Header() {
 
   const handleDownloadFullPlanPdf = React.useCallback(async () => {
     if (!activeProfile) return;
-    const { downloadDietPdf } = await import('../../services/pdfService');
+    const { downloadCombinedDietPdf, downloadDietPdf } = await import('../../services/pdfService');
 
     if (activeProfile === 'ambos') {
-      downloadDietPdf(profilesData.el, profilesData.el.plan, false);
-      downloadDietPdf(profilesData.ella, profilesData.ella.plan, true);
+      downloadCombinedDietPdf([
+        { perfilData: profilesData.el, planObj: profilesData.el.plan, isVA: false },
+        { perfilData: profilesData.ella, planObj: profilesData.ella.plan, isVA: true },
+      ]);
       return;
     }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Settings, X, KeyRound, Zap, Sparkles, ChevronDown, ShieldCheck, Moon, Sun } from 'lucide-react';
 import AdminPanel from '../AdminPanel';
 import { useDiet } from '../../context/DietContext';
@@ -91,6 +91,8 @@ export default function AdminLayout() {
     : modelOptions;
   const recommendedModel = geminiRecommendedModel || visibleModelOptions[0]?.val || '';
   const recommendedModelLabel = modelOptions.find((option) => option.val === recommendedModel)?.techLabel || recommendedModel;
+  const defaultElJson = useMemo(() => getRawDataText('el'), []);
+  const defaultEllaJson = useMemo(() => getRawDataText('ella'), []);
 
   useEffect(() => {
     setApiKeyDraft(geminiApiKey);
@@ -124,7 +126,7 @@ export default function AdminLayout() {
   const resetAppState = async () => {
     const accepted = await confirmAction(
       'Restablecer app',
-      'Esto borrará datos locales, cookies y configuraciones guardadas. ¿Deseas continuar?'
+      'Esto borrara solo los datos y configuraciones locales de esta app en este dispositivo. Deseas continuar?'
     );
     if (!accepted) return;
 
@@ -164,7 +166,7 @@ export default function AdminLayout() {
     setQuestionnaireManualPortions({});
     setQuestionnaireAdditionalNotes('');
 
-    await notify('Aplicación restablecida', '✅ Se limpiaron datos locales y la app volvió al estado inicial.');
+    await notify('Aplicacion restablecida', 'Se limpiaron los datos locales de esta app y volvio al estado inicial.');
     try {
       window.location.reload();
     } catch (error) {
@@ -504,7 +506,7 @@ export default function AdminLayout() {
                 perfilId="el"
                 title="Datos El"
                 themeColor="blue"
-                rawDataText={getRawDataText('el')}
+                rawDataText={defaultElJson}
                 customData={customData}
                 setCustomData={setCustomData}
                 dataVersion={dataVersions.el}
@@ -517,7 +519,7 @@ export default function AdminLayout() {
                 perfilId="ella"
                 title="Datos Ella"
                 themeColor="rose"
-                rawDataText={getRawDataText('ella')}
+                rawDataText={defaultEllaJson}
                 customData={customData}
                 setCustomData={setCustomData}
                 dataVersion={dataVersions.ella}
