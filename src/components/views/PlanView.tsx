@@ -16,6 +16,7 @@ import { useDiet } from '../../context/DietContext';
 import { getMomentMacroPortions } from '../../utils/macros';
 import { downloadDaySelectionPdf } from '../../services/pdfService';
 import { sumSelectedMealCalories } from '../../utils/nutrition';
+import { getAccentColors } from '../../utils/theme';
 
 const momentoIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
@@ -42,7 +43,11 @@ export default function PlanView() {
     progresoDia,
     ac,
     mealSectionRefs,
+    isDarkMode,
   } = useDiet();
+
+  const elAccent = getAccentColors('el', isDarkMode);
+  const ellaAccent = getAccentColors('ella', isDarkMode);
 
   const handleDownloadDayPdf = React.useCallback(() => {
     if (!perfilActivo) return;
@@ -132,7 +137,11 @@ export default function PlanView() {
                 if (el) mealSectionRefs.current[momento.key] = el;
               }}
               id={`momento-${momento.key}`}
-              className={`bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_10px_28px_rgba(15,23,42,0.06)] hover:shadow-[0_14px_32px_rgba(15,23,42,0.08)] border border-white/70 overflow-hidden transition-shadow duration-300 ${
+              className={`rounded-[24px] sm:rounded-[28px] overflow-hidden transition-shadow duration-300 ${
+                isDarkMode
+                  ? 'bg-slate-950/92 border border-slate-800 shadow-[0_12px_32px_rgba(2,6,23,0.42)] hover:shadow-[0_16px_40px_rgba(2,6,23,0.52)]'
+                  : 'bg-white border border-white/70 shadow-[0_10px_28px_rgba(15,23,42,0.06)] hover:shadow-[0_14px_32px_rgba(15,23,42,0.08)]'
+              } ${
                 done ? ac.borderAccent : ''
               }`}
             >
@@ -146,7 +155,13 @@ export default function PlanView() {
                   }
                 }}
                 className={`w-full flex items-center justify-between text-left p-4 sm:p-5 transition-colors focus:outline-none ${
-                  done ? 'bg-slate-50/60' : 'hover:bg-slate-50'
+                  done
+                    ? isDarkMode
+                      ? ac.bgLight
+                      : 'bg-slate-50/60'
+                    : isDarkMode
+                      ? 'hover:bg-slate-900'
+                      : 'hover:bg-slate-50'
                 } ${estaEnEdicion ? 'cursor-default' : ''}`}
               >
                 <div className="min-w-0 flex items-center gap-3">
@@ -164,12 +179,12 @@ export default function PlanView() {
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <h3 className="text-sm sm:text-[15px] font-bold text-slate-900 truncate">
+                      <h3 className={`text-sm sm:text-[15px] font-bold truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                         {momento.label}
                       </h3>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{momento.hora}</p>
-                    <p className="text-[11px] mt-1 font-bold text-slate-600">
+                    <p className={`text-[11px] mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>{momento.hora}</p>
+                    <p className={`text-[11px] mt-1 font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                       {!isAmbos
                         ? `${momento.label}: ${kcalSingle} kcal`
                         : `Subtotal: Él ${kcalEl} kcal · Ella ${kcalElla} kcal`}
@@ -190,7 +205,7 @@ export default function PlanView() {
                     transition={{ type: 'spring', damping: 20 }}
                     className="flex-shrink-0"
                   >
-                    <ChevronUp className="w-5 h-5 text-slate-400" />
+                    <ChevronUp className={`w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
                   </motion.div>
                 )}
               </button>
@@ -206,11 +221,11 @@ export default function PlanView() {
                   >
                     <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
                       {isElegidoVacio ? (
-                        <div className="text-center py-7 px-4 bg-slate-50/60 rounded-2xl border border-dashed border-slate-200">
-                          <p className="text-slate-600 text-sm font-bold">
+                        <div className={`text-center py-7 px-4 rounded-2xl border border-dashed ${isDarkMode ? 'bg-slate-900/80 border-slate-700' : 'bg-slate-50/60 border-slate-200'}`}>
+                          <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-600'}`}>
                             Ningún platillo reservado
                           </p>
-                          <p className="text-slate-400 text-xs mt-1">
+                          <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>
                             Elige tu comida para este horario.
                           </p>
                           <button
@@ -234,12 +249,16 @@ export default function PlanView() {
                                 {mealsSingleSeleccionadas.map((meal, idx) => (
                                   <div
                                     key={idx}
-                                    className={`p-4 rounded-2xl border border-white/70 bg-gradient-to-br ${ac.bgLight} via-white to-white shadow-[0_10px_24px_rgba(15,23,42,0.06)]`}
+                                    className={`p-4 rounded-2xl border bg-gradient-to-br ${
+                                      isDarkMode
+                                        ? `${ac.bgGradientLight} ${ac.borderLight} shadow-[0_14px_28px_rgba(2,6,23,0.38)]`
+                                        : `border-white/70 ${ac.bgLight} via-white to-white shadow-[0_10px_24px_rgba(15,23,42,0.06)]`
+                                    }`}
                                   >
                                     <h4 className={`font-bold text-sm mb-1 ${ac.text}`}>
                                       {meal.nombre}
                                     </h4>
-                                    <p className="text-slate-600 text-xs leading-relaxed">
+                                    <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-600'}`}>
                                       {meal.detalle}
                                     </p>
                                     <p className={`text-[11px] mt-2 font-bold ${ac.text}`}>
@@ -254,7 +273,7 @@ export default function PlanView() {
                                           title={`${item.label} ${item.cantidad}`}
                                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${ac.tagBg} ${ac.tagText} text-[11px] font-bold`}
                                         >
-                                          <span className="w-5 h-5 rounded-full bg-white/70 flex items-center justify-center text-[12px] shadow-sm shadow-slate-200/50">
+                                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[12px] shadow-sm ${isDarkMode ? 'bg-slate-900 text-slate-100 shadow-black/30' : 'bg-white/70 shadow-slate-200/50'}`}>
                                             {item.icon}
                                           </span>
                                           <span>x{item.cantidad}</span>
@@ -295,13 +314,14 @@ export default function PlanView() {
                                   }));
                                 }}
                                 accentClasses={ac}
+                                isDarkMode={isDarkMode}
                               />
                             ))}
 
                           {isAmbos && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                               <div className="space-y-3">
-                                <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wider px-1">
+                                <div className={`text-[10px] font-bold uppercase tracking-wider px-1 ${elAccent.text}`}>
                                   Para {perfilesData.el.nombre}
                                 </div>
 
@@ -311,15 +331,19 @@ export default function PlanView() {
                                       mealsElSeleccionadas.map((meal, idx) => (
                                         <div
                                           key={idx}
-                                          className="p-4 rounded-2xl border border-white/70 bg-gradient-to-br from-blue-50 via-white to-white shadow-[0_10px_24px_rgba(37,99,235,0.10)]"
+                                          className={`p-4 rounded-2xl border bg-gradient-to-br ${
+                                            isDarkMode
+                                              ? `${elAccent.bgGradientLight} ${elAccent.borderLight} shadow-[0_14px_28px_rgba(2,6,23,0.38)]`
+                                              : 'border-white/70 from-blue-50 via-white to-white shadow-[0_10px_24px_rgba(37,99,235,0.10)]'
+                                          }`}
                                         >
-                                          <h4 className="font-bold text-sm mb-1 text-blue-800">
+                                          <h4 className={`font-bold text-sm mb-1 ${elAccent.textDark}`}>
                                             {meal.nombre}
                                           </h4>
-                                          <p className="text-slate-600 text-xs leading-relaxed">
+                                          <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-600'}`}>
                                             {meal.detalle}
                                           </p>
-                                          <p className="text-[11px] mt-2 font-bold text-blue-600">
+                                          <p className={`text-[11px] mt-2 font-bold ${elAccent.text}`}>
                                             {meal.caloriasKcal || 0} kcal
                                             {typeof meal.proteinaG === 'number' ? ` · ${meal.proteinaG}g proteína` : ''}
                                           </p>
@@ -329,9 +353,9 @@ export default function PlanView() {
                                               <span
                                                 key={`${meal.nombre}-${item.key}-${item.cantidad}`}
                                                 title={`${item.label} ${item.cantidad}`}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold"
+                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${elAccent.tagBg} ${elAccent.tagText} text-[11px] font-bold`}
                                               >
-                                                <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[12px] shadow-sm shadow-blue-200/60">
+                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[12px] shadow-sm ${isDarkMode ? 'bg-slate-900 text-slate-100 shadow-black/30' : 'bg-white/80 shadow-blue-200/60'}`}>
                                                   {item.icon}
                                                 </span>
                                                 <span>x{item.cantidad}</span>
@@ -341,8 +365,8 @@ export default function PlanView() {
                                         </div>
                                       ))
                                     ) : (
-                                      <div className="text-center py-5 px-4 bg-blue-50/50 rounded-2xl border border-dashed border-blue-200">
-                                        <p className="text-blue-700 text-sm font-semibold">
+                                      <div className={`text-center py-5 px-4 rounded-2xl border border-dashed ${isDarkMode ? `${elAccent.bgLight} ${elAccent.border}` : 'bg-blue-50/50 border-blue-200'}`}>
+                                        <p className={`text-sm font-semibold ${elAccent.text}`}>
                                           Ningún platillo reservado
                                         </p>
                                       </div>
@@ -355,7 +379,7 @@ export default function PlanView() {
                                           [`${momento.key}-el`]: true,
                                         }))
                                       }
-                                      className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 active:scale-95 transition"
+                                      className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold ${elAccent.text} ${elAccent.bgLight} border ${elAccent.border} hover:opacity-90 active:scale-95 transition`}
                                     >
                                       <Zap className="w-3.5 h-3.5" />
                                       {mealsElSeleccionadas.length > 0
@@ -364,7 +388,7 @@ export default function PlanView() {
                                     </button>
                                   </>
                                 ) : (
-                                  <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-100">
+                                  <div className={`p-3 rounded-2xl border ${isDarkMode ? `${elAccent.bgLight} ${elAccent.border}` : 'bg-blue-50/50 border-blue-100'}`}>
                                     <MealSelector
                                       perfil="el"
                                       comidas={mealsElAll}
@@ -379,23 +403,15 @@ export default function PlanView() {
                                           [`${momentoKey}-el`]: false,
                                         }));
                                       }}
-                                      accentClasses={{
-                                        bg: 'bg-blue-500',
-                                        bgLight: 'bg-blue-50',
-                                        bgGradient: 'from-blue-500 to-indigo-600',
-                                        text: 'text-blue-600',
-                                        border: 'border-blue-200',
-                                        borderAccent: 'border-blue-500',
-                                        tagBg: 'bg-blue-100',
-                                        tagText: 'text-blue-700',
-                                      }}
+                                      accentClasses={elAccent}
+                                      isDarkMode={isDarkMode}
                                     />
                                   </div>
                                 )}
                               </div>
 
                               <div className="space-y-3">
-                                <div className="text-[10px] font-bold text-rose-500 uppercase tracking-wider px-1">
+                                <div className={`text-[10px] font-bold uppercase tracking-wider px-1 ${ellaAccent.text}`}>
                                   Para {perfilesData.ella.nombre}
                                 </div>
 
@@ -405,15 +421,19 @@ export default function PlanView() {
                                       mealsEllaSeleccionadas.map((meal, idx) => (
                                         <div
                                           key={idx}
-                                          className="p-4 rounded-2xl border border-white/70 bg-gradient-to-br from-rose-50 via-white to-white shadow-[0_10px_24px_rgba(244,63,94,0.10)]"
+                                          className={`p-4 rounded-2xl border bg-gradient-to-br ${
+                                            isDarkMode
+                                              ? `${ellaAccent.bgGradientLight} ${ellaAccent.borderLight} shadow-[0_14px_28px_rgba(2,6,23,0.38)]`
+                                              : 'border-white/70 from-rose-50 via-white to-white shadow-[0_10px_24px_rgba(244,63,94,0.10)]'
+                                          }`}
                                         >
-                                          <h4 className="font-bold text-sm mb-1 text-rose-800">
+                                          <h4 className={`font-bold text-sm mb-1 ${ellaAccent.textDark}`}>
                                             {meal.nombre}
                                           </h4>
-                                          <p className="text-slate-600 text-xs leading-relaxed">
+                                          <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-600'}`}>
                                             {meal.detalle}
                                           </p>
-                                          <p className="text-[11px] mt-2 font-bold text-rose-600">
+                                          <p className={`text-[11px] mt-2 font-bold ${ellaAccent.text}`}>
                                             {meal.caloriasKcal || 0} kcal
                                             {typeof meal.proteinaG === 'number' ? ` · ${meal.proteinaG}g proteína` : ''}
                                           </p>
@@ -423,9 +443,9 @@ export default function PlanView() {
                                               <span
                                                 key={`${meal.nombre}-${item.key}-${item.cantidad}`}
                                                 title={`${item.label} ${item.cantidad}`}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 text-[11px] font-bold"
+                                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${ellaAccent.tagBg} ${ellaAccent.tagText} text-[11px] font-bold`}
                                               >
-                                                <span className="w-5 h-5 rounded-full bg-white/80 flex items-center justify-center text-[12px] shadow-sm shadow-rose-200/60">
+                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[12px] shadow-sm ${isDarkMode ? 'bg-slate-900 text-slate-100 shadow-black/30' : 'bg-white/80 shadow-rose-200/60'}`}>
                                                   {item.icon}
                                                 </span>
                                                 <span>x{item.cantidad}</span>
@@ -435,8 +455,8 @@ export default function PlanView() {
                                         </div>
                                       ))
                                     ) : (
-                                      <div className="text-center py-5 px-4 bg-rose-50/50 rounded-2xl border border-dashed border-rose-200">
-                                        <p className="text-rose-700 text-sm font-semibold">
+                                      <div className={`text-center py-5 px-4 rounded-2xl border border-dashed ${isDarkMode ? `${ellaAccent.bgLight} ${ellaAccent.border}` : 'bg-rose-50/50 border-rose-200'}`}>
+                                        <p className={`text-sm font-semibold ${ellaAccent.text}`}>
                                           Ningún platillo reservado
                                         </p>
                                       </div>
@@ -449,7 +469,7 @@ export default function PlanView() {
                                           [`${momento.key}-ella`]: true,
                                         }))
                                       }
-                                      className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 active:scale-95 transition"
+                                      className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold ${ellaAccent.text} ${ellaAccent.bgLight} border ${ellaAccent.border} hover:opacity-90 active:scale-95 transition`}
                                     >
                                       <Zap className="w-3.5 h-3.5" />
                                       {mealsEllaSeleccionadas.length > 0
@@ -458,7 +478,7 @@ export default function PlanView() {
                                     </button>
                                   </>
                                 ) : (
-                                  <div className="p-3 bg-rose-50/50 rounded-2xl border border-rose-100">
+                                  <div className={`p-3 rounded-2xl border ${isDarkMode ? `${ellaAccent.bgLight} ${ellaAccent.border}` : 'bg-rose-50/50 border-rose-100'}`}>
                                     <MealSelector
                                       perfil="ella"
                                       comidas={mealsEllaAll}
@@ -473,16 +493,8 @@ export default function PlanView() {
                                           [`${momentoKey}-ella`]: false,
                                         }));
                                       }}
-                                      accentClasses={{
-                                        bg: 'bg-rose-500',
-                                        bgLight: 'bg-rose-50',
-                                        bgGradient: 'from-rose-500 to-pink-600',
-                                        text: 'text-rose-600',
-                                        border: 'border-rose-200',
-                                        borderAccent: 'border-rose-500',
-                                        tagBg: 'bg-rose-100',
-                                        tagText: 'text-rose-700',
-                                      }}
+                                      accentClasses={ellaAccent}
+                                      isDarkMode={isDarkMode}
                                     />
                                   </div>
                                 )}

@@ -30,13 +30,31 @@ import {
   Milk,
   Bean,
   Ruler,
+  FileUp,
+  ScanLine,
+  Trash,
 } from 'lucide-react';
-import { downloadJsonFile } from '../dataManager';
+import { buildExportData, downloadJsonFile } from '../dataManager';
 import { persistGeminiApiKey } from '../utils/geminiKey';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type TargetProfile = 'el' | 'ella' | 'ambos';
 export type PortionMode = 'manual' | 'auto';
+
+export interface UploadedAssessmentPdf {
+  name: string;
+  mimeType: 'application/pdf';
+  dataBase64: string;
+}
+
+export interface BodyMeasurements {
+  waistCm: string;
+  hipCm: string;
+  neckCm: string;
+  chestCm: string;
+  armCm: string;
+  thighCm: string;
+}
 
 export interface QuestionnairePayload {
   targetProfile: TargetProfile;
@@ -54,6 +72,8 @@ export interface QuestionnairePayload {
   healthContext?: any;
   preferences?: any;
   routine?: any;
+  bodyMeasurements?: BodyMeasurements;
+  assessmentReportPdf?: UploadedAssessmentPdf | null;
   preferredModel?: string;
 }
 
@@ -150,6 +170,15 @@ const emptyPerson = () => ({
   wakeTime: '',
   sleepTime: '',
   trainingFrequency: '',
+  bodyMeasurements: {
+    waistCm: '',
+    hipCm: '',
+    neckCm: '',
+    chestCm: '',
+    armCm: '',
+    thighCm: '',
+  } as BodyMeasurements,
+  assessmentReportPdf: null as UploadedAssessmentPdf | null,
 });
 type Person = ReturnType<typeof emptyPerson>;
 
@@ -160,6 +189,7 @@ type StepType =
   | 'objetivo'
   | 'salud'
   | 'medicos'
+  | 'assessment'
   | 'preferencias'
   | 'lifestyle'
   | 'horarios'
@@ -178,6 +208,7 @@ function buildSteps(tp: TargetProfile): WizardStep[] {
     { type: 'objetivo', profile: p },
     { type: 'salud', profile: p },
     { type: 'medicos', profile: p },
+    { type: 'assessment', profile: p },
     { type: 'preferencias', profile: p },
     { type: 'lifestyle', profile: p },
     { type: 'horarios', profile: p },
@@ -206,23 +237,23 @@ const slideVariants = {
 const THEME = {
   el: {
     accent: '#3b82f6',
-    light: 'bg-blue-50',
-    text: 'text-blue-600',
-    border: 'border-blue-200',
+    light: 'bg-blue-50 dark:bg-sky-950/50',
+    text: 'text-blue-600 dark:text-sky-200',
+    border: 'border-blue-200 dark:border-sky-900/60',
     grad: 'from-blue-500 to-indigo-600',
   },
   ella: {
     accent: '#f43f5e',
-    light: 'bg-rose-50',
-    text: 'text-rose-600',
-    border: 'border-rose-200',
+    light: 'bg-rose-50 dark:bg-rose-950/50',
+    text: 'text-rose-600 dark:text-rose-200',
+    border: 'border-rose-200 dark:border-rose-900/60',
     grad: 'from-rose-500 to-pink-600',
   },
   ambos: {
     accent: '#10b981',
-    light: 'bg-emerald-50',
-    text: 'text-emerald-600',
-    border: 'border-emerald-200',
+    light: 'bg-emerald-50 dark:bg-emerald-950/50',
+    text: 'text-emerald-600 dark:text-emerald-200',
+    border: 'border-emerald-200 dark:border-emerald-900/60',
     grad: 'from-emerald-500 to-teal-600',
   },
 };
@@ -233,6 +264,7 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
   objetivo: { label: 'Objetivo', Icon: Target },
   salud: { label: 'Salud', Icon: Shield },
   medicos: { label: 'Médicos', Icon: Pill },
+  assessment: { label: 'Medidas', Icon: ScanLine },
   preferencias: { label: 'Preferencias', Icon: Heart },
   lifestyle: { label: 'Actividad', Icon: Activity },
   horarios: { label: 'Horarios', Icon: Clock },
@@ -269,8 +301,8 @@ function CardSection({
     <div className="space-y-3">
       {(title || hint) && (
         <div>
-          {title && <p className="text-sm font-bold text-slate-800">{title}</p>}
-          {hint && <p className="text-xs text-slate-500 mt-0.5">{hint}</p>}
+          {title && <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{title}</p>}
+          {hint && <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-400">{hint}</p>}
         </div>
       )}
       {children}
@@ -282,7 +314,7 @@ function ChipButton({
   active,
   onClick,
   children,
-  activeClassName = 'border-indigo-500 bg-indigo-50 text-indigo-700',
+  activeClassName = 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/60 dark:text-indigo-200',
 }: {
   active: boolean;
   onClick: () => void;
@@ -294,7 +326,7 @@ function ChipButton({
       type="button"
       onClick={onClick}
       className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-all active:scale-[.98] ${
-        active ? activeClassName : 'border-slate-200 bg-white text-slate-600'
+        active ? activeClassName : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
       }`}
     >
       {children}
@@ -313,7 +345,7 @@ function QuickTag({
     <button
       type="button"
       onClick={onClick}
-      className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+      className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
     >
       {children}
     </button>
@@ -355,20 +387,20 @@ function NumField({
   const updateValue = (next: number) => onChange(formatValue(clamp(next)));
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="text-sm font-semibold text-slate-700">
+        <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">
           {label}
           {required && <span className="text-rose-400 ml-1">*</span>}
         </div>
-        <div className="text-xs font-semibold text-slate-400 uppercase">{unit}</div>
+        <div className="text-xs font-semibold text-slate-400 uppercase dark:text-slate-500">{unit}</div>
       </div>
 
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => updateValue(safeValue - step)}
-          className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-700 active:scale-95"
+          className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           aria-label={`Reducir ${label}`}
         >
           <Minus className="w-4 h-4" />
@@ -383,12 +415,12 @@ function NumField({
             step={step}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full h-10 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-800 outline-none focus:ring-2 focus:ring-slate-300"
+            className="w-full h-10 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50 dark:focus:ring-slate-700"
           />
           {(minIcon || maxIcon) && (
             <div className="flex items-center justify-between px-1 mt-1">
-              <span className="text-[11px] text-slate-400">{minIcon || ''}</span>
-              <span className="text-[11px] text-slate-400">{maxIcon || ''}</span>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">{minIcon || ''}</span>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">{maxIcon || ''}</span>
             </div>
           )}
         </div>
@@ -396,7 +428,7 @@ function NumField({
         <button
           type="button"
           onClick={() => updateValue(safeValue + step)}
-          className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-700 active:scale-95"
+          className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           aria-label={`Aumentar ${label}`}
         >
           <Plus className="w-4 h-4" />
@@ -406,17 +438,44 @@ function NumField({
   );
 }
 
-function parseTimeToParts(value: string) {
-  if (!value || !value.includes(':')) return { hour: 7, minute: 0 };
-  const [h, m] = value.split(':').map((v) => parseInt(v, 10));
+type Meridiem = 'AM' | 'PM';
+
+function clampTimeNumber(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, value));
+}
+
+function parseTimeTo12HourParts(value: string) {
+  if (!value || !value.includes(':')) {
+    return { hour12: '7', minute: '00', meridiem: 'AM' as Meridiem };
+  }
+
+  const [rawHour, rawMinute] = value.split(':').map((v) => Number.parseInt(v, 10));
+  const hour24 = clampTimeNumber(rawHour, 0, 23);
+  const minute = clampTimeNumber(rawMinute, 0, 59);
+  const meridiem: Meridiem = hour24 >= 12 ? 'PM' : 'AM';
+  const hour12 = hour24 % 12 || 12;
+
   return {
-    hour: Number.isFinite(h) ? Math.max(0, Math.min(23, h)) : 7,
-    minute: Number.isFinite(m) ? Math.max(0, Math.min(59, m)) : 0,
+    hour12: String(hour12),
+    minute: String(minute).padStart(2, '0'),
+    meridiem,
   };
 }
 
-function formatTimeFromParts(hour: number, minute: number) {
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+function formatTimeFrom12HourParts(hour12Value: string, minuteValue: string, meridiem: Meridiem) {
+  const hour12 = clampTimeNumber(Number.parseInt(hour12Value, 10), 1, 12);
+  const minute = clampTimeNumber(Number.parseInt(minuteValue, 10), 0, 59);
+  const hour24 = meridiem === 'AM'
+    ? (hour12 === 12 ? 0 : hour12)
+    : (hour12 === 12 ? 12 : hour12 + 12);
+
+  return `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function formatTimeForDisplay(value: string, fallback: string) {
+  const { hour12, minute, meridiem } = parseTimeTo12HourParts(value || fallback);
+  return `${hour12}:${minute} ${meridiem}`;
 }
 
 function TimeWheelPicker({
@@ -425,47 +484,155 @@ function TimeWheelPicker({
   onChange,
 }: {
   title: string;
-  value: string;
-  onChange: (v: string) => void;
+  value: { hour12: string; minute: string; meridiem: Meridiem };
+  onChange: (v: { hour12: string; minute: string; meridiem: Meridiem }) => void;
 }) {
-  const { hour, minute } = parseTimeToParts(value);
+  const normalizeHour = (rawValue: string) => {
+    const digitsOnly = rawValue.replace(/\D/g, '').slice(0, 2);
+    if (!digitsOnly) return '';
+    return String(clampTimeNumber(Number.parseInt(digitsOnly, 10), 1, 12));
+  };
+
+  const normalizeMinute = (rawValue: string) => {
+    const digitsOnly = rawValue.replace(/\D/g, '').slice(0, 2);
+    if (!digitsOnly) return '';
+    return String(clampTimeNumber(Number.parseInt(digitsOnly, 10), 0, 59)).padStart(2, '0');
+  };
+
+  const safePreview = formatTimeFrom12HourParts(
+    value.hour12 || '7',
+    value.minute || '00',
+    value.meridiem
+  );
+
+  const previewLabel = (() => {
+    const { hour12, minute, meridiem } = parseTimeTo12HourParts(safePreview);
+    return `${hour12}:${minute} ${meridiem}`;
+  })();
+
+  const changeHour = (delta: number) => {
+    const base = clampTimeNumber(Number.parseInt(value.hour12 || '7', 10), 1, 12);
+    const next = base + delta;
+    const wrapped = next < 1 ? 12 : next > 12 ? 1 : next;
+    onChange({ ...value, hour12: String(wrapped) });
+  };
+
+  const changeMinute = (delta: number) => {
+    const base = clampTimeNumber(Number.parseInt(value.minute || '00', 10), 0, 59);
+    const next = base + delta;
+    const wrapped = next < 0 ? 59 : next > 59 ? 0 : next;
+    onChange({ ...value, minute: String(wrapped).padStart(2, '0') });
+  };
 
   return (
     <div className="space-y-4">
-      <p className="text-center text-sm font-semibold text-slate-700">{title}</p>
+      <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-100">{title}</p>
 
-      <div className="mx-auto w-fit bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 rounded-2xl p-4">
-        <div className="flex items-center gap-2">
-          <select
-            value={hour}
-            onChange={(e) => onChange(formatTimeFromParts(parseInt(e.target.value, 10), minute))}
-            className="h-32 sm:h-40 w-24 rounded-xl border border-indigo-200 bg-white text-center text-3xl font-black text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-          >
-            {Array.from({ length: 24 }, (_, i) => (
-              <option key={i} value={i}>
-                {String(i).padStart(2, '0')}
-              </option>
-            ))}
-          </select>
+      <div className="rounded-[24px] border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-4 shadow-sm dark:border-indigo-900/60 dark:from-slate-950 dark:to-indigo-950/60">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">Hora</div>
+              <div className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">1-12</div>
+            </div>
 
-          <span className="text-3xl font-black text-indigo-400">:</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => changeHour(-1)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                aria-label="Reducir hora"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
 
-          <select
-            value={minute}
-            onChange={(e) => onChange(formatTimeFromParts(hour, parseInt(e.target.value, 10)))}
-            className="h-32 sm:h-40 w-24 rounded-xl border border-indigo-200 bg-white text-center text-3xl font-black text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-          >
-            {Array.from({ length: 60 }, (_, i) => (
-              <option key={i} value={i}>
-                {String(i).padStart(2, '0')}
-              </option>
-            ))}
-          </select>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={12}
+                value={value.hour12}
+                onChange={(e) => onChange({ ...value, hour12: normalizeHour(e.target.value) })}
+                onBlur={() => onChange({ ...value, hour12: normalizeHour(value.hour12 || '7') || '7' })}
+                className="h-10 flex-1 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50 dark:focus:ring-slate-700"
+              />
+
+              <button
+                type="button"
+                onClick={() => changeHour(1)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                aria-label="Aumentar hora"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">Min</div>
+              <div className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">00-59</div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => changeMinute(-1)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                aria-label="Reducir minutos"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={59}
+                value={value.minute}
+                onChange={(e) => onChange({ ...value, minute: normalizeMinute(e.target.value) })}
+                onBlur={() => onChange({ ...value, minute: normalizeMinute(value.minute || '00') || '00' })}
+                className="h-10 flex-1 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50 dark:focus:ring-slate-700"
+              />
+
+              <button
+                type="button"
+                onClick={() => changeMinute(1)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                aria-label="Aumentar minutos"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+          <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-100">Formato</div>
+          <div className="grid grid-cols-2 gap-2">
+            {(['AM', 'PM'] as const).map((period) => {
+              const active = value.meridiem === period;
+              return (
+                <button
+                  key={period}
+                  type="button"
+                  onClick={() => onChange({ ...value, meridiem: period })}
+                  className={`rounded-2xl border px-4 py-3 text-sm font-black transition-all active:scale-[0.98] ${
+                    active
+                      ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm dark:border-indigo-400 dark:bg-indigo-500'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                  }`}
+                >
+                  {period}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <p className="text-center text-xs text-indigo-500 font-semibold">
-        Hora seleccionada: {value || '07:00'}
+      <p className="text-center text-xs text-indigo-500 font-semibold dark:text-indigo-300">
+        Hora seleccionada: {previewLabel}
       </p>
     </div>
   );
@@ -506,8 +673,13 @@ export default function NutritionQuestionnaire({
     open: boolean;
     profile: 'el' | 'ella' | null;
     field: 'wakeTime' | 'sleepTime' | null;
-    value: string;
-  }>({ open: false, profile: null, field: null, value: '' });
+    value: { hour12: string; minute: string; meridiem: Meridiem };
+  }>({
+    open: false,
+    profile: null,
+    field: null,
+    value: { hour12: '7', minute: '00', meridiem: 'AM' },
+  });
 
   const [activePortionMoment, setActivePortionMoment] = useState('desayuno');
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
@@ -661,23 +833,89 @@ export default function NutritionQuestionnaire({
     field: 'wakeTime' | 'sleepTime',
     currentValue: string
   ) => {
+    const defaultValue = field === 'wakeTime' ? '07:00' : '22:00';
     setTimePickerState({
       open: true,
       profile,
       field,
-      value: currentValue || (field === 'wakeTime' ? '07:00' : '22:00'),
+      value: parseTimeTo12HourParts(currentValue || defaultValue),
     });
   };
 
   const closeTimePicker = () =>
-    setTimePickerState({ open: false, profile: null, field: null, value: '' });
+    setTimePickerState({
+      open: false,
+      profile: null,
+      field: null,
+      value: { hour12: '7', minute: '00', meridiem: 'AM' },
+    });
 
   const confirmTimePicker = () => {
     if (!timePickerState.profile || !timePickerState.field) return;
     setPerson(timePickerState.profile, {
-      [timePickerState.field]: timePickerState.value,
+      [timePickerState.field]: formatTimeFrom12HourParts(
+        timePickerState.value.hour12,
+        timePickerState.value.minute,
+        timePickerState.value.meridiem
+      ),
     } as Partial<Person>);
     closeTimePicker();
+  };
+
+  const updateBodyMeasurement = (
+    profile: 'el' | 'ella',
+    field: keyof BodyMeasurements,
+    value: string
+  ) => {
+    const currentMeasurements = person(profile).bodyMeasurements ?? emptyPerson().bodyMeasurements;
+    setPerson(profile, {
+      bodyMeasurements: {
+        ...currentMeasurements,
+        [field]: value,
+      },
+    } as Partial<Person>);
+  };
+
+  const handleAssessmentPdfUpload = async (
+    profile: 'el' | 'ella',
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+    if (file.type !== 'application/pdf') return;
+
+    try {
+      const dataBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = typeof reader.result === 'string' ? reader.result : '';
+          const base64 = result.includes(',') ? result.split(',')[1] : '';
+          if (!base64) {
+            reject(new Error('No se pudo leer el PDF seleccionado.'));
+            return;
+          }
+          resolve(base64);
+        };
+        reader.onerror = () => reject(new Error('No se pudo leer el PDF seleccionado.'));
+        reader.readAsDataURL(file);
+      });
+
+      setPerson(profile, {
+        assessmentReportPdf: {
+          name: file.name,
+          mimeType: 'application/pdf',
+          dataBase64,
+        },
+      } as Partial<Person>);
+    } catch (error) {
+      console.error('Failed to read assessment PDF:', error);
+    }
+  };
+
+  const clearAssessmentPdf = (profile: 'el' | 'ella') => {
+    setPerson(profile, { assessmentReportPdf: null } as Partial<Person>);
   };
 
   const updatePortionValue = (
@@ -744,6 +982,8 @@ export default function NutritionQuestionnaire({
         sleepTime: p.sleepTime,
         trainingFrequency: p.trainingFrequency,
       },
+      bodyMeasurements: p.bodyMeasurements,
+      assessmentReportPdf: p.assessmentReportPdf,
     });
 
     const base = {
@@ -792,15 +1032,15 @@ export default function NutritionQuestionnaire({
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 font-semibold text-left transition-all duration-200 active:scale-[.98] ${
                   active
                     ? `${t.border} ${t.light} shadow-sm`
-                    : 'border-slate-200 bg-white hover:bg-slate-50'
+                    : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
                 }`}
               >
-                <span className="text-2xl w-11 h-11 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl w-11 h-11 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center flex-shrink-0 dark:bg-slate-900 dark:border-slate-700">
                   {emoji}
                 </span>
 
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-slate-800'}`}>
+                  <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-slate-800 dark:text-slate-100'}`}>
                     {title}
                   </p>
                   <p className={`text-[11px] mt-0.5 ${active ? `${t.text} opacity-70` : 'text-slate-400'}`}>
@@ -897,10 +1137,10 @@ export default function NutritionQuestionnaire({
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 font-semibold text-sm transition-all duration-200 active:scale-[.98] ${
                       isSelected
                         ? `${tc.border} ${tc.light} ${tc.text} shadow-sm border-[2.5px]`
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900 dark:text-slate-100'
                     }`}
                   >
-                    <span className="text-xl w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center">
+                    <span className="text-xl w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center dark:bg-slate-900 dark:border-slate-700">
                       {obj.emoji}
                     </span>
                     <span className="flex-1 text-left">{obj.val}</span>
@@ -922,7 +1162,7 @@ export default function NutritionQuestionnaire({
                     className={`py-2.5 px-1 rounded-xl border text-center transition-all active:scale-[.97] ${
                       active
                         ? `border-transparent ${tc.light} shadow-sm`
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
                     }`}
                   >
                     <span className="text-xs font-bold">{tl.val}</span>
@@ -940,7 +1180,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
             💡 Esta sección es opcional. Puedes saltar si no aplica.
           </p>
 
@@ -948,7 +1188,7 @@ export default function NutritionQuestionnaire({
             <textarea
               rows={2}
               placeholder="Ej. Diabetes"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
               value={p.diagnostics}
               onChange={(e) => setPerson(profile, { diagnostics: e.target.value })}
             />
@@ -969,7 +1209,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
             💡 Esta sección es opcional.
           </p>
 
@@ -977,7 +1217,7 @@ export default function NutritionQuestionnaire({
             <textarea
               rows={2}
               placeholder="Ej. Metformina"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
               value={p.medications}
               onChange={(e) => setPerson(profile, { medications: e.target.value })}
             />
@@ -994,7 +1234,7 @@ export default function NutritionQuestionnaire({
             <CardSection title="Alergias">
               <input
                 placeholder="Ej. Lácteos"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
                 value={p.allergies}
                 onChange={(e) => setPerson(profile, { allergies: e.target.value })}
               />
@@ -1010,7 +1250,7 @@ export default function NutritionQuestionnaire({
             <CardSection title="Intolerancias">
               <input
                 placeholder="Ej. Lactosa"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
                 value={p.intolerances}
                 onChange={(e) => setPerson(profile, { intolerances: e.target.value })}
               />
@@ -1027,19 +1267,131 @@ export default function NutritionQuestionnaire({
       );
     }
 
+    if (type === 'assessment' && profile) {
+      const p = person(profile);
+      const measurements = p.bodyMeasurements ?? emptyPerson().bodyMeasurements;
+
+      return (
+        <div className="space-y-4">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
+            💡 Este paso es opcional. Puedes adjuntar un PDF de báscula corporal o capturar medidas manuales.
+          </p>
+
+          <CardSection
+            title="Reporte corporal en PDF"
+            hint="Ejemplo: un resumen tipo Renpho con grasa, músculo, agua corporal o métricas similares."
+          >
+            <label className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer active:scale-[.99] transition dark:border-slate-700 dark:bg-slate-950">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 dark:bg-indigo-950/50 dark:text-indigo-200">
+                  <FileUp className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    {p.assessmentReportPdf ? 'Cambiar PDF adjunto' : 'Adjuntar PDF opcional'}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed dark:text-slate-300">
+                    La IA lo toma como contexto adicional. Tus respuestas manuales siguen teniendo prioridad.
+                  </p>
+                </div>
+              </div>
+
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                onChange={(event) => void handleAssessmentPdfUpload(profile, event)}
+              />
+
+              <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-3 text-xs font-semibold text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/50 dark:text-indigo-200">
+                {p.assessmentReportPdf ? p.assessmentReportPdf.name : 'Toca aquí para seleccionar un PDF'}
+              </div>
+            </label>
+
+            {p.assessmentReportPdf && (
+              <button
+                type="button"
+                onClick={() => clearAssessmentPdf(profile)}
+                className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 flex items-center justify-center gap-2 active:scale-[.98] dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+              >
+                <Trash className="w-4 h-4" />
+                Quitar PDF
+              </button>
+            )}
+          </CardSection>
+
+          <CardSection
+            title="Medidas corporales opcionales"
+            hint="Llénalas solo si las tienes. Ayudan a dar más contexto al plan."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <NumField
+                label="Cintura"
+                unit="cm"
+                min={40}
+                max={200}
+                value={measurements.waistCm}
+                onChange={(value) => updateBodyMeasurement(profile, 'waistCm', value)}
+              />
+              <NumField
+                label="Cadera"
+                unit="cm"
+                min={40}
+                max={220}
+                value={measurements.hipCm}
+                onChange={(value) => updateBodyMeasurement(profile, 'hipCm', value)}
+              />
+              <NumField
+                label="Cuello"
+                unit="cm"
+                min={20}
+                max={80}
+                value={measurements.neckCm}
+                onChange={(value) => updateBodyMeasurement(profile, 'neckCm', value)}
+              />
+              <NumField
+                label="Pecho"
+                unit="cm"
+                min={40}
+                max={180}
+                value={measurements.chestCm}
+                onChange={(value) => updateBodyMeasurement(profile, 'chestCm', value)}
+              />
+              <NumField
+                label="Brazo"
+                unit="cm"
+                min={15}
+                max={80}
+                value={measurements.armCm}
+                onChange={(value) => updateBodyMeasurement(profile, 'armCm', value)}
+              />
+              <NumField
+                label="Muslo"
+                unit="cm"
+                min={20}
+                max={120}
+                value={measurements.thighCm}
+                onChange={(value) => updateBodyMeasurement(profile, 'thighCm', value)}
+              />
+            </div>
+          </CardSection>
+        </div>
+      );
+    }
+
     if (type === 'preferencias' && profile) {
       const p = person(profile);
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
             💡 Esta sección es opcional.
           </p>
 
           <CardSection title="Síntomas digestivos">
             <input
               placeholder="Ej. Reflujo"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
               value={p.digestiveSymptoms}
               onChange={(e) => setPerson(profile, { digestiveSymptoms: e.target.value })}
             />
@@ -1056,7 +1408,7 @@ export default function NutritionQuestionnaire({
             <CardSection title="Favoritos">
               <input
                 placeholder="Ej. Pollo"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
                 value={p.favoriteFoods}
                 onChange={(e) => setPerson(profile, { favoriteFoods: e.target.value })}
               />
@@ -1072,7 +1424,7 @@ export default function NutritionQuestionnaire({
             <CardSection title="Jamás incluir">
               <input
                 placeholder="Ej. Hígado"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
                 value={p.dislikedFoods}
                 onChange={(e) => setPerson(profile, { dislikedFoods: e.target.value })}
               />
@@ -1105,13 +1457,13 @@ export default function NutritionQuestionnaire({
                     className={`flex flex-col items-start gap-0.5 p-3 rounded-2xl border-2 transition-all active:scale-[.97] ${
                       active
                         ? `${tc.border} ${tc.light} shadow-sm border-[2.5px]`
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                        : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
                     }`}
                   >
-                    <span className="text-xl mb-0.5 w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center">
+                    <span className="text-xl mb-0.5 w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center dark:bg-slate-900 dark:border-slate-700">
                       {al.emoji}
                     </span>
-                    <span className={`text-xs font-bold leading-tight ${active ? tc.text : 'text-slate-700'}`}>
+                    <span className={`text-xs font-bold leading-tight ${active ? tc.text : 'text-slate-700 dark:text-slate-100'}`}>
                       {al.val}
                     </span>
                     <span className={`text-[10px] leading-tight ${active ? `${tc.text} opacity-60` : 'text-slate-400'}`}>
@@ -1131,7 +1483,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
             💡 Esta sección es opcional.
           </p>
 
@@ -1139,9 +1491,9 @@ export default function NutritionQuestionnaire({
             <CardSection title="Hora de despertar">
               <button
                 onClick={() => openTimePicker(profile, 'wakeTime', p.wakeTime)}
-                className="w-full rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-3 text-sm font-bold text-indigo-700 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="flex w-full items-center justify-between rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-3 text-sm font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-indigo-900/60 dark:bg-gradient-to-r dark:from-slate-950 dark:to-indigo-950/55 dark:text-indigo-200 dark:focus:ring-indigo-800"
               >
-                <span>{p.wakeTime || '07:00'}</span>
+                <span>{formatTimeForDisplay(p.wakeTime, '07:00')}</span>
                 <Clock className="w-4 h-4" />
               </button>
             </CardSection>
@@ -1149,9 +1501,9 @@ export default function NutritionQuestionnaire({
             <CardSection title="Hora de dormir">
               <button
                 onClick={() => openTimePicker(profile, 'sleepTime', p.sleepTime)}
-                className="w-full rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-3 text-sm font-bold text-indigo-700 flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="flex w-full items-center justify-between rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-3 text-sm font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-indigo-900/60 dark:bg-gradient-to-r dark:from-slate-950 dark:to-indigo-950/55 dark:text-indigo-200 dark:focus:ring-indigo-800"
               >
-                <span>{p.sleepTime || '22:00'}</span>
+                <span>{formatTimeForDisplay(p.sleepTime, '22:00')}</span>
                 <Clock className="w-4 h-4" />
               </button>
             </CardSection>
@@ -1176,13 +1528,13 @@ export default function NutritionQuestionnaire({
 
     if (type === 'portions') {
       const foodGroups = [
-        { key: 'frutas', label: 'Frutas', icon: Apple, color: 'text-rose-300', activeColor: 'text-rose-500', bg: 'bg-rose-50' },
-        { key: 'verduras', label: 'Verduras', icon: Leaf, color: 'text-emerald-300', activeColor: 'text-emerald-500', bg: 'bg-emerald-50' },
-        { key: 'cereales', label: 'Cereales', icon: Wheat, color: 'text-amber-300', activeColor: 'text-amber-500', bg: 'bg-amber-50' },
-        { key: 'proteina', label: 'Proteína', icon: Beef, color: 'text-red-300', activeColor: 'text-red-500', bg: 'bg-red-50' },
-        { key: 'grasas', label: 'Grasas', icon: Droplets, color: 'text-lime-300', activeColor: 'text-lime-500', bg: 'bg-lime-50' },
-        { key: 'lacteos', label: 'Lácteos', icon: Milk, color: 'text-blue-300', activeColor: 'text-blue-500', bg: 'bg-blue-50' },
-        { key: 'leguminosas', label: 'Leguminosas', icon: Bean, color: 'text-amber-300', activeColor: 'text-amber-700', bg: 'bg-amber-100' },
+        { key: 'frutas', label: 'Frutas', icon: Apple, color: 'text-rose-300', activeColor: 'text-rose-500 dark:text-rose-300', bg: 'bg-rose-50 dark:bg-rose-950/40' },
+        { key: 'verduras', label: 'Verduras', icon: Leaf, color: 'text-emerald-300', activeColor: 'text-emerald-500 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
+        { key: 'cereales', label: 'Cereales', icon: Wheat, color: 'text-amber-300', activeColor: 'text-amber-500 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/40' },
+        { key: 'proteina', label: 'Proteína', icon: Beef, color: 'text-red-300', activeColor: 'text-red-500 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-950/35' },
+        { key: 'grasas', label: 'Grasas', icon: Droplets, color: 'text-lime-300', activeColor: 'text-lime-500 dark:text-lime-300', bg: 'bg-lime-50 dark:bg-lime-950/35' },
+        { key: 'lacteos', label: 'Lácteos', icon: Milk, color: 'text-blue-300', activeColor: 'text-blue-500 dark:text-blue-300', bg: 'bg-blue-50 dark:bg-blue-950/40' },
+        { key: 'leguminosas', label: 'Leguminosas', icon: Bean, color: 'text-amber-300', activeColor: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-950/50' },
       ];
 
       const macroGroups = [
@@ -1207,7 +1559,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
             💡 Este paso es opcional. Puedes saltar si prefieres que la IA calcule las porciones automáticamente.
           </p>
 
@@ -1222,8 +1574,8 @@ export default function NutritionQuestionnaire({
                   onClick={() => setPortionMode(val)}
                   className={`relative flex flex-col gap-0.5 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[.97] ${
                     portionMode === val
-                      ? 'border-[2.5px] border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100'
-                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                      ? 'border-[2.5px] border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100 dark:border-indigo-400 dark:bg-indigo-950/55 dark:shadow-black/30'
+                      : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
                   }`}
                 >
                   <motion.span
@@ -1238,7 +1590,7 @@ export default function NutritionQuestionnaire({
                   </motion.span>
 
                   <span className="text-xl">{emoji}</span>
-                  <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-indigo-700' : 'text-slate-800'}`}>
+                  <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}>
                     {title}
                   </span>
                   <span className={`text-[10px] ${portionMode === val ? 'text-indigo-500' : 'text-slate-400'}`}>
@@ -1251,19 +1603,19 @@ export default function NutritionQuestionnaire({
 
           {portionMode === 'manual' && (
             <div className="space-y-3">
-              <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3">
+              <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3 dark:border-indigo-900/60 dark:from-slate-950 dark:to-indigo-950/60">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-indigo-800">Total de porciones</p>
-                  <span className="text-sm font-black text-indigo-700 tabular-nums">{totalPortions}</span>
+                  <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-100">Total de porciones</p>
+                  <span className="text-sm font-black text-indigo-700 tabular-nums dark:text-indigo-200">{totalPortions}</span>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-white/80 overflow-hidden">
+                <div className="mt-2 h-2 rounded-full bg-white/80 overflow-hidden dark:bg-slate-900">
                   <motion.div
                     animate={{ width: `${progressPercent}%` }}
                     transition={{ type: 'spring', stiffness: 140, damping: 20 }}
                     className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
                   />
                 </div>
-                <p className="mt-1 text-[11px] text-indigo-600">Completado: {progressPercent}%</p>
+                <p className="mt-1 text-[11px] text-indigo-600 dark:text-indigo-300">Completado: {progressPercent}%</p>
               </div>
 
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -1275,8 +1627,8 @@ export default function NutritionQuestionnaire({
                       onClick={() => setActivePortionMoment(momento)}
                       className={`px-3 py-2 rounded-xl whitespace-nowrap text-xs font-bold border transition ${
                         active
-                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                          : 'border-slate-200 bg-white text-slate-600'
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/55 dark:text-indigo-200'
+                          : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
                       }`}
                     >
                       {mLabels[idx]}
@@ -1288,7 +1640,7 @@ export default function NutritionQuestionnaire({
               <div className="space-y-2">
                 {macroGroups.map((macro) => (
                   <div key={macro.key} className={`rounded-xl border p-2 ${macro.tone}`}>
-                    <p className="text-[11px] font-bold text-slate-600 uppercase mb-1">{macro.label}</p>
+                    <p className="text-[11px] font-bold text-slate-600 uppercase mb-1 dark:text-slate-300">{macro.label}</p>
 
                     <div className="space-y-2">
                       {macro.foodKeys.map((foodKey) => {
@@ -1300,17 +1652,17 @@ export default function NutritionQuestionnaire({
                         const iconClass = value === 0 ? `${group.color} opacity-50 grayscale` : group.activeColor;
 
                         return (
-                          <div key={group.key} className="rounded-lg border border-white/80 bg-white px-2 py-2">
+                          <div key={group.key} className="rounded-lg border border-white/80 bg-white px-2 py-2 dark:border-slate-700 dark:bg-slate-950">
                             <div className="flex items-center gap-2">
                               <Icon className={`w-4 h-4 ${iconClass}`} />
-                              <span className="text-xs font-semibold text-slate-700 flex-1">
+                              <span className="text-xs font-semibold text-slate-700 flex-1 dark:text-slate-100">
                                 {group.label}
                               </span>
 
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => updatePortionValue(group.key, activePortionMoment, (n) => n - 1)}
-                                  className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 active:scale-95"
+                                  className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                                   aria-label={`Reducir ${group.label}`}
                                 >
                                   <Minus className="w-4 h-4" />
@@ -1330,13 +1682,13 @@ export default function NutritionQuestionnaire({
                                       () => (Number.isFinite(parsed) ? parsed : 0)
                                     );
                                   }}
-                                  className={`w-14 h-9 rounded-lg border border-slate-200 text-center text-sm font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-300 ${group.bg}`}
+                                  className={`w-14 h-9 rounded-lg border border-slate-200 text-center text-sm font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-300 ${group.bg} dark:border-slate-700 dark:text-slate-100 dark:focus:ring-indigo-900`}
                                   aria-label={`Porciones de ${group.label}`}
                                 />
 
                                 <button
                                   onClick={() => updatePortionValue(group.key, activePortionMoment, (n) => n + 1)}
-                                  className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 active:scale-95"
+                                  className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                                   aria-label={`Aumentar ${group.label}`}
                                 >
                                   <Plus className="w-4 h-4" />
@@ -1374,7 +1726,7 @@ export default function NutritionQuestionnaire({
     if (type === 'cocina') {
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
             💡 Esta sección es opcional.
           </p>
 
@@ -1418,7 +1770,7 @@ export default function NutritionQuestionnaire({
                 target.style.height = 'auto';
                 target.style.height = `${target.scrollHeight}px`;
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none overflow-hidden focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none overflow-hidden focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-slate-700"
               value={additionalNotes}
               onChange={(e) => setAdditionalNotes(e.target.value)}
             />
@@ -1443,14 +1795,14 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-center text-sm text-slate-500">Revisa y confirma tu plan</p>
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400">Revisa y confirma tu plan</p>
 
-          <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
+          <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
               Configuración del plan
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-200">
               <span className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-slate-400" />
                 Perfil:
@@ -1464,28 +1816,28 @@ export default function NutritionQuestionnaire({
               </span>
 
               {portionSummary && (
-                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5">
+                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5 dark:text-slate-400">
                   <Activity className="w-3.5 h-3.5" />
                   Resumen: {portionSummary}
                 </span>
               )}
 
               {el.favoriteCuisineStyles && (
-                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5">
+                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5 dark:text-slate-400">
                   <ChefHat className="w-3.5 h-3.5" />
                   Cocina: {el.favoriteCuisineStyles}
                 </span>
               )}
 
               {el.cookingTime && (
-                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5">
+                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5 dark:text-slate-400">
                   <Clock className="w-3.5 h-3.5" />
                   Tiempo cocina: {el.cookingTime}
                 </span>
               )}
 
               {additionalNotes && (
-                <span className="sm:col-span-2 text-slate-500">
+                <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">
                   Notas: {additionalNotes}
                 </span>
               )}
@@ -1540,28 +1892,51 @@ export default function NutritionQuestionnaire({
                   {data.objectiveTimeline && <span className="sm:col-span-2">Tiempo: <strong>{data.objectiveTimeline}</strong></span>}
                   {data.wakeTime && data.sleepTime && <span className="sm:col-span-2">Horario: <strong>{data.wakeTime} - {data.sleepTime}</strong></span>}
                   {data.trainingFrequency && <span className="sm:col-span-2">Entreno: <strong>{data.trainingFrequency}</strong></span>}
-                  {data.diagnostics && <span className="sm:col-span-2 text-slate-500">Salud: {data.diagnostics}</span>}
-                  {data.medications && <span className="sm:col-span-2 text-slate-500">Medicamentos: {data.medications}</span>}
-                  {data.allergies && <span className="sm:col-span-2 text-slate-500">Alergias: {data.allergies}</span>}
-                  {data.intolerances && <span className="sm:col-span-2 text-slate-500">Intolerancias: {data.intolerances}</span>}
-                  {data.digestiveSymptoms && <span className="sm:col-span-2 text-slate-500">Digestivo: {data.digestiveSymptoms}</span>}
+                  {data.diagnostics && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Salud: {data.diagnostics}</span>}
+                  {data.medications && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Medicamentos: {data.medications}</span>}
+                  {data.allergies && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Alergias: {data.allergies}</span>}
+                  {data.intolerances && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Intolerancias: {data.intolerances}</span>}
+                  {data.digestiveSymptoms && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Digestivo: {data.digestiveSymptoms}</span>}
                   {data.favoriteFoods && <span className="sm:col-span-2 text-emerald-600">Favoritos: {data.favoriteFoods}</span>}
                   {data.dislikedFoods && <span className="sm:col-span-2 text-rose-500">No incluir: {data.dislikedFoods}</span>}
+                  {data.assessmentReportPdf?.name && (
+                    <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">
+                      PDF adjunto: <strong>{data.assessmentReportPdf.name}</strong>
+                    </span>
+                  )}
+                  {Object.values(data.bodyMeasurements || {}).some(Boolean) && (
+                    <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">
+                      Medidas:
+                      <strong>
+                        {' '}
+                        {[
+                          data.bodyMeasurements?.waistCm ? `Cintura ${data.bodyMeasurements.waistCm} cm` : null,
+                          data.bodyMeasurements?.hipCm ? `Cadera ${data.bodyMeasurements.hipCm} cm` : null,
+                          data.bodyMeasurements?.neckCm ? `Cuello ${data.bodyMeasurements.neckCm} cm` : null,
+                          data.bodyMeasurements?.chestCm ? `Pecho ${data.bodyMeasurements.chestCm} cm` : null,
+                          data.bodyMeasurements?.armCm ? `Brazo ${data.bodyMeasurements.armCm} cm` : null,
+                          data.bodyMeasurements?.thighCm ? `Muslo ${data.bodyMeasurements.thighCm} cm` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </strong>
+                    </span>
+                  )}
                 </div>
               </div>
             );
           })}
 
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 leading-relaxed">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 leading-relaxed dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-200">
               {errorMessage}
             </div>
           )}
 
           {showApiRecovery && (
             <CardSection title="Clave de respaldo (si falló Google/Gemini)">
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 space-y-2">
-                <p className="text-[11px] text-indigo-700">
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 space-y-2 dark:border-indigo-900/60 dark:bg-indigo-950/40">
+                <p className="text-[11px] text-indigo-700 dark:text-indigo-200">
                   Si tienes otra API key, agrégala aquí para reintentar sin salir del cuestionario.
                 </p>
                 <input
@@ -1569,7 +1944,7 @@ export default function NutritionQuestionnaire({
                   value={localApiKey}
                   onChange={(e) => setLocalApiKey(e.target.value)}
                   placeholder="Pega tu API key de Gemini"
-                  className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-indigo-300"
+                  className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-indigo-300 dark:border-indigo-900/60 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-indigo-900"
                 />
                 <button
                   type="button"
@@ -1599,13 +1974,13 @@ export default function NutritionQuestionnaire({
                         setGeminiModel?.(m.value);
                       }}
                       className={`flex flex-col gap-1 p-3 rounded-xl border-2 text-left transition-all active:scale-[.97] ${
-                        active ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                        active ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-950/50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
                       }`}
                     >
-                      <span className={`text-[11px] font-bold leading-tight ${active ? 'text-indigo-700' : 'text-slate-700'}`}>
+                      <span className={`text-[11px] font-bold leading-tight ${active ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-100'}`}>
                         {m.label}
                       </span>
-                      <span className={`text-[9px] font-semibold ${active ? 'text-indigo-500' : 'text-slate-400'}`}>
+                      <span className={`text-[9px] font-semibold ${active ? 'text-indigo-500 dark:text-indigo-300' : 'text-slate-400 dark:text-slate-500'}`}>
                         {m.badge}
                       </span>
                     </button>
@@ -1620,21 +1995,17 @@ export default function NutritionQuestionnaire({
               onClick={() => {
                 const rawFormat: any = {};
 
-                if (lastGeneratedData.voData) {
-                  rawFormat.perfilVO = lastGeneratedData.voData.perfilVO;
-                  rawFormat.equivalenciasVO = lastGeneratedData.voData.equivalenciasVO;
-                  rawFormat.planVO = lastGeneratedData.voData.planVO;
+                if (lastGeneratedData.elData) {
+                  Object.assign(rawFormat, buildExportData(lastGeneratedData.elData, 'EL'));
                 }
 
-                if (lastGeneratedData.vaData) {
-                  rawFormat.perfilVA = lastGeneratedData.vaData.perfilVA;
-                  rawFormat.equivalenciasVA = lastGeneratedData.vaData.equivalenciasVA;
-                  rawFormat.planVA = lastGeneratedData.vaData.planVA;
+                if (lastGeneratedData.ellaData) {
+                  Object.assign(rawFormat, buildExportData(lastGeneratedData.ellaData, 'ELLA'));
                 }
 
                 downloadJsonFile('plan_generado.json', JSON.stringify(rawFormat, null, 2));
               }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold border-2 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all active:scale-[.98]"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold border-2 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all active:scale-[.98] dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/55"
             >
               <Download className="w-4 h-4" />
               Descargar JSON generado
@@ -1655,8 +2026,8 @@ export default function NutritionQuestionnaire({
               </div>
 
               <div className="text-center space-y-1 px-4">
-                <p className="text-sm font-bold text-slate-700">La IA está creando tu plan</p>
-                <p className="text-xs text-slate-500">Esto puede tomar 30 a 60 segundos.</p>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-100">La IA está creando tu plan</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Esto puede tomar 30 a 60 segundos.</p>
               </div>
 
               <div className="flex gap-1">
@@ -1716,6 +2087,7 @@ export default function NutritionQuestionnaire({
   const isOptional =
     type === 'salud' ||
     type === 'medicos' ||
+    type === 'assessment' ||
     type === 'preferencias' ||
     type === 'horarios' ||
     type === 'portions' ||
@@ -1727,8 +2099,8 @@ export default function NutritionQuestionnaire({
 
   return (
     <>
-      <div className="mt-4 rounded-[28px] bg-white border border-slate-200 shadow-sm overflow-hidden">
-        <div className="h-2 bg-slate-100">
+      <div className="mt-4 rounded-[28px] bg-white border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-950 dark:border-slate-800">
+        <div className="h-2 bg-slate-100 dark:bg-slate-900">
           <motion.div
             className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500"
             animate={{ width: `${progress * 100}%` }}
@@ -1736,18 +2108,18 @@ export default function NutritionQuestionnaire({
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`w-9 h-9 rounded-2xl flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${tc.grad}`}>
               <StepIcon className="w-4 h-4 text-white" />
             </div>
 
             <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-800 leading-tight truncate">
+              <p className="text-sm font-bold text-slate-800 leading-tight truncate dark:text-slate-100">
                 {stepLabel}
                 {profileSuffix}
               </p>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-xs text-slate-500 font-medium dark:text-slate-400">
                 Paso {stepIdx + 1} de {steps.length} · {stepsLeft <= 3 ? 'Ya casi terminamos' : `Solo ${stepsLeft} pasos más`}
               </p>
             </div>
@@ -1755,7 +2127,7 @@ export default function NutritionQuestionnaire({
 
           <button
             onClick={onCancel}
-            className="flex-shrink-0 text-xs px-3 py-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition font-medium"
+            className="flex-shrink-0 text-xs px-3 py-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition font-medium dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Cerrar
           </button>
@@ -1778,11 +2150,11 @@ export default function NutritionQuestionnaire({
         </div>
 
         {(showBack || showNext) && (
-          <div className="flex items-center gap-2 px-4 pb-4 pt-3 border-t border-slate-100">
+          <div className="flex items-center gap-2 px-4 pb-4 pt-3 border-t border-slate-100 dark:border-slate-800">
             {showBack && (
               <button
                 onClick={goBack}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 transition active:scale-95 flex-shrink-0"
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 transition active:scale-95 flex-shrink-0 dark:text-slate-300 dark:hover:bg-slate-900"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Atrás
@@ -1794,7 +2166,7 @@ export default function NutritionQuestionnaire({
                 {isOptional && (
                   <button
                     onClick={advance}
-                    className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-slate-400 underline underline-offset-2 hover:text-slate-600 transition active:scale-95"
+                    className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-slate-400 underline underline-offset-2 hover:text-slate-600 transition active:scale-95 dark:text-slate-500 dark:hover:text-slate-300"
                   >
                     <SkipForward className="w-3.5 h-3.5" />
                     Saltar
@@ -1807,7 +2179,7 @@ export default function NutritionQuestionnaire({
                   className={`ml-auto flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold transition-all active:scale-[.98] ${
                     canContinue()
                       ? `bg-gradient-to-r ${tc.grad} text-white shadow-sm`
-                      : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                      : 'bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-900 dark:text-slate-600'
                   }`}
                 >
                   {isLastNav ? 'Confirmar' : 'Siguiente'}
@@ -1834,7 +2206,7 @@ export default function NutritionQuestionnaire({
               exit={{ opacity: 0, y: 24, scale: 0.98 }}
               transition={{ type: 'spring', stiffness: 320, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-[28px] bg-white border border-slate-200 shadow-2xl p-4 sm:p-5"
+              className="w-full max-w-sm rounded-[28px] bg-white border border-slate-200 shadow-2xl p-4 sm:p-5 dark:bg-slate-950 dark:border-slate-800"
             >
               <TimeWheelPicker
                 title={timePickerState.field === 'wakeTime' ? 'Hora de despertar' : 'Hora de dormir'}
@@ -1846,7 +2218,7 @@ export default function NutritionQuestionnaire({
                 <button
                   type="button"
                   onClick={closeTimePicker}
-                  className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-600 font-semibold"
+                  className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-600 font-semibold dark:bg-slate-900 dark:text-slate-200"
                 >
                   Cancelar
                 </button>

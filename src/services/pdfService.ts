@@ -3,26 +3,30 @@ import autoTable from 'jspdf-autotable';
 import { MealItem } from '../types';
 
 /**
- * Genera y descarga un PDF formateado basándose en los datos provistos.
+ * Generates and downloads a formatted PDF from the provided plan data.
  */
-export function downloadDietPdf(perfilData: any, planObj: Record<string, Record<string, MealItem[]>>, isVA: boolean) {
+export function downloadDietPdf(
+  perfilData: any,
+  planObj: Record<string, Record<string, MealItem[]>>,
+  isVA: boolean
+) {
   const doc = new jsPDF() as any;
   const color: [number, number, number] = isVA ? [225, 29, 72] : [37, 99, 235];
 
   const drawHeader = (doc: any, title: string, subtitle: string, meta: string) => {
     doc.setFillColor(color[0], color[1], color[2]);
     doc.rect(0, 0, 210, 36, 'F');
-    
-    doc.setFont("helvetica", "bold");
+
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
     doc.setTextColor(255, 255, 255);
     doc.text(title, 14, 20);
-    
-    doc.setFont("helvetica", "normal");
+
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.setTextColor(240, 240, 240);
     doc.text(subtitle, 14, 28);
-    
+
     if (meta) {
       doc.setFontSize(10);
       doc.text(`Meta: ${meta}`, 14, 33);
@@ -34,16 +38,16 @@ export function downloadDietPdf(perfilData: any, planObj: Record<string, Record<
   dias.forEach((dia, dIdx) => {
     if (dIdx > 0) doc.addPage();
     drawHeader(doc, `Plan Nutricional: ${perfilData.nombre}`, perfilData.perfil, perfilData.meta);
-    
+
     let startY = 46;
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(50, 50, 50);
-    doc.text(`Menú para el día: ${dia}`, 14, startY);
+    doc.text(`MenÃº para el dÃ­a: ${dia}`, 14, startY);
     startY += 8;
 
     const momentosKeys = perfilData.momentos.map((m: any) => m.key);
-    
+
     momentosKeys.forEach((momentoKey: string) => {
       const momentoLabel = perfilData.momentos.find((m: any) => m.key === momentoKey)?.label || momentoKey;
       const comidas = planObj[dia][momentoKey] || [];
@@ -85,7 +89,7 @@ export function downloadDietPdf(perfilData: any, planObj: Record<string, Record<
 }
 
 /**
- * Genera y descarga un PDF resumido con ÚNICAMENTE las comidas seleccionadas del día activo.
+ * Generates and downloads a summary PDF with only the selected meals for the active day.
  */
 export function downloadDaySelectionPdf(
   diaActivo: string,
@@ -101,31 +105,31 @@ export function downloadDaySelectionPdf(
     doc.setFillColor(color[0], color[1], color[2]);
     doc.rect(0, 0, 210, 36, 'F');
 
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(22);
     doc.setTextColor(255, 255, 255);
     doc.text(`Registro Diario: ${diaActivo}`, 14, 20);
-    
-    doc.setFont("helvetica", "normal");
+
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
     doc.setTextColor(240, 240, 240);
     doc.text(`Perfil: ${perfilData.nombre} | ${perfilData.meta}`, 14, 28);
 
     let startY = 46;
-    doc.setFont("helvetica", "bold");
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(60, 60, 60);
-    doc.text("Comidas seleccionadas y completadas", 14, startY);
+    doc.text('Comidas seleccionadas y completadas', 14, startY);
     startY += 8;
 
     const momentosKeys = perfilData.momentos.map((m: any) => m.key);
     let itemsFound = 0;
-    
+
     momentosKeys.forEach((momentoKey: string) => {
       const momentoLabel = perfilData.momentos.find((m: any) => m.key === momentoKey)?.label || momentoKey;
       const comidas = planObj[diaActivo]?.[momentoKey] || [];
       const comidasSeleccionadas = comidas.filter((c: any) => selecciones[`${perfilId}-${diaActivo}-${momentoKey}-${c.nombre}`]);
-      
+
       if (comidasSeleccionadas.length === 0) return;
       itemsFound++;
 
@@ -161,10 +165,10 @@ export function downloadDaySelectionPdf(
     });
 
     if (itemsFound === 0) {
-      doc.setFont("helvetica", "italic");
+      doc.setFont('helvetica', 'italic');
       doc.setFontSize(11);
       doc.setTextColor(150, 150, 150);
-      doc.text("No completaste comidas registradas bajo este perfil para hoy.", 14, startY + 5);
+      doc.text('No completaste comidas registradas bajo este perfil para hoy.', 14, startY + 5);
     }
   });
 

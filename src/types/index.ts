@@ -15,6 +15,16 @@ export interface MealTime {
   hora: string;
 }
 
+export interface SupplementRecommendation {
+  name: string;
+  goalSupport: string;
+  whyItMayHelp: string;
+  howToUse: string;
+  timing: string;
+  notes: string;
+  caution?: string;
+}
+
 export interface Profile {
   id: string;
   nombre: string;
