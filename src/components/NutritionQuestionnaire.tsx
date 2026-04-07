@@ -1029,6 +1029,7 @@ export default function NutritionQuestionnaire({
               <button
                 key={val}
                 onClick={() => selectProfile(val)}
+                data-testid={`questionnaire-target-${val}`}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 font-semibold text-left transition-all duration-200 active:scale-[.98] ${
                   active
                     ? `${t.border} ${t.light} shadow-sm`
@@ -2046,6 +2047,7 @@ export default function NutritionQuestionnaire({
           {!loading && lastGeneratedData && onViewPlan && (
             <button
               onClick={() => onViewPlan(targetProfile)}
+              data-testid="questionnaire-view-plan"
               className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white"
             >
               <CheckCircle2 className="w-5 h-5" />
@@ -2057,6 +2059,7 @@ export default function NutritionQuestionnaire({
             <motion.button
               onClick={handleGenerate}
               disabled={loading}
+              data-testid="questionnaire-generate"
               animate={!loading ? { backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] } : {}}
               transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
               className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] ${
@@ -2143,6 +2146,7 @@ export default function NutritionQuestionnaire({
               animate="center"
               exit="exit"
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              data-testid={`questionnaire-step-${type}${currentStep.profile ? `-${currentStep.profile}` : ''}`}
             >
               {renderStep()}
             </motion.div>
@@ -2154,6 +2158,7 @@ export default function NutritionQuestionnaire({
             {showBack && (
               <button
                 onClick={goBack}
+                data-testid="questionnaire-back"
                 className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 transition active:scale-95 flex-shrink-0 dark:text-slate-300 dark:hover:bg-slate-900"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -2164,10 +2169,11 @@ export default function NutritionQuestionnaire({
             {showNext && (
               <>
                 {isOptional && (
-                  <button
-                    onClick={advance}
-                    className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-slate-400 underline underline-offset-2 hover:text-slate-600 transition active:scale-95 dark:text-slate-500 dark:hover:text-slate-300"
-                  >
+                <button
+                  onClick={advance}
+                  data-testid="questionnaire-skip"
+                  className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-slate-400 underline underline-offset-2 hover:text-slate-600 transition active:scale-95 dark:text-slate-500 dark:hover:text-slate-300"
+                >
                     <SkipForward className="w-3.5 h-3.5" />
                     Saltar
                   </button>
@@ -2176,6 +2182,7 @@ export default function NutritionQuestionnaire({
                 <button
                   onClick={advance}
                   disabled={!canContinue()}
+                  data-testid="questionnaire-next"
                   className={`ml-auto flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold transition-all active:scale-[.98] ${
                     canContinue()
                       ? `bg-gradient-to-r ${tc.grad} text-white shadow-sm`

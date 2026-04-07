@@ -118,10 +118,12 @@ function PlanButton({
   label,
   onClick,
   tint,
+  dataTestId,
 }: {
   label: string;
   onClick: (e: React.MouseEvent) => void;
   tint: 'blue' | 'rose' | 'emerald';
+  dataTestId?: string;
 }) {
   const cls = {
     blue: 'border-blue-200/20 bg-white/10 hover:bg-white/16 shadow-[0_8px_24px_rgba(29,78,216,0.22)] hover:shadow-[0_12px_30px_rgba(29,78,216,0.32)]',
@@ -134,6 +136,7 @@ function PlanButton({
     <button
       type="button"
       onClick={onClick}
+      data-testid={dataTestId}
       className={`
         relative overflow-hidden group
         inline-flex items-center justify-center gap-1.5
@@ -387,6 +390,7 @@ export default function LandingView() {
             initial={{ opacity: 0, x: 14 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsAdminOpen(true)}
+            data-testid="landing-admin-button"
             className="group inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/75 px-3.5 py-2 text-[0px] font-bold hover:bg-white transition-all shrink-0 dark:border-slate-800 dark:bg-slate-950/70 dark:hover:bg-slate-900"
             title="Ajustes avanzados"
             type="button"
@@ -501,6 +505,7 @@ export default function LandingView() {
                 tabIndex={0}
                 onClick={p.onCard}
                 onKeyDown={onKey(p.onCard)}
+                data-testid={`landing-profile-${p.id}-card`}
                 className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${p.gradient} shadow-[0_18px_44px_rgba(15,23,42,0.16)] hover:shadow-[0_24px_56px_rgba(15,23,42,0.2)] ${p.shadowHover} transition-all duration-300 cursor-pointer flex flex-col ring-1 ring-white/10 min-h-[300px] sm:min-h-[340px]`}
               >
                 <div
@@ -557,6 +562,7 @@ export default function LandingView() {
                     <PlanButton
                       label={p.ready ? 'Actualizar mi plan' : 'Personalizar mi plan'}
                       tint={p.id === 'el' ? 'blue' : 'rose'}
+                      dataTestId={`landing-customize-${p.id}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         p.onIA();
@@ -582,6 +588,7 @@ export default function LandingView() {
               setActiveDay('Lunes');
               setActiveTab('plan');
             }}
+            data-testid="landing-profile-ambos-card"
             onKeyDown={onKey(() => {
               setActiveProfile('ambos');
               setActiveDay('Lunes');
@@ -620,6 +627,7 @@ export default function LandingView() {
                 <PlanButton
                   label={elReady && ellaReady ? 'Actualizar mi plan' : 'Personalizar mi plan'}
                   tint="emerald"
+                  dataTestId="landing-customize-ambos"
                   onClick={(e) => {
                     e.stopPropagation();
                     void openQuestionnaireWithCheck('ambos');

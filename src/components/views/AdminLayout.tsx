@@ -220,6 +220,7 @@ export default function AdminLayout() {
 
           <button
             onClick={() => setShowAdmin(false)}
+            data-testid="admin-close-button"
             className="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 rounded-full text-slate-500 dark:text-slate-300 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -237,6 +238,7 @@ export default function AdminLayout() {
             <button
               key={t.key}
               onClick={() => setAdminTab(t.key)}
+              data-testid={`admin-tab-${t.key}`}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 ${
                 adminTab === t.key
                   ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-950 dark:text-slate-100 dark:border dark:border-slate-800'

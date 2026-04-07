@@ -124,6 +124,7 @@ export default function Header() {
 
           <button
             onClick={() => setShowPdfMenu((value) => !value)}
+            data-testid="header-pdf-button"
             className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all ${accentColors.border} ${accentColors.bgLight} ${accentColors.text}`}
             title="Descargar PDF"
           >
@@ -179,6 +180,7 @@ export default function Header() {
                   setActiveDay('Lunes');
                   setActiveTab('plan');
                 }}
+                data-testid={`header-profile-${profileId}`}
                 className={`
                   px-3 py-1.5 sm:px-3.5 sm:py-2
                   rounded-2xl

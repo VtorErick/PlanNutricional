@@ -249,6 +249,7 @@ export default function App() {
                 <button
                   key={tabItem.key}
                   onClick={() => setActiveTab(tabItem.key)}
+                  data-testid={`mobile-tab-${tabItem.key}`}
                   className={`relative flex flex-col items-center justify-center gap-1 w-[58px] py-1 transition-all duration-200 active:scale-95 ${
                     active
                       ? staticColors.text

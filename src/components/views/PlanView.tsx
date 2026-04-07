@@ -240,12 +240,14 @@ export default function PlanView() {
     accent: AccentColors,
     portions: { key: string; label: string; icon: string; cantidad: number }[],
     _profileId: EditableProfileId,
-    onChangeMeal: () => void
+    onChangeMeal: () => void,
+    dataTestId?: string
   ) => (
     <div
       key={`${meal.nombre}-${meal.detalle}`}
       role="button"
       tabIndex={0}
+      data-testid={dataTestId}
       onClick={onChangeMeal}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -288,11 +290,13 @@ export default function PlanView() {
 
   const renderEmptyMealState = React.useCallback((
     accent: AccentColors,
-    onOpen: () => void
+    onOpen: () => void,
+    dataTestId?: string
   ) => (
     <div
       role="button"
       tabIndex={0}
+      data-testid={dataTestId}
       onClick={onOpen}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -370,6 +374,7 @@ export default function PlanView() {
                   if (element) mealSectionRefs.current[momento.key] = element;
                 }}
                 id={`momento-${momento.key}`}
+                data-testid={`moment-section-${momento.key}`}
                 className={`rounded-[24px] sm:rounded-[28px] overflow-hidden transition-shadow duration-300 ${
                   isDarkMode
                     ? 'bg-slate-950/92 border border-slate-800 shadow-[0_12px_32px_rgba(2,6,23,0.42)] hover:shadow-[0_16px_40px_rgba(2,6,23,0.52)]'
@@ -455,7 +460,8 @@ export default function PlanView() {
                                 setMomentosEnEdicion((prev) => ({
                                   ...prev,
                                   [momento.key]: true,
-                                }))
+                                })),
+                              `moment-empty-${momento.key}-single`
                             )
                           ) : (
                           <>
@@ -471,7 +477,8 @@ export default function PlanView() {
                                       setMomentosEnEdicion((prev) => ({
                                         ...prev,
                                         [momento.key]: true,
-                                      }))
+                                      })),
+                                    `selected-meal-${perfilActivo}-${diaActivo}-${momento.key}-${meal.nombre}`
                                   ))}
                                 </div>
                               ) : (
@@ -525,7 +532,8 @@ export default function PlanView() {
                                             setMomentosEnEdicion((prev) => ({
                                               ...prev,
                                               [`${momento.key}-el`]: true,
-                                            }))
+                                            })),
+                                          `selected-meal-el-${diaActivo}-${momento.key}-${meal.nombre}`
                                         ))
                                       ) : (
                                         renderEmptyMealState(
@@ -534,7 +542,8 @@ export default function PlanView() {
                                             setMomentosEnEdicion((prev) => ({
                                               ...prev,
                                               [`${momento.key}-el`]: true,
-                                            }))
+                                            })),
+                                          `moment-empty-${momento.key}-el`
                                         )
                                       )}
                                     </>
@@ -584,7 +593,8 @@ export default function PlanView() {
                                             setMomentosEnEdicion((prev) => ({
                                               ...prev,
                                               [`${momento.key}-ella`]: true,
-                                            }))
+                                            })),
+                                          `selected-meal-ella-${diaActivo}-${momento.key}-${meal.nombre}`
                                         ))
                                       ) : (
                                         renderEmptyMealState(
@@ -593,7 +603,8 @@ export default function PlanView() {
                                             setMomentosEnEdicion((prev) => ({
                                               ...prev,
                                               [`${momento.key}-ella`]: true,
-                                            }))
+                                            })),
+                                          `moment-empty-${momento.key}-ella`
                                         )
                                       )}
                                     </>

@@ -1,116 +1,99 @@
-# Plan de Comidas 2026 - App React Moderna
+# Plan Nutricional
 
-Una aplicación web moderna y responsiva para gestionar planes de nutrición personalizados. Diseñada con React 19, Vite, TypeScript y TailwindCSS.
+Aplicación web en React + Vite para gestionar planes nutricionales personalizados para `El`, `Ella` o `Ambos`, con generación por IA, edición de comidas, seguimiento diario y documentación visual validada en móvil con Playwright.
 
-## 🎯 Características
+## Estado actual
 
-- **Dos Perfiles Personalizados**: Vo y Va con planes específicos
-- **Plan Semanal Completo**: Lunes a Domingo con múltiples opciones por comida
-- **Selector Interactivo**: Marca tus comidas durante el día
-- **Seguimiento de Progreso**: Visualiza tu avance diario en tiempo real
-- **Equivalencias Inteligentes**: Consulta porciones y equivalencias de alimentos
-- **Interfaz Moderna**: Animaciones suaves, gradientes, y diseño 2026
-- **Generación con IA mediante cuestionario**: Crea JSON VO/VA automáticamente con Gemini
-- **Completamente Responsiva**: Funciona perfecto en móvil, tablet y desktop
+- Landing mobile-first con acceso a perfiles individuales y vista compartida.
+- Cuestionario IA en varios pasos para generar o actualizar planes.
+- Ajustes avanzados para Gemini, respaldo/restauración JSON y reseteo local.
+- Vista de plan con selección de comidas por momento, edición de platillos y descarga de PDF.
+- Vistas dedicadas de equivalencias, suplementos, calorías, compras y resumen.
+- Persistencia local en `localStorage`.
+- Suite E2E móvil con capturas reales en `docs/screenshots/mobile`.
 
-## 🚀 Quick Start
+## Stack
 
-### Instalación
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS 4
+- Framer Motion
+- jsPDF / jspdf-autotable
+- Playwright
+
+## Variables de entorno
+
+Opcionales para la generación con IA:
+
+```bash
+GEMINI_API_KEY=tu_api_key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+## Scripts
 
 ```bash
 npm install
-```
-
-### Desarrollo
-
-```bash
 npm run dev
-```
-
-La app se abrirá automáticamente en `http://localhost:5173`
-
-### Producción
-
-```bash
 npm run build
 npm run preview
+npm run test:e2e
 ```
 
-## 📦 Tecnologías
+`npm run test:e2e` compila la app, levanta `vite preview`, ejecuta la suite móvil y actualiza las capturas usadas en esta documentación.
 
-- **React 19** - Framework UI
-- **Vite** - Build tool ultrarrápido
-- **TypeScript** - Type safety
-- **TailwindCSS** - Estilos modernos
-- **Framer Motion** - Animaciones fluidas
-- **Lucide React** - Iconografía limpia
+## Flujos cubiertos por pruebas móviles
 
-## 📁 Estructura
+- Landing y acceso a administración.
+- Configuración de generación IA.
+- Cuestionario completo para `Ambos` con generación simulada.
+- Selección de comidas en `Mi Plan`.
+- Edición de un platillo y descarga de PDF diario.
+- Navegación móvil por `Equivalencias`, `Suplementos`, `Calorías`, `Compras` y `Resumen`.
 
+## Capturas actuales
+
+### Landing
+
+![Landing móvil](docs/screenshots/mobile/landing-mobile.png)
+
+### Configuración
+
+![Ajustes avanzados en móvil](docs/screenshots/mobile/admin-settings-mobile.png)
+
+### Confirmación del cuestionario IA
+
+![Confirmación del cuestionario en móvil](docs/screenshots/mobile/questionnaire-confirm-mobile.png)
+
+### Mi Plan
+
+![Vista de plan en móvil](docs/screenshots/mobile/plan-mobile.png)
+
+### Compras
+
+![Lista de compras en móvil](docs/screenshots/mobile/shopping-mobile.png)
+
+### Calorías
+
+![Monitoreo de calorías en móvil](docs/screenshots/mobile/calories-mobile.png)
+
+### Resumen
+
+![Resumen en móvil](docs/screenshots/mobile/summary-mobile.png)
+
+## Estructura relevante
+
+```text
+api/                         Endpoints para Gemini en despliegue
+docs/screenshots/mobile/     Capturas generadas por Playwright
+src/components/views/        Landing, plan, compras, calorías, resumen, etc.
+src/context/                 Estado global y navegación
+src/data/defaults/           Fixtures base de los perfiles
+tests/e2e/                   Suite móvil y helpers de seed/mocks
+playwright.config.ts         Configuración E2E
 ```
-src/
-├── components/
-│   ├── MealSelector.tsx      # Selector de comidas
-│   ├── EquivalenciasCard.tsx # Tarjeta de equivalencias
-│   └── ProfileCard.tsx       # Perfil del usuario
-├── data.ts                   # Datos de perfiles y planes
-├── App.tsx                   # App principal
-├── main.tsx                  # Entry point
-└── index.css                 # Estilos globales
-```
 
-## 🎨 Diseño
+## Guía de uso
 
-La app cuenta con:
-- Gradientes modernos en azul y primarios
-- Animaciones de Framer Motion
-- Interfaz oscura (dark mode ready)
-- Cards con efectos hover
-- Progress bar animado
-- Transiciones suaves entre tabs
-
-## 📝 Uso
-
-1. **Selecciona Perfil**: Elige entre Vo o Va
-2. **Elige Día**: Navega por los días de la semana
-3. **Marca Comidas**: Selecciona las comidas que consumiste
-4. **Monitorea Progreso**: Observa tu avance del día
-5. **Consulta Equivalencias**: Aprende porciones y consejos nutricionales
-6. **Lee Resumen**: Entiende los fundamentos de tu plan
-
-## 🔧 Personalización y Datos Dinámicos
-
-La plataforma permite personalización flexible sin requerir conocimientos de código y sin usar un servidor:
-
-1. **Editar Archivos Directamente**: Edita `src/data/perfil-vo.ts` y `perfil-va.ts` para agregar dietas predeterminadas en el proyecto antes de compilar (Vercel).
-2. **Subida Dinámica en Navegador (Client-Side)**: 
-   - Gracias al Administrador de Datos en la página de inicio, los usuarios pueden descargar sus planes en `.ts`.
-   - Si se requiere actualizar el plan pero la página ya se encuentra compilada y hosteada (p. ej. en Vercel), simplemente pueden subir el nuevo `.ts` o un archivo de texto con la misma estructura.
-   - **Limitaciones de Vercel (Sitios Estáticos)**: Al carecer de back-end, la información subida se *evalúa dinámicamente* en el teléfono o PC de cada usuario y se **guarda en el LocalStorage**. Funciona perfectamente como una personalización individual que mantiene su rapidez. Si borran la caché de su navegador, volverán a la versión original.
-   - Para que un cambio sea universal para todos sin tener que subir su `.ts` manualmente, la modificación debe hacerse mediante un commit al repositorio en Vercel.
-
-## 💡 Notas de Desarrollo
-
-- La app está configurada con TypeScript strict mode para máxima seguridad
-- Todas las animaciones usan Framer Motion para rendimiento óptimo
-- Responsive diseño usando Tailwind breakpoints
-- Sin librerías de UI externas: puro estilos personalizados
-
-## 📱 Navegadores Soportados
-
-- Chrome/Edge (últimas 2 versiones)
-- Firefox (últimas 2 versiones)
-- Safari (últimas 2 versiones)
-- Mobile browsers
-
----
-
-**Hecho con ❤️ - Nutrición Inteligente 2026**
-
-
-## 🤖 Variables de entorno (Vercel)
-
-Agrega estas variables en tu proyecto de Vercel:
-
-- `GEMINI_API_KEY` (obligatoria)
-- `GEMINI_MODEL` (opcional, por defecto `gemini-2.0-flash`)
+La guía operativa de la aplicación está en [GUIA_DE_USO.md](GUIA_DE_USO.md).

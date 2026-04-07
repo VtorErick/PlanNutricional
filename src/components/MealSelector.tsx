@@ -41,6 +41,7 @@ export default function MealSelector({
             key={`${comida.nombre}-${idx}`}
             role="button"
             tabIndex={0}
+            data-testid={`meal-option-${perfil}-${dia}-${momento}-${idx}`}
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             whileTap={{ scale: 0.985 }}
@@ -82,6 +83,7 @@ export default function MealSelector({
                             event.stopPropagation();
                             onRestoreMeal(comida);
                           }}
+                          data-testid={`meal-restore-${perfil}-${dia}-${momento}-${idx}`}
                           className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
                             isDarkMode
                               ? `${accentClasses.border} bg-slate-950 text-slate-100 hover:bg-slate-900`
@@ -100,6 +102,7 @@ export default function MealSelector({
                             event.stopPropagation();
                             onEditMeal(comida);
                           }}
+                          data-testid={`meal-edit-${perfil}-${dia}-${momento}-${idx}`}
                           className={`w-8 h-8 rounded-full border flex items-center justify-center transition ${
                             isDarkMode
                               ? 'border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500'
