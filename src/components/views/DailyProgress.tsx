@@ -118,28 +118,33 @@ export default function DailyProgress() {
     >
       {/* Selector de día */}
       <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 pb-2 border-b border-slate-100/70">
-        <div className="flex gap-2 overflow-x-auto snap-x scrollbar-none items-center">
-          {diasDisponibles.map((dia) => {
-            const active = diaActivo === dia;
-            return (
-              <button
-                key={dia}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDiaActivo(dia);
-                }}
-                className={`py-2 px-3.5 rounded-2xl font-bold transition-all duration-300 text-xs whitespace-nowrap snap-start flex-shrink-0 border ${
-                  active
-                    ? `${ac.btnActive} shadow-sm scale-[1.02] border-transparent`
-                    : 'bg-slate-100/85 hover:bg-slate-200 text-slate-600 border-slate-200/70'
-                }`}
-              >
-                <span className="sm:hidden">{dia.slice(0, 3)}</span>
-                <span className="hidden sm:inline">{dia}</span>
-              </button>
-            );
-          })}
-          <div className={`ml-auto flex-shrink-0 rounded-2xl border px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold leading-tight ${statusPalette[energyStatus]}`}>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 overflow-x-auto snap-x scrollbar-none">
+            <div className="inline-flex gap-2 items-center min-w-max">
+              {diasDisponibles.map((dia) => {
+                const active = diaActivo === dia;
+                return (
+                  <button
+                    key={dia}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDiaActivo(dia);
+                    }}
+                    className={`py-2 px-3.5 rounded-2xl font-bold transition-all duration-300 text-xs whitespace-nowrap snap-start flex-shrink-0 border ${
+                      active
+                        ? `${ac.btnActive} shadow-sm scale-[1.02] border-transparent`
+                        : 'bg-slate-100/85 hover:bg-slate-200 text-slate-600 border-slate-200/70'
+                    }`}
+                  >
+                    <span className="sm:hidden">{dia.slice(0, 3)}</span>
+                    <span className="hidden sm:inline">{dia}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={`flex-shrink-0 rounded-2xl border px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold leading-tight ${statusPalette[energyStatus]}`}>
             <div className="whitespace-nowrap">
               <span>{totals.kcal} kcal</span>
               <span className="mx-1 text-slate-300">·</span>
@@ -147,9 +152,7 @@ export default function DailyProgress() {
               <span className="mx-1 text-slate-300">·</span>
               <span>{totals.fat}g G</span>
             </div>
-            <div className="mt-0.5 font-semibold whitespace-nowrap opacity-85">
-              Meta: {metaCalorica} kcal
-            </div>
+            <div className="mt-0.5 font-semibold whitespace-nowrap opacity-85">Meta: {metaCalorica} kcal</div>
           </div>
         </div>
       </div>
