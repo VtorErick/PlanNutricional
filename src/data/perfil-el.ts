@@ -8,6 +8,7 @@ export const perfilEL = {
   descripcion: 'Plan diseñado para bajar de peso con horarios tarde-noche. Tu riesgo principal es llegar con hambre y rebotar a pan, galletas, cereal o dulce. Este plan mete proteína fuerte en cada comida y opciones dulces inteligentes.',
   perfil: '90 kg • 1.70 m • 32 años • IMC 31.1',
   meta: 'Llegar a peso saludable (~75 kg) sin sentir castigo',
+  metaCaloricaKcalDia: 1850,
   horariosTexto: '9–10 am • Col. AM • 5–6 pm • Col. PM • 10–11 pm',
   momentos: [
     { key: 'desayuno', label: 'Desayuno', hora: '9:00–10:00 am' },

@@ -90,6 +90,10 @@ export default function MealSelector({
                   <p className="text-xs sm:text-[13px] text-slate-500 mt-1.5 font-medium leading-relaxed break-words">
                     {comida.detalle}
                   </p>
+                  <p className={`text-[11px] sm:text-xs mt-2 font-bold ${accentClasses.text}`}>
+                    {comida.caloriasKcal || 0} kcal
+                    {typeof comida.proteinaG === 'number' ? ` · ${comida.proteinaG}g proteína` : ''}
+                  </p>
                 </div>
               </div>
 

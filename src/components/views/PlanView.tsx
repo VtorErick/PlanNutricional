@@ -15,6 +15,7 @@ import MealSelector from '../MealSelector';
 import { useDiet } from '../../context/DietContext';
 import { getMomentMacroPortions } from '../../utils/macros';
 import { downloadDaySelectionPdf } from '../../services/pdfService';
+import { sumSelectedMealCalories } from '../../utils/nutrition';
 
 const momentoIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
@@ -114,6 +115,9 @@ export default function PlanView() {
 
           const porcionesElMomento = getMomentMacroPortions(perfilesData.el, momento.key);
           const porcionesEllaMomento = getMomentMacroPortions(perfilesData.ella, momento.key);
+          const kcalSingle = sumSelectedMealCalories(mealsSingleSeleccionadas);
+          const kcalEl = sumSelectedMealCalories(mealsElSeleccionadas);
+          const kcalElla = sumSelectedMealCalories(mealsEllaSeleccionadas);
 
           const isElegidoVacio =
             !estaEnEdicion &&
@@ -165,6 +169,11 @@ export default function PlanView() {
                       </h3>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-0.5">{momento.hora}</p>
+                    <p className="text-[11px] mt-1 font-bold text-slate-600">
+                      {!isAmbos
+                        ? `${momento.label}: ${kcalSingle} kcal`
+                        : `Subtotal: Él ${kcalEl} kcal · Ella ${kcalElla} kcal`}
+                    </p>
                   </div>
                 </div>
 
@@ -232,6 +241,10 @@ export default function PlanView() {
                                     </h4>
                                     <p className="text-slate-600 text-xs leading-relaxed">
                                       {meal.detalle}
+                                    </p>
+                                    <p className={`text-[11px] mt-2 font-bold ${ac.text}`}>
+                                      {meal.caloriasKcal || 0} kcal
+                                      {typeof meal.proteinaG === 'number' ? ` · ${meal.proteinaG}g proteína` : ''}
                                     </p>
 
                                     <div className="mt-3 flex flex-wrap gap-1.5">
@@ -305,6 +318,10 @@ export default function PlanView() {
                                           </h4>
                                           <p className="text-slate-600 text-xs leading-relaxed">
                                             {meal.detalle}
+                                          </p>
+                                          <p className="text-[11px] mt-2 font-bold text-blue-600">
+                                            {meal.caloriasKcal || 0} kcal
+                                            {typeof meal.proteinaG === 'number' ? ` · ${meal.proteinaG}g proteína` : ''}
                                           </p>
 
                                           <div className="mt-3 flex flex-wrap gap-1.5">
@@ -395,6 +412,10 @@ export default function PlanView() {
                                           </h4>
                                           <p className="text-slate-600 text-xs leading-relaxed">
                                             {meal.detalle}
+                                          </p>
+                                          <p className="text-[11px] mt-2 font-bold text-rose-600">
+                                            {meal.caloriasKcal || 0} kcal
+                                            {typeof meal.proteinaG === 'number' ? ` · ${meal.proteinaG}g proteína` : ''}
                                           </p>
 
                                           <div className="mt-3 flex flex-wrap gap-1.5">
