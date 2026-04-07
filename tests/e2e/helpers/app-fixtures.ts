@@ -20,6 +20,13 @@ type SeedPlanOptions = {
   selectedDays?: string[];
 };
 
+export async function resetAppStorage(page: Page) {
+  await page.addInitScript(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+}
+
 export function getGeneratedPlanResponse(targetProfile: 'el' | 'ella' | 'ambos' = 'ambos') {
   if (targetProfile === 'el') {
     return { elData: elFixture };
@@ -85,6 +92,8 @@ export async function seedGeneratedPlans(
 }
 
 export async function mockPlanGenerationApis(page: Page) {
+  await resetAppStorage(page);
+
   await page.route('**/api/gemini-status', async (route) => {
     await route.fulfill({
       status: 200,

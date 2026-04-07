@@ -439,6 +439,23 @@ function normalizeQuestionnaireTarget(
   return value === 'el' || value === 'ella' || value === 'ambos' ? value : null;
 }
 
+function isSelectionKeyValid(
+  key: string,
+  profiles: Record<string, Profile>
+) {
+  const parts = key.split('-');
+  if (parts.length < 4) return false;
+
+  const [profileId, day, mealTimeKey, ...mealNameParts] = parts;
+  if ((profileId !== 'el' && profileId !== 'ella') || mealNameParts.length === 0) {
+    return false;
+  }
+
+  const mealName = mealNameParts.join('-');
+  const meals = profiles[profileId]?.plan?.[day]?.[mealTimeKey] || [];
+  return meals.some((meal) => meal.nombre === mealName);
+}
+
 function parseRoute(): RouteState {
   if (typeof window === 'undefined') {
     return { view: 'home' };
@@ -1271,6 +1288,21 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     document.documentElement.classList.toggle('dark', isDarkMode);
     document.documentElement.style.colorScheme = isDarkMode ? 'dark' : 'light';
   }, [isDarkMode]);
+
+  useEffect(() => {
+    setSelecciones((prev) => {
+      let changed = false;
+      const next = Object.fromEntries(
+        Object.entries(prev).filter(([key, value]) => {
+          const keep = value && isSelectionKeyValid(key, perfilesData);
+          if (!keep) changed = true;
+          return keep;
+        })
+      );
+
+      return changed ? next : prev;
+    });
+  }, [perfilesData, setSelecciones]);
 
   // Persist Gemini settings
   useEffect(() => { persistGeminiApiKey(geminiApiKey); }, [geminiApiKey]);

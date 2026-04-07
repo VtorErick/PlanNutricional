@@ -684,6 +684,7 @@ export default function NutritionQuestionnaire({
   const [activePortionMoment, setActivePortionMoment] = useState('desayuno');
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const wakeLockReleaseTimeoutRef = useRef<number | null>(null);
+  const selectProfileTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (geminiModel) setLocalModel(geminiModel);
@@ -753,6 +754,9 @@ export default function NutritionQuestionnaire({
 
   useEffect(() => {
     return () => {
+      if (selectProfileTimeoutRef.current) {
+        window.clearTimeout(selectProfileTimeoutRef.current);
+      }
       if (wakeLockReleaseTimeoutRef.current) {
         window.clearTimeout(wakeLockReleaseTimeoutRef.current);
       }
@@ -801,7 +805,13 @@ export default function NutritionQuestionnaire({
   const selectProfile = (p: TargetProfile) => {
     setTargetProfile(p);
     setDirection(1);
-    setTimeout(() => setStepIdx(1), 220);
+    if (selectProfileTimeoutRef.current) {
+      window.clearTimeout(selectProfileTimeoutRef.current);
+    }
+    selectProfileTimeoutRef.current = window.setTimeout(() => {
+      setStepIdx(1);
+      selectProfileTimeoutRef.current = null;
+    }, 220);
   };
 
   const canContinue = () => {
