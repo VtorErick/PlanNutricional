@@ -51,7 +51,7 @@ function appendDietPlan(
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(50, 50, 50);
-    doc.text(`Menu para el dia: ${dia}`, 14, startY);
+    doc.text(`Menú para el día: ${dia}`, 14, startY);
     startY += 8;
 
     const momentosKeys = perfilData.momentos.map((momento: any) => momento.key);

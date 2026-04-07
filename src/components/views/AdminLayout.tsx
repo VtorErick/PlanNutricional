@@ -111,22 +111,22 @@ export default function AdminLayout() {
     });
 
     if (envKey && status?.ok) {
-      await notify('Configuracion actualizada', `Se restauro la clave del entorno. Modelo sugerido: ${status.selectedModel}`);
+      await notify('Configuración actualizada', `Se restauró la clave del entorno. Modelo sugerido: ${status.selectedModel}`);
       return;
     }
 
     if (envKey) {
-      await notify('Configuracion actualizada', status?.error || 'Se restauro la clave del entorno, pero no se pudo validar Gemini.');
+      await notify('Configuración actualizada', status?.error || 'Se restauró la clave del entorno, pero no se pudo validar Gemini.');
       return;
     }
 
-    await notify('Configuracion actualizada', 'Se elimino la clave personalizada y no hay una clave del entorno disponible.');
+    await notify('Configuración actualizada', 'Se eliminó la clave personalizada y no hay una clave del entorno disponible.');
   };
 
   const resetAppState = async () => {
     const accepted = await confirmAction(
       'Restablecer app',
-      'Esto borrara solo los datos y configuraciones locales de esta app en este dispositivo. Deseas continuar?'
+      'Esto borrará solo los datos y configuraciones locales de esta app en este dispositivo. ¿Deseas continuar?'
     );
     if (!accepted) return;
 
@@ -166,7 +166,7 @@ export default function AdminLayout() {
     setQuestionnaireManualPortions({});
     setQuestionnaireAdditionalNotes('');
 
-    await notify('Aplicacion restablecida', 'Se limpiaron los datos locales de esta app y volvio al estado inicial.');
+    await notify('Aplicación restablecida', 'Se limpiaron los datos locales de esta app y volvió al estado inicial.');
     try {
       window.location.reload();
     } catch (error) {
@@ -296,15 +296,15 @@ export default function AdminLayout() {
                     });
 
                     await notify(
-                      'Configuracion lista',
+                      'Configuración lista',
                       envKey
-                        ? `La app quedo usando la clave del entorno. Modelo sugerido: ${status?.selectedModel || recommendedModel}`
-                        : 'La app quedo con el modelo recomendado, pero no hay clave del entorno disponible'
+                        ? `La app quedó usando la clave del entorno. Modelo sugerido: ${status?.selectedModel || recommendedModel}`
+                        : 'La app quedó con el modelo recomendado, pero no hay clave del entorno disponible'
                     );
                   }}
                   className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-2xl transition-all active:scale-[0.98] shadow-md"
                 >
-                  Usar configuracion recomendada
+                  Usar configuración recomendada
                 </button>
 
                 <div className="flex items-center justify-center px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-200 font-medium">
@@ -418,7 +418,7 @@ export default function AdminLayout() {
                       <input
                         type="password"
                         id="admin-api-key"
-                        placeholder="Pega aqui tu clave si te la compartieron"
+                        placeholder="Pega aquí tu clave si te la compartieron"
                         value={apiKeyDraft}
                         onChange={(e) => setApiKeyDraft(e.target.value)}
                         className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 pr-10 text-slate-700 dark:text-slate-100 text-sm outline-none focus:ring-2 focus:ring-orange-400 transition"
@@ -443,20 +443,20 @@ export default function AdminLayout() {
                             });
 
                             if (!status?.ok) {
-                              await notify('Clave invalida', status?.error || 'No fue posible validar la API key.');
+                              await notify('Clave inválida', status?.error || 'No fue posible validar la API key.');
                               return;
                             }
 
                             setGeminiApiKey(trimmedKey);
                             setGeminiModel(status.selectedModel || '');
-                            await notify('Guardado', `Tu clave personal quedo guardada. Modelo sugerido: ${status.selectedModel}`);
+                            await notify('Guardado', `Tu clave personal quedó guardada. Modelo sugerido: ${status.selectedModel}`);
                           } else {
                             await resetApiKeyToDefault();
                           }
                         }}
                         className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98] shadow-md"
                       >
-                        {apiKeyDraft.trim() ? 'Guardar clave personal' : 'Restaurar configuracion predeterminada'}
+                        {apiKeyDraft.trim() ? 'Guardar clave personal' : 'Restaurar configuración predeterminada'}
                       </button>
 
                       {usingCustomKey && (
