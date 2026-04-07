@@ -71,7 +71,7 @@ function getOptionalPdfPart(payload: any): GeminiPart[] {
   return [
     {
       text:
-        'Archivo adjunto opcional: reporte corporal del usuario en PDF. Úsalo como contexto complementario junto con el cuestionario.',
+        'Archivo adjunto opcional: reporte corporal del usuario en PDF. Usalo como contexto complementario junto con el cuestionario.',
     },
     {
       inlineData: {
@@ -85,9 +85,9 @@ function getOptionalPdfPart(payload: any): GeminiPart[] {
 function buildSystemPrompt(prefix: string) {
   const lowerPrefix = prefix.toLowerCase();
 
-  return `Eres un nutricionista clínico experto. Genera un plan semanal completo, realista y consistente con el cuestionario.
+  return `Eres un nutricionista clinico experto. Genera un plan semanal completo, realista y consistente con el cuestionario.
 
-Debes responder SOLO con JSON válido y seguir exactamente esta estructura:
+Debes responder SOLO con JSON valido y seguir exactamente esta estructura:
 
 1. perfil${prefix}: {
   id: "${lowerPrefix}",
@@ -131,26 +131,26 @@ Debes responder SOLO con JSON válido y seguir exactamente esta estructura:
 4. plan${prefix}: {
   Lunes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
   Martes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Miércoles: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Miercoles: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
   Jueves: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
   Viernes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Sábado: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Sabado: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
   Domingo: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] }
 }
 
-Reglas críticas:
+Reglas criticas:
 - No cambies id ni nombre.
-- "perfil" debe ser SIEMPRE un resumen compacto en una sola linea con este formato: "<peso> kg • <altura> m • <edad> años • IMC <valor>". Ejemplo valido: "67 kg • 1.60 m • 32 años • IMC 26.2".
+- "perfil" debe ser SIEMPRE un resumen compacto en una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>". Ejemplo valido: "67 kg | 1.60 m | 32 anos | IMC 26.2".
 - No pongas parrafos, explicaciones clinicas ni texto narrativo dentro de "perfil".
 - Usa "detallesPerfil" para guardar el analisis narrativo completo del caso, incluyendo contexto corporal, actividad, hallazgos del PDF, riesgos y consideraciones relevantes.
 - Cada comida debe incluir: nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG.
-- Las calorías y macros deben ser enteros realistas.
+- Las calorias y macros deben ser enteros realistas.
 - Las equivalencias deben alinearse con los ingredientes usados en el plan.
-- Los suplementos deben ser EXTRA opcional. Nunca deben ser necesarios para cumplir calorías, macros o el objetivo.
+- Los suplementos deben ser EXTRA opcional. Nunca deben ser necesarios para cumplir calorias, macros o el objetivo.
 - No pongas suplementos dentro de plan${prefix}. El plan debe usar alimentos reales.
-- Si el usuario adjuntó PDF o medidas corporales, úsalos como contexto complementario.
+- Si el usuario adjunto PDF o medidas corporales, usalos como contexto complementario.
 - Si hay conflicto entre el PDF y las respuestas manuales, prioriza las respuestas manuales del cuestionario.
-- Si targetProfile = "ambos" y recibes companionPlan, conserva las mismas preparaciones base por día, momento e índice, ajustando solo porciones y macros.
+- Si targetProfile = "ambos" y recibes companionPlan, conserva las mismas preparaciones base por dia, momento e indice, ajustando solo porciones y macros.
 - Responde solo con JSON, sin markdown ni texto adicional.`;
 }
 
@@ -165,7 +165,7 @@ function buildUserPrompt(payload: any, prefix: string) {
         `suplementos${prefix}`,
         `plan${prefix}`,
       ],
-      fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+      fixedDays: ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'],
       momentsSource: 'questionnaire.planConfig.selectedMoments',
       profileRequiredKeys: [
         'perfil',
@@ -182,7 +182,7 @@ function buildUserPrompt(payload: any, prefix: string) {
         'resumenPersonal',
       ],
       profileFormat: {
-        perfil: '<peso> kg • <altura> m • <edad> años • IMC <valor>',
+        perfil: '<peso> kg | <altura> m | <edad> anos | IMC <valor>',
         detallesPerfil: 'Resumen narrativo del caso y contexto clinico.',
       },
       mealsRequiredKeys: [
@@ -222,7 +222,7 @@ function sanitizeAiJson(text: string) {
   const lastBrace = cleaned.lastIndexOf('}');
 
   if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-    throw new Error('Respuesta de IA no contiene JSON válido.');
+    throw new Error('Respuesta de IA no contiene JSON valido.');
   }
 
   return cleaned.slice(firstBrace, lastBrace + 1);
@@ -275,8 +275,9 @@ export async function callGeminiDirectly(payload: any, apiKey: string, modelName
 
     const responseJson = JSON.parse(responseText);
     const generatedText =
-      responseJson?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text || '').join('\n') ||
-      '';
+      responseJson?.candidates?.[0]?.content?.parts
+        ?.map((part: any) => part?.text || '')
+        .join('\n') || '';
 
     return JSON.parse(sanitizeAiJson(generatedText));
   };
@@ -295,7 +296,8 @@ export async function callGeminiDirectly(payload: any, apiKey: string, modelName
       await new Promise((resolve) => setTimeout(resolve, 4500));
     }
 
-    const ellaPayload = target === 'ambos' ? buildScopedPayload(payload, payload?.ella) : payload;
+    const ellaPayload =
+      target === 'ambos' ? buildScopedPayload(payload, payload?.ella) : payload;
 
     if (target === 'ambos' && elData?.planEL) {
       ellaPayload.companionPlan = elData.planEL;

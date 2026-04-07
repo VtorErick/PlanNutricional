@@ -59,7 +59,9 @@ function getOrderedModels(models: any[], preferredModelRaw?: string) {
 }
 
 async function listAvailableModelsDirect(apiKey: string) {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+  );
   const json = await response.json().catch(() => null);
 
   if (!response.ok) {
@@ -117,10 +119,10 @@ function buildUserMessage({
   const modelText = selectedModel || envModel || 'sin modelo disponible';
 
   if (generationChecked) {
-    return `Se validó la ${sourceText} y el modelo ${modelText} respondió correctamente.`;
+    return `Se valido la ${sourceText} y el modelo ${modelText} respondio correctamente.`;
   }
 
-  return `Se detectó la ${sourceText}. Modelo recomendado disponible: ${modelText}.`;
+  return `Se detecto la ${sourceText}. Modelo recomendado disponible: ${modelText}.`;
 }
 
 async function fetchGeminiStatusDirect(
@@ -135,7 +137,8 @@ async function fetchGeminiStatusDirect(
   if (!apiKey) {
     return {
       ok: false,
-      error: 'No hay una API key configurada. Agrega tu GEMINI_API_KEY local o una clave personalizada.',
+      error:
+        'No hay una API key configurada. Agrega tu GEMINI_API_KEY local o una clave personalizada.',
       keySource,
       envModel,
       selectedModel: '',
@@ -151,7 +154,7 @@ async function fetchGeminiStatusDirect(
   if (!selectedModel) {
     return {
       ok: false,
-      error: 'La API key es válida, pero no tiene modelos con generateContent disponibles.',
+      error: 'La API key es valida, pero no tiene modelos con generateContent disponibles.',
       keySource,
       envModel,
       preferredModel: options.preferredModel,

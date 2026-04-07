@@ -21,13 +21,23 @@ const PORTION_KEY_ALIASES: Record<string, string> = {
   leguminosas: 'leguminosas',
   lacteo: 'lacteos',
   lacteos: 'lacteos',
-  proteína: 'proteina',
   proteina: 'proteina',
+  proteinas: 'proteina',
   grasas: 'grasas',
   grasa: 'grasas',
 };
 
-export function estimateMealNutritionFromPortions(portionsText: string): { caloriasKcal: number; proteinaG: number; grasasG: number } {
+function normalizePortionKeyToken(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+export function estimateMealNutritionFromPortions(
+  portionsText: string
+): { caloriasKcal: number; proteinaG: number; grasasG: number } {
   if (!portionsText || /libre/i.test(portionsText)) {
     return { caloriasKcal: 35, proteinaG: 1, grasasG: 0 };
   }
@@ -42,10 +52,10 @@ export function estimateMealNutritionFromPortions(portionsText: string): { calor
   let fat = 0;
 
   for (const entry of entries) {
-    const match = entry.match(/([A-Za-zÁÉÍÓÚáéíóúñÑ]+)\s*(\d+)/);
+    const match = entry.match(/([\p{L}]+)\s*(\d+)/u);
     if (!match) continue;
 
-    const key = PORTION_KEY_ALIASES[match[1].toLowerCase()];
+    const key = PORTION_KEY_ALIASES[normalizePortionKeyToken(match[1])];
     const amount = Number(match[2]);
     if (!key || Number.isNaN(amount)) continue;
 
@@ -63,15 +73,21 @@ export function estimateMealNutritionFromPortions(portionsText: string): { calor
 }
 
 export function ensureMealNutrition(meal: MealItem): MealItem {
-  if (typeof meal.caloriasKcal === 'number' && Number.isFinite(meal.caloriasKcal) && meal.caloriasKcal > 0) {
+  if (
+    typeof meal.caloriasKcal === 'number' &&
+    Number.isFinite(meal.caloriasKcal) &&
+    meal.caloriasKcal > 0
+  ) {
     return {
       ...meal,
-      proteinaG: typeof meal.proteinaG === 'number' && Number.isFinite(meal.proteinaG)
-        ? Math.round(meal.proteinaG)
-        : meal.proteinaG,
-      grasasG: typeof meal.grasasG === 'number' && Number.isFinite(meal.grasasG)
-        ? Math.round(meal.grasasG)
-        : meal.grasasG,
+      proteinaG:
+        typeof meal.proteinaG === 'number' && Number.isFinite(meal.proteinaG)
+          ? Math.round(meal.proteinaG)
+          : meal.proteinaG,
+      grasasG:
+        typeof meal.grasasG === 'number' && Number.isFinite(meal.grasasG)
+          ? Math.round(meal.grasasG)
+          : meal.grasasG,
       caloriasKcal: Math.round(meal.caloriasKcal),
     };
   }
@@ -80,7 +96,8 @@ export function ensureMealNutrition(meal: MealItem): MealItem {
   return {
     ...meal,
     caloriasKcal: estimated.caloriasKcal,
-    proteinaG: typeof meal.proteinaG === 'number' ? Math.round(meal.proteinaG) : estimated.proteinaG,
+    proteinaG:
+      typeof meal.proteinaG === 'number' ? Math.round(meal.proteinaG) : estimated.proteinaG,
     grasasG: typeof meal.grasasG === 'number' ? Math.round(meal.grasasG) : estimated.grasasG,
   };
 }
@@ -102,7 +119,9 @@ export function estimateDailyCaloriesFromObjectives(profile: Profile): number {
   return estimateDailyMacroTargetsFromObjectives(profile).kcal;
 }
 
-export function estimateDailyMacroTargetsFromObjectives(profile: Profile): { kcal: number; proteinG: number; fatG: number } {
+export function estimateDailyMacroTargetsFromObjectives(
+  profile: Profile
+): { kcal: number; proteinG: number; fatG: number } {
   const objetivos = profile.objetivosPorMomento || {};
   let kcal = 0;
   let protein = 0;
@@ -110,7 +129,7 @@ export function estimateDailyMacroTargetsFromObjectives(profile: Profile): { kca
 
   for (const grupos of Object.values(objetivos)) {
     for (const [groupKey, amount] of Object.entries(grupos || {})) {
-      const normalized = PORTION_KEY_ALIASES[groupKey.toLowerCase()];
+      const normalized = PORTION_KEY_ALIASES[normalizePortionKeyToken(groupKey)];
       const exchange = normalized ? EXCHANGE_VALUES[normalized] : null;
       if (!exchange) continue;
       const n = Number(amount) || 0;

@@ -53,6 +53,14 @@ const PORTION_ALIASES: Record<string, string> = {
   grasa: 'grasas',
 };
 
+function normalizePortionKeyToken(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 function sanitizeList(items: string[]) {
   return items
     .map((item) => item.trim())
@@ -270,8 +278,7 @@ export function parsePortionsText(portionsText: string) {
       const match = entry.match(/([\p{L}]+)\s*(\d+)/u);
       if (!match) return;
 
-      const rawKey = match[1].toLowerCase();
-      const key = PORTION_ALIASES[rawKey];
+      const key = PORTION_ALIASES[normalizePortionKeyToken(match[1])];
       const amount = Number(match[2]);
       if (!key || Number.isNaN(amount)) return;
 

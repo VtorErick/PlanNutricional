@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useMemo, useRef, useEffect, ReactNode, useCallback } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Profile, Equivalencia, MealEditMeta, MealItem, MealOriginalSnapshot, MealTime, SupplementRecommendation } from '../types';
-import { perfilesData as origPerfilesData, equivalenciasData as origEquivData, supplementsData as origSupplementsData, iconsMap } from '../data';
+import { getRawDataText, perfilesData as origPerfilesData, equivalenciasData as origEquivData, supplementsData as origSupplementsData, iconsMap } from '../data';
 import { AccentColors, getAccentColors } from '../utils/theme';
 import { Heart } from 'lucide-react';
 import { parseObjectToData } from '../dataManager';
@@ -718,6 +718,14 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [generationError, setGenerationError] = useState('');
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
 
+  const defaultCustomBuckets = useMemo(
+    () => ({
+      el: JSON.parse(getRawDataText('el')),
+      ella: JSON.parse(getRawDataText('ella')),
+    }),
+    []
+  );
+
   // 6. Questionnaire state
   const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useState<TargetProfile>(
     initialRoute.view === 'questionnaire' ? initialRoute.target : 'ambos'
@@ -848,6 +856,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     );
     const profileBucketKey = perfilId;
     const planKey = perfilId === 'ella' ? 'planELLA' : 'planEL';
+    const profileKey = perfilId === 'ella' ? 'perfilELLA' : 'perfilEL';
+    const equivalenciasKey = perfilId === 'ella' ? 'equivalenciasELLA' : 'equivalenciasEL';
+    const supplementsKey = perfilId === 'ella' ? 'suplementosELLA' : 'suplementosEL';
+    const defaultBucket = defaultCustomBuckets[perfilId];
 
     setCustomData((prev: any) => {
       const previousBucket =
@@ -856,6 +868,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       return {
         ...prev,
         [profileBucketKey]: {
+          [profileKey]: previousBucket[profileKey] || defaultBucket[profileKey],
+          [equivalenciasKey]:
+            previousBucket[equivalenciasKey] || defaultBucket[equivalenciasKey],
+          [supplementsKey]:
+            previousBucket[supplementsKey] || defaultBucket[supplementsKey],
           ...previousBucket,
           [planKey]: nextPlan,
         },
@@ -892,7 +909,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel}`
       ),
     };
-  }, [perfilesData, setCustomData, setDataVersions, setSelecciones]);
+  }, [defaultCustomBuckets, perfilesData, setCustomData, setDataVersions, setSelecciones]);
 
   const restoreMealRecipe = useCallback((
     perfilId: 'el' | 'ella',
@@ -905,6 +922,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     );
     const profileBucketKey = perfilId;
     const planKey = perfilId === 'ella' ? 'planELLA' : 'planEL';
+    const profileKey = perfilId === 'ella' ? 'perfilELLA' : 'perfilEL';
+    const equivalenciasKey = perfilId === 'ella' ? 'equivalenciasELLA' : 'equivalenciasEL';
+    const supplementsKey = perfilId === 'ella' ? 'suplementosELLA' : 'suplementosEL';
+    const defaultBucket = defaultCustomBuckets[perfilId];
 
     setCustomData((prev: any) => {
       const previousBucket =
@@ -913,6 +934,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       return {
         ...prev,
         [profileBucketKey]: {
+          [profileKey]: previousBucket[profileKey] || defaultBucket[profileKey],
+          [equivalenciasKey]:
+            previousBucket[equivalenciasKey] || defaultBucket[equivalenciasKey],
+          [supplementsKey]:
+            previousBucket[supplementsKey] || defaultBucket[supplementsKey],
           ...previousBucket,
           [planKey]: nextPlan,
         },
@@ -949,7 +975,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel}`
       ),
     };
-  }, [perfilesData, setCustomData, setDataVersions, setSelecciones]);
+  }, [defaultCustomBuckets, perfilesData, setCustomData, setDataVersions, setSelecciones]);
 
   // ─── Scroll logic ──────────────────────────────────────────────────
   const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean) => {

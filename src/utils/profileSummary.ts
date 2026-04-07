@@ -1,7 +1,7 @@
 const KG_REGEX = /(\d+(?:[.,]\d+)?)\s*kg\b/i;
 const HEIGHT_CM_REGEX = /(\d+(?:[.,]\d+)?)\s*cm\b/i;
 const HEIGHT_M_REGEX = /(\d+(?:[.,]\d+)?)\s*m\b/i;
-const AGE_REGEX = /(\d+)\s*a(?:ñ|n)os\b/i;
+const AGE_REGEX = /(\d+)\s*a(?:n|(?:\u00f1))os\b/i;
 const IMC_REGEX = /IMC(?:\s*(?:de|:|-))?\s*([\d]+(?:[.,]\d+)?)/i;
 
 function normalizeWhitespace(value: string | null | undefined) {
@@ -33,7 +33,7 @@ export function looksCompactProfile(value: string | null | undefined) {
   const text = normalizeWhitespace(value);
   if (!text) return false;
 
-  return text.includes('•') && /kg\b/i.test(text) && /\bIMC\b/i.test(text);
+  return (text.includes('|') || text.includes('\u2022')) && /kg\b/i.test(text) && /\bIMC\b/i.test(text);
 }
 
 export function extractProfileMetrics(value: string | null | undefined) {
@@ -64,11 +64,11 @@ export function buildCompactProfileSummary(value: string | null | undefined) {
   const parts = [
     metrics.weightKg ? `${metrics.weightKg} kg` : null,
     metrics.heightM ? `${metrics.heightM} m` : null,
-    metrics.age ? `${metrics.age} años` : null,
+    metrics.age ? `${metrics.age} anos` : null,
     metrics.imc ? `IMC ${formatImc(metrics.imc)}` : null,
   ].filter((part): part is string => Boolean(part));
 
-  return parts.length >= 2 ? parts.join(' • ') : null;
+  return parts.length >= 2 ? parts.join(' | ') : null;
 }
 
 export function buildProfileInspectionText(

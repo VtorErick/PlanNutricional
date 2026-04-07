@@ -98,6 +98,13 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   expect(download.suggestedFilename()).toContain('Menu_Seleccionado_Lunes');
 
   await saveDocScreenshot(page, 'plan-mobile.png');
+
+  await page.goto('/admin');
+  await expect(page.getByTestId('admin-export-json-el')).toBeVisible();
+  const customJsonDownload = page.waitForEvent('download');
+  await page.getByTestId('admin-export-json-el').click();
+  const jsonDownload = await customJsonDownload;
+  expect(jsonDownload.suggestedFilename()).toBe('perfil-el-personalizado.json');
 });
 
 test('combined mobile navigation renders every major view with populated data', async ({ page }) => {

@@ -182,6 +182,7 @@ export default function AdminPanel({
             onClick={() => {
               void handlePdfDownload();
             }}
+            data-testid={`admin-export-pdf-${perfilId}`}
             className="flex items-center justify-center gap-2 py-3 px-3 bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-700 dark:text-slate-100 transition active:scale-95 shadow-sm"
           >
             <FileText className="w-4 h-4 flex-shrink-0" />
@@ -192,6 +193,7 @@ export default function AdminPanel({
 
           <button
             onClick={handleJsonDownload}
+            data-testid={`admin-export-json-${perfilId}`}
             className="flex items-center justify-center gap-2 py-3 px-3 bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-700 dark:text-slate-100 transition active:scale-95 shadow-sm"
           >
             <FileJson className="w-4 h-4 flex-shrink-0" />
