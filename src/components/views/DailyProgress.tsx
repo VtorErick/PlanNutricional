@@ -18,7 +18,7 @@ import {
   sumSelectedMealProtein,
 } from '../../utils/nutrition';
 
-const momentoIcons: Record<string, React.ElementType> = {
+const mealTimeIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
   colacion_am: Apple,
   comida: UtensilsCrossed,
@@ -28,30 +28,34 @@ const momentoIcons: Record<string, React.ElementType> = {
 
 export default function DailyProgress() {
   const {
-    perfilActivo,
+    perfilActivo: activeProfile,
     progressExpanded,
     setProgressExpanded,
-    diasDisponibles,
-    diaActivo,
-    setDiaActivo,
-    perfilesData,
-    selecciones,
-    isAmbos,
-    perfilBase: perfil,
-    momentoCompletado,
-    progresoDia,
+    diasDisponibles: availableDays,
+    diaActivo: activeDay,
+    setDiaActivo: setActiveDay,
+    perfilesData: profilesData,
+    selecciones: selections,
+    isAmbos: isCombinedProfile,
+    perfilBase: baseProfile,
+    momentoCompletado: completedMoments,
+    progresoDia: dailyProgressPercent,
     completadosCount,
-    totalMomentosProgress: totalMomentos,
-    scrollToMomento,
-    ac,
+    totalMomentosProgress: totalMomentCount,
+    scrollToMomento: scrollToMoment,
+    ac: accentColors,
+    isDarkMode,
   } = useDiet();
 
   const totals = React.useMemo(() => {
-    const sumForProfile = (perfilId: 'el' | 'ella') => {
-      const planDia = perfilesData[perfilId]?.plan?.[diaActivo] || {};
-      const selectedMeals = Object.entries(planDia).flatMap(([momentoKey, meals]) =>
-        (meals || []).filter((meal) => selecciones[`${perfilId}-${diaActivo}-${momentoKey}-${meal.nombre}`])
+    const sumForProfile = (profileId: 'el' | 'ella') => {
+      const dayPlan = profilesData[profileId]?.plan?.[activeDay] || {};
+      const selectedMeals = Object.entries(dayPlan).flatMap(([mealTimeKey, meals]) =>
+        (meals || []).filter(
+          (meal) => selections[`${profileId}-${activeDay}-${mealTimeKey}-${meal.nombre}`]
+        )
       );
+
       return {
         kcal: sumSelectedMealCalories(selectedMeals),
         protein: sumSelectedMealProtein(selectedMeals),
@@ -59,7 +63,7 @@ export default function DailyProgress() {
       };
     };
 
-    if (isAmbos || perfilActivo === 'ambos') {
+    if (isCombinedProfile || activeProfile === 'ambos') {
       const el = sumForProfile('el');
       const ella = sumForProfile('ella');
       return {
@@ -69,82 +73,110 @@ export default function DailyProgress() {
       };
     }
 
-    const perfilId = perfilActivo === 'ella' ? 'ella' : 'el';
-    return sumForProfile(perfilId);
-  }, [diaActivo, perfilesData, selecciones, isAmbos, perfilActivo]);
+    const profileId = activeProfile === 'ella' ? 'ella' : 'el';
+    return sumForProfile(profileId);
+  }, [activeDay, activeProfile, isCombinedProfile, profilesData, selections]);
 
-  const metaCalorica = React.useMemo(() => {
-    const getProfileTarget = (perfilId: 'el' | 'ella') => {
-      const profile = perfilesData[perfilId];
+  const calorieTarget = React.useMemo(() => {
+    const getProfileTarget = (profileId: 'el' | 'ella') => {
+      const profile = profilesData[profileId];
       return profile?.metaCaloricaKcalDia ?? estimateDailyCaloriesFromObjectives(profile);
     };
 
-    if (isAmbos || perfilActivo === 'ambos') {
+    if (isCombinedProfile || activeProfile === 'ambos') {
       return getProfileTarget('el') + getProfileTarget('ella');
     }
 
-    return perfilActivo === 'ella' ? getProfileTarget('ella') : getProfileTarget('el');
-  }, [perfilesData, isAmbos, perfilActivo]);
+    return activeProfile === 'ella' ? getProfileTarget('ella') : getProfileTarget('el');
+  }, [activeProfile, isCombinedProfile, profilesData]);
 
-  const energyRatio = metaCalorica > 0 ? totals.kcal / metaCalorica : 0;
-  const energyStatus: 'low' | 'near' | 'high' = energyRatio < 0.85 ? 'low' : energyRatio <= 1.1 ? 'near' : 'high';
+  const energyRatio = calorieTarget > 0 ? totals.kcal / calorieTarget : 0;
+  const energyStatus: 'low' | 'near' | 'high' =
+    energyRatio < 0.85 ? 'low' : energyRatio <= 1.1 ? 'near' : 'high';
 
-  const statusPalette = (isAmbos || perfilActivo === 'ambos')
-    ? {
-        low: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-        near: 'bg-emerald-100 border-emerald-300 text-emerald-800',
-        high: 'bg-teal-100 border-teal-300 text-teal-800',
-      }
-    : perfilActivo === 'ella'
+  const statusPalette =
+    isDarkMode
+      ? isCombinedProfile || activeProfile === 'ambos'
+        ? {
+            low: 'bg-emerald-950/70 border-emerald-900/70 text-emerald-200',
+            near: 'bg-teal-950/80 border-teal-800/70 text-teal-100',
+            high: 'bg-cyan-950/75 border-cyan-900/70 text-cyan-200',
+          }
+        : activeProfile === 'ella'
+          ? {
+              low: 'bg-rose-950/70 border-rose-900/70 text-rose-200',
+              near: 'bg-fuchsia-950/80 border-fuchsia-800/70 text-pink-100',
+              high: 'bg-pink-950/75 border-pink-900/70 text-pink-200',
+            }
+          : {
+              low: 'bg-sky-950/70 border-sky-900/70 text-sky-200',
+              near: 'bg-blue-950/80 border-blue-800/70 text-sky-100',
+              high: 'bg-indigo-950/75 border-indigo-900/70 text-indigo-200',
+            }
+      : isCombinedProfile || activeProfile === 'ambos'
       ? {
-          low: 'bg-rose-50 border-rose-200 text-rose-700',
-          near: 'bg-rose-100 border-rose-300 text-rose-800',
-          high: 'bg-pink-100 border-pink-300 text-pink-800',
+          low: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+          near: 'bg-emerald-100 border-emerald-300 text-emerald-800',
+          high: 'bg-teal-100 border-teal-300 text-teal-800',
         }
-      : {
-          low: 'bg-blue-50 border-blue-200 text-blue-700',
-          near: 'bg-blue-100 border-blue-300 text-blue-800',
-          high: 'bg-indigo-100 border-indigo-300 text-indigo-800',
-        };
+      : activeProfile === 'ella'
+        ? {
+            low: 'bg-rose-50 border-rose-200 text-rose-700',
+            near: 'bg-rose-100 border-rose-300 text-rose-800',
+            high: 'bg-pink-100 border-pink-300 text-pink-800',
+          }
+        : {
+            low: 'bg-blue-50 border-blue-200 text-blue-700',
+            near: 'bg-blue-100 border-blue-300 text-blue-800',
+            high: 'bg-indigo-100 border-indigo-300 text-indigo-800',
+          };
 
   return (
     <motion.div
-      key={`progress-${perfilActivo}`}
+      key={`progress-${activeProfile}`}
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-      className={`sticky top-[52px] sm:top-[56px] z-40 bg-white/96 backdrop-blur-xl border-b ${ac.border} shadow-[0_10px_30px_rgba(15,23,42,0.08)]`}
+      className={`sticky top-[52px] sm:top-[56px] z-40 backdrop-blur-xl border-b ${accentColors.border} ${
+        isDarkMode
+          ? 'bg-slate-950/96 shadow-[0_10px_30px_rgba(2,6,23,0.42)]'
+          : 'bg-white/96 shadow-[0_10px_30px_rgba(15,23,42,0.08)]'
+      }`}
     >
-      {/* Selector de día */}
-      <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 pb-2 border-b border-slate-100/70">
+      {/* Day selector */}
+      <div className={`max-w-5xl mx-auto px-3 sm:px-6 pt-3 pb-2 border-b ${isDarkMode ? 'border-slate-800' : 'border-slate-100/70'}`}>
         <div className="flex items-center gap-2">
           <div className="flex-1 overflow-x-auto snap-x scrollbar-none">
             <div className="inline-flex gap-2 items-center min-w-max">
-              {diasDisponibles.map((dia) => {
-                const active = diaActivo === dia;
+              {availableDays.map((day) => {
+                const active = activeDay === day;
                 return (
                   <button
-                    key={dia}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDiaActivo(dia);
+                    key={day}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setActiveDay(day);
                     }}
                     className={`py-2 px-3.5 rounded-2xl font-bold transition-all duration-300 text-xs whitespace-nowrap snap-start flex-shrink-0 border ${
                       active
-                        ? `${ac.btnActive} shadow-sm scale-[1.02] border-transparent`
-                        : 'bg-slate-100/85 hover:bg-slate-200 text-slate-600 border-slate-200/70'
+                        ? `${accentColors.btnActive} shadow-sm scale-[1.02] border-transparent`
+                        : isDarkMode
+                          ? 'bg-slate-900 text-slate-200 border-slate-800 hover:bg-slate-800'
+                          : 'bg-slate-100/85 hover:bg-slate-200 text-slate-600 border-slate-200/70'
                     }`}
                   >
-                    <span className="sm:hidden">{dia.slice(0, 3)}</span>
-                    <span className="hidden sm:inline">{dia}</span>
+                    <span className="sm:hidden">{day.slice(0, 3)}</span>
+                    <span className="hidden sm:inline">{day}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <div className={`flex-shrink-0 rounded-2xl border px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold leading-tight ${statusPalette[energyStatus]}`}>
+          <div
+            className={`flex-shrink-0 rounded-2xl border px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold leading-tight ${statusPalette[energyStatus]}`}
+          >
             <div className="whitespace-nowrap">
               <span>{totals.kcal} kcal</span>
               <span className="mx-1 text-slate-300">·</span>
@@ -152,40 +184,43 @@ export default function DailyProgress() {
               <span className="mx-1 text-slate-300">·</span>
               <span>{totals.fat}g G</span>
             </div>
-            <div className="mt-0.5 font-semibold whitespace-nowrap opacity-85">Meta: {metaCalorica} kcal</div>
+            <div className="mt-0.5 font-semibold whitespace-nowrap opacity-85">
+              Meta: {calorieTarget} kcal
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Barra compacta siempre visible */}
+      {/* Compact progress summary */}
       <div
         className="max-w-5xl mx-auto px-3 sm:px-6 py-3 flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none"
-        onClick={() => setProgressExpanded((e) => !e)}
+        onClick={() => setProgressExpanded((expanded) => !expanded)}
       >
-
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-          {perfil.momentos.map((momento) => {
-            const Icon = momentoIcons[momento.key] || UtensilsCrossed;
-            const done = momentoCompletado[momento.key];
+          {baseProfile.momentos.map((moment) => {
+            const Icon = mealTimeIcons[moment.key] || UtensilsCrossed;
+            const done = completedMoments[moment.key];
 
             return (
               <button
-                key={momento.key}
-                title={`Ir a ${momento.label}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  scrollToMomento(momento.key, progressExpanded);
+                key={moment.key}
+                title={`Ir a ${moment.label}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  scrollToMoment(moment.key, progressExpanded);
                 }}
                 className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 ${
                   done
-                    ? `bg-gradient-to-br ${ac.bgGradient} shadow-sm hover:opacity-85`
-                    : `${ac.bgLight} border ${ac.border} hover:opacity-75`
+                    ? `bg-gradient-to-br ${accentColors.bgGradient} shadow-sm hover:opacity-85`
+                    : `${accentColors.bgLight} border ${accentColors.border} hover:opacity-75`
                 }`}
               >
                 {done ? (
                   <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                 ) : (
-                  <Icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${ac.momentoIconColorPending}`} />
+                  <Icon
+                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${accentColors.momentoIconColorPending}`}
+                  />
                 )}
               </button>
             );
@@ -194,11 +229,15 @@ export default function DailyProgress() {
 
         <div className="flex-1 min-w-0">
           <div
-            className={`h-2.5 bg-gradient-to-r ${ac.progressBg} rounded-full overflow-hidden shadow-inner shadow-slate-200/70`}
+            className={`h-2.5 bg-gradient-to-r ${accentColors.progressBg} rounded-full overflow-hidden shadow-inner ${isDarkMode ? 'shadow-black/40' : 'shadow-slate-200/70'}`}
           >
             <motion.div
-              className={`h-full bg-gradient-to-r ${ac.progressFill} rounded-full shadow-[0_0_12px_rgba(15,23,42,0.25)]`}
-              animate={{ width: `${progresoDia}%` }}
+              className={`h-full bg-gradient-to-r ${accentColors.progressFill} rounded-full ${
+                isDarkMode
+                  ? 'shadow-[0_0_18px_rgba(255,255,255,0.12)]'
+                  : 'shadow-[0_0_12px_rgba(15,23,42,0.25)]'
+              }`}
+              animate={{ width: `${dailyProgressPercent}%` }}
               transition={{ type: 'spring', stiffness: 80, damping: 15 }}
             />
           </div>
@@ -207,30 +246,34 @@ export default function DailyProgress() {
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <span
             className={`text-[11px] sm:text-xs font-black ${
-              progresoDia === 100 ? 'text-emerald-600' : ac.text
+              dailyProgressPercent === 100
+                ? isDarkMode
+                  ? 'text-emerald-300'
+                  : 'text-emerald-600'
+                : accentColors.text
             } tabular-nums w-8 sm:w-9 text-right`}
           >
-            {progresoDia}%
+            {dailyProgressPercent}%
           </span>
 
           <button
-            className="flex-shrink-0 p-1.5 rounded-full hover:bg-slate-100 transition-colors"
-            onClick={(e) => {
-              e.stopPropagation();
-              setProgressExpanded((x) => !x);
+            className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              setProgressExpanded((expanded) => !expanded);
             }}
             aria-label={progressExpanded ? 'Colapsar progreso' : 'Expandir progreso'}
           >
             {progressExpanded ? (
-              <ChevronUp className={`w-4 h-4 ${ac.text}`} />
+              <ChevronUp className={`w-4 h-4 ${accentColors.text}`} />
             ) : (
-              <ChevronDown className={`w-4 h-4 ${ac.text}`} />
+              <ChevronDown className={`w-4 h-4 ${accentColors.text}`} />
             )}
           </button>
         </div>
       </div>
 
-      {/* Panel expandido */}
+      {/* Expanded panel */}
       <AnimatePresence>
         {progressExpanded && (
           <motion.div
@@ -243,12 +286,12 @@ export default function DailyProgress() {
           >
             <div className="max-w-5xl mx-auto px-3 sm:px-6 pb-4 pt-1">
               <div className="flex items-center justify-between gap-3 mb-3">
-                <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-                  {completadosCount} de {totalMomentos} momentos completados
+                <p className={`text-[11px] sm:text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {completadosCount} de {totalMomentCount} momentos completados
                 </p>
 
-                {progresoDia === 100 && (
-                  <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 whitespace-nowrap">
+                {dailyProgressPercent === 100 && (
+                  <span className={`text-[11px] font-semibold flex items-center gap-1 whitespace-nowrap ${isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}`}>
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     ¡Día completo!
                   </span>
@@ -256,44 +299,48 @@ export default function DailyProgress() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-                {perfil.momentos.map((momento) => {
-                  const Icon = momentoIcons[momento.key] || UtensilsCrossed;
-                  const done = momentoCompletado[momento.key];
+                {baseProfile.momentos.map((moment) => {
+                  const Icon = mealTimeIcons[moment.key] || UtensilsCrossed;
+                  const done = completedMoments[moment.key];
 
-                  const shortLabel = momento.label
+                  const shortLabel = moment.label
                     .replace('Colación ', 'Col. ')
                     .replace('mañana', 'AM')
                     .replace('tarde', 'PM');
 
                   return (
                     <motion.button
-                      key={momento.key}
+                      key={moment.key}
                       animate={{ scale: done ? 1.02 : 1 }}
                       whileTap={{ scale: 0.97 }}
                       transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        scrollToMomento(momento.key, true);
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        scrollToMoment(moment.key, true);
                       }}
                       className={`relative rounded-2xl p-3 sm:p-3.5 flex flex-col items-center gap-1.5 border shadow-sm transition-all duration-300 cursor-pointer text-left w-full ${
-                        done ? ac.cardDone : `${ac.cardPending} hover:shadow-md`
+                        done
+                          ? accentColors.cardDone
+                          : `${accentColors.cardPending} hover:shadow-md`
                       }`}
                     >
                       <div
                         className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center ${
-                          done ? ac.iconDone : ac.iconPending
+                          done ? accentColors.iconDone : accentColors.iconPending
                         }`}
                       >
                         {done ? (
                           <CheckCircle2 className="w-5 h-5 text-white" />
                         ) : (
-                          <Icon className={`w-5 h-5 ${ac.momentoIconColorPending}`} />
+                          <Icon
+                            className={`w-5 h-5 ${accentColors.momentoIconColorPending}`}
+                          />
                         )}
                       </div>
 
                       <span
                         className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight ${
-                          done ? 'text-white' : 'text-slate-700'
+                          done ? 'text-white' : isDarkMode ? 'text-slate-100' : 'text-slate-700'
                         }`}
                       >
                         {shortLabel}
@@ -304,7 +351,7 @@ export default function DailyProgress() {
                           done ? 'text-white/75' : 'text-slate-400'
                         }`}
                       >
-                        {momento.hora}
+                        {moment.hora}
                       </span>
 
                       {done && (

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, Heart, Shield, TrendingDown, User } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
+import { getAccentColors } from '../../utils/theme';
 
 const mealKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'] as const;
 const mealLabels = ['Des', 'C.AM', 'Com', 'C.PM', 'Cen'];
@@ -17,8 +18,10 @@ const categories = [
 ] as const;
 
 export default function SummaryView() {
-  const { perfilActivo, perfilesData, ac } = useDiet();
+  const { perfilActivo, perfilesData, ac, isDarkMode } = useDiet();
   const [ambosSubTab, setAmbosSubTab] = useState<'el' | 'ella'>('el');
+  const elAccent = getAccentColors('el', isDarkMode);
+  const ellaAccent = getAccentColors('ella', isDarkMode);
 
   const isAmbos = perfilActivo === 'ambos';
   const perfil =
@@ -36,13 +39,13 @@ export default function SummaryView() {
       className="w-full flex flex-col"
     >
       {isAmbos && (
-        <div className="lg:hidden flex bg-slate-100 p-1.5 rounded-2xl mb-4 mx-auto max-w-xs shadow-inner w-full">
+        <div className={`lg:hidden flex p-1.5 rounded-2xl mb-4 mx-auto max-w-xs shadow-inner w-full ${isDarkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
           <button
             onClick={() => setAmbosSubTab('el')}
             className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
               ambosSubTab === 'el'
-                ? 'bg-white shadow-sm text-blue-600'
-                : 'text-slate-500'
+                ? `${elAccent.bgLight} shadow-sm ${elAccent.text}`
+                : isDarkMode ? 'text-slate-400' : 'text-slate-500'
             }`}
           >
             {perfilesData.el.nombre}
@@ -51,8 +54,8 @@ export default function SummaryView() {
             onClick={() => setAmbosSubTab('ella')}
             className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
               ambosSubTab === 'ella'
-                ? 'bg-white shadow-sm text-rose-600'
-                : 'text-slate-500'
+                ? `${ellaAccent.bgLight} shadow-sm ${ellaAccent.text}`
+                : isDarkMode ? 'text-slate-400' : 'text-slate-500'
             }`}
           >
             {perfilesData.ella.nombre}
@@ -63,6 +66,7 @@ export default function SummaryView() {
       <div className={isAmbos ? 'grid lg:grid-cols-2 gap-6' : 'space-y-8'}>
         {(isAmbos ? [perfilesData.el, perfilesData.ella] : [perfil]).map((p, pIdx) => {
           if (!p) return null;
+          const summaryPoints = Array.isArray(p.resumenPersonal) ? p.resumenPersonal : [];
 
           const isFirst = pIdx === 0;
           const pfKey = isFirst ? 'el' : 'ella';
@@ -74,16 +78,8 @@ export default function SummaryView() {
 
           const dynamicAc = isAmbos
             ? {
-                ...ac,
+                ...(isFirst ? elAccent : ellaAccent),
                 color500: isFirst ? '#3b82f6' : '#f43f5e',
-                text: isFirst ? 'text-blue-600' : 'text-rose-600',
-                textDark: isFirst ? 'text-blue-900' : 'text-rose-900',
-                bgLight: isFirst ? 'bg-blue-50' : 'bg-rose-50',
-                bgGradientLight: isFirst
-                  ? 'from-blue-50 to-indigo-50'
-                  : 'from-rose-50 to-pink-50',
-                border: isFirst ? 'border-blue-200' : 'border-rose-200',
-                dot: isFirst ? 'bg-blue-500' : 'bg-rose-500',
               }
             : ac;
 
@@ -93,8 +89,8 @@ export default function SummaryView() {
                 <h3
                   className={`text-base font-bold pb-2 border-b-2 ${
                     isFirst
-                      ? 'text-blue-800 border-blue-200'
-                      : 'text-rose-800 border-rose-200'
+                      ? `${elAccent.textDark} ${elAccent.border}`
+                      : `${ellaAccent.textDark} ${ellaAccent.border}`
                   }`}
                 >
                   Resumen de {p.nombre}
@@ -118,26 +114,26 @@ export default function SummaryView() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-100">
-                <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+              <div className={`rounded-2xl p-4 sm:p-6 shadow-sm border ${isDarkMode ? 'bg-slate-950/92 border-slate-800' : 'bg-white border-slate-100'}`}>
+                <h3 className={`font-bold mb-3 flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                   <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
                   Puntos clave de tu plan
                 </h3>
 
                 <div className="space-y-2.5">
-                  {p.resumenPersonal.map((linea, idx) => (
+                  {summaryPoints.map((linea, idx) => (
                     <motion.div
                       key={idx}
                       initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.06 }}
-                      className="flex gap-3 p-3 rounded-xl bg-slate-50"
+                      className={`flex gap-3 p-3 rounded-xl ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}
                       style={{ borderLeft: `3px solid ${dynamicAc.color500}` }}
                     >
                       <div
                         className={`w-1.5 h-1.5 rounded-full ${dynamicAc.dot} mt-1.5 flex-shrink-0`}
                       />
-                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                      <p className={`text-xs sm:text-sm leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         {linea}
                       </p>
                     </motion.div>
@@ -146,10 +142,10 @@ export default function SummaryView() {
               </div>
 
               {p.objetivosPorMomento && (
-                <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100/80 overflow-hidden relative w-full">
-                  <div className="absolute top-0 right-0 w-28 h-28 bg-slate-50 rounded-full blur-3xl -z-10" />
+                <div className={`rounded-2xl p-4 sm:p-5 shadow-sm border overflow-hidden relative w-full ${isDarkMode ? 'bg-slate-950/92 border-slate-800' : 'bg-white border-slate-100/80'}`}>
+                  <div className={`absolute top-0 right-0 w-28 h-28 rounded-full blur-3xl -z-10 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`} />
 
-                  {/* META Y PERFIL ARRIBA */}
+                  {/* Goal and profile summary */}
                   <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-2">
                     <div
                       className={`bg-gradient-to-br ${dynamicAc.bgGradientLight} rounded-2xl p-4 border ${dynamicAc.border}`}
@@ -169,18 +165,18 @@ export default function SummaryView() {
                       className={`rounded-2xl p-4 border ${
                         isAmbos
                           ? isFirst
-                            ? 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
-                            : 'bg-gradient-to-br from-rose-50 to-pink-50 border-rose-200'
-                          : 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200'
+                            ? `${elAccent.bgGradientLight} ${elAccent.border}`
+                            : `${ellaAccent.bgGradientLight} ${ellaAccent.border}`
+                          : `${dynamicAc.bgGradientLight} ${dynamicAc.border}`
                       }`}
                     >
                       <h3
                         className={`font-bold mb-1.5 flex items-center gap-2 text-xs sm:text-sm ${
                           isAmbos
                             ? isFirst
-                              ? 'text-blue-900'
-                              : 'text-rose-900'
-                            : 'text-emerald-900'
+                              ? elAccent.textDark
+                              : ellaAccent.textDark
+                            : dynamicAc.textDark
                         }`}
                       >
                         <User className="w-3.5 h-3.5" />
@@ -190,9 +186,9 @@ export default function SummaryView() {
                         className={`text-xs sm:text-sm leading-relaxed ${
                           isAmbos
                             ? isFirst
-                              ? 'text-blue-700'
-                              : 'text-rose-700'
-                            : 'text-emerald-700'
+                              ? elAccent.text
+                              : ellaAccent.text
+                            : dynamicAc.text
                         }`}
                       >
                         {p.perfil}
@@ -200,12 +196,12 @@ export default function SummaryView() {
                     </div>
                   </div>
 
-                  <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                  <h3 className={`font-bold mb-3 flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                     <BarChart3 className={`w-4 h-4 ${dynamicAc.text}`} />
                     Tabla de macros y porciones
                   </h3>
 
-                  {/* MOBILE */}
+                  {/* Mobile layout */}
                   <div className="sm:hidden space-y-3 mt-4">
                     {categories.map((cat) => {
                       const total = mealKeys.reduce(
@@ -216,7 +212,7 @@ export default function SummaryView() {
                       return (
                         <div
                           key={cat.key}
-                          className={`${cat.bg} rounded-2xl p-3 border border-slate-100`}
+                          className={`rounded-2xl p-3 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : `${cat.bg} border-slate-100`}`}
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2 min-w-0">
@@ -227,11 +223,11 @@ export default function SummaryView() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] uppercase tracking-wide text-slate-400 font-bold">
+                              <span className={`text-[10px] uppercase tracking-wide font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                                 Total
                               </span>
                               <span
-                                className={`min-w-[34px] h-8 px-2 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-base ${cat.color}`}
+                                className={`min-w-[34px] h-8 px-2 rounded-xl shadow-sm flex items-center justify-center font-black text-base ${cat.color} ${isDarkMode ? 'bg-slate-950' : 'bg-white'}`}
                               >
                                 {total}
                               </span>
@@ -248,20 +244,28 @@ export default function SummaryView() {
                                   key={m}
                                   className={`rounded-xl px-1.5 py-2 text-center border ${
                                     active
-                                      ? 'bg-white border-white shadow-sm'
-                                      : 'bg-white/50 border-white/60'
+                                      ? isDarkMode
+                                        ? 'bg-slate-950 border-slate-700 shadow-sm'
+                                        : 'bg-white border-white shadow-sm'
+                                      : isDarkMode
+                                        ? 'bg-slate-900 border-slate-800'
+                                        : 'bg-white/50 border-white/60'
                                   }`}
                                 >
                                   <div
                                     className={`text-[9px] font-extrabold uppercase tracking-wide ${
-                                      active ? 'text-slate-500' : 'text-slate-300'
+                                      active
+                                        ? isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                                        : isDarkMode ? 'text-slate-600' : 'text-slate-300'
                                     }`}
                                   >
                                     {mealLabels[idx]}
                                   </div>
                                   <div
                                     className={`text-sm font-black mt-0.5 ${
-                                      active ? 'text-slate-800' : 'text-slate-300'
+                                      active
+                                        ? isDarkMode ? 'text-slate-50' : 'text-slate-800'
+                                        : isDarkMode ? 'text-slate-600' : 'text-slate-300'
                                     }`}
                                   >
                                     {val}
@@ -275,14 +279,14 @@ export default function SummaryView() {
                     })}
                   </div>
 
-                  {/* TABLET / DESKTOP */}
+                  {/* Tablet / desktop layout */}
                   <div className="hidden sm:block overflow-x-auto w-full">
                     <table className="w-full text-left text-sm min-w-max">
                       <thead>
                         <tr
-                          className={`border-b-2 ${dynamicAc.border} text-slate-400 font-bold uppercase tracking-wider text-[11px]`}
+                          className={`border-b-2 ${dynamicAc.border} font-bold uppercase tracking-wider text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                         >
-                          <th className="p-3 pb-3 sticky left-0 bg-white/95 backdrop-blur-md z-10 w-32">
+                          <th className={`p-3 pb-3 sticky left-0 backdrop-blur-md z-10 w-32 ${isDarkMode ? 'bg-slate-950/95' : 'bg-white/95'}`}>
                             Grupo
                           </th>
                           {['Desayuno', 'Col. AM', 'Comida', 'Col. PM', 'Cena'].map((l) => (
@@ -290,13 +294,13 @@ export default function SummaryView() {
                               {l}
                             </th>
                           ))}
-                          <th className="p-3 pb-3 text-center bg-slate-50/50 rounded-tr-xl w-16">
+                          <th className={`p-3 pb-3 text-center rounded-tr-xl w-16 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50/50'}`}>
                             Total
                           </th>
                         </tr>
                       </thead>
 
-                      <tbody className="divide-y divide-slate-100/60">
+                      <tbody className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-slate-100/60'}`}>
                         {categories.map((cat) => {
                           const total = mealKeys.reduce(
                             (acc, m) => acc + (p.objetivosPorMomento?.[m]?.[cat.key] || 0),
@@ -306,9 +310,9 @@ export default function SummaryView() {
                           return (
                             <tr
                               key={cat.key}
-                              className="hover:bg-slate-50/70 transition-colors group"
+                              className={`transition-colors group ${isDarkMode ? 'hover:bg-slate-900/70' : 'hover:bg-slate-50/70'}`}
                             >
-                              <td className="p-3 sticky left-0 bg-white/95 group-hover:bg-slate-50/95 backdrop-blur-md z-10 font-bold text-slate-700 border-r border-transparent group-hover:border-slate-100/50 transition-colors">
+                              <td className={`p-3 sticky left-0 backdrop-blur-md z-10 font-bold border-r border-transparent transition-colors ${isDarkMode ? 'bg-slate-950/95 group-hover:bg-slate-900/95 text-slate-100 group-hover:border-slate-800' : 'bg-white/95 group-hover:bg-slate-50/95 text-slate-700 group-hover:border-slate-100/50'}`}>
                                 <div className="flex items-center gap-2">
                                   <span className="text-base">{cat.icon}</span>
                                   {cat.label}
@@ -321,7 +325,9 @@ export default function SummaryView() {
                                   <td
                                     key={m}
                                     className={`p-3 text-center font-medium ${
-                                      val > 0 ? 'text-slate-800' : 'text-slate-300'
+                                      val > 0
+                                        ? isDarkMode ? 'text-slate-50' : 'text-slate-800'
+                                        : isDarkMode ? 'text-slate-600' : 'text-slate-300'
                                     }`}
                                   >
                                     {val}
@@ -330,7 +336,7 @@ export default function SummaryView() {
                               })}
 
                               <td
-                                className={`p-3 text-center font-bold ${dynamicAc.text} bg-slate-50/50`}
+                                className={`p-3 text-center font-bold ${dynamicAc.text} ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50/50'}`}
                               >
                                 {total}
                               </td>

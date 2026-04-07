@@ -27,7 +27,7 @@ export type AccentColors = {
   iconPending: string;
 };
 
-export const THEME_COLORS: Record<'el' | 'ella' | 'ambos' | 'default', AccentColors> = {
+const LIGHT_THEME_COLORS: Record<'el' | 'ella' | 'ambos' | 'default', AccentColors> = {
   ambos: {
     bg: 'bg-indigo-500',
     bgLight: 'bg-indigo-50',
@@ -142,15 +142,136 @@ export const THEME_COLORS: Record<'el' | 'ella' | 'ambos' | 'default', AccentCol
   }
 };
 
+const DARK_THEME_COLORS: Record<'el' | 'ella' | 'ambos' | 'default', AccentColors> = {
+  ambos: {
+    bg: 'bg-emerald-500',
+    bgLight: 'bg-emerald-950/70',
+    bgGradient: 'from-emerald-900 via-teal-900 to-green-950',
+    bgGradientLight: 'from-emerald-950/75 to-teal-950/70',
+    text: 'text-emerald-300',
+    textDark: 'text-emerald-100',
+    border: 'border-emerald-900/70',
+    borderLight: 'border-emerald-800/70',
+    borderAccent: 'border-emerald-400',
+    tagBg: 'bg-emerald-950/80',
+    tagText: 'text-emerald-200',
+    shadowLight: 'shadow-emerald-950/40',
+    momentoIconBgDone: 'bg-emerald-500 shadow-[0_4px_18px_rgba(16,185,129,0.35)]',
+    momentoIconColorDone: 'text-white',
+    momentoIconBgPending: 'bg-emerald-950/75 text-emerald-300 border border-emerald-900/70',
+    momentoIconColorPending: 'text-emerald-300',
+    color500: '#10b981',
+    progressBg: 'from-slate-800 via-emerald-950/80 to-teal-950/80',
+    progressFill: 'from-emerald-400 via-teal-400 to-green-400',
+    btnActive: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-950/35',
+    btnInactive: 'bg-slate-950/90 text-slate-200 hover:bg-slate-900 border border-emerald-900/40',
+    dot: 'bg-emerald-400',
+    cardDone: 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-400 shadow-[0_16px_32px_rgba(4,120,87,0.28)]',
+    cardPending: 'bg-slate-950/92 border-slate-800 shadow-[0_10px_30px_rgba(2,6,23,0.4)]',
+    iconDone: 'bg-white/20',
+    iconPending: 'bg-emerald-950/75 border border-emerald-900/60',
+  },
+  ella: {
+    bg: 'bg-rose-500',
+    bgLight: 'bg-fuchsia-950/70',
+    bgGradient: 'from-fuchsia-900 via-rose-900 to-pink-950',
+    bgGradientLight: 'from-fuchsia-950/75 to-rose-950/70',
+    text: 'text-pink-300',
+    textDark: 'text-rose-100',
+    border: 'border-fuchsia-900/70',
+    borderLight: 'border-fuchsia-800/70',
+    borderAccent: 'border-pink-400',
+    tagBg: 'bg-fuchsia-950/80',
+    tagText: 'text-pink-200',
+    shadowLight: 'shadow-fuchsia-950/40',
+    momentoIconBgDone: 'bg-rose-500 shadow-[0_4px_18px_rgba(244,63,94,0.35)]',
+    momentoIconColorDone: 'text-white',
+    momentoIconBgPending: 'bg-fuchsia-950/75 text-pink-300 border border-fuchsia-900/70',
+    momentoIconColorPending: 'text-pink-300',
+    color500: '#f43f5e',
+    progressBg: 'from-slate-800 via-fuchsia-950/80 to-rose-950/80',
+    progressFill: 'from-pink-400 via-rose-400 to-fuchsia-400',
+    btnActive: 'bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-950/35',
+    btnInactive: 'bg-slate-950/90 text-slate-200 hover:bg-slate-900 border border-fuchsia-900/40',
+    dot: 'bg-pink-400',
+    cardDone: 'bg-gradient-to-br from-rose-500 to-fuchsia-600 border-pink-400 shadow-[0_16px_32px_rgba(157,23,77,0.28)]',
+    cardPending: 'bg-slate-950/92 border-slate-800 shadow-[0_10px_30px_rgba(2,6,23,0.4)]',
+    iconDone: 'bg-white/20',
+    iconPending: 'bg-fuchsia-950/75 border border-fuchsia-900/60',
+  },
+  el: {
+    bg: 'bg-sky-500',
+    bgLight: 'bg-sky-950/70',
+    bgGradient: 'from-sky-900 via-blue-900 to-indigo-950',
+    bgGradientLight: 'from-sky-950/75 to-blue-950/70',
+    text: 'text-sky-300',
+    textDark: 'text-sky-100',
+    border: 'border-sky-900/70',
+    borderLight: 'border-sky-800/70',
+    borderAccent: 'border-sky-400',
+    tagBg: 'bg-sky-950/80',
+    tagText: 'text-sky-200',
+    shadowLight: 'shadow-sky-950/40',
+    momentoIconBgDone: 'bg-sky-500 shadow-[0_4px_18px_rgba(14,165,233,0.35)]',
+    momentoIconColorDone: 'text-white',
+    momentoIconBgPending: 'bg-sky-950/75 text-sky-300 border border-sky-900/70',
+    momentoIconColorPending: 'text-sky-300',
+    color500: '#0ea5e9',
+    progressBg: 'from-slate-800 via-sky-950/80 to-blue-950/80',
+    progressFill: 'from-sky-400 via-blue-400 to-indigo-400',
+    btnActive: 'bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-lg shadow-sky-950/35',
+    btnInactive: 'bg-slate-950/90 text-slate-200 hover:bg-slate-900 border border-sky-900/40',
+    dot: 'bg-sky-400',
+    cardDone: 'bg-gradient-to-br from-sky-500 to-indigo-600 border-sky-400 shadow-[0_16px_32px_rgba(14,116,144,0.28)]',
+    cardPending: 'bg-slate-950/92 border-slate-800 shadow-[0_10px_30px_rgba(2,6,23,0.4)]',
+    iconDone: 'bg-white/20',
+    iconPending: 'bg-sky-950/75 border border-sky-900/60',
+  },
+  default: {
+    bg: 'bg-slate-500',
+    bgLight: 'bg-slate-900/80',
+    bgGradient: 'from-slate-800 to-slate-950',
+    bgGradientLight: 'from-slate-900/85 to-slate-950/80',
+    text: 'text-slate-300',
+    textDark: 'text-slate-100',
+    border: 'border-slate-800',
+    borderLight: 'border-slate-700',
+    borderAccent: 'border-slate-400',
+    tagBg: 'bg-slate-900/80',
+    tagText: 'text-slate-200',
+    shadowLight: 'shadow-slate-950/40',
+    momentoIconBgDone: 'bg-slate-500 shadow-[0_4px_18px_rgba(100,116,139,0.35)]',
+    momentoIconColorDone: 'text-white',
+    momentoIconBgPending: 'bg-slate-900/80 text-slate-300 border border-slate-700',
+    momentoIconColorPending: 'text-slate-300',
+    color500: '#94a3b8',
+    progressBg: 'from-slate-800 via-slate-900 to-slate-950',
+    progressFill: 'from-slate-400 via-slate-300 to-zinc-200',
+    btnActive: 'bg-gradient-to-r from-slate-500 to-slate-700 text-white shadow-lg shadow-slate-950/35',
+    btnInactive: 'bg-slate-950/90 text-slate-200 hover:bg-slate-900 border border-slate-800',
+    dot: 'bg-slate-300',
+    cardDone: 'bg-gradient-to-br from-slate-500 to-slate-700 border-slate-400 shadow-[0_16px_32px_rgba(30,41,59,0.28)]',
+    cardPending: 'bg-slate-950/92 border-slate-800 shadow-[0_10px_30px_rgba(2,6,23,0.4)]',
+    iconDone: 'bg-white/20',
+    iconPending: 'bg-slate-900/80 border border-slate-700',
+  },
+};
+
 /**
  * Returns the theme accent colors object for a given active profile.
  * 
- * @param perfilActivo 'el' | 'ella' | 'ambos' | null
+ * @param perfilActivo Current active profile: 'el' | 'ella' | 'ambos' | null
+ * @param isDarkMode Whether the UI is currently using dark mode.
  * @returns AccentColors Object precomputed with full tailwind classes.
  */
-export const getAccentColors = (perfilActivo: string | null): AccentColors => {
-  if (perfilActivo === 'ambos') return THEME_COLORS.ambos;
-  if (perfilActivo === 'ella') return THEME_COLORS.ella;
-  if (perfilActivo === 'el') return THEME_COLORS.el;
-  return THEME_COLORS.default;
+export const getAccentColors = (
+  perfilActivo: string | null,
+  isDarkMode = false
+): AccentColors => {
+  const palette = isDarkMode ? DARK_THEME_COLORS : LIGHT_THEME_COLORS;
+
+  if (perfilActivo === 'ambos') return palette.ambos;
+  if (perfilActivo === 'ella') return palette.ella;
+  if (perfilActivo === 'el') return palette.el;
+  return palette.default;
 };

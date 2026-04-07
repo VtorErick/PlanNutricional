@@ -1,105 +1,154 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ChefHat, FileText } from 'lucide-react';
+import { ArrowLeft, ChefHat, FileText, Moon, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { downloadDaySelectionPdf, downloadDietPdf } from '../../services/pdfService';
 
 export default function Header() {
   const [showPdfMenu, setShowPdfMenu] = React.useState(false);
+  const pdfMenuRef = React.useRef<HTMLDivElement | null>(null);
+
   const {
-    setPerfilActivo,
-    perfilActivo,
-    setDiaActivo,
-    setTab,
-    perfilesData,
-    diaActivo,
-    selecciones,
-    ac,
+    setPerfilActivo: setActiveProfile,
+    perfilActivo: activeProfile,
+    setDiaActivo: setActiveDay,
+    setTab: setActiveTab,
+    perfilesData: profilesData,
+    diaActivo: activeDay,
+    selecciones: selections,
+    ac: accentColors,
+    isDarkMode,
+    setIsDarkMode,
   } = useDiet();
 
-  const handleDownloadDayPdf = React.useCallback(() => {
-    if (!perfilActivo) return;
+  React.useEffect(() => {
+    if (!showPdfMenu) return;
 
-    if (perfilActivo === 'ambos') {
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (pdfMenuRef.current?.contains(target)) return;
+      setShowPdfMenu(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [showPdfMenu]);
+
+  const handleDownloadDayPdf = React.useCallback(() => {
+    if (!activeProfile) return;
+
+    if (activeProfile === 'ambos') {
       downloadDaySelectionPdf(
-        diaActivo,
+        activeDay,
         [
-          { perfilData: perfilesData.el, color: [37, 99, 235], planObj: perfilesData.el.plan, perfilId: 'el' },
-          { perfilData: perfilesData.ella, color: [225, 29, 72], planObj: perfilesData.ella.plan, perfilId: 'ella' },
+          { perfilData: profilesData.el, color: [37, 99, 235], planObj: profilesData.el.plan, perfilId: 'el' },
+          { perfilData: profilesData.ella, color: [225, 29, 72], planObj: profilesData.ella.plan, perfilId: 'ella' },
         ],
-        selecciones
+        selections
       );
       return;
     }
 
-    const isElla = perfilActivo === 'ella';
+    const isElla = activeProfile === 'ella';
     downloadDaySelectionPdf(
-      diaActivo,
+      activeDay,
       [
         {
-          perfilData: perfilesData[perfilActivo],
+          perfilData: profilesData[activeProfile],
           color: isElla ? [225, 29, 72] : [37, 99, 235],
-          planObj: perfilesData[perfilActivo].plan,
-          perfilId: perfilActivo,
+          planObj: profilesData[activeProfile].plan,
+          perfilId: activeProfile,
         },
       ],
-      selecciones
+      selections
     );
-  }, [perfilActivo, diaActivo, perfilesData, selecciones]);
+  }, [activeProfile, activeDay, profilesData, selections]);
 
   const handleDownloadFullPlanPdf = React.useCallback(() => {
-    if (!perfilActivo) return;
-    if (perfilActivo === 'ambos') {
-      downloadDietPdf(perfilesData.el, perfilesData.el.plan, false);
-      downloadDietPdf(perfilesData.ella, perfilesData.ella.plan, true);
+    if (!activeProfile) return;
+
+    if (activeProfile === 'ambos') {
+      downloadDietPdf(profilesData.el, profilesData.el.plan, false);
+      downloadDietPdf(profilesData.ella, profilesData.ella.plan, true);
       return;
     }
-    downloadDietPdf(perfilesData[perfilActivo], perfilesData[perfilActivo].plan, perfilActivo === 'ella');
-  }, [perfilActivo, perfilesData]);
+
+    downloadDietPdf(
+      profilesData[activeProfile],
+      profilesData[activeProfile].plan,
+      activeProfile === 'ella'
+    );
+  }, [activeProfile, profilesData]);
 
   return (
     <motion.header
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/60 shadow-[0_6px_20px_rgba(15,23,42,0.06)]"
+      className={`sticky top-0 z-50 backdrop-blur-xl border-b shadow-[0_6px_20px_rgba(15,23,42,0.06)] ${
+        isDarkMode
+          ? 'bg-slate-950/95 border-slate-800'
+          : 'bg-white/95 border-slate-200/60'
+      }`}
     >
       <div className="max-w-5xl mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2">
-        
-        {/* LEFT */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
-            onClick={() => setPerfilActivo(null)}
-            className="p-2.5 rounded-2xl hover:bg-slate-100 active:scale-95 transition-all flex-shrink-0"
+            onClick={() => setActiveProfile(null)}
+            className="p-2.5 rounded-2xl hover:bg-slate-100 active:scale-95 transition-all flex-shrink-0 dark:hover:bg-slate-800"
           >
-            <ArrowLeft className="w-5 h-5 text-slate-600" />
+            <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-200" />
           </button>
 
-          {/* Logo (solo en sm+) */}
           <div
-            className={`hidden sm:flex w-9 h-9 rounded-2xl bg-gradient-to-br ${ac.bgGradient} items-center justify-center shadow-sm`}
+            className={`hidden sm:flex w-9 h-9 rounded-2xl bg-gradient-to-br ${accentColors.bgGradient} items-center justify-center shadow-sm`}
           >
             <ChefHat className="w-4 h-4 text-white" />
           </div>
         </div>
 
-        {/* RIGHT - perfiles */}
-        <div className="flex items-center gap-1.5 sm:gap-2 relative">
+        <div className="flex items-center gap-1.5 sm:gap-2 relative" ref={pdfMenuRef}>
           <button
-            onClick={() => setShowPdfMenu((v) => !v)}
-            className={`p-2 rounded-2xl border transition-all ${ac.border} ${ac.bgLight} ${ac.text}`}
+            type="button"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-bold transition-colors ${
+              isDarkMode
+                ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+            title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          >
+            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <span className="hidden sm:inline">{isDarkMode ? 'Claro' : 'Oscuro'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowPdfMenu((value) => !value)}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all ${accentColors.border} ${accentColors.bgLight} ${accentColors.text}`}
             title="Descargar PDF"
           >
             <FileText className="w-4 h-4" />
+            <span className="text-xs font-bold">PDF</span>
           </button>
 
           {showPdfMenu && (
-            <div className="absolute top-12 right-0 z-50 w-44 rounded-2xl border border-slate-200 bg-white shadow-xl p-1.5">
+            <div
+              className={`absolute top-12 right-0 z-50 w-48 rounded-2xl border shadow-xl p-1.5 ${
+                isDarkMode
+                  ? 'border-slate-700 bg-slate-950'
+                  : 'border-slate-200 bg-white'
+              }`}
+            >
               <button
                 onClick={() => {
                   handleDownloadDayPdf();
                   setShowPdfMenu(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100"
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
+                  isDarkMode
+                    ? 'text-slate-100 hover:bg-slate-800'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
               >
                 PDF del día
               </button>
@@ -108,23 +157,27 @@ export default function Header() {
                   handleDownloadFullPlanPdf();
                   setShowPdfMenu(false);
                 }}
-                className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100"
+                className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
+                  isDarkMode
+                    ? 'text-slate-100 hover:bg-slate-800'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
               >
                 PDF plan completo
               </button>
             </div>
           )}
 
-          {(['el', 'ella', 'ambos'] as const).map((p) => {
-            const isActive = perfilActivo === p;
+          {(['el', 'ella', 'ambos'] as const).map((profileId) => {
+            const isActive = activeProfile === profileId;
 
             return (
               <button
-                key={p}
+                key={profileId}
                 onClick={() => {
-                  setPerfilActivo(p);
-                  setDiaActivo('Lunes');
-                  setTab('plan');
+                  setActiveProfile(profileId);
+                  setActiveDay('Lunes');
+                  setActiveTab('plan');
                 }}
                 className={`
                   px-3 py-1.5 sm:px-3.5 sm:py-2
@@ -135,14 +188,12 @@ export default function Header() {
                   border
                   ${
                     isActive
-                      ? `${ac.btnActive} shadow-sm scale-[1.03] border-transparent`
-                      : `${ac.btnInactive} border-slate-200 hover:bg-slate-100`
+                      ? `${accentColors.btnActive} shadow-sm scale-[1.03] border-transparent`
+                      : accentColors.btnInactive
                   }
                 `}
               >
-                {p === 'ambos'
-                  ? 'Ambos'
-                  : perfilesData[p]?.nombre || p}
+                {profileId === 'ambos' ? 'Ambos' : profilesData[profileId]?.nombre || profileId}
               </button>
             );
           })}

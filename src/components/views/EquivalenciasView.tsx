@@ -3,10 +3,13 @@ import { motion } from 'framer-motion';
 import { Repeat, User } from 'lucide-react';
 import EquivalenciasCard from '../EquivalenciasCard';
 import { useDiet } from '../../context/DietContext';
+import { getAccentColors } from '../../utils/theme';
 
 export default function EquivalenciasView() {
-  const { perfilActivo, perfilesData, equivalenciasData, ac, isAmbos } = useDiet();
+  const { perfilActivo, perfilesData, equivalenciasData, ac, isAmbos, isDarkMode } = useDiet();
   const [ambosSubTab, setAmbosSubTab] = useState<'el' | 'ella'>('el');
+  const elAccent = getAccentColors('el', isDarkMode);
+  const ellaAccent = getAccentColors('ella', isDarkMode);
 
   const equivalencias =
     perfilActivo && perfilActivo !== 'ambos'
@@ -24,13 +27,17 @@ export default function EquivalenciasView() {
     >
       {isAmbos ? (
         <>
-          <div className="lg:hidden flex bg-slate-100 p-1.5 rounded-2xl mx-auto max-w-xs shadow-inner w-full">
+          <div className={`lg:hidden flex p-1.5 rounded-2xl mx-auto max-w-xs shadow-inner w-full ${isDarkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
             <button
               onClick={() => setAmbosSubTab('el')}
               className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
                 ambosSubTab === 'el'
-                  ? 'bg-white shadow-sm text-blue-600'
-                  : 'text-slate-500'
+                  ? isDarkMode
+                    ? `${elAccent.bgLight} shadow-sm ${elAccent.text}`
+                    : 'bg-white shadow-sm text-blue-600'
+                  : isDarkMode
+                    ? 'text-slate-400'
+                    : 'text-slate-500'
               }`}
             >
               {perfilesData.el.nombre}
@@ -39,8 +46,12 @@ export default function EquivalenciasView() {
               onClick={() => setAmbosSubTab('ella')}
               className={`flex-1 py-2 text-sm font-bold rounded-xl transition-all ${
                 ambosSubTab === 'ella'
-                  ? 'bg-white shadow-sm text-rose-600'
-                  : 'text-slate-500'
+                  ? isDarkMode
+                    ? `${ellaAccent.bgLight} shadow-sm ${ellaAccent.text}`
+                    : 'bg-white shadow-sm text-rose-600'
+                  : isDarkMode
+                    ? 'text-slate-400'
+                    : 'text-slate-500'
               }`}
             >
               {perfilesData.ella.nombre}
@@ -49,16 +60,16 @@ export default function EquivalenciasView() {
 
           <div className="grid lg:grid-cols-2 gap-6">
             <div className={`${ambosSubTab === 'el' ? 'block' : 'hidden lg:block'} space-y-4`}>
-              <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
+              <div className={`rounded-2xl border bg-gradient-to-br p-4 ${isDarkMode ? `${elAccent.border} ${elAccent.bgGradientLight}` : 'border-blue-100 from-blue-50 to-indigo-50'}`}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-white/90 shadow-sm flex items-center justify-center">
-                    <User className="w-5 h-5 text-blue-600" />
+                  <div className={`w-10 h-10 rounded-2xl shadow-sm flex items-center justify-center ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
+                    <User className={`w-5 h-5 ${elAccent.text}`} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-blue-500">
+                    <p className={`text-[11px] uppercase tracking-[0.18em] font-bold ${elAccent.text}`}>
                       Equivalencias
                     </p>
-                    <h3 className="text-base sm:text-lg font-extrabold text-blue-900 truncate">
+                    <h3 className={`text-base sm:text-lg font-extrabold truncate ${elAccent.textDark}`}>
                       {perfilesData.el.nombre}
                     </h3>
                   </div>
@@ -72,28 +83,25 @@ export default function EquivalenciasView() {
                     equivalencia={eq}
                     delay={idx * 0.05}
                     accentClasses={{
-                      ...ac,
-                      bgLight: 'bg-blue-50',
-                      text: 'text-blue-600',
-                      tagBg: 'bg-blue-100',
-                      tagText: 'text-blue-700',
+                      ...elAccent,
                     }}
+                    isDarkMode={isDarkMode}
                   />
                 ))}
               </div>
             </div>
 
             <div className={`${ambosSubTab === 'ella' ? 'block' : 'hidden lg:block'} space-y-4`}>
-              <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 to-pink-50 p-4">
+              <div className={`rounded-2xl border bg-gradient-to-br p-4 ${isDarkMode ? `${ellaAccent.border} ${ellaAccent.bgGradientLight}` : 'border-rose-100 from-rose-50 to-pink-50'}`}>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-white/90 shadow-sm flex items-center justify-center">
-                    <User className="w-5 h-5 text-rose-600" />
+                  <div className={`w-10 h-10 rounded-2xl shadow-sm flex items-center justify-center ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
+                    <User className={`w-5 h-5 ${ellaAccent.text}`} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-rose-500">
+                    <p className={`text-[11px] uppercase tracking-[0.18em] font-bold ${ellaAccent.text}`}>
                       Equivalencias
                     </p>
-                    <h3 className="text-base sm:text-lg font-extrabold text-rose-900 truncate">
+                    <h3 className={`text-base sm:text-lg font-extrabold truncate ${ellaAccent.textDark}`}>
                       {perfilesData.ella.nombre}
                     </h3>
                   </div>
@@ -107,12 +115,9 @@ export default function EquivalenciasView() {
                     equivalencia={eq}
                     delay={idx * 0.05}
                     accentClasses={{
-                      ...ac,
-                      bgLight: 'bg-rose-50',
-                      text: 'text-rose-600',
-                      tagBg: 'bg-rose-100',
-                      tagText: 'text-rose-700',
+                      ...ellaAccent,
                     }}
+                    isDarkMode={isDarkMode}
                   />
                 ))}
               </div>
@@ -123,7 +128,7 @@ export default function EquivalenciasView() {
         <div className="space-y-4">
           <div className={`rounded-2xl border p-4 bg-gradient-to-br ${ac.bgGradientLight} ${ac.border}`}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-white/90 shadow-sm flex items-center justify-center">
+              <div className={`w-10 h-10 rounded-2xl shadow-sm flex items-center justify-center ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
                 <Repeat className={`w-5 h-5 ${ac.text}`} />
               </div>
               <div className="min-w-0">
@@ -144,6 +149,7 @@ export default function EquivalenciasView() {
                 equivalencia={eq}
                 delay={idx * 0.05}
                 accentClasses={ac}
+                isDarkMode={isDarkMode}
               />
             ))}
           </div>

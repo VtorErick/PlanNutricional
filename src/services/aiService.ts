@@ -1,224 +1,286 @@
-// Función auxiliar para llamar directamente a Gemini API en desarrollo local
-export async function callGeminiDirectly(payload: any, apiKey: string, modelName: string) {
-  const alignCompanionMeals = (
-    referencePlan: Record<string, Record<string, any[]>> = {},
-    targetPlan: Record<string, Record<string, any[]>> = {}
-  ) => {
-    const alignedPlan: Record<string, Record<string, any[]>> = { ...targetPlan };
+type GeminiPart =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } };
 
-    for (const [dia, momentosRef] of Object.entries(referencePlan)) {
-      const momentosTarget = alignedPlan[dia];
-      if (!momentosTarget) continue;
+const ALLOWED_ICONS = [
+  'Apple',
+  'Carrot',
+  'Wheat',
+  'Bean',
+  'Milk',
+  'Beef',
+  'Droplets',
+  'Candy',
+  'AlertTriangle',
+  'Heart',
+];
 
-      for (const [momentoKey, mealsRef] of Object.entries(momentosRef || {})) {
-        const mealsTarget = momentosTarget[momentoKey];
-        if (!Array.isArray(mealsRef) || !Array.isArray(mealsTarget)) continue;
+function alignCompanionMeals(
+  referencePlan: Record<string, Record<string, any[]>> = {},
+  targetPlan: Record<string, Record<string, any[]>> = {}
+) {
+  const alignedPlan: Record<string, Record<string, any[]>> = { ...targetPlan };
 
-        momentosTarget[momentoKey] = mealsTarget.map((targetMeal, idx) => {
-          const refMeal = mealsRef[idx];
-          if (!refMeal) return targetMeal;
-          return {
-            ...targetMeal,
-            nombre: refMeal.nombre,
-            detalle: refMeal.detalle,
-            tags: refMeal.tags,
-            super: refMeal.super,
-          };
-        });
-      }
+  for (const [day, referenceMoments] of Object.entries(referencePlan)) {
+    const targetMoments = alignedPlan[day];
+    if (!targetMoments) continue;
+
+    for (const [momentKey, referenceMeals] of Object.entries(referenceMoments || {})) {
+      const targetMeals = targetMoments[momentKey];
+      if (!Array.isArray(referenceMeals) || !Array.isArray(targetMeals)) continue;
+
+      targetMoments[momentKey] = targetMeals.map((targetMeal, index) => {
+        const referenceMeal = referenceMeals[index];
+        if (!referenceMeal) return targetMeal;
+
+        return {
+          ...targetMeal,
+          nombre: referenceMeal.nombre,
+          detalle: referenceMeal.detalle,
+          tags: referenceMeal.tags,
+          super: referenceMeal.super,
+        };
+      });
     }
+  }
 
-    return alignedPlan;
-  };
+  return alignedPlan;
+}
 
-  const buildSystemPrompt = (prefix: string) => {
-    const lowerPrefix = prefix.toLowerCase();
-    return `Eres un nutricionista clínico experto. Genera un plan semanal COMPLETO y VARIADO con comidas reales.
+function sanitizePromptPayload(payload: any) {
+  if (!payload || typeof payload !== 'object') return payload;
 
-ESTRUCTURA REQUERIDA - DEBES SEGUIR ESTA ESTRUCTURA EXACTA:
+  const nextPayload = { ...payload };
+
+  if (nextPayload.assessmentReportPdf) {
+    nextPayload.assessmentReportPdf = {
+      name: nextPayload.assessmentReportPdf.name,
+      mimeType: nextPayload.assessmentReportPdf.mimeType,
+    };
+  }
+
+  return nextPayload;
+}
+
+function getOptionalPdfPart(payload: any): GeminiPart[] {
+  const pdf = payload?.assessmentReportPdf;
+  if (!pdf?.dataBase64 || pdf?.mimeType !== 'application/pdf') {
+    return [];
+  }
+
+  return [
+    {
+      text:
+        'Archivo adjunto opcional: reporte corporal del usuario en PDF. Úsalo como contexto complementario junto con el cuestionario.',
+    },
+    {
+      inlineData: {
+        mimeType: pdf.mimeType,
+        data: pdf.dataBase64,
+      },
+    },
+  ];
+}
+
+function buildSystemPrompt(prefix: string) {
+  const lowerPrefix = prefix.toLowerCase();
+
+  return `Eres un nutricionista clínico experto. Genera un plan semanal completo, realista y consistente con el cuestionario.
+
+Debes responder SOLO con JSON válido y seguir exactamente esta estructura:
 
 1. perfil${prefix}: {
-    id: "${lowerPrefix}",
-    nombre: "${prefix === 'EL' ? 'El' : 'Ella'}",
-    perfil: "[PESO] kg • [ALTURA] m • [EDAD] años • IMC [VALOR]" (FORMATO EXACTO OBLIGATORIO: usa bullet point "•" como separador, peso en kg con número entero, altura en metros con 2 decimales, edad en años, IMC con 1 decimal. Ejemplo: "90 kg • 1.70 m • 32 años • IMC 31.1"),
-    meta: string,
-    metaCaloricaKcalDia: number (OBLIGATORIO, entero),
-    descripcion: string,
-    edad: number,
-    horariosTexto: string,
-    momentos: [{ key: "desayuno", label: "Desayuno", hora: "8:00 am" }, { key: "colacion_am", label: "Colación mañana", hora: "..." }, { key: "comida", label: "Comida", hora: "..." }, { key: "colacion_pm", label: "Colación tarde", hora: "..." }, { key: "cena", label: "Cena", hora: "..." }],
-    objetivosPorMomento: {
-      desayuno: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
-      colacion_am: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
-      comida: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
-      colacion_pm: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number },
-      cena: { frutas: number, verduras: number, cereales: number, leguminosas: number, lacteos: number, proteina: number, grasas: number }
+  id: "${lowerPrefix}",
+  nombre: "${prefix === 'EL' ? 'El' : 'Ella'}",
+  perfil: string,
+  meta: string,
+  metaCaloricaKcalDia: number,
+  descripcion: string,
+  edad: number,
+  horariosTexto: string,
+  notaSalud: string,
+  momentos: [{ key, label, hora }],
+  objetivosPorMomento: {
+    desayuno: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas },
+    colacion_am: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas },
+    comida: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas },
+    colacion_pm: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas },
+    cena: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas }
+  },
+  distribucionDiaria: [{ grupo, total, detalle }],
+  resumenPersonal: string[],
+}
+
+2. equivalencias${prefix}: [
+  { titulo: string, icon: enum[${ALLOWED_ICONS.join(', ')}], items: string[] }
+]
+
+3. suplementos${prefix}: [
+  {
+    name: string,
+    goalSupport: string,
+    whyItMayHelp: string,
+    howToUse: string,
+    timing: string,
+    notes: string,
+    caution: string
+  }
+]
+
+4. plan${prefix}: {
+  Lunes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Martes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Miércoles: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Jueves: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Viernes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Sábado: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Domingo: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] }
+}
+
+Reglas críticas:
+- No cambies id ni nombre.
+- Cada comida debe incluir: nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG.
+- Las calorías y macros deben ser enteros realistas.
+- Las equivalencias deben alinearse con los ingredientes usados en el plan.
+- Los suplementos deben ser EXTRA opcional. Nunca deben ser necesarios para cumplir calorías, macros o el objetivo.
+- No pongas suplementos dentro de plan${prefix}. El plan debe usar alimentos reales.
+- Si el usuario adjuntó PDF o medidas corporales, úsalos como contexto complementario.
+- Si hay conflicto entre el PDF y las respuestas manuales, prioriza las respuestas manuales del cuestionario.
+- Si targetProfile = "ambos" y recibes companionPlan, conserva las mismas preparaciones base por día, momento e índice, ajustando solo porciones y macros.
+- Responde solo con JSON, sin markdown ni texto adicional.`;
+}
+
+function buildUserPrompt(payload: any, prefix: string) {
+  return JSON.stringify({
+    profilePrefix: prefix,
+    questionnaire: sanitizePromptPayload(payload),
+    outputContract: {
+      rootKeys: [
+        `perfil${prefix}`,
+        `equivalencias${prefix}`,
+        `suplementos${prefix}`,
+        `plan${prefix}`,
+      ],
+      fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+      momentsSource: 'questionnaire.planConfig.selectedMoments',
+      mealsRequiredKeys: [
+        'nombre',
+        'porciones',
+        'detalle',
+        'tags',
+        'super',
+        'caloriasKcal',
+        'proteinaG',
+        'grasasG',
+      ],
+      supplementRequiredKeys: [
+        'name',
+        'goalSupport',
+        'whyItMayHelp',
+        'howToUse',
+        'timing',
+        'notes',
+        'caution',
+      ],
     },
-    distribucionDiaria: [
-      { grupo: "Frutas", total: number, detalle: "ej: 1 en desayuno + 1 en colación" },
-      { grupo: "Verduras", total: number, detalle: "ej: 2 desayuno + 2 comida" },
-      { grupo: "Cereales", total: number, detalle: "ej: 1 desayuno + 1 comida" },
-      { grupo: "Proteína", total: number, detalle: "ej: 3 desayuno + 4 comida" },
-      { grupo: "Grasas", total: number, detalle: "ej: 2 desayuno + 2 col. AM" },
-      { grupo: "lacteos", total: number, detalle: "ej: 1 en cena" },
-      { grupo: "Leguminosas", total: number, detalle: "ej: 3 veces por semana" }
-    ],
-    resumenPersonal: string[] (5-7 puntos clave específicos del plan),
-    notaSalud: string (nota sobre salud específica, requerida)
+  });
+}
+
+function buildRequestParts(prefix: string, payload: any): GeminiPart[] {
+  return [
+    { text: buildSystemPrompt(prefix) },
+    { text: buildUserPrompt(payload, prefix) },
+    ...getOptionalPdfPart(payload),
+  ];
+}
+
+function sanitizeAiJson(text: string) {
+  const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    throw new Error('Respuesta de IA no contiene JSON válido.');
   }
 
-2. equivalencias${prefix}: array con MINIMO 6-7 objetos, cada uno con:
-    { titulo: string, icon: enum[Carrot, Apple, Wheat, Bean, Milk, Beef, Droplets, Candy, AlertTriangle, Heart], items: string[] (5-10 items detallados con cantidad y gramos, formato: "1 manzana mediana (150g)", "1 taza de brócoli cocido (150g)", "30g de pechuga de pollo cocida") }
-   
-   Categorías requeridas: Frutas, Verduras, Cereales, Proteínas, Grasas, Leguminosas, Lácteos, y opcionalmente "Alimentos libres", "Antojos saludables", "Notas especiales"
-   
-   IMPORTANTE: Las equivalencias deben reflejar ingredientes REALES usados en los platillos del plan. Ejemplos de items:
-   - Frutas: ["1 manzana mediana (150g)", "1 pera mediana (150g)", "1 taza de fresas (150g)", "1 naranja mediana (180g)", "1 plátano pequeño (100g)", "1 taza de frutos rojos (150g)", "1 taza de melón picado (180g)"]
-   - Verduras: ["1 taza de brócoli cocido (150g)", "1 taza de espinacas crudas (30g)", "1 tomate grande (180g)", "1/2 pimiento morrón (100g)", "1 taza de pepino rallado (150g)", "1 taza de champiñones (100g)", "1/2 aguacate mediano (75g)"]
-   - Cereales: ["1 rebanada de pan integral (30g)", "1 tortilla de maíz (30g)", "1/2 taza de avena cocida (100g)", "1/2 taza de arroz integral cocido (90g)", "1/2 taza de quinoa cocida (90g)"]
-   - Proteínas: ["30g de pechuga de pollo cocida", "30g de carne de res magra cocida", "30g de pescado blanco cocido", "1 huevo entero (50g)", "2 claras de huevo", "1/4 taza de queso cottage (60g)", "30g de atún en agua", "2 rebanadas de jamón de pavo (30g)", "1/2 taza de tofu firme (75g)", "1 scoop de proteína en polvo (30g) - OPCIONAL"]
-   - Grasas: ["1 cucharadita de aceite de oliva (5ml)", "1/4 de aguacate mediano (30g)", "10 almendras (15g)", "6 nueces (15g)", "1 cucharada de semillas de chía (10g)", "1 cucharadita de crema de cacahuate (10g)"]
-   - Leguminosas: ["1/2 taza de frijoles cocidos (90g)", "1/2 taza de lentejas cocidas (90g)", "1/2 taza de garbanzos cocidos (90g)"]
-   - Lácteos: ["1 taza de leche descremada (240ml)", "1 taza de yogurt natural sin azúcar (200g)", "30g de queso panela o bajo en grasa", "1/4 taza de queso cottage (60g)"]
+  return cleaned.slice(firstBrace, lastBrace + 1);
+}
 
-3. plan${prefix}: objeto con EXACTAMENTE 7 días: Lunes, Martes, Miércoles, Jueves, Viernes, Sábado, Domingo. Cada día DEBE tener 5 momentos: desayuno, colacion_am, comida, colacion_pm, cena. Cada momento DEBE ser un array con EXACTAMENTE 3 comidas (NO vacío, NO null, NO undefined).
-
-REGLAS CRÍTICAS:
-- OBLIGATORIO: id debe ser "${lowerPrefix}" y nombre debe ser "${prefix === 'EL' ? 'El' : 'Ella'}" - NO usar otros nombres
-- **CRÍTICO - ESTRUCTURA DEL PLAN: El objeto plan${prefix} DEBE contener TODOS los días de la semana (Lunes a Domingo). NINGÚN día puede faltar. NINGÚN momento puede estar vacío. Cada momento DEBE tener EXACTAMENTE 3 opciones de comida.**
-- **CRÍTICO - VALIDACIÓN INTERNA: Antes de responder, verifica que cada día (Lunes-Martes-Miércoles-Jueves-Viernes-Sábado-Domingo) exista en plan${prefix} y que cada momento tenga un array con 3 comidas. Si falta algún día o momento, regénralo completamente.**
-- OBLIGATORIO: objetivosPorMomento debe incluir TODOS los grupos: frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas
-- OBLIGATORIO: distribucionDiaria debe calcular los totales correctamente sumando objetivosPorMomento
-- OBLIGATORIO: equivalencias debe tener MINIMO 6-7 categorías diferentes con items detallados
-- CRÍTICO: El perfil y meta deben reflejar los datos REALES del usuario. Si el usuario quiere "Perder grasa", NO describir su IMC como "bajo peso severo" - contextualiza correctamente basado en sus objetivos.
-- CRÍTICO: El peso meta debe ser razonable según el contexto. Si el usuario quiere ganar masa, el peso meta debe ser MAYOR que el actual. Si quiere perder grasa, debe ser MENOR o mantenerse.
-- Cada momento debe tener 3 opciones de comidas REALES y variadas usando ingredientes naturales
-- **PROHIBIDO: NO usar suplementos ni proteína en polvo en las comidas del plan. Usar solo alimentos reales como huevos, pollo, res, pescado, queso cottage, tofu, legumbres.**
-- La proteína en polvo solo puede aparecer en la sección de equivalencias como alternativa opcional, NUNCA en los platillos sugeridos.
-- Cada comida debe tener: nombre (específico), porciones (cantidad real), detalle (descripción), tags (array), super (ingredientes para comprar), caloriasKcal (number entero), proteinaG (number entero), grasasG (number entero)
-- **EJEMPLO DE ESTRUCTURA CORRECTA DEL PLAN:**
-  plan${prefix}: {
-    "Lunes": { "desayuno": [{nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG}, {nombre...}, {nombre...}], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
-    "Martes": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
-    "Miércoles": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
-    "Jueves": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
-    "Viernes": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
-    "Sábado": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] },
-    "Domingo": { "desayuno": [3 comidas], "colacion_am": [3 comidas], "comida": [3 comidas], "colacion_pm": [3 comidas], "cena": [3 comidas] }
-  }
-- **CRÍTICO - CONSISTENCIA DE PORTIONES:** Cada platillo sugerido DEBE cumplir EXACTAMENTE con los objetivosPorMomento del momento del día. Ejemplo real: si objetivosPorMomento.desayuno indica {cereales: 2, proteina: 2, grasas: 1, frutas: 1}, una opción válida sería: "Avena cocida (1 taza = 2 cereales), 2 huevos revueltos (2 proteínas), 1/4 aguacate (1 grasa), 1 plátano pequeño (1 fruta)". Otra opción: "2 tortillas de maíz (2 cereales), 90g pechuga de pollo (1 proteína) + 1 huevo (1 proteína), 10 almendras (1 grasa), 1 manzana (1 fruta)".**
-- **CRÍTICO - FORMATO NUTRICIONAL:** caloriasKcal y proteinaG son obligatorios en cada comida. Deben ser números enteros (NO string, NO null). Ejemplo: "caloriasKcal": 420, "proteinaG": 32.
-- **CRÍTICO - GRASAS:** grasasG es obligatorio en cada comida (number entero, no string, no null). Ejemplo: "grasasG": 14.
-- **CRÍTICO - REALISMO NUTRICIONAL:** caloriasKcal, proteinaG y grasasG deben ser REALISTAS para el alimento, técnica de cocción y porción sugeridos (usar referencias estándar tipo SMAE/USDA). PROHIBIDO devolver valores extremos incoherentes (ej: ensalada 900 kcal o pechuga 5g proteína).
-- **CRÍTICO - CONSISTENCIA INTERNA:** si ajustas porciones, ajusta proporcionalmente calorías y macros del platillo; evita copiar el mismo número en todas las comidas.
-- **CRÍTICO - OBJETIVO CALÓRICO DIARIO:** Calcula metaCaloricaKcalDia usando el contexto del usuario y su objetivo de peso (si dio targetWeightKg/objectiveTimeline úsalo activamente). Si no dio meta explícita, estima calorías para acercarse a peso ideal de forma segura.
-- **CRÍTICO - AJUSTE DE COMBINACIONES DEL DÍA:** Para cada día, la suma de caloriasKcal al elegir UNA opción por momento debe quedar cerca de metaCaloricaKcalDia (rango recomendado 90%-110%). Repite esta validación para las 3 combinaciones por índice (opción 1 del día, opción 2 del día, opción 3 del día).
-- **CRÍTICO - BALANCE ALREDEDOR DE LA META:** NO concentres todas las combinaciones por encima de la meta. Distribuye las 3 combinaciones diarias así: una ligeramente por debajo (~95%-99%), una muy cercana (~99%-101%) y una ligeramente por arriba (~101%-105%) de metaCaloricaKcalDia.
-- **CRÍTICO - LÁCTEOS CONSISTENTES:** Si objetivosPorMomento de un momento incluye lacteos > 0, el platillo DEBE incluir una fuente láctea real en porciones/detalle y también en super. Si lacteos = 0, NO inventes lácteos ocultos. Además, toda fuente láctea usada en plan debe aparecer en equivalencias y en la lista super del platillo correspondiente.
-- **CRÍTICO: TODOS los datos del cuestionario deben ser considerados activamente:**
-  - **trainingFrequency**: Si el usuario entrena 3-4 días o más, aumenta las porciones de proteína y cereales en días de entrenamiento, especialmente en la comida post-entreno.
-  - **additionalNotes (planConfig.additionalNotes)**: Lee y aplica las notas adicionales del usuario (preferencias especiales, alimentos a evitar, objetivos específicos, etc.).
-  - **portionMode**: Si es 'manual', usa EXACTAMENTE las porciones de manualPortions sin modificar. Si es 'auto', calcula porciones nutricionalmente apropiadas basadas en el perfil del usuario.
-  - **objectiveTimeline**: Ajusta la distribución de porciones y calorías para alcanzar la meta en el tiempo objetivo indicado (ej: 12 semanas).
-  - **cookingTime**: Sugiere platillos que se puedan preparar dentro del tiempo disponible (ej: si 15 min, prioriza ensaladas, smoothies, wraps; si 1 hora, permite recetas más elaboradas).
-  - **wakeTime/sleepTime**: Distribuye los momentos de comida considerando el horario de despertar y dormir. Si despierta tarde, ajusta el desayuno; si duerme temprano, evita cenas tardías.
-  - **favoriteCuisineStyles**: Prioriza platillos de los estilos de cocina seleccionados (Mexicana, Italiana, Asiática, etc.).
-- **CRÍTICO PARA PAREJA (targetProfile='ambos'): si en questionnaire.companionPlan hay un plan de referencia, mantén las MISMAS preparaciones base por día/momento/índice (mismo nombre, ingredientes y técnica) y ajusta solo porciones/calorías/macros del perfil actual. Objetivo: cocinar una sola base por tiempo de comida.**
-- Responde SOLO con JSON válido, omitiendo el markdown block de json.`;
+function buildScopedPayload(payload: any, profileData?: any) {
+  const { el, ella, ...basePayload } = payload || {};
+  return {
+    ...basePayload,
+    ...(profileData || {}),
   };
+}
 
-  const buildUserPrompt = (p: any, prefix: string) => {
-    return JSON.stringify({
-      profilePrefix: prefix,
-      questionnaire: p,
-      outputContract: {
-        rootKeys: [`perfil${prefix}`, `equivalencias${prefix}`, `plan${prefix}`],
-        fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
-        momentsSource: 'questionnaire.planConfig.selectedMoments',
-        mealsRequiredKeys: ['nombre', 'porciones', 'detalle', 'tags', 'super', 'caloriasKcal', 'proteinaG', 'grasasG']
-      }
-    });
-  };
-
-  const generateForProfile = async (prefix: string, profilePayload: any) => {
+export async function callGeminiDirectly(payload: any, apiKey: string, modelName: string) {
+  const generateForProfile = async (prefix: 'EL' | 'ELLA', profilePayload: any) => {
     const body = {
       contents: [
         {
           role: 'user',
-          parts: [
-            { text: buildSystemPrompt(prefix) },
-            { text: buildUserPrompt(profilePayload, prefix) }
-          ]
-        }
+          parts: buildRequestParts(prefix, profilePayload),
+        },
       ],
       generationConfig: {
-        temperature: 0.5,
-        responseMimeType: 'application/json'
-      }
+        temperature: 0.35,
+        responseMimeType: 'application/json',
+      },
     };
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
-    
-    const res = await fetch(url, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
 
-    const text = await res.text();
-    
-    if (!res.ok) {
-      let errorMsg = `Error ${res.status}`;
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      let errorMessage = `Error ${response.status}`;
+
       try {
-        const errJson = JSON.parse(text);
-        errorMsg = errJson?.error?.message || errorMsg;
-      } catch {}
-      throw new Error(`Gemini API Error: ${errorMsg}`);
+        const errorJson = JSON.parse(responseText);
+        errorMessage = errorJson?.error?.message || errorMessage;
+      } catch {
+        // Ignore JSON parse errors for API failures.
+      }
+
+      throw new Error(`Gemini API Error: ${errorMessage}`);
     }
 
-    const json = JSON.parse(text);
-    const generatedText = json?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // Sanitizar y parsear
-    const cleaned = generatedText.replace(/```json/gi, '').replace(/```/g, '').trim();
-    const first = cleaned.indexOf('{');
-    const last = cleaned.lastIndexOf('}');
-    if (first === -1 || last === -1) {
-      throw new Error('Respuesta de IA no contiene JSON válido');
-    }
-    const sanitized = cleaned.slice(first, last + 1);
-    
-    return JSON.parse(sanitized);
+    const responseJson = JSON.parse(responseText);
+    const generatedText =
+      responseJson?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text || '').join('\n') ||
+      '';
+
+    return JSON.parse(sanitizeAiJson(generatedText));
   };
 
   const target = payload?.targetProfile || 'ambos';
   let elData = null;
   let ellaData = null;
 
-  // Preparar payloads por perfil
-  const buildProfilePayload = (profileData: any) => ({
-    ...payload,
-    profileContext: profileData?.profileContext,
-    healthContext: profileData?.healthContext,
-    preferences: profileData?.preferences,
-    routine: profileData?.routine,
-  });
-
   if (target === 'el' || target === 'ambos') {
-    const elPayload = target === 'ambos' && payload.el ? buildProfilePayload(payload.el) : payload;
+    const elPayload = target === 'ambos' ? buildScopedPayload(payload, payload?.el) : payload;
     elData = await generateForProfile('EL', elPayload);
   }
 
   if (target === 'ella' || target === 'ambos') {
-    // Delay para evitar rate limit
     if (target === 'ambos') {
-      await new Promise(r => setTimeout(r, 4500));
+      await new Promise((resolve) => setTimeout(resolve, 4500));
     }
-    const ellaPayload = target === 'ambos' && payload.ella ? buildProfilePayload(payload.ella) : payload;
+
+    const ellaPayload = target === 'ambos' ? buildScopedPayload(payload, payload?.ella) : payload;
+
     if (target === 'ambos' && elData?.planEL) {
       ellaPayload.companionPlan = elData.planEL;
     }
+
     ellaData = await generateForProfile('ELLA', ellaPayload);
+
     if (target === 'ambos' && elData?.planEL && ellaData?.planELLA) {
       ellaData.planELLA = alignCompanionMeals(elData.planEL, ellaData.planELLA);
     }

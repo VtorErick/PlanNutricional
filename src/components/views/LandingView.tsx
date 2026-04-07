@@ -8,14 +8,16 @@ import {
   Calendar,
   ChefHat,
   ShoppingBasket,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// Constants
 const IMC_MIN = 16;
 const IMC_MAX = 45;
 
-// ─── IMC Horizontal Bar ───────────────────────────────────────────────────────
+// BMI progress bar
 function ImcBar({ imc, label }: { imc: number; label: string }) {
   const pct = Math.min(100, Math.max(0, ((imc - IMC_MIN) / (IMC_MAX - IMC_MIN)) * 100));
 
@@ -87,7 +89,7 @@ function ImcBar({ imc, label }: { imc: number; label: string }) {
   );
 }
 
-// ─── Biometric chip ───────────────────────────────────────────────────────────
+// Biometric chip
 function BioChip({
   icon: Icon,
   value,
@@ -110,7 +112,7 @@ function BioChip({
   );
 }
 
-// ─── Unified IA / Editar button ───────────────────────────────────────────────
+// Shared AI/edit button
 function PlanButton({
   label,
   onClick,
@@ -154,7 +156,7 @@ function PlanButton({
   );
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 function getImcData(text: string) {
   const m = text.match(/IMC\s*[:\-]?\s*([\d]+(?:[.,]\d+)?)/i);
   const imc = m ? Number(m[1].replace(',', '.')) : null;
@@ -174,29 +176,31 @@ function getBio(text: string) {
   };
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// Main view
 export default function LandingView() {
   const {
-    setPerfilActivo,
-    setDiaActivo,
-    setTab,
-    perfilesData,
+    setPerfilActivo: setActiveProfile,
+    setDiaActivo: setActiveDay,
+    setTab: setActiveTab,
+    perfilesData: profilesData,
     dataVersions,
-    setShowAdmin,
-    setShowQuestionnaire,
+    setShowAdmin: setIsAdminOpen,
+    setShowQuestionnaire: setIsQuestionnaireOpen,
     setQuestionnaireTargetProfile,
     geminiApiKey,
     geminiModel,
     setGeminiModel,
     refreshGeminiAvailability,
     notify,
+    isDarkMode,
+    setIsDarkMode,
   } = useDiet();
   const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(false);
 
   const elReady = dataVersions.el === 'custom';
   const ellaReady = dataVersions.ella === 'custom';
 
-  const ambos = useMemo(() => {
+  const sharedPlanStats = useMemo(() => {
     const norm = (v: string) =>
       v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
@@ -220,19 +224,19 @@ export default function LandingView() {
       return { meals, ing };
     };
 
-    const el = parse(perfilesData.el.plan);
-    const ella = parse(perfilesData.ella.plan);
-    const shared = [...el.meals].filter((n) => ella.meals.has(n)).length;
-    const common = [...el.ing].filter((i) => ella.ing.has(i)).length;
+    const el = parse(profilesData.el.plan);
+    const ella = parse(profilesData.ella.plan);
+    const shared = [...el.meals].filter((name) => ella.meals.has(name)).length;
+    const common = [...el.ing].filter((ingredient) => ella.ing.has(ingredient)).length;
     const union = new Set([...el.ing, ...ella.ing]).size;
 
     return { shared, pct: union > 0 ? Math.round((common / union) * 100) : 0 };
-  }, [perfilesData.el.plan, perfilesData.ella.plan]);
+  }, [profilesData.el.plan, profilesData.ella.plan]);
 
-  const elImc = getImcData(perfilesData.el.perfil);
-  const ellaImc = getImcData(perfilesData.ella.perfil);
-  const elBio = getBio(perfilesData.el.perfil);
-  const ellaBio = getBio(perfilesData.ella.perfil);
+  const elImc = getImcData(profilesData.el.perfil);
+  const ellaImc = getImcData(profilesData.ella.perfil);
+  const elBio = getBio(profilesData.el.perfil);
+  const ellaBio = getBio(profilesData.ella.perfil);
 
   const onKey = (fn: () => void) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -265,7 +269,7 @@ export default function LandingView() {
       }
 
       setQuestionnaireTargetProfile(target);
-      setShowQuestionnaire(true);
+      setIsQuestionnaireOpen(true);
     } finally {
       setCheckingQuestionnaire(false);
     }
@@ -283,11 +287,11 @@ export default function LandingView() {
       bgImg: '/images/hero.png',
       imc: elImc,
       bio: elBio,
-      meta: perfilesData.el.meta,
+      meta: profilesData.el.meta,
       onCard: () => {
-        setPerfilActivo('el');
-        setDiaActivo('Lunes');
-        setTab('plan');
+        setActiveProfile('el');
+        setActiveDay('Lunes');
+        setActiveTab('plan');
       },
       onIA: () => {
         void openQuestionnaireWithCheck('el');
@@ -304,11 +308,11 @@ export default function LandingView() {
       bgImg: '/images/meal-prep.png',
       imc: ellaImc,
       bio: ellaBio,
-      meta: perfilesData.ella.meta,
+      meta: profilesData.ella.meta,
       onCard: () => {
-        setPerfilActivo('ella');
-        setDiaActivo('Lunes');
-        setTab('plan');
+        setActiveProfile('ella');
+        setActiveDay('Lunes');
+        setActiveTab('plan');
       },
       onIA: () => {
         void openQuestionnaireWithCheck('ella');
@@ -317,10 +321,10 @@ export default function LandingView() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden">
-      {/* Ambient BG */}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col relative overflow-hidden">
+      {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.10),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#f3f6fb_48%,_#edf7f1_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.10),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#f3f6fb_48%,_#edf7f1_100%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_30%),linear-gradient(180deg,_#020617_0%,_#0f172a_48%,_#111827_100%)]" />
 
         <div className="absolute -top-24 -left-16 w-[28rem] h-[28rem] rounded-full bg-sky-300/20 blur-3xl" />
         <div className="absolute top-[10%] -right-20 w-[26rem] h-[26rem] rounded-full bg-emerald-300/20 blur-3xl" />
@@ -339,7 +343,7 @@ export default function LandingView() {
           }}
         />
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_60%,_rgba(15,23,42,0.04)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_60%,_rgba(15,23,42,0.04)_100%)] dark:bg-[radial-gradient(circle_at_center,_transparent_60%,_rgba(2,6,23,0.55)_100%)]" />
       </div>
 
       <div className="relative z-10 flex flex-col flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8">
@@ -348,10 +352,10 @@ export default function LandingView() {
           <motion.div
             initial={{ opacity: 0, x: -14 }}
             animate={{ opacity: 1, x: 0 }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/85 backdrop-blur-sm rounded-full shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70"
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/85 backdrop-blur-sm rounded-full shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 dark:bg-slate-900/85 dark:border-slate-800"
           >
             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.65)]" />
-            <span className="text-[11px] font-semibold tracking-wide text-slate-600 uppercase">
+            <span className="text-[11px] font-semibold tracking-wide text-slate-600 uppercase dark:text-slate-300">
               Bienvenido a su plan
             </span>
           </motion.div>
@@ -359,8 +363,18 @@ export default function LandingView() {
           <motion.button
             initial={{ opacity: 0, x: 14 }}
             animate={{ opacity: 1, x: 0 }}
-            onClick={() => setShowAdmin(true)}
-            className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-sm shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 text-slate-600 text-[11px] font-medium hover:bg-white transition-all shrink-0"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-sm shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 text-slate-600 text-[11px] font-medium hover:bg-white transition-all shrink-0 dark:bg-slate-900/85 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+          >
+            {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{isDarkMode ? 'Claro' : 'Oscuro'}</span>
+          </motion.button>
+
+          <motion.button
+            initial={{ opacity: 0, x: 14 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={() => setIsAdminOpen(true)}
+            className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-sm shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 text-slate-600 text-[11px] font-medium hover:bg-white transition-all shrink-0 dark:bg-slate-900/85 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
           >
             <Settings className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
             Opciones de respaldo y restauración
@@ -374,31 +388,31 @@ export default function LandingView() {
           transition={{ delay: 0.08 }}
           className="text-center pb-5"
         >
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight mb-2">
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight mb-2 dark:text-slate-50">
             Nutrición inteligente,{' '}
             <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
               sin complicaciones
             </span>
           </h1>
 
-          <p className="text-sm text-slate-500 max-w-md mx-auto mb-3">
+          <p className="text-sm text-slate-500 max-w-md mx-auto mb-3 dark:text-slate-300">
             Elige tu plan individual o armen su lista de compras juntos de forma automática.
           </p>
 
           <div className="flex flex-wrap justify-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-white/70 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-white/70 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600 dark:bg-slate-900/80 dark:border-slate-800 dark:text-slate-200">
               <ChefHat className="w-3.5 h-3.5 text-emerald-500" />
               Plan editable
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-white/70 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 border border-white/70 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600 dark:bg-slate-900/80 dark:border-slate-800 dark:text-slate-200">
               <ShoppingBasket className="w-3.5 h-3.5 text-blue-500" />
               Lista de compras
             </div>
           </div>
         </motion.div>
 
-        {/* Banners */}
+        {/* Status banners */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -406,13 +420,13 @@ export default function LandingView() {
           className="space-y-2 pb-4"
         >
           {!elReady && !ellaReady && (
-            <div className="rounded-2xl border border-violet-200/80 bg-violet-50/85 shadow-[0_10px_30px_rgba(139,92,246,0.08)] px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs font-semibold text-slate-500 text-center leading-relaxed">
+            <div className="rounded-2xl border border-violet-200/80 dark:border-violet-900/60 bg-violet-50/85 dark:bg-violet-950/35 shadow-[0_10px_30px_rgba(139,92,246,0.08)] dark:shadow-[0_12px_30px_rgba(54,11,84,0.28)] px-4 py-3 backdrop-blur-sm">
+              <p className="text-xs font-semibold text-violet-800 dark:text-violet-200 text-center leading-relaxed">
                 Aún no hay planes generados.
                 <br />
                 Comienza con <Sparkles className="w-3 h-3 inline mx-1" />
-                <span className="font-bold italic text-base">Personalizar mi plan</span>.
-                <span className="block text-[11px] font-medium text-slate-400 mt-1">
+                <span className="font-bold italic text-base text-violet-900 dark:text-violet-100">Personalizar mi plan</span>.
+                <span className="block text-[11px] font-medium text-violet-600 dark:text-violet-300 mt-1">
                   También puedes personalizar ambos para obtener más comidas compartidas.
                 </span>
               </p>
@@ -420,17 +434,17 @@ export default function LandingView() {
           )}
 
           {elReady !== ellaReady && (
-            <div className="rounded-2xl border border-violet-200/80 bg-violet-50/85 shadow-[0_10px_30px_rgba(139,92,246,0.08)] px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs font-semibold text-slate-500 text-center leading-relaxed">
+            <div className="rounded-2xl border border-violet-200/80 dark:border-violet-900/60 bg-violet-50/85 dark:bg-violet-950/35 shadow-[0_10px_30px_rgba(139,92,246,0.08)] dark:shadow-[0_12px_30px_rgba(54,11,84,0.28)] px-4 py-3 backdrop-blur-sm">
+              <p className="text-xs font-semibold text-violet-800 dark:text-violet-200 text-center leading-relaxed">
                 <Sparkles className="w-3 h-3 inline mr-1" />
-                <span className="font-bold italic text-base">{elReady ? 'El' : 'Ella'}</span>{' '}
+                <span className="font-bold italic text-base text-violet-900 dark:text-violet-100">{elReady ? 'El' : 'Ella'}</span>{' '}
                 ya tiene un plan listo.
                 <br />
                 Ahora puedes generar el de{' '}
-                <span className="font-bold italic text-base">{elReady ? 'Ella' : 'El'}</span>{' '}
+                <span className="font-bold italic text-base text-violet-900 dark:text-violet-100">{elReady ? 'Ella' : 'El'}</span>{' '}
                 desde <Sparkles className="w-3 h-3 inline mx-1" />
-                <span className="font-bold italic text-base">Personalizar mi plan</span>.
-                <span className="block text-[11px] font-medium text-slate-400 mt-1">
+                <span className="font-bold italic text-base text-violet-900 dark:text-violet-100">Personalizar mi plan</span>.
+                <span className="block text-[11px] font-medium text-violet-600 dark:text-violet-300 mt-1">
                   O personaliza ambos para obtener más comidas compartidas.
                 </span>
               </p>
@@ -450,9 +464,9 @@ export default function LandingView() {
           )}
         </motion.div>
 
-        {/* Cards */}
+        {/* Profile cards */}
         <div className="flex flex-col gap-4 pb-10">
-          {/* El + Ella */}
+          {/* Individual profiles */}
           <div className="grid grid-cols-2 gap-4 items-stretch">
             {profiles.map((p, i) => (
               <motion.div
@@ -538,7 +552,7 @@ export default function LandingView() {
             ))}
           </div>
 
-          {/* Ambos */}
+          {/* Combined view */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
@@ -548,14 +562,14 @@ export default function LandingView() {
             role="button"
             tabIndex={0}
             onClick={() => {
-              setPerfilActivo('ambos');
-              setDiaActivo('Lunes');
-              setTab('plan');
+              setActiveProfile('ambos');
+              setActiveDay('Lunes');
+              setActiveTab('plan');
             }}
             onKeyDown={onKey(() => {
-              setPerfilActivo('ambos');
-              setDiaActivo('Lunes');
-              setTab('plan');
+              setActiveProfile('ambos');
+              setActiveDay('Lunes');
+              setActiveTab('plan');
             })}
             className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#10b981] via-[#059669] to-[#0f766e] shadow-[0_18px_44px_rgba(15,23,42,0.16)] hover:shadow-[0_24px_56px_rgba(15,23,42,0.2)] hover:shadow-[0_22px_60px_rgba(16,185,129,0.24)] transition-all duration-300 cursor-pointer ring-1 ring-white/10"
           >
@@ -598,8 +612,8 @@ export default function LandingView() {
 
                 <div className="flex flex-wrap lg:flex-nowrap justify-start lg:justify-end gap-3">
                   {[
-                    { val: String(ambos.shared), label: 'Compartidas', sub: 'comidas' },
-                    { val: `${ambos.pct}%`, label: 'Sinergia', sub: 'ingredientes' },
+                    { val: String(sharedPlanStats.shared), label: 'Compartidas', sub: 'comidas' },
+                    { val: `${sharedPlanStats.pct}%`, label: 'Sinergia', sub: 'ingredientes' },
                   ].map(({ val, label, sub }) => (
                     <div
                       key={label}

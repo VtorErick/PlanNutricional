@@ -1,6 +1,6 @@
 @import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -42,6 +42,13 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.dark body {
+  background: #020617;
+  color: #e2e8f0;
 }
 
 /* Smooth transitions between profiles */
@@ -66,6 +73,9 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--accent-300); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-400); }
+
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
 /* Hide scrollbar on horizontal scroll areas (day selector) */
 .overflow-x-auto {

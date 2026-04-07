@@ -6,6 +6,10 @@ interface DialogOptions {
 }
 
 function createBaseDialog({ title, message, confirmText = 'Aceptar', cancelText }: DialogOptions) {
+  if (typeof document === 'undefined' || !document.body) {
+    throw new Error('Dialog APIs are unavailable in the current environment.');
+  }
+
   const overlay = document.createElement('div');
   overlay.style.position = 'fixed';
   overlay.style.inset = '0';
@@ -80,7 +84,15 @@ function createBaseDialog({ title, message, confirmText = 'Aceptar', cancelText 
 
 export function showAppAlert(options: DialogOptions): Promise<void> {
   return new Promise((resolve) => {
-    const { overlay, confirmBtn } = createBaseDialog(options);
+    let dialog;
+    try {
+      dialog = createBaseDialog(options);
+    } catch {
+      window.alert(`${options.title}\n\n${options.message}`);
+      resolve();
+      return;
+    }
+    const { overlay, confirmBtn } = dialog;
 
     const close = () => {
       overlay.remove();
@@ -98,11 +110,18 @@ export function showAppAlert(options: DialogOptions): Promise<void> {
 
 export function showAppConfirm(options: DialogOptions): Promise<boolean> {
   return new Promise((resolve) => {
-    const { overlay, confirmBtn, cancelBtn } = createBaseDialog({
-      ...options,
-      confirmText: options.confirmText || 'Confirmar',
-      cancelText: options.cancelText || 'Cancelar',
-    });
+    let dialog;
+    try {
+      dialog = createBaseDialog({
+        ...options,
+        confirmText: options.confirmText || 'Confirmar',
+        cancelText: options.cancelText || 'Cancelar',
+      });
+    } catch {
+      resolve(window.confirm(`${options.title}\n\n${options.message}`));
+      return;
+    }
+    const { overlay, confirmBtn, cancelBtn } = dialog;
 
     const close = (result: boolean) => {
       overlay.remove();
