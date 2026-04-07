@@ -7,10 +7,23 @@ import { perfilesData as origPerfilesData, rawData } from '../../data';
 export default function AdminLayout() {
   const {
     setShowAdmin,
+    setPerfilActivo,
+    setDiaActivo,
+    setTab,
     geminiApiKey, setGeminiApiKey,
     geminiModel, setGeminiModel,
     customData, setCustomData,
     dataVersions, setDataVersions,
+    setSelecciones,
+    setComprasCheck,
+    setQuestionnaireTargetProfile,
+    setQuestionnaireStepIdx,
+    setQuestionnaireEl,
+    setQuestionnaireElla,
+    setQuestionnairePortionMode,
+    setQuestionnaireManualPortions,
+    setQuestionnaireAdditionalNotes,
+    confirmAction,
     notify,
   } = useDiet();
 
@@ -65,6 +78,55 @@ export default function AdminLayout() {
 
   const recommendedModel = 'gemini-2.0-flash';
   const advancedInputValue = geminiApiKey || localStorage.getItem('geminiApiKey') || '';
+
+  const resetAppState = async () => {
+    const accepted = await confirmAction(
+      'Restablecer app',
+      'Esto borrará datos locales, cookies y configuraciones guardadas. ¿Deseas continuar?'
+    );
+    if (!accepted) return;
+
+    localStorage.clear();
+    sessionStorage.clear();
+
+    document.cookie.split(';').forEach((cookie) => {
+      const eqPos = cookie.indexOf('=');
+      const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+      document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    });
+
+    setCustomData({});
+    setDataVersions({ el: 'original', ella: 'original' });
+    setSelecciones({});
+    setComprasCheck({});
+    setGeminiApiKey('');
+    setGeminiModel('gemini-2.5-flash');
+    setPerfilActivo(null);
+    setDiaActivo('Lunes');
+    setTab('plan');
+    setQuestionnaireTargetProfile('ambos');
+    setQuestionnaireStepIdx(0);
+    setQuestionnaireEl({
+      age: '', currentWeightKg: '70', heightCm: '165', targetWeightKg: '',
+      objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
+      medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
+      dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
+      wakeTime: '', sleepTime: '', trainingFrequency: ''
+    });
+    setQuestionnaireElla({
+      age: '', currentWeightKg: '60', heightCm: '160', targetWeightKg: '',
+      objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
+      medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
+      dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
+      wakeTime: '', sleepTime: '', trainingFrequency: ''
+    });
+    setQuestionnairePortionMode('auto');
+    setQuestionnaireManualPortions({});
+    setQuestionnaireAdditionalNotes('');
+
+    await notify('Aplicación restablecida', '✅ Se limpiaron datos locales y la app volvió al estado inicial.');
+    window.location.reload();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col">
@@ -375,6 +437,18 @@ export default function AdminLayout() {
                 notify={notify}
                 confirmAction={() => Promise.resolve(true)}
               />
+            </div>
+
+            <div className="mt-5 bg-white rounded-3xl p-4 border border-rose-200 shadow-sm">
+              <p className="text-xs text-slate-500 mb-3">
+                Si quieres empezar desde cero en este dispositivo, puedes limpiar almacenamiento local y cookies.
+              </p>
+              <button
+                onClick={resetAppState}
+                className="w-full sm:w-auto bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98]"
+              >
+                Restablecer app (borrar datos locales)
+              </button>
             </div>
           </section>
         )}
