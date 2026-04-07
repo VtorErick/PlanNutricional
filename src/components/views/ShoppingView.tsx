@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, CheckCircle2, PackageCheck, ClipboardList } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, PackageCheck, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 
 export default function ShoppingView() {
   const { selecciones, perfilActivo, perfilesData, comprasCheck, setComprasCheck } = useDiet();
+  const [expandedIngredients, setExpandedIngredients] = useState<Record<string, boolean>>({});
 
   const listaCompras = useMemo(() => {
     const map: Record<string, { texto: string; perfil: string }[]> = {};
@@ -136,12 +137,6 @@ export default function ShoppingView() {
                 <motion.div
                   whileTap={{ scale: 0.985 }}
                   key={item.ingrediente}
-                  onClick={() =>
-                    setComprasCheck((prev) => ({
-                      ...prev,
-                      [item.ingrediente]: !prev[item.ingrediente],
-                    }))
-                  }
                   className={`group rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden flex items-stretch ${
                     isChecked
                       ? 'bg-slate-50 border-emerald-200 opacity-70'
@@ -158,15 +153,23 @@ export default function ShoppingView() {
 
                   <div className="p-4 flex-1 min-w-0">
                     <div className="flex items-start gap-3 mb-3">
-                      <div
-                        className={`w-6 h-6 rounded-full border-2 mt-0.5 flex-shrink-0 transition-all duration-300 flex items-center justify-center ${
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setComprasCheck((prev) => ({
+                            ...prev,
+                            [item.ingrediente]: !prev[item.ingrediente],
+                          }))
+                        }
+                        className={`w-7 h-7 rounded-full border-2 mt-0.5 flex-shrink-0 transition-all duration-300 flex items-center justify-center ${
                           isChecked
                             ? 'bg-emerald-500 border-emerald-500 scale-110'
                             : 'border-slate-200 group-hover:border-emerald-500 bg-slate-50'
                         }`}
+                        aria-label={`${isChecked ? 'Desmarcar' : 'Marcar'} ingrediente ${item.ingrediente}`}
                       >
                         {isChecked && <CheckCircle2 className="w-4 h-4 text-white" />}
-                      </div>
+                      </button>
 
                       <div className="min-w-0 flex-1">
                         <h3
@@ -182,36 +185,59 @@ export default function ShoppingView() {
                           lo ocupa{item.usos.length > 1 ? 'n' : ''}
                         </p>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedIngredients((prev) => ({
+                            ...prev,
+                            [item.ingrediente]: !prev[item.ingrediente],
+                          }))
+                        }
+                        className="flex-shrink-0 px-2 py-1 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-500 bg-white active:scale-95"
+                        aria-label={`${expandedIngredients[item.ingrediente] ? 'Colapsar' : 'Expandir'} comidas de ${item.ingrediente}`}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {expandedIngredients[item.ingrediente] ? 'Ocultar' : 'Ver'}
+                          {expandedIngredients[item.ingrediente] ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
+                        </span>
+                      </button>
                     </div>
 
-                    <div className="space-y-2 ml-9">
-                      {item.usos.map((uso, idx) => (
-                        <div
-                          key={idx}
-                          className={`rounded-xl p-2.5 flex gap-2 items-start ${
-                            isChecked ? 'bg-slate-100/70' : 'bg-slate-50'
-                          }`}
-                        >
-                          <span
-                            className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${
-                              uso.perfil === 'el'
-                                ? 'bg-blue-100/80 text-blue-700'
-                                : 'bg-rose-100/80 text-rose-700'
+                    {expandedIngredients[item.ingrediente] && (
+                      <div className="space-y-2 ml-9">
+                        {item.usos.map((uso, idx) => (
+                          <div
+                            key={idx}
+                            className={`rounded-xl p-2.5 flex gap-2 items-start ${
+                              isChecked ? 'bg-slate-100/70' : 'bg-slate-50'
                             }`}
                           >
-                            {uso.perfil === 'el' ? 'Él' : 'Ella'}
-                          </span>
+                            <span
+                              className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${
+                                uso.perfil === 'el'
+                                  ? 'bg-blue-100/80 text-blue-700'
+                                  : 'bg-rose-100/80 text-rose-700'
+                              }`}
+                            >
+                              {uso.perfil === 'el' ? 'Él' : 'Ella'}
+                            </span>
 
-                          <span
-                            className={`font-medium leading-snug break-words text-[11px] sm:text-xs ${
-                              isChecked ? 'text-slate-400' : 'text-slate-600'
-                            }`}
-                          >
-                            {uso.texto}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                            <span
+                              className={`font-medium leading-snug break-words text-[11px] sm:text-xs ${
+                                isChecked ? 'text-slate-400' : 'text-slate-600'
+                              }`}
+                            >
+                              {uso.texto}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               );

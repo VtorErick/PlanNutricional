@@ -64,6 +64,8 @@ interface Props {
   errorMessage?: string;
   geminiModel?: string;
   setGeminiModel?: (m: string) => void;
+  geminiApiKey?: string;
+  setGeminiApiKey?: (k: string) => void;
   lastGeneratedData?: any;
   targetProfile: TargetProfile;
   setTargetProfile: (p: TargetProfile) => void;
@@ -476,6 +478,8 @@ export default function NutritionQuestionnaire({
   errorMessage,
   geminiModel,
   setGeminiModel,
+  geminiApiKey,
+  setGeminiApiKey,
   lastGeneratedData,
   targetProfile,
   setTargetProfile,
@@ -494,6 +498,7 @@ export default function NutritionQuestionnaire({
 }: Props) {
   const [direction, setDirection] = useState(1);
   const [localModel, setLocalModel] = useState(geminiModel || 'gemini-2.0-flash');
+  const [localApiKey, setLocalApiKey] = useState(geminiApiKey || '');
   const [timePickerState, setTimePickerState] = useState<{
     open: boolean;
     profile: 'el' | 'ella' | null;
@@ -508,6 +513,10 @@ export default function NutritionQuestionnaire({
   useEffect(() => {
     if (geminiModel) setLocalModel(geminiModel);
   }, [geminiModel]);
+
+  useEffect(() => {
+    setLocalApiKey(geminiApiKey || '');
+  }, [geminiApiKey]);
 
   const releaseScreenWakeLock = useCallback(async () => {
     if (!wakeLockRef.current) return;
@@ -572,6 +581,17 @@ export default function NutritionQuestionnaire({
   }, [releaseScreenWakeLock]);
 
   const steps = useMemo(() => buildSteps(targetProfile), [targetProfile]);
+  const showApiRecovery = useMemo(() => {
+    const msg = (errorMessage || '').toLowerCase();
+    return !!msg && (
+      msg.includes('gemini') ||
+      msg.includes('api') ||
+      msg.includes('fetch') ||
+      msg.includes('network') ||
+      msg.includes('429') ||
+      msg.includes('quota')
+    );
+  }, [errorMessage]);
   const currentStep = steps[stepIdx] ?? steps[0];
   const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
   const stepsLeft = Math.max(steps.length - (stepIdx + 1), 0);
@@ -1528,6 +1548,38 @@ export default function NutritionQuestionnaire({
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 leading-relaxed">
               {errorMessage}
             </div>
+          )}
+
+          {showApiRecovery && (
+            <CardSection title="Clave de respaldo (si falló Google/Gemini)">
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 space-y-2">
+                <p className="text-[11px] text-indigo-700">
+                  Si tienes otra API key, agrégala aquí para reintentar sin salir del cuestionario.
+                </p>
+                <input
+                  type="password"
+                  value={localApiKey}
+                  onChange={(e) => setLocalApiKey(e.target.value)}
+                  placeholder="Pega tu API key de Gemini"
+                  className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-indigo-300"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGeminiApiKey?.(localApiKey.trim());
+                    localStorage.setItem('geminiApiKey', localApiKey.trim());
+                    try {
+                      (import.meta as any).env.GEMINI_API_KEY = localApiKey.trim();
+                    } catch {
+                      // ignore if env is readonly
+                    }
+                  }}
+                  className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 active:scale-[.98]"
+                >
+                  Guardar clave para reintentar
+                </button>
+              </div>
+            </CardSection>
           )}
 
           {errorMessage && (
