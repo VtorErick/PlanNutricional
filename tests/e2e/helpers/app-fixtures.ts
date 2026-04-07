@@ -67,9 +67,10 @@ export async function seedGeneratedPlans(
   const selectedDays = options.selectedDays ?? [];
   const selecciones = buildSelectionSeed(selectedDays);
 
+  await resetAppStorage(page);
+
   await page.addInitScript(
     ({ customData, dataVersions, seleccionesDieta }) => {
-      window.localStorage.clear();
       window.localStorage.setItem('darkMode', JSON.stringify(false));
       window.localStorage.setItem('customData', JSON.stringify(customData));
       window.localStorage.setItem('dataVersions', JSON.stringify(dataVersions));

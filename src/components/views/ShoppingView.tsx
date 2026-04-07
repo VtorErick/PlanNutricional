@@ -153,11 +153,17 @@ export default function ShoppingView() {
             >
               <div className="mb-1 flex items-center gap-2">
                 <ClipboardList className="w-4 h-4 text-emerald-600" />
-                <span className="text-[11px] uppercase tracking-[0.14em] font-bold text-emerald-700">
+                <span
+                  className={`text-[11px] uppercase tracking-[0.14em] font-bold ${
+                    isDarkMode ? 'text-emerald-300' : 'text-emerald-700'
+                  }`}
+                >
                   Total
                 </span>
               </div>
-              <p className="text-xl font-black text-emerald-900">{shoppingList.length}</p>
+              <p className={`text-xl font-black ${isDarkMode ? 'text-emerald-100' : 'text-emerald-900'}`}>
+                {shoppingList.length}
+              </p>
             </div>
 
             <div
@@ -169,11 +175,17 @@ export default function ShoppingView() {
             >
               <div className="mb-1 flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4 text-amber-600" />
-                <span className="text-[11px] uppercase tracking-[0.14em] font-bold text-amber-700">
+                <span
+                  className={`text-[11px] uppercase tracking-[0.14em] font-bold ${
+                    isDarkMode ? 'text-amber-300' : 'text-amber-700'
+                  }`}
+                >
                   Pendientes
                 </span>
               </div>
-              <p className="text-xl font-black text-amber-900">{pendingCount}</p>
+              <p className={`text-xl font-black ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
+                {pendingCount}
+              </p>
             </div>
 
             <div
@@ -183,11 +195,17 @@ export default function ShoppingView() {
             >
               <div className="mb-1 flex items-center gap-2">
                 <PackageCheck className="w-4 h-4 text-blue-600" />
-                <span className="text-[11px] uppercase tracking-[0.14em] font-bold text-blue-700">
+                <span
+                  className={`text-[11px] uppercase tracking-[0.14em] font-bold ${
+                    isDarkMode ? 'text-sky-300' : 'text-blue-700'
+                  }`}
+                >
                   Marcados
                 </span>
               </div>
-              <p className="text-xl font-black text-blue-900">{checkedCount}</p>
+              <p className={`text-xl font-black ${isDarkMode ? 'text-sky-100' : 'text-blue-900'}`}>
+                {checkedCount}
+              </p>
             </div>
           </div>
         )}
