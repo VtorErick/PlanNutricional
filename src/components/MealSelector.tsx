@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Utensils } from 'lucide-react';
-import type { MealItem } from '../data';
+import { PencilLine, RotateCcw, Utensils } from 'lucide-react';
+import type { MealItem } from '../types';
+import { isMealEdited } from '../utils/mealEditing';
 
 interface MealSelectorProps {
   perfil: string;
@@ -9,6 +10,8 @@ interface MealSelectorProps {
   momento: string;
   selecciones: Record<string, boolean>;
   onToggle: (perfil: string, dia: string, momento: string, nombre: string) => void;
+  onEditMeal?: (meal: MealItem) => void;
+  onRestoreMeal?: (meal: MealItem) => void;
   accentClasses: Record<string, string>;
   porciones?: { key: string; label: string; icon: string; cantidad: number }[];
   isDarkMode?: boolean;
@@ -21,6 +24,8 @@ export default function MealSelector({
   momento,
   selecciones,
   onToggle,
+  onEditMeal,
+  onRestoreMeal,
   accentClasses,
   porciones = [],
   isDarkMode = false,
@@ -29,17 +34,25 @@ export default function MealSelector({
     <div className="grid gap-3">
       {comidas.map((comida, idx) => {
         const esSeleccionada = selecciones[`${perfil}-${dia}-${momento}-${comida.nombre}`];
+        const edited = isMealEdited(comida);
 
         return (
-          <motion.button
-            key={comida.nombre}
-            type="button"
+          <motion.div
+            key={`${comida.nombre}-${idx}`}
+            role="button"
+            tabIndex={0}
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             whileTap={{ scale: 0.985 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30, delay: idx * 0.04 }}
             onClick={() => onToggle(perfil, dia, momento, comida.nombre)}
-            className={`relative overflow-hidden rounded-[22px] sm:rounded-[26px] transition-all duration-300 text-left w-full group ${
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onToggle(perfil, dia, momento, comida.nombre);
+              }
+            }}
+            className={`relative overflow-hidden rounded-[22px] sm:rounded-[26px] transition-all duration-300 text-left w-full group cursor-pointer ${
               esSeleccionada
                 ? `${accentClasses.bgLight} border-2 ${accentClasses.borderAccent} shadow-[0_8px_28px_rgb(0,0,0,0.05)]`
                 : isDarkMode
@@ -47,49 +60,88 @@ export default function MealSelector({
                   : 'bg-white border border-slate-100/90 shadow-sm hover:border-slate-200 hover:shadow-md'
             }`}
           >
-            {esSeleccionada && (
+            {esSeleccionada ? (
               <div className={`absolute inset-x-0 top-0 h-1 pointer-events-none ${isDarkMode ? 'bg-white/10' : 'bg-white/30'}`} />
-            )}
+            ) : null}
 
             <div className="relative p-4 sm:p-5 space-y-3">
-              {/* Card header */}
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
-                    <h4 className={`font-black text-[15px] sm:text-base tracking-tight leading-snug break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                      {comida.nombre}
-                    </h4>
+                      <div className="min-w-0">
+                        <h4 className={`font-black text-[15px] sm:text-base tracking-tight leading-snug break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                          {comida.nombre}
+                        </h4>
+                      </div>
 
-                    <div
-                      className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
-                        esSeleccionada
-                          ? `${accentClasses.bg} ${accentClasses.borderAccent} scale-105`
-                          : isDarkMode
-                            ? 'border-slate-700 group-hover:border-slate-500 bg-slate-900'
-                            : 'border-slate-200 group-hover:border-slate-300 bg-slate-50'
-                      }`}
-                    >
-                      {esSeleccionada && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {edited && onRestoreMeal ? (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRestoreMeal(comida);
+                          }}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                            isDarkMode
+                              ? `${accentClasses.border} bg-slate-950 text-slate-100 hover:bg-slate-900`
+                              : `${accentClasses.border} bg-white text-slate-700 hover:bg-slate-50`
+                          }`}
+                          aria-label={`Restaurar ${comida.nombre}`}
                         >
-                          <svg
-                            className="w-4 h-4 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={3}
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                      ) : null}
+
+                      {onEditMeal ? (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onEditMeal(comida);
+                          }}
+                          className={`w-8 h-8 rounded-full border flex items-center justify-center transition ${
+                            isDarkMode
+                              ? 'border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500'
+                              : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                          }`}
+                          aria-label={`Editar ${comida.nombre}`}
+                        >
+                          <PencilLine className="w-3.5 h-3.5" />
+                        </button>
+                      ) : null}
+
+                      <div
+                        className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                          esSeleccionada
+                            ? `${accentClasses.bg} ${accentClasses.borderAccent} scale-105`
+                            : isDarkMode
+                              ? 'border-slate-700 group-hover:border-slate-500 bg-slate-900'
+                              : 'border-slate-200 group-hover:border-slate-300 bg-slate-50'
+                        }`}
+                      >
+                        {esSeleccionada ? (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </motion.div>
-                      )}
+                            <svg
+                              className="w-4 h-4 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={3}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </motion.div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
 
@@ -98,22 +150,22 @@ export default function MealSelector({
                   </p>
                   <p className={`text-[11px] sm:text-xs mt-2 font-bold ${accentClasses.text}`}>
                     {comida.caloriasKcal || 0} kcal
-                    {typeof comida.proteinaG === 'number' ? ` · ${comida.proteinaG}g proteína` : ''}
+                    {typeof comida.proteinaG === 'number' ? ` · ${comida.proteinaG}g proteina` : ''}
+                    {typeof comida.grasasG === 'number' ? ` · ${comida.grasasG}g grasas` : ''}
                   </p>
                 </div>
               </div>
 
-              {/* Portion badges */}
               <div className="pt-0.5">
                 {porciones.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {porciones.map((item) => (
                       <span
                         key={`${comida.nombre}-${item.key}-${item.cantidad}`}
                         title={`${item.label} ${item.cantidad}`}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-[11px] font-bold`}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-[10px] font-bold`}
                       >
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[12px] shadow-sm ${isDarkMode ? 'bg-slate-900 text-slate-100 shadow-black/30' : 'bg-white/70 shadow-slate-200/50'}`}>
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shadow-sm ${isDarkMode ? 'bg-slate-900 text-slate-100 shadow-black/30' : 'bg-white/70 shadow-slate-200/50'}`}>
                           {item.icon}
                         </span>
                         <span>x{item.cantidad}</span>
@@ -122,7 +174,7 @@ export default function MealSelector({
                   </div>
                 ) : (
                   <div
-                    className={`flex items-center gap-3 text-xs rounded-[16px] p-3 border shadow-sm ${
+                    className={`flex items-center gap-2 text-[11px] rounded-[14px] px-2.5 py-2 border shadow-sm ${
                       esSeleccionada
                         ? isDarkMode
                           ? `bg-slate-900/80 ${accentClasses.border}`
@@ -132,10 +184,8 @@ export default function MealSelector({
                           : 'bg-white border-slate-100'
                     }`}
                   >
-                    <div
-                      className={`w-8 h-8 rounded-[12px] ${accentClasses.bgLight} flex items-center justify-center flex-shrink-0`}
-                    >
-                      <Utensils className={`w-4 h-4 ${accentClasses.text}`} />
+                    <div className={`w-7 h-7 rounded-[10px] ${accentClasses.bgLight} flex items-center justify-center flex-shrink-0`}>
+                      <Utensils className={`w-3.5 h-3.5 ${accentClasses.text}`} />
                     </div>
                     <span className={`font-medium tracking-tight leading-relaxed break-words ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
                       {comida.porciones}
@@ -144,21 +194,8 @@ export default function MealSelector({
                 )}
               </div>
 
-              {/* Tags */}
-              {comida.tags.length > 0 && (
-                <div className={`flex flex-wrap gap-1.5 pt-1 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-                  {comida.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className={`inline-flex items-center px-2.5 py-1 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-[9px] uppercase tracking-widest font-extrabold`}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
-          </motion.button>
+          </motion.div>
         );
       })}
     </div>

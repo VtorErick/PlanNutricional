@@ -14,8 +14,6 @@ import { useDiet } from '../../context/DietContext';
 import {
   estimateDailyCaloriesFromObjectives,
   sumSelectedMealCalories,
-  sumSelectedMealFat,
-  sumSelectedMealProtein,
 } from '../../utils/nutrition';
 
 const mealTimeIcons: Record<string, React.ElementType> = {
@@ -58,8 +56,6 @@ export default function DailyProgress() {
 
       return {
         kcal: sumSelectedMealCalories(selectedMeals),
-        protein: sumSelectedMealProtein(selectedMeals),
-        fat: sumSelectedMealFat(selectedMeals),
       };
     };
 
@@ -68,8 +64,6 @@ export default function DailyProgress() {
       const ella = sumForProfile('ella');
       return {
         kcal: el.kcal + ella.kcal,
-        protein: el.protein + ella.protein,
-        fat: el.fat + ella.fat,
       };
     }
 
@@ -175,18 +169,11 @@ export default function DailyProgress() {
           </div>
 
           <div
-            className={`flex-shrink-0 rounded-2xl border px-2.5 py-1.5 text-[10px] sm:text-[11px] font-bold leading-tight ${statusPalette[energyStatus]}`}
+            className={`flex-shrink-0 px-1 text-xs font-bold whitespace-nowrap ${
+              isDarkMode ? 'text-slate-400' : 'text-slate-500'
+            }`}
           >
-            <div className="whitespace-nowrap">
-              <span>{totals.kcal} kcal</span>
-              <span className="mx-1 text-slate-300">·</span>
-              <span>{totals.protein}g P</span>
-              <span className="mx-1 text-slate-300">·</span>
-              <span>{totals.fat}g G</span>
-            </div>
-            <div className="mt-0.5 font-semibold whitespace-nowrap opacity-85">
-              Meta: {calorieTarget} kcal
-            </div>
+            {totals.kcal} kcal/{calorieTarget} kcal
           </div>
         </div>
       </div>

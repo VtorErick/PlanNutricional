@@ -1,4 +1,5 @@
 import { Profile, Equivalencia, MealItem } from './types';
+import { normalizeProfileSummary } from './utils/profileSummary';
 
 type RawProfilePrefix = 'EL' | 'ELLA';
 
@@ -43,6 +44,19 @@ export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix)
   if (!perfil.nombre || !Array.isArray(perfil.momentos)) {
     throw new Error('La estructura del perfil no coincide con el formato esperado. Faltan: nombre o momentos.');
   }
+
+  const normalizedProfileSummary = normalizeProfileSummary({
+    perfil: perfil.perfil,
+    detallesPerfil: perfil.detallesPerfil,
+  });
+
+  parsed[perfilKey] = {
+    ...perfil,
+    perfil: normalizedProfileSummary.perfil || perfil.perfil,
+    ...(normalizedProfileSummary.detallesPerfil
+      ? { detallesPerfil: normalizedProfileSummary.detallesPerfil }
+      : {}),
+  };
 
   const equivalencias = parsed[equivKey];
   if (!Array.isArray(equivalencias) || equivalencias.length === 0) {
