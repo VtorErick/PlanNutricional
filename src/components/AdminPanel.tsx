@@ -9,7 +9,6 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { buildExportData, downloadJsonFile, parseJsonToData } from '../dataManager';
-import { downloadDietPdf } from '../services/pdfService';
 
 interface AdminPanelProps {
   perfilId: 'el' | 'ella';
@@ -55,7 +54,7 @@ export default function AdminPanel({
         setCustomData((prev: any) => ({ ...prev, [perfilId]: parsed }));
         setDataVersion('custom');
 
-        await notify('Importación completada', `¡Datos de ${title} cargados exitosamente!`);
+        await notify('Importacion completada', `Datos de ${title} cargados exitosamente.`);
       } catch (err: any) {
         await notify('Error al importar archivo', 'Error al cargar archivo: ' + err.message);
       }
@@ -73,15 +72,15 @@ export default function AdminPanel({
 
   const handleDelete = async () => {
     const accepted = await confirmAction(
-      'Eliminar versión personalizada',
-      `¿Estás seguro de eliminar los datos personalizados de ${title}?`
+      'Eliminar version personalizada',
+      `Estas seguro de eliminar los datos personalizados de ${title}?`
     );
 
     if (accepted) {
       setCustomData((prev: any) => {
-        const newD = { ...prev };
-        delete newD[perfilId];
-        return newD;
+        const newData = { ...prev };
+        delete newData[perfilId];
+        return newData;
       });
 
       setDataVersion('original');
@@ -90,6 +89,7 @@ export default function AdminPanel({
 
   const handlePdfDownload = async () => {
     try {
+      const { downloadDietPdf } = await import('../services/pdfService');
       const dataToUse =
         dataVersion === 'custom' && customData[perfilId]
           ? customData[perfilId][`perfil${perfilId.toUpperCase()}`]
@@ -161,7 +161,7 @@ export default function AdminPanel({
           </div>
 
           <p className={`text-xs sm:text-sm mt-1 ${textColor} dark:text-slate-300 opacity-80`}>
-            Administra la versión original o personalizada de este plan.
+            Administra la version original o personalizada de este plan.
           </p>
         </div>
 
@@ -169,7 +169,7 @@ export default function AdminPanel({
           <button
             onClick={handleDelete}
             className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-white dark:hover:bg-slate-900 transition-colors flex-shrink-0"
-            title="Eliminar versión personalizada"
+            title="Eliminar version personalizada"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -177,10 +177,11 @@ export default function AdminPanel({
       </div>
 
       <div className="relative z-10 flex flex-col gap-3">
-        {/* Downloads */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <button
-            onClick={handlePdfDownload}
+            onClick={() => {
+              void handlePdfDownload();
+            }}
             className="flex items-center justify-center gap-2 py-3 px-3 bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-700 dark:text-slate-100 transition active:scale-95 shadow-sm"
           >
             <FileText className="w-4 h-4 flex-shrink-0" />
@@ -202,16 +203,15 @@ export default function AdminPanel({
 
         <div className="h-px bg-slate-200/60 dark:bg-slate-800 w-full my-1" />
 
-        {/* Import / version switch */}
         {isCustomAvailable ? (
           <div className="p-3 sm:p-4 bg-white dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-100">
-                  Versión activa
+                  Version activa
                 </p>
                 <p className="text-[11px] sm:text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                  Cambia entre la versión original y la personalizada.
+                  Cambia entre la version original y la personalizada.
                 </p>
               </div>
 

@@ -13,43 +13,45 @@ export function downloadDietPdf(
   const doc = new jsPDF() as any;
   const color: [number, number, number] = isVA ? [225, 29, 72] : [37, 99, 235];
 
-  const drawHeader = (doc: any, title: string, subtitle: string, meta: string) => {
-    doc.setFillColor(color[0], color[1], color[2]);
-    doc.rect(0, 0, 210, 36, 'F');
+  const drawHeader = (pdfDoc: any, title: string, subtitle: string, meta: string) => {
+    pdfDoc.setFillColor(color[0], color[1], color[2]);
+    pdfDoc.rect(0, 0, 210, 36, 'F');
 
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.setTextColor(255, 255, 255);
-    doc.text(title, 14, 20);
+    pdfDoc.setFont('helvetica', 'bold');
+    pdfDoc.setFontSize(22);
+    pdfDoc.setTextColor(255, 255, 255);
+    pdfDoc.text(title, 14, 20);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(240, 240, 240);
-    doc.text(subtitle, 14, 28);
+    pdfDoc.setFont('helvetica', 'normal');
+    pdfDoc.setFontSize(11);
+    pdfDoc.setTextColor(240, 240, 240);
+    pdfDoc.text(subtitle, 14, 28);
 
     if (meta) {
-      doc.setFontSize(10);
-      doc.text(`Meta: ${meta}`, 14, 33);
+      pdfDoc.setFontSize(10);
+      pdfDoc.text(`Meta: ${meta}`, 14, 33);
     }
   };
 
   const dias = Object.keys(planObj);
 
-  dias.forEach((dia, dIdx) => {
-    if (dIdx > 0) doc.addPage();
+  dias.forEach((dia, dayIndex) => {
+    if (dayIndex > 0) doc.addPage();
     drawHeader(doc, `Plan Nutricional: ${perfilData.nombre}`, perfilData.perfil, perfilData.meta);
 
     let startY = 46;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(50, 50, 50);
-    doc.text(`MenÃº para el dÃ­a: ${dia}`, 14, startY);
+    doc.text(`Menu para el dia: ${dia}`, 14, startY);
     startY += 8;
 
-    const momentosKeys = perfilData.momentos.map((m: any) => m.key);
+    const momentosKeys = perfilData.momentos.map((momento: any) => momento.key);
 
     momentosKeys.forEach((momentoKey: string) => {
-      const momentoLabel = perfilData.momentos.find((m: any) => m.key === momentoKey)?.label || momentoKey;
+      const momentoLabel =
+        perfilData.momentos.find((momento: any) => momento.key === momentoKey)?.label ||
+        momentoKey;
       const comidas = planObj[dia][momentoKey] || [];
       if (comidas.length === 0) return;
 
@@ -59,24 +61,39 @@ export function downloadDietPdf(
         startY = 20;
       }
 
-      const bodyData = comidas.map((c: any) => [
-        c.nombre,
-        c.porciones,
-        c.super && c.super.length > 0 ? `${c.detalle}\n+ Extras: ${c.super.join(', ')}` : c.detalle
+      const bodyData = comidas.map((comida: any) => [
+        comida.nombre,
+        comida.porciones,
+        comida.super && comida.super.length > 0
+          ? `${comida.detalle}\n+ Extras: ${comida.super.join(', ')}`
+          : comida.detalle,
       ]);
 
       autoTable(doc, {
-        startY: startY,
+        startY,
         head: [[momentoLabel.toUpperCase(), 'Porciones', 'Detalle']],
         body: bodyData,
         theme: 'plain',
-        headStyles: { fillColor: color, textColor: 255, fontStyle: 'bold', fontSize: 10, cellPadding: 5 },
-        styles: { font: 'helvetica', fontSize: 9, cellPadding: 5, textColor: [70, 70, 70], lineColor: [235, 235, 235], lineWidth: 0.1 },
+        headStyles: {
+          fillColor: color,
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 10,
+          cellPadding: 5,
+        },
+        styles: {
+          font: 'helvetica',
+          fontSize: 9,
+          cellPadding: 5,
+          textColor: [70, 70, 70],
+          lineColor: [235, 235, 235],
+          lineWidth: 0.1,
+        },
         alternateRowStyles: { fillColor: [250, 251, 252] },
         columnStyles: {
           0: { cellWidth: 45, fontStyle: 'bold', textColor: color },
           1: { cellWidth: 35 },
-          2: { cellWidth: 'auto' }
+          2: { cellWidth: 'auto' },
         },
         margin: { left: 14, right: 14 },
       });
@@ -93,7 +110,12 @@ export function downloadDietPdf(
  */
 export function downloadDaySelectionPdf(
   diaActivo: string,
-  seleccionesInfo: { perfilData: any; color: [number, number, number]; planObj: Record<string, Record<string, MealItem[]>>; perfilId: string }[],
+  seleccionesInfo: {
+    perfilData: any;
+    color: [number, number, number];
+    planObj: Record<string, Record<string, MealItem[]>>;
+    perfilId: string;
+  }[],
   selecciones: Record<string, boolean>
 ) {
   const doc = new jsPDF() as any;
@@ -122,16 +144,20 @@ export function downloadDaySelectionPdf(
     doc.text('Comidas seleccionadas y completadas', 14, startY);
     startY += 8;
 
-    const momentosKeys = perfilData.momentos.map((m: any) => m.key);
+    const momentosKeys = perfilData.momentos.map((momento: any) => momento.key);
     let itemsFound = 0;
 
     momentosKeys.forEach((momentoKey: string) => {
-      const momentoLabel = perfilData.momentos.find((m: any) => m.key === momentoKey)?.label || momentoKey;
+      const momentoLabel =
+        perfilData.momentos.find((momento: any) => momento.key === momentoKey)?.label ||
+        momentoKey;
       const comidas = planObj[diaActivo]?.[momentoKey] || [];
-      const comidasSeleccionadas = comidas.filter((c: any) => selecciones[`${perfilId}-${diaActivo}-${momentoKey}-${c.nombre}`]);
+      const comidasSeleccionadas = comidas.filter(
+        (comida: any) => selecciones[`${perfilId}-${diaActivo}-${momentoKey}-${comida.nombre}`]
+      );
 
       if (comidasSeleccionadas.length === 0) return;
-      itemsFound++;
+      itemsFound += 1;
 
       const pageHeight = doc.internal.pageSize.getHeight();
       if (startY > pageHeight - 75) {
@@ -139,24 +165,40 @@ export function downloadDaySelectionPdf(
         startY = 20;
       }
 
-      const bodyData = comidasSeleccionadas.map((c: any) => [
-        c.nombre,
-        c.porciones,
-        c.super && c.super.length > 0 ? `${c.detalle}\n+ Extras: ${c.super.join(', ')}` : c.detalle
+      const bodyData = comidasSeleccionadas.map((comida: any) => [
+        comida.nombre,
+        comida.porciones,
+        comida.super && comida.super.length > 0
+          ? `${comida.detalle}\n+ Extras: ${comida.super.join(', ')}`
+          : comida.detalle,
       ]);
 
       autoTable(doc, {
-        startY: startY,
+        startY,
         head: [[momentoLabel.toUpperCase(), 'Porciones', 'Detalle']],
         body: bodyData,
         theme: 'plain',
-        headStyles: { fillColor: color, textColor: 255, fontStyle: 'bold', fontSize: 10, cellPadding: 5, halign: 'left' },
-        styles: { font: 'helvetica', fontSize: 9, cellPadding: 5, textColor: [70, 70, 70], lineColor: [235, 235, 235], lineWidth: 0.1 },
+        headStyles: {
+          fillColor: color,
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 10,
+          cellPadding: 5,
+          halign: 'left',
+        },
+        styles: {
+          font: 'helvetica',
+          fontSize: 9,
+          cellPadding: 5,
+          textColor: [70, 70, 70],
+          lineColor: [235, 235, 235],
+          lineWidth: 0.1,
+        },
         alternateRowStyles: { fillColor: [249, 250, 251] },
         columnStyles: {
           0: { cellWidth: 45, fontStyle: 'bold', textColor: color },
           1: { cellWidth: 35 },
-          2: { cellWidth: 'auto' }
+          2: { cellWidth: 'auto' },
         },
         margin: { left: 14, right: 14 },
       });
@@ -172,6 +214,6 @@ export function downloadDaySelectionPdf(
     }
   });
 
-  const sufix = seleccionesInfo.length > 1 ? 'Ambos' : seleccionesInfo[0].perfilData.nombre;
-  doc.save(`Menu_Seleccionado_${diaActivo}_${sufix}.pdf`);
+  const suffix = seleccionesInfo.length > 1 ? 'Ambos' : seleccionesInfo[0].perfilData.nombre;
+  doc.save(`Menu_Seleccionado_${diaActivo}_${suffix}.pdf`);
 }

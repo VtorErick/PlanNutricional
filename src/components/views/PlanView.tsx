@@ -15,7 +15,6 @@ import MealSelector from '../MealSelector';
 import MealEditSheet from '../MealEditSheet';
 import { useDiet } from '../../context/DietContext';
 import { getMomentMacroPortions } from '../../utils/macros';
-import { downloadDaySelectionPdf } from '../../services/pdfService';
 import { type AccentColors, getAccentColors } from '../../utils/theme';
 import type { MealItem } from '../../types';
 import {
@@ -91,8 +90,9 @@ export default function PlanView() {
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
 
-  const handleDownloadDayPdf = React.useCallback(() => {
+  const handleDownloadDayPdf = React.useCallback(async () => {
     if (!perfilActivo) return;
+    const { downloadDaySelectionPdf } = await import('../../services/pdfService');
 
     if (perfilActivo === 'ambos') {
       downloadDaySelectionPdf(
@@ -675,7 +675,9 @@ export default function PlanView() {
             </div>
 
             <button
-              onClick={handleDownloadDayPdf}
+              onClick={() => {
+                void handleDownloadDayPdf();
+              }}
               className="z-10 group flex items-center gap-2 bg-white text-slate-800 px-5 sm:px-6 py-3 rounded-2xl font-bold text-sm shadow-md hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto justify-center"
             >
               <FileText className={`w-5 h-5 ${ac.text}`} />

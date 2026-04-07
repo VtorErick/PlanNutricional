@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Suspense, lazy, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -15,17 +15,25 @@ import {
 
 import { useDiet } from './context/DietContext';
 
-import AdminLayout from './components/views/AdminLayout';
 import LandingView from './components/views/LandingView';
 import Header from './components/views/Header';
 import DailyProgress from './components/views/DailyProgress';
-import PlanView from './components/views/PlanView';
-import ShoppingView from './components/views/ShoppingView';
-import SummaryView from './components/views/SummaryView';
-import EquivalenciasView from './components/views/EquivalenciasView';
-import CalorieMonitoringView from './components/views/CalorieMonitoringView';
-import NutritionQuestionnaire from './components/NutritionQuestionnaire';
-import SupplementsView from './components/views/SupplementsView';
+const AdminLayout = lazy(() => import('./components/views/AdminLayout'));
+const PlanView = lazy(() => import('./components/views/PlanView'));
+const ShoppingView = lazy(() => import('./components/views/ShoppingView'));
+const SummaryView = lazy(() => import('./components/views/SummaryView'));
+const EquivalenciasView = lazy(() => import('./components/views/EquivalenciasView'));
+const CalorieMonitoringView = lazy(() => import('./components/views/CalorieMonitoringView'));
+const NutritionQuestionnaire = lazy(() => import('./components/NutritionQuestionnaire'));
+const SupplementsView = lazy(() => import('./components/views/SupplementsView'));
+
+function ViewFallback() {
+  return (
+    <div className="rounded-[28px] border border-slate-200 bg-white p-6 text-center text-sm font-semibold text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+      Cargando vista...
+    </div>
+  );
+}
 
 export default function App() {
   const {
@@ -104,38 +112,40 @@ export default function App() {
 
         <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 pb-24">
           <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <NutritionQuestionnaire
-              onCancel={() => setIsQuestionnaireOpen(false)}
-              onGenerate={handleGenerateWithAi}
-              onViewPlan={(profile) => {
-                setIsQuestionnaireOpen(false);
-                setActiveProfile(profile);
-                setActiveDay('Lunes');
-                setActiveTab('plan');
-              }}
-              loading={generationLoading}
-              errorMessage={generationError}
-              geminiModel={geminiModel}
-              setGeminiModel={setGeminiModel}
-              availableGeminiModels={geminiAvailableModels}
-              geminiApiKey={geminiApiKey}
-              setGeminiApiKey={setGeminiApiKey}
-              lastGeneratedData={lastGeneratedData}
-              targetProfile={questionnaireTargetProfile}
-              setTargetProfile={setQuestionnaireTargetProfile}
-              stepIdx={questionnaireStepIndex}
-              setStepIdx={setQuestionnaireStepIndex}
-              el={questionnaireElData}
-              setEl={setQuestionnaireElData}
-              ella={questionnaireEllaData}
-              setElla={setQuestionnaireEllaData}
-              portionMode={questionnairePortionMode}
-              setPortionMode={setQuestionnairePortionMode}
-              manualPortions={questionnaireManualPortions}
-              setManualPortions={setQuestionnaireManualPortions}
-              additionalNotes={questionnaireAdditionalNotes}
-              setAdditionalNotes={setQuestionnaireAdditionalNotes}
-            />
+            <Suspense fallback={<ViewFallback />}>
+              <NutritionQuestionnaire
+                onCancel={() => setIsQuestionnaireOpen(false)}
+                onGenerate={handleGenerateWithAi}
+                onViewPlan={(profile) => {
+                  setIsQuestionnaireOpen(false);
+                  setActiveProfile(profile);
+                  setActiveDay('Lunes');
+                  setActiveTab('plan');
+                }}
+                loading={generationLoading}
+                errorMessage={generationError}
+                geminiModel={geminiModel}
+                setGeminiModel={setGeminiModel}
+                availableGeminiModels={geminiAvailableModels}
+                geminiApiKey={geminiApiKey}
+                setGeminiApiKey={setGeminiApiKey}
+                lastGeneratedData={lastGeneratedData}
+                targetProfile={questionnaireTargetProfile}
+                setTargetProfile={setQuestionnaireTargetProfile}
+                stepIdx={questionnaireStepIndex}
+                setStepIdx={setQuestionnaireStepIndex}
+                el={questionnaireElData}
+                setEl={setQuestionnaireElData}
+                ella={questionnaireEllaData}
+                setElla={setQuestionnaireEllaData}
+                portionMode={questionnairePortionMode}
+                setPortionMode={setQuestionnairePortionMode}
+                manualPortions={questionnaireManualPortions}
+                setManualPortions={setQuestionnaireManualPortions}
+                additionalNotes={questionnaireAdditionalNotes}
+                setAdditionalNotes={setQuestionnaireAdditionalNotes}
+              />
+            </Suspense>
           </section>
         </main>
       </div>
@@ -143,7 +153,11 @@ export default function App() {
   }
 
   if (isAdminOpen) {
-    return <AdminLayout />;
+    return (
+      <Suspense fallback={<ViewFallback />}>
+        <AdminLayout />
+      </Suspense>
+    );
   }
 
   if (!activeProfile) {
@@ -287,12 +301,14 @@ export default function App() {
         </div>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'plan' && <PlanView />}
-          {activeTab === 'equivalencias' && <EquivalenciasView />}
-          {activeTab === 'suplementos' && <SupplementsView />}
-          {activeTab === 'calorias' && <CalorieMonitoringView />}
-          {activeTab === 'resumen' && <SummaryView />}
-          {activeTab === 'compras' && <ShoppingView />}
+          <Suspense fallback={<ViewFallback />}>
+            {activeTab === 'plan' && <PlanView />}
+            {activeTab === 'equivalencias' && <EquivalenciasView />}
+            {activeTab === 'suplementos' && <SupplementsView />}
+            {activeTab === 'calorias' && <CalorieMonitoringView />}
+            {activeTab === 'resumen' && <SummaryView />}
+            {activeTab === 'compras' && <ShoppingView />}
+          </Suspense>
         </AnimatePresence>
       </main>
 

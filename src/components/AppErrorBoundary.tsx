@@ -1,4 +1,5 @@
 import React from 'react';
+import { clearAppStorage } from '../utils/appStorage';
 
 type Props = {
   children: React.ReactNode;
@@ -30,18 +31,7 @@ export default class AppErrorBoundary extends React.Component<Props, State> {
   };
 
   private handleResetStorage = () => {
-    try {
-      localStorage.clear();
-    } catch (error) {
-      console.warn('Failed to clear localStorage from error boundary:', error);
-    }
-
-    try {
-      sessionStorage.clear();
-    } catch (error) {
-      console.warn('Failed to clear sessionStorage from error boundary:', error);
-    }
-
+    clearAppStorage();
     this.handleReload();
   };
 

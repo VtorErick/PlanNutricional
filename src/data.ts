@@ -72,18 +72,21 @@ export const supplementsData: Record<'el' | 'ella', SupplementRecommendation[]> 
   ella: [...defaultSupplements.ella],
 };
 
-export const rawData = {
-  el: JSON.stringify(
-    {
-      perfilEL,
-      equivalenciasEL,
-      planEL,
-      suplementosEL: defaultSupplements.el,
-    },
-    null,
-    2
-  ),
-  ella: JSON.stringify(
+export function getRawDataText(profileId: 'el' | 'ella') {
+  if (profileId === 'el') {
+    return JSON.stringify(
+      {
+        perfilEL,
+        equivalenciasEL,
+        planEL,
+        suplementosEL: defaultSupplements.el,
+      },
+      null,
+      2
+    );
+  }
+
+  return JSON.stringify(
     {
       perfilELLA,
       equivalenciasELLA,
@@ -92,5 +95,5 @@ export const rawData = {
     },
     null,
     2
-  ),
-};
+  );
+}

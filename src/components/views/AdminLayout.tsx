@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Settings, X, KeyRound, Zap, Sparkles, ChevronDown, ShieldCheck, Moon, Sun } from 'lucide-react';
 import AdminPanel from '../AdminPanel';
 import { useDiet } from '../../context/DietContext';
-import { perfilesData as origPerfilesData, rawData } from '../../data';
+import { getRawDataText, perfilesData as origPerfilesData } from '../../data';
 import { getEnvGeminiApiKey, persistGeminiApiKey } from '../../utils/geminiKey';
+import { clearAppStorage } from '../../utils/appStorage';
 
 export default function AdminLayout() {
   const {
@@ -128,25 +129,9 @@ export default function AdminLayout() {
     if (!accepted) return;
 
     try {
-      localStorage.clear();
+      clearAppStorage();
     } catch (error) {
-      console.warn('Failed to clear localStorage:', error);
-    }
-
-    try {
-      sessionStorage.clear();
-    } catch (error) {
-      console.warn('Failed to clear sessionStorage:', error);
-    }
-
-    try {
-      document.cookie.split(';').forEach((cookie) => {
-        const eqPos = cookie.indexOf('=');
-        const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
-        document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-      });
-    } catch (error) {
-      console.warn('Failed to clear cookies:', error);
+      console.warn('Failed to clear app storage:', error);
     }
 
     setCustomData({});
@@ -519,7 +504,7 @@ export default function AdminLayout() {
                 perfilId="el"
                 title="Datos El"
                 themeColor="blue"
-                rawDataText={rawData.el}
+                rawDataText={getRawDataText('el')}
                 customData={customData}
                 setCustomData={setCustomData}
                 dataVersion={dataVersions.el}
@@ -532,7 +517,7 @@ export default function AdminLayout() {
                 perfilId="ella"
                 title="Datos Ella"
                 themeColor="rose"
-                rawDataText={rawData.ella}
+                rawDataText={getRawDataText('ella')}
                 customData={customData}
                 setCustomData={setCustomData}
                 dataVersion={dataVersions.ella}
@@ -545,7 +530,7 @@ export default function AdminLayout() {
 
             <div className="mt-5 bg-white dark:bg-slate-950 rounded-3xl p-4 border border-rose-200 dark:border-rose-900/60 shadow-sm">
               <p className="text-xs text-slate-500 dark:text-slate-300 mb-3">
-                Si encuentras un error o quieres empezar desde cero en este dispositivo, puedes limpiar almacenamiento local y cookies.
+                Si encuentras un error o quieres empezar desde cero en este dispositivo, puedes limpiar el almacenamiento local de esta app.
                 <br />
                 ⚠️ Esto no se puede deshacer y perderás cualquier dato que no hayas respaldado. Asegúrate de guardar tu información antes de continuar.
               </p>

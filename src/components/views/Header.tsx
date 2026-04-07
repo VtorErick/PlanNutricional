@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ChefHat, FileText, Moon, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
-import { downloadDaySelectionPdf, downloadDietPdf } from '../../services/pdfService';
 
 export default function Header() {
   const [showPdfMenu, setShowPdfMenu] = React.useState(false);
@@ -35,8 +34,9 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [showPdfMenu]);
 
-  const handleDownloadDayPdf = React.useCallback(() => {
+  const handleDownloadDayPdf = React.useCallback(async () => {
     if (!activeProfile) return;
+    const { downloadDaySelectionPdf } = await import('../../services/pdfService');
 
     if (activeProfile === 'ambos') {
       downloadDaySelectionPdf(
@@ -65,8 +65,9 @@ export default function Header() {
     );
   }, [activeProfile, activeDay, profilesData, selections]);
 
-  const handleDownloadFullPlanPdf = React.useCallback(() => {
+  const handleDownloadFullPlanPdf = React.useCallback(async () => {
     if (!activeProfile) return;
+    const { downloadDietPdf } = await import('../../services/pdfService');
 
     if (activeProfile === 'ambos') {
       downloadDietPdf(profilesData.el, profilesData.el.plan, false);
@@ -142,7 +143,7 @@ export default function Header() {
             >
               <button
                 onClick={() => {
-                  handleDownloadDayPdf();
+                  void handleDownloadDayPdf();
                   setShowPdfMenu(false);
                 }}
                 className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
@@ -155,7 +156,7 @@ export default function Header() {
               </button>
               <button
                 onClick={() => {
-                  handleDownloadFullPlanPdf();
+                  void handleDownloadFullPlanPdf();
                   setShowPdfMenu(false);
                 }}
                 className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${

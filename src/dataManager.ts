@@ -5,16 +5,13 @@ type RawProfilePrefix = 'EL' | 'ELLA';
 
 /**
  * Normalizes a day name by removing accents and standardizing capitalization.
- * Miércoles -> Miercoles, Sábado -> Sabado, lunes -> Lunes
+ * Miercoles -> Miercoles, Sabado -> Sabado, lunes -> Lunes
  */
 function normalizeDayName(day: string): string {
-  const accents: Record<string, string> = {
-    'Ã¡': 'a', 'Ã©': 'e', 'Ã­': 'i', 'Ã³': 'o', 'Ãº': 'u',
-    'Ã': 'A', 'Ã‰': 'E', 'Ã': 'I', 'Ã“': 'O', 'Ãš': 'U',
-    'Ã¼': 'u', 'Ãœ': 'U', 'Ã±': 'n', 'Ã‘': 'N'
-  };
+  const withoutAccents = day
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 
-  const withoutAccents = day.replace(/[Ã¡Ã©Ã­Ã³ÃºÃÃ‰ÃÃ“ÃšÃ¼ÃœÃ±Ã‘]/g, char => accents[char] || char);
   return withoutAccents.charAt(0).toUpperCase() + withoutAccents.slice(1).toLowerCase();
 }
 
@@ -28,19 +25,17 @@ export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix)
   const planKey = `plan${expectedPrefix}`;
   const supplementsKey = `suplementos${expectedPrefix}`;
 
-  // Ensure the payload contains the expected root keys.
   if (!parsed[perfilKey] || !parsed[equivKey] || !parsed[planKey]) {
     const wrongPrefix = expectedPrefix === 'EL' ? 'ELLA' : 'EL';
     if (parsed[`perfil${wrongPrefix}`]) {
       const expectedLabel = expectedPrefix === 'EL' ? 'El' : 'Ella';
       const wrongLabel = wrongPrefix === 'EL' ? 'El' : 'Ella';
-      throw new Error(`Intentaste subir un archivo de ${wrongLabel} en la secciÃ³n de ${expectedLabel}. Sube el archivo correcto.`);
+      throw new Error(`Intentaste subir un archivo de ${wrongLabel} en la seccion de ${expectedLabel}. Sube el archivo correcto.`);
     }
     throw new Error(`El archivo JSON no contiene las estructuras requeridas (${perfilKey}, ${equivKey}, ${planKey}).`);
   }
 
   const perfil = parsed[perfilKey];
-  // Permissive validation: only require a name and the meal-time array.
   if (!perfil.nombre || !Array.isArray(perfil.momentos)) {
     throw new Error('La estructura del perfil no coincide con el formato esperado. Faltan: nombre o momentos.');
   }
@@ -60,15 +55,14 @@ export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix)
 
   const equivalencias = parsed[equivKey];
   if (!Array.isArray(equivalencias) || equivalencias.length === 0) {
-    throw new Error('Las equivalencias deben ser un arreglo no vacÃ­o.');
+    throw new Error('Las equivalencias deben ser un arreglo no vacio.');
   }
 
   let plan = parsed[planKey];
   if (typeof plan !== 'object' || plan === null) {
-    throw new Error('El plan de comidas no tiene un formato vÃ¡lido.');
+    throw new Error('El plan de comidas no tiene un formato valido.');
   }
 
-  // Normalize day names by removing accents and standardizing casing.
   const normalizedPlan: Record<string, any> = {};
   for (const [dayKey, dayData] of Object.entries(plan)) {
     const normalizedKey = normalizeDayName(dayKey);
@@ -77,20 +71,18 @@ export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix)
   plan = normalizedPlan;
   parsed[planKey] = plan;
 
-  // Ensure the plan contains at least one day with meal times.
   const dias = Object.keys(plan);
   if (dias.length === 0) {
-    throw new Error('El plan no contiene dÃ­as.');
+    throw new Error('El plan no contiene dias.');
   }
 
-  // Ensure each day has the expected meal times and at least one meal option.
   const momentosKeys = perfil.momentos.map((m: any) => m.key);
   const diasConMomentosVacios: string[] = [];
 
   for (const dia of dias) {
     const diaPlan = plan[dia];
     if (typeof diaPlan !== 'object' || diaPlan === null) {
-      throw new Error(`El dÃ­a ${dia} no tiene formato vÃ¡lido.`);
+      throw new Error(`El dia ${dia} no tiene formato valido.`);
     }
     for (const momento of momentosKeys) {
       if (!Array.isArray(diaPlan[momento])) {
@@ -102,9 +94,8 @@ export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix)
     }
   }
 
-  // Strict validation: reject plans with empty meal times.
   if (diasConMomentosVacios.length > 0) {
-    throw new Error(`El plan generado estÃ¡ incompleto. Faltan comidas en: ${diasConMomentosVacios.join(', ')}. Por favor, intenta generar el plan nuevamente.`);
+    throw new Error(`El plan generado esta incompleto. Faltan comidas en: ${diasConMomentosVacios.join(', ')}. Por favor, intenta generar el plan nuevamente.`);
   }
 
   if (!Array.isArray(parsed[supplementsKey])) {
@@ -118,8 +109,8 @@ export function parseJsonToData(jsonString: string, expectedPrefix: RawProfilePr
   let parsed: any;
   try {
     parsed = JSON.parse(jsonString);
-  } catch (e) {
-    throw new Error('El archivo no tiene un formato JSON vÃ¡lido.');
+  } catch {
+    throw new Error('El archivo no tiene un formato JSON valido.');
   }
 
   return parseObjectToData(parsed, expectedPrefix);
@@ -151,17 +142,17 @@ export function downloadJsonFile(fileName: string, content: string) {
 
   const blob = new Blob([content], { type: 'application/json;charset=utf-8;' });
   const objectUrl = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const anchor = document.createElement('a');
 
   try {
-    a.href = objectUrl;
-    a.download = fileName;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
   } finally {
-    if (a.parentNode) {
-      a.parentNode.removeChild(a);
+    if (anchor.parentNode) {
+      anchor.parentNode.removeChild(anchor);
     }
     URL.revokeObjectURL(objectUrl);
   }
