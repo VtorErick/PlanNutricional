@@ -32,6 +32,7 @@ import {
   Ruler,
 } from 'lucide-react';
 import { downloadJsonFile } from '../dataManager';
+import { persistGeminiApiKey } from '../utils/geminiKey';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type TargetProfile = 'el' | 'ella' | 'ambos';
@@ -64,6 +65,7 @@ interface Props {
   errorMessage?: string;
   geminiModel?: string;
   setGeminiModel?: (m: string) => void;
+  availableGeminiModels?: string[];
   geminiApiKey?: string;
   setGeminiApiKey?: (k: string) => void;
   lastGeneratedData?: any;
@@ -478,6 +480,7 @@ export default function NutritionQuestionnaire({
   errorMessage,
   geminiModel,
   setGeminiModel,
+  availableGeminiModels,
   geminiApiKey,
   setGeminiApiKey,
   lastGeneratedData,
@@ -517,6 +520,11 @@ export default function NutritionQuestionnaire({
   useEffect(() => {
     setLocalApiKey(geminiApiKey || '');
   }, [geminiApiKey]);
+
+  const visibleGeminiModels = useMemo(() => {
+    if (!availableGeminiModels?.length) return GEMINI_MODELS;
+    return GEMINI_MODELS.filter((model) => availableGeminiModels.includes(model.value));
+  }, [availableGeminiModels]);
 
   const releaseScreenWakeLock = useCallback(async () => {
     if (!wakeLockRef.current) return;
@@ -1566,13 +1574,9 @@ export default function NutritionQuestionnaire({
                 <button
                   type="button"
                   onClick={() => {
-                    setGeminiApiKey?.(localApiKey.trim());
-                    localStorage.setItem('geminiApiKey', localApiKey.trim());
-                    try {
-                      (import.meta as any).env.GEMINI_API_KEY = localApiKey.trim();
-                    } catch {
-                      // ignore if env is readonly
-                    }
+                    const trimmedKey = localApiKey.trim();
+                    setGeminiApiKey?.(trimmedKey);
+                    persistGeminiApiKey(trimmedKey);
                   }}
                   className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 active:scale-[.98]"
                 >
@@ -1585,7 +1589,7 @@ export default function NutritionQuestionnaire({
           {errorMessage && (
             <CardSection title="Cambiar modelo de Gemini (opcional)">
               <div className="grid grid-cols-2 gap-2">
-                {GEMINI_MODELS.map((m) => {
+                {visibleGeminiModels.map((m) => {
                   const active = localModel === m.value;
                   return (
                     <button

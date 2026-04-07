@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings,
@@ -185,7 +185,13 @@ export default function LandingView() {
     setShowAdmin,
     setShowQuestionnaire,
     setQuestionnaireTargetProfile,
+    geminiApiKey,
+    geminiModel,
+    setGeminiModel,
+    refreshGeminiAvailability,
+    notify,
   } = useDiet();
+  const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(false);
 
   const elReady = dataVersions.el === 'custom';
   const ellaReady = dataVersions.ella === 'custom';
@@ -235,6 +241,36 @@ export default function LandingView() {
     }
   };
 
+  const openQuestionnaireWithCheck = async (target: 'el' | 'ella' | 'ambos') => {
+    if (checkingQuestionnaire) return;
+
+    setCheckingQuestionnaire(true);
+    try {
+      const status = await refreshGeminiAvailability({
+        customApiKey: geminiApiKey,
+        preferredModel: geminiModel,
+        checkGeneration: true,
+      });
+
+      if (!status?.ok) {
+        await notify(
+          'Gemini no disponible',
+          status?.error || 'No fue posible validar la API key actual de Gemini.'
+        );
+        return;
+      }
+
+      if (status.selectedModel && status.selectedModel !== geminiModel) {
+        setGeminiModel(status.selectedModel);
+      }
+
+      setQuestionnaireTargetProfile(target);
+      setShowQuestionnaire(true);
+    } finally {
+      setCheckingQuestionnaire(false);
+    }
+  };
+
   const profiles = [
     {
       id: 'el' as const,
@@ -254,8 +290,7 @@ export default function LandingView() {
         setTab('plan');
       },
       onIA: () => {
-        setQuestionnaireTargetProfile('el');
-        setShowQuestionnaire(true);
+        void openQuestionnaireWithCheck('el');
       },
     },
     {
@@ -276,8 +311,7 @@ export default function LandingView() {
         setTab('plan');
       },
       onIA: () => {
-        setQuestionnaireTargetProfile('ella');
-        setShowQuestionnaire(true);
+        void openQuestionnaireWithCheck('ella');
       },
     },
   ];
@@ -329,7 +363,7 @@ export default function LandingView() {
             className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-sm shadow-[0_8px_24px_rgba(15,23,42,0.06)] border border-white/70 text-slate-600 text-[11px] font-medium hover:bg-white transition-all shrink-0"
           >
             <Settings className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
-            Respalda/Exporta tu plan
+            Opciones de respaldo y restauración
           </motion.button>
         </div>
 
@@ -558,8 +592,7 @@ export default function LandingView() {
                   tint="emerald"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setQuestionnaireTargetProfile('ambos');
-                    setShowQuestionnaire(true);
+                    void openQuestionnaireWithCheck('ambos');
                   }}
                 />
 

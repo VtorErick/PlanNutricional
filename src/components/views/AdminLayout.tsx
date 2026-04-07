@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Settings, X, KeyRound, Zap, Sparkles, ChevronDown, ShieldCheck } from 'lucide-react';
 import AdminPanel from '../AdminPanel';
 import { useDiet } from '../../context/DietContext';
 import { perfilesData as origPerfilesData, rawData } from '../../data';
+import { getEnvGeminiApiKey, persistGeminiApiKey } from '../../utils/geminiKey';
 
 export default function AdminLayout() {
   const {
@@ -12,6 +13,11 @@ export default function AdminLayout() {
     setTab,
     geminiApiKey, setGeminiApiKey,
     geminiModel, setGeminiModel,
+    geminiAvailableModels,
+    geminiRecommendedModel,
+    geminiAvailabilityLoading,
+    geminiAvailabilityMessage,
+    refreshGeminiAvailability,
     customData, setCustomData,
     dataVersions, setDataVersions,
     setSelecciones,
@@ -29,17 +35,18 @@ export default function AdminLayout() {
 
   const [adminTab, setAdminTab] = useState<'manual' | 'settings'>('manual');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [apiKeyDraft, setApiKeyDraft] = useState(geminiApiKey);
 
-  const hasSavedKey = !!localStorage.getItem('geminiApiKey');
-  const usingCustomKey = !!geminiApiKey || hasSavedKey;
+  const envKey = getEnvGeminiApiKey();
+  const usingCustomKey = !!geminiApiKey.trim();
 
   const modelOptions = [
     {
       val: 'gemini-2.0-flash',
-      label: 'Recomendado',
+      label: 'Equilibrado',
       techLabel: 'Gemini 2.0 Flash',
       desc: 'Equilibrio entre velocidad y buenos resultados.',
-      badge: 'Ideal',
+      badge: 'Balance',
       badgeColor: 'bg-blue-100 text-blue-700',
     },
     {
@@ -76,8 +83,40 @@ export default function AdminLayout() {
     },
   ];
 
-  const recommendedModel = 'gemini-2.0-flash';
-  const advancedInputValue = geminiApiKey || localStorage.getItem('geminiApiKey') || '';
+  const visibleModelOptions = geminiAvailableModels.length
+    ? modelOptions.filter((option) => geminiAvailableModels.includes(option.val))
+    : modelOptions;
+  const recommendedModel = geminiRecommendedModel || visibleModelOptions[0]?.val || '';
+  const recommendedModelLabel = modelOptions.find((option) => option.val === recommendedModel)?.techLabel || recommendedModel;
+
+  useEffect(() => {
+    setApiKeyDraft(geminiApiKey);
+  }, [geminiApiKey]);
+
+  const resetApiKeyToDefault = async () => {
+    setApiKeyDraft('');
+    setGeminiApiKey('');
+    setGeminiModel('');
+    persistGeminiApiKey('');
+
+    const status = await refreshGeminiAvailability({
+      customApiKey: '',
+      preferredModel: '',
+      syncModel: true,
+    });
+
+    if (envKey && status?.ok) {
+      await notify('Configuracion actualizada', `Se restauro la clave del entorno. Modelo sugerido: ${status.selectedModel}`);
+      return;
+    }
+
+    if (envKey) {
+      await notify('Configuracion actualizada', status?.error || 'Se restauro la clave del entorno, pero no se pudo validar Gemini.');
+      return;
+    }
+
+    await notify('Configuracion actualizada', 'Se elimino la clave personalizada y no hay una clave del entorno disponible.');
+  };
 
   const resetAppState = async () => {
     const accepted = await confirmAction(
@@ -99,8 +138,9 @@ export default function AdminLayout() {
     setDataVersions({ el: 'original', ella: 'original' });
     setSelecciones({});
     setComprasCheck({});
+    setApiKeyDraft('');
     setGeminiApiKey('');
-    setGeminiModel('gemini-2.5-flash');
+    setGeminiModel('');
     setPerfilActivo(null);
     setDiaActivo('Lunes');
     setTab('plan');
@@ -221,23 +261,30 @@ export default function AdminLayout() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={async () => {
-                    const envKey = (import.meta as any).env?.GEMINI_API_KEY || '';
-                    localStorage.setItem('geminiApiKey', envKey);
-                    setGeminiApiKey(envKey);
-                    setGeminiModel(recommendedModel);
+                    setApiKeyDraft('');
+                    setGeminiApiKey('');
+                    setGeminiModel('');
+
+                    const status = await refreshGeminiAvailability({
+                      customApiKey: '',
+                      preferredModel: '',
+                      syncModel: true,
+                    });
 
                     await notify(
-                      'Configuración lista',
-                      '✅ La app quedó configurada con la opción recomendada'
+                      'Configuracion lista',
+                      envKey
+                        ? `La app quedo usando la clave del entorno. Modelo sugerido: ${status?.selectedModel || recommendedModel}`
+                        : 'La app quedo con el modelo recomendado, pero no hay clave del entorno disponible'
                     );
                   }}
                   className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-2xl transition-all active:scale-[0.98] shadow-md"
                 >
-                  Usar configuración recomendada
+                  Usar configuracion recomendada
                 </button>
 
                 <div className="flex items-center justify-center px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-slate-600 font-medium">
-                  Modelo actual: {modelOptions.find((m) => m.val === geminiModel)?.label || 'Recomendado'}
+                  Modelo actual: {modelOptions.find((m) => m.val === geminiModel)?.label || recommendedModelLabel || 'Sin validar'}
                 </div>
               </div>
             </section>
@@ -257,7 +304,7 @@ export default function AdminLayout() {
               </div>
 
               <div className="grid gap-2">
-                {modelOptions.map((m) => (
+                {visibleModelOptions.map((m) => (
                   <button
                     key={m.val}
                     type="button"
@@ -282,11 +329,24 @@ export default function AdminLayout() {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>
                           {m.badge}
                         </span>
+                        {recommendedModel === m.val && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                            Default
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">{m.desc}</p>
                     </div>
                   </button>
                 ))}
+              </div>
+
+              <div className="mt-3 rounded-2xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+                <p>
+                  {geminiAvailabilityLoading
+                    ? 'Validando modelos disponibles para la API key actual...'
+                    : geminiAvailabilityMessage || `Modelo sugerido por defecto: ${recommendedModelLabel || 'sin datos'}`}
+                </p>
               </div>
             </section>
 
@@ -334,14 +394,14 @@ export default function AdminLayout() {
                       <input
                         type="password"
                         id="admin-api-key"
-                        placeholder="Pega aquí tu clave si te la compartieron"
-                        value={geminiApiKey}
-                        onChange={(e) => setGeminiApiKey(e.target.value)}
+                        placeholder="Pega aqui tu clave si te la compartieron"
+                        value={apiKeyDraft}
+                        onChange={(e) => setApiKeyDraft(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-10 text-slate-700 text-sm outline-none focus:ring-2 focus:ring-orange-400 transition"
                       />
                       {usingCustomKey && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-bold">
-                          ✓
+                          OK
                         </span>
                       )}
                     </div>
@@ -349,33 +409,35 @@ export default function AdminLayout() {
                     <div className="flex flex-col sm:flex-row gap-2">
                       <button
                         onClick={async () => {
-                          if (geminiApiKey) {
-                            localStorage.setItem('geminiApiKey', geminiApiKey);
-                            await notify('Guardado', '✅ Tu clave personal quedó guardada en este navegador');
-                          } else {
-                            const envKey = (import.meta as any).env?.GEMINI_API_KEY || '';
-                            localStorage.setItem('geminiApiKey', envKey);
-                            setGeminiApiKey(envKey);
+                          const trimmedKey = apiKeyDraft.trim();
 
-                            if (envKey) {
-                              await notify('Configuración actualizada', '✅ Se restauró la configuración predeterminada');
-                            } else {
-                              await notify('Configuración actualizada', '🗑️ Se eliminó la clave personalizada');
+                          if (trimmedKey) {
+                            const status = await refreshGeminiAvailability({
+                              customApiKey: trimmedKey,
+                              preferredModel: '',
+                              syncModel: true,
+                            });
+
+                            if (!status?.ok) {
+                              await notify('Clave invalida', status?.error || 'No fue posible validar la API key.');
+                              return;
                             }
+
+                            setGeminiApiKey(trimmedKey);
+                            setGeminiModel(status.selectedModel || '');
+                            await notify('Guardado', `Tu clave personal quedo guardada. Modelo sugerido: ${status.selectedModel}`);
+                          } else {
+                            await resetApiKeyToDefault();
                           }
                         }}
                         className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98] shadow-md"
                       >
-                        {geminiApiKey ? 'Guardar clave personal' : 'Restaurar configuración predeterminada'}
+                        {apiKeyDraft.trim() ? 'Guardar clave personal' : 'Restaurar configuracion predeterminada'}
                       </button>
 
                       {usingCustomKey && (
                         <button
-                          onClick={async () => {
-                            localStorage.removeItem('geminiApiKey');
-                            setGeminiApiKey('');
-                            await notify('Configuración limpiada', '✅ Se quitó la clave personalizada de este navegador');
-                          }}
+                          onClick={resetApiKeyToDefault}
                           className="sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98]"
                         >
                           Quitar clave
@@ -392,6 +454,11 @@ export default function AdminLayout() {
                           {modelOptions.find((m) => m.val === geminiModel)?.techLabel || geminiModel}
                         </span>
                       </p>
+                      {geminiAvailableModels.length > 0 && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          Disponibles con esta clave: {geminiAvailableModels.join(', ')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -441,7 +508,9 @@ export default function AdminLayout() {
 
             <div className="mt-5 bg-white rounded-3xl p-4 border border-rose-200 shadow-sm">
               <p className="text-xs text-slate-500 mb-3">
-                Si quieres empezar desde cero en este dispositivo, puedes limpiar almacenamiento local y cookies.
+                Si encuentras un error o quieres empezar desde cero en este dispositivo, puedes limpiar almacenamiento local y cookies.
+                <br />
+                ⚠️ Esto no se puede deshacer y perderás cualquier dato que no hayas respaldado. Asegúrate de guardar tu información antes de continuar.
               </p>
               <button
                 onClick={resetAppState}

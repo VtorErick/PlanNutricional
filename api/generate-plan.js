@@ -162,13 +162,15 @@ function pickBestModel(models, preferredModelRaw) {
   }
 
   const priorityMatchers = [
+    /^gemini-2\.5-pro/i,
     /^gemini-2\.5-flash/i,
     /^gemini-2\.0-flash/i,
+    /^gemini-2\.5-flash-lite/i,
+    /^gemini-2\.0-flash-lite/i,
+    /^gemini-1\.5-pro/i,
     /^gemini-1\.5-flash/i,
     /^gemini-flash-latest/i,
-    /^gemini-2\.5-pro/i,
     /^gemini-2\.0-pro/i,
-    /^gemini-1\.5-pro/i,
   ];
 
   for (const matcher of priorityMatchers) {
@@ -313,7 +315,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Body vacío o inválido' });
     }
 
-    const apiKey = payload.customApiKey || process.env.GEMINI_API_KEY;
+    const customApiKey = typeof payload.customApiKey === 'string' ? payload.customApiKey.trim() : '';
+    const apiKey = customApiKey || process.env.GEMINI_API_KEY;
     const preferredModel = payload.preferredModel || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
     if (!apiKey) {

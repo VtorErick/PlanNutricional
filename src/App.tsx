@@ -30,6 +30,7 @@ export default function App() {
     handleGenerateWithAi,
     generationLoading, generationError,
     geminiModel, setGeminiModel,
+    geminiAvailableModels,
     geminiApiKey, setGeminiApiKey,
     lastGeneratedData,
     questionnaireTargetProfile, setQuestionnaireTargetProfile,
@@ -76,6 +77,7 @@ export default function App() {
               errorMessage={generationError}
               geminiModel={geminiModel}
               setGeminiModel={setGeminiModel}
+              availableGeminiModels={geminiAvailableModels}
               geminiApiKey={geminiApiKey}
               setGeminiApiKey={setGeminiApiKey}
               lastGeneratedData={lastGeneratedData}
