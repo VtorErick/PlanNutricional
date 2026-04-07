@@ -717,12 +717,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [generationLoading, setGenerationLoading] = useState(false);
   const [generationError, setGenerationError] = useState('');
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
+  const geminiModelRef = useRef(geminiModel);
 
-  const defaultCustomBuckets = useMemo(
-    () => ({
-      el: JSON.parse(getRawDataText('el')),
-      ella: JSON.parse(getRawDataText('ella')),
-    }),
+  const getDefaultCustomBucket = useCallback(
+    (perfilId: 'el' | 'ella') => JSON.parse(getRawDataText(perfilId)),
     []
   );
 
@@ -859,7 +857,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     const profileKey = perfilId === 'ella' ? 'perfilELLA' : 'perfilEL';
     const equivalenciasKey = perfilId === 'ella' ? 'equivalenciasELLA' : 'equivalenciasEL';
     const supplementsKey = perfilId === 'ella' ? 'suplementosELLA' : 'suplementosEL';
-    const defaultBucket = defaultCustomBuckets[perfilId];
+    const defaultBucket = getDefaultCustomBucket(perfilId);
 
     setCustomData((prev: any) => {
       const previousBucket =
@@ -909,7 +907,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel}`
       ),
     };
-  }, [defaultCustomBuckets, perfilesData, setCustomData, setDataVersions, setSelecciones]);
+  }, [getDefaultCustomBucket, perfilesData, setCustomData, setDataVersions, setSelecciones]);
 
   const restoreMealRecipe = useCallback((
     perfilId: 'el' | 'ella',
@@ -925,7 +923,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     const profileKey = perfilId === 'ella' ? 'perfilELLA' : 'perfilEL';
     const equivalenciasKey = perfilId === 'ella' ? 'equivalenciasELLA' : 'equivalenciasEL';
     const supplementsKey = perfilId === 'ella' ? 'suplementosELLA' : 'suplementosEL';
-    const defaultBucket = defaultCustomBuckets[perfilId];
+    const defaultBucket = getDefaultCustomBucket(perfilId);
 
     setCustomData((prev: any) => {
       const previousBucket =
@@ -975,7 +973,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel}`
       ),
     };
-  }, [defaultCustomBuckets, perfilesData, setCustomData, setDataVersions, setSelecciones]);
+  }, [getDefaultCustomBucket, perfilesData, setCustomData, setDataVersions, setSelecciones]);
 
   // ─── Scroll logic ──────────────────────────────────────────────────
   const scrollToMomento = useCallback((momentoKey: string, isExpanded: boolean) => {
@@ -1143,9 +1141,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     setGeminiAvailabilityLoading(true);
 
     try {
+      const currentModel = options?.preferredModel ?? geminiModelRef.current;
       const status = await fetchGeminiStatus({
         customApiKey: options?.customApiKey ?? geminiApiKey,
-        preferredModel: options?.preferredModel ?? geminiModel,
+        preferredModel: currentModel,
         checkGeneration: options?.checkGeneration,
       });
 
@@ -1155,10 +1154,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
       const shouldSyncModel =
         Boolean(options?.syncModel) ||
-        !geminiModel.trim() ||
-        (status.selectedModel ? !status.availableModels.includes(geminiModel) : false);
+        !currentModel.trim() ||
+        (status.selectedModel ? !status.availableModels.includes(currentModel) : false);
 
-      if (status.ok && status.selectedModel && shouldSyncModel && status.selectedModel !== geminiModel) {
+      if (status.ok && status.selectedModel && shouldSyncModel && status.selectedModel !== currentModel) {
         setGeminiModel(status.selectedModel);
       }
 
@@ -1177,7 +1176,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setGeminiAvailabilityLoading(false);
     }
-  }, [geminiApiKey, geminiModel]);
+  }, [geminiApiKey]);
 
   // ─── Side Effects ──────────────────────────────────────────────────
 
@@ -1297,6 +1296,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       console.warn('Failed to persist active profile:', error);
     }
   }, [perfilActivo]);
+  useEffect(() => {
+    geminiModelRef.current = geminiModel;
+  }, [geminiModel]);
+
   useEffect(() => {
     refreshGeminiAvailability();
   }, [geminiApiKey, refreshGeminiAvailability]);
