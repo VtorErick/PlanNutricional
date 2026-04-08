@@ -222,6 +222,42 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await expect(page.getByText(untouchedTuesdayBreakfast)).toBeVisible();
 });
 
+test('recreate from zero can reopen the questionnaire with saved answers', async ({ page }) => {
+  await seedGeneratedPlans(page, {
+    selectedDays: ['Lunes'],
+    lastQuestionnaireContext: {
+      targetProfile: 'el',
+      profileToUpdate: 'el',
+      portionMode: 'manual',
+      planConfig: {
+        mealsPerDay: '5',
+        selectedMoments: [],
+        manualPortions: {
+          desayuno: {
+            proteina: 2,
+          },
+        },
+        additionalNotes: 'Sin lactosa y con desayunos sencillos.',
+      },
+      el: {
+        age: '41',
+        currentWeightKg: '82',
+        heightCm: '178',
+      },
+    },
+  });
+  await mockGeminiStatusApi(page);
+  await page.goto('/miplan?profile=el');
+
+  await page.getByTestId('plan-ai-open').click();
+  await page.getByTestId('plan-ai-mode-regenerate').click();
+  await page.getByTestId('plan-ai-regenerate-path-questionnaire').click();
+  await page.getByTestId('plan-ai-submit').click();
+
+  await expect(page.getByTestId('questionnaire-step-fisica-el')).toBeVisible();
+  await expect(page.getByRole('spinbutton').first()).toHaveValue('41');
+});
+
 test('combined mobile navigation renders every major view with populated data', async ({ page }) => {
   await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Martes'] });
   await page.goto('/miplan?profile=ambos');

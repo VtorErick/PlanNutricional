@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { buildProfileInspectionText, extractProfileMetrics } from '../../utils/profileSummary';
+import { getLandingTheme } from '../../utils/theme';
 
 // Constants
 const IMC_MIN = 16;
@@ -117,21 +118,14 @@ function BioChip({
 function PlanButton({
   label,
   onClick,
-  tint,
+  toneClass,
   dataTestId,
 }: {
   label: string;
   onClick: (e: React.MouseEvent) => void;
-  tint: 'blue' | 'rose' | 'emerald';
+  toneClass: string;
   dataTestId?: string;
 }) {
-  const cls = {
-    blue: 'border-blue-200/20 bg-white/10 hover:bg-white/16 shadow-[0_8px_24px_rgba(29,78,216,0.22)] hover:shadow-[0_12px_30px_rgba(29,78,216,0.32)]',
-    rose: 'border-rose-200/20 bg-white/10 hover:bg-white/16 shadow-[0_8px_24px_rgba(190,24,93,0.22)] hover:shadow-[0_12px_30px_rgba(190,24,93,0.32)]',
-    emerald:
-      'border-emerald-200/20 bg-white/10 hover:bg-white/16 shadow-[0_8px_24px_rgba(5,150,105,0.22)] hover:shadow-[0_12px_30px_rgba(5,150,105,0.32)]',
-  }[tint];
-
   return (
     <button
       type="button"
@@ -145,7 +139,7 @@ function PlanButton({
         text-[11px] font-semibold text-white
         transition-all duration-200
         hover:scale-[1.03] active:scale-95
-        ${cls}
+        ${toneClass}
       `}
     >
       <span className="absolute inset-0 rounded-full bg-white/10 blur-md opacity-60 pointer-events-none" />
@@ -250,6 +244,9 @@ export default function LandingView() {
   const ellaImc = getImcData(ellaProfileText);
   const elBio = getBio(elProfileText);
   const ellaBio = getBio(ellaProfileText);
+  const elLandingTheme = getLandingTheme('el');
+  const ellaLandingTheme = getLandingTheme('ella');
+  const ambosLandingTheme = getLandingTheme('ambos');
 
   const onKey = (fn: () => void) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -294,9 +291,11 @@ export default function LandingView() {
       label: 'El',
       emoji: '🧍‍♂️',
       ready: elReady,
-      gradient: 'from-[#2563eb] via-[#1d4ed8] to-[#172554]',
-      shadowHover: 'hover:shadow-[0_22px_60px_rgba(37,99,235,0.28)]',
-      metaCls: 'text-blue-50/85',
+      gradient: elLandingTheme.cardGradient,
+      shadowHover: elLandingTheme.cardHoverShadow,
+      metaCls: elLandingTheme.metaText,
+      buttonTone: elLandingTheme.buttonTone,
+      readyDot: elLandingTheme.readyDot,
       bgImg: '/images/hero.png',
       imc: elImc,
       bio: elBio,
@@ -315,9 +314,11 @@ export default function LandingView() {
       label: 'Ella',
       emoji: '🧍‍♀️',
       ready: ellaReady,
-      gradient: 'from-[#ec4899] via-[#db2777] to-[#831843]',
-      shadowHover: 'hover:shadow-[0_22px_60px_rgba(236,72,153,0.28)]',
-      metaCls: 'text-rose-50/85',
+      gradient: ellaLandingTheme.cardGradient,
+      shadowHover: ellaLandingTheme.cardHoverShadow,
+      metaCls: ellaLandingTheme.metaText,
+      buttonTone: ellaLandingTheme.buttonTone,
+      readyDot: ellaLandingTheme.readyDot,
       bgImg: '/images/meal-prep.png',
       imc: ellaImc,
       bio: ellaBio,
@@ -337,10 +338,10 @@ export default function LandingView() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col relative overflow-hidden">
       {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.10),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#f3f6fb_48%,_#edf7f1_100%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_30%),linear-gradient(180deg,_#020617_0%,_#0f172a_48%,_#111827_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.10),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#f3f6fb_48%,_#f5f3ff_100%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.12),_transparent_30%),linear-gradient(180deg,_#020617_0%,_#0f172a_48%,_#111827_100%)]" />
 
         <div className="absolute -top-24 -left-16 w-[28rem] h-[28rem] rounded-full bg-sky-300/20 blur-3xl" />
-        <div className="absolute top-[10%] -right-20 w-[26rem] h-[26rem] rounded-full bg-emerald-300/20 blur-3xl" />
+        <div className="absolute top-[10%] -right-20 w-[26rem] h-[26rem] rounded-full bg-violet-300/20 blur-3xl" />
         <div className="absolute bottom-[-8rem] left-[18%] w-[30rem] h-[30rem] rounded-full bg-violet-300/10 blur-3xl" />
 
         <div
@@ -367,7 +368,7 @@ export default function LandingView() {
             animate={{ opacity: 1, x: 0 }}
             className="min-w-0 flex items-center gap-2"
           >
-            <ChefHat className="w-4 h-4 text-emerald-500" />
+            <ChefHat className="w-4 h-4 text-violet-500" />
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
               INICIO
             </p>
@@ -410,7 +411,7 @@ export default function LandingView() {
         >
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight mb-2 dark:text-slate-50">
             Nutrición inteligente,{' '}
-            <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 bg-clip-text text-transparent">
               sin complicaciones
             </span>
           </h1>
@@ -421,7 +422,7 @@ export default function LandingView() {
 
           <div className="flex flex-wrap justify-center gap-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600 dark:bg-slate-900/80 dark:text-slate-200">
-              <ChefHat className="w-3.5 h-3.5 text-emerald-500" />
+              <ChefHat className="w-3.5 h-3.5 text-violet-500" />
               Plan editable
             </div>
 
@@ -472,11 +473,11 @@ export default function LandingView() {
           )}
 
           {elReady && ellaReady && (
-            <div className="rounded-2xl bg-emerald-50/85 shadow-[0_10px_30px_rgba(16,185,129,0.08)] px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs font-semibold text-emerald-700 text-center leading-relaxed">
+            <div className={ambosLandingTheme.combinedBannerSurface}>
+              <p className={ambosLandingTheme.combinedBannerText}>
                 Los planes de <span className="font-bold italic text-base">El</span> y{' '}
                 <span className="font-bold italic text-base">Ella</span> ya están listos.
-                <span className="block text-[11px] font-medium text-emerald-600/80 mt-1">
+                <span className={ambosLandingTheme.combinedBannerSubtext}>
                   Si quieres más comidas compartidas, puedes volver a personalizar ambos.
                 </span>
               </p>
@@ -517,7 +518,7 @@ export default function LandingView() {
 
                 {p.ready && (
                   <div className="absolute top-3.5 right-3.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/18 backdrop-blur-md text-white text-[10px] font-bold shadow-[0_8px_20px_rgba(0,0,0,0.16)]">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${p.readyDot}`} />
                     Listo
                   </div>
                 )}
@@ -561,7 +562,7 @@ export default function LandingView() {
                   <div className="pt-1">
                     <PlanButton
                       label={p.ready ? 'Actualizar mi plan' : 'Personalizar mi plan'}
-                      tint={p.id === 'el' ? 'blue' : 'rose'}
+                      toneClass={p.buttonTone}
                       dataTestId={`landing-customize-${p.id}`}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -594,7 +595,7 @@ export default function LandingView() {
               setActiveDay('Lunes');
               setActiveTab('plan');
             })}
-            className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#10b981] via-[#059669] to-[#0f766e] shadow-[0_18px_44px_rgba(15,23,42,0.16)] hover:shadow-[0_24px_56px_rgba(15,23,42,0.2)] hover:shadow-[0_22px_60px_rgba(16,185,129,0.24)] transition-all duration-300 cursor-pointer ring-1 ring-white/10"
+            className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${ambosLandingTheme.cardGradient} shadow-[0_18px_44px_rgba(15,23,42,0.16)] hover:shadow-[0_24px_56px_rgba(15,23,42,0.2)] ${ambosLandingTheme.cardHoverShadow} transition-all duration-300 cursor-pointer ring-1 ring-white/10`}
           >
             <div
               className="absolute inset-0 bg-cover bg-center opacity-[0.09] mix-blend-luminosity"
@@ -626,7 +627,7 @@ export default function LandingView() {
               <div className="flex flex-col items-start lg:items-end gap-3">
                 <PlanButton
                   label={elReady && ellaReady ? 'Actualizar mi plan' : 'Personalizar mi plan'}
-                  tint="emerald"
+                  toneClass={ambosLandingTheme.buttonTone}
                   dataTestId="landing-customize-ambos"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -643,13 +644,13 @@ export default function LandingView() {
                       key={label}
                       className="flex flex-col items-center bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_rgba(0,0,0,0.08)] rounded-2xl px-4 py-3 min-w-[96px] backdrop-blur-sm"
                     >
-                      <span className="text-[9px] text-emerald-50/70 font-bold uppercase tracking-widest mb-1">
+                      <span className={ambosLandingTheme.combinedStatsLabel}>
                         {label}
                       </span>
                       <span className="text-2xl font-bold text-white tabular-nums leading-none drop-shadow-sm">
                         {val}
                       </span>
-                      <span className="text-[9px] text-emerald-50/55 mt-0.5">{sub}</span>
+                      <span className={ambosLandingTheme.combinedStatsSubtext}>{sub}</span>
                     </div>
                   ))}
                 </div>

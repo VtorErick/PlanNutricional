@@ -18,6 +18,7 @@ const ellaFixture = JSON.parse(
 
 type SeedPlanOptions = {
   selectedDays?: string[];
+  lastQuestionnaireContext?: Record<string, unknown> | null;
 };
 
 export function getFirstMealName(
@@ -96,17 +97,22 @@ export async function seedGeneratedPlans(
 ) {
   const selectedDays = options.selectedDays ?? [];
   const selecciones = buildSelectionSeed(selectedDays);
+  const lastQuestionnaireContext = options.lastQuestionnaireContext ?? null;
 
   await resetAppStorage(page);
 
   await page.addInitScript(
-    ({ customData, dataVersions, seleccionesDieta }) => {
+    ({ customData, dataVersions, seleccionesDieta, savedQuestionnaireContext }) => {
       window.localStorage.setItem('darkMode', JSON.stringify(false));
       window.localStorage.setItem('customData', JSON.stringify(customData));
       window.localStorage.setItem('dataVersions', JSON.stringify(dataVersions));
       window.localStorage.setItem('seleccionesDieta', JSON.stringify(seleccionesDieta));
       window.localStorage.setItem('comprasCheck', JSON.stringify({}));
       window.localStorage.setItem('diaActivo', JSON.stringify('Lunes'));
+
+      if (savedQuestionnaireContext) {
+        window.localStorage.setItem('lastQuestionnaireContext', JSON.stringify(savedQuestionnaireContext));
+      }
     },
     {
       customData: {
@@ -118,6 +124,7 @@ export async function seedGeneratedPlans(
         ella: 'custom',
       },
       seleccionesDieta: selecciones,
+      savedQuestionnaireContext: lastQuestionnaireContext,
     }
   );
 }

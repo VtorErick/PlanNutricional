@@ -15,6 +15,7 @@ import {
 import MealSelector from '../MealSelector';
 import MealEditSheet from '../MealEditSheet';
 import PlanAiRefreshSheet from '../PlanAiRefreshSheet';
+import type { QuestionnairePayload } from '../NutritionQuestionnaire';
 import { useDiet } from '../../context/DietContext';
 import { getMomentMacroPortions } from '../../utils/macros';
 import { type AccentColors, getAccentColors } from '../../utils/theme';
@@ -31,6 +32,14 @@ import {
   getMealOccurrences,
   type MealEditorDraft,
 } from '../../utils/mealEditing';
+
+function cloneQuestionnaireValue<T>(value: T): T {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as T;
+}
 
 const momentoIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
@@ -94,6 +103,17 @@ export default function PlanView() {
     planRevisionError,
     lastQuestionnaireContext,
     handleRevisePlanWithAi,
+    geminiApiKey,
+    geminiModel,
+    refreshGeminiAvailability,
+    setShowQuestionnaire,
+    setQuestionnaireTargetProfile,
+    setQuestionnaireStepIdx,
+    setQuestionnaireEl,
+    setQuestionnaireElla,
+    setQuestionnairePortionMode,
+    setQuestionnaireManualPortions,
+    setQuestionnaireAdditionalNotes,
     notify,
     confirmAction,
   } = useDiet();
@@ -317,6 +337,59 @@ export default function PlanView() {
 
   const defaultPlanAiTarget = (perfilActivo === 'ambos' ? 'ambos' : (perfilActivo || 'el')) as 'el' | 'ella' | 'ambos';
 
+  const handleOpenQuestionnaireFromPlanAi = React.useCallback(async (
+    targetProfile: PlanRevisionRequest['targetProfile']
+  ) => {
+    const status = await refreshGeminiAvailability({
+      customApiKey: geminiApiKey,
+      preferredModel: geminiModel,
+      checkGeneration: true,
+      syncModel: true,
+    });
+
+    if (!status?.ok) {
+      await notify(
+        'IA no disponible',
+        status?.error || 'No fue posible validar la IA en este momento.'
+      );
+      return;
+    }
+
+    const questionnaireContext = lastQuestionnaireContext as Partial<QuestionnairePayload> | null;
+    setQuestionnaireTargetProfile(targetProfile);
+    setQuestionnaireStepIdx(1);
+    setQuestionnairePortionMode(questionnaireContext?.portionMode === 'manual' ? 'manual' : 'auto');
+    setQuestionnaireManualPortions(cloneQuestionnaireValue(
+      questionnaireContext?.planConfig?.manualPortions || {}
+    ));
+    setQuestionnaireAdditionalNotes(questionnaireContext?.planConfig?.additionalNotes || '');
+
+    if (questionnaireContext?.el) {
+      setQuestionnaireEl(cloneQuestionnaireValue(questionnaireContext.el));
+    }
+
+    if (questionnaireContext?.ella) {
+      setQuestionnaireElla(cloneQuestionnaireValue(questionnaireContext.ella));
+    }
+
+    setIsPlanAiSheetOpen(false);
+    setShowQuestionnaire(true);
+  }, [
+    geminiApiKey,
+    geminiModel,
+    lastQuestionnaireContext,
+    notify,
+    refreshGeminiAvailability,
+    setQuestionnaireAdditionalNotes,
+    setQuestionnaireEl,
+    setQuestionnaireElla,
+    setQuestionnaireManualPortions,
+    setQuestionnairePortionMode,
+    setQuestionnaireStepIdx,
+    setQuestionnaireTargetProfile,
+    setShowQuestionnaire,
+  ]);
+
   const handlePlanAiSubmit = React.useCallback(async ({
     requestMode,
     targetProfile,
@@ -456,59 +529,16 @@ export default function PlanView() {
         className="space-y-4"
       >
         <div className="space-y-4">
-          <div className={`rounded-[24px] sm:rounded-[28px] overflow-hidden ${
-            isDarkMode
-              ? 'bg-slate-950/92 shadow-[0_12px_32px_rgba(2,6,23,0.42)]'
-              : 'bg-white shadow-[0_10px_28px_rgba(15,23,42,0.05)]'
-          }`}>
-            <div className={`relative overflow-hidden p-4 sm:p-5 ${
-              isDarkMode ? 'bg-slate-900' : 'bg-slate-50/70'
-            }`}>
-              <div className={`absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl ${
-                isDarkMode ? 'bg-cyan-500/15' : 'bg-cyan-200/50'
-              }`} />
-
-              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-2">
-                  <div>
-                    <h3 className={`text-lg font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
-                      Ajusta tu plan
-                    </h3>
-                    <p className={`mt-1 max-w-2xl text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                      Pide cambios puntuales o rehace el plan sin repetir todo el formulario.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsPlanAiSheetOpen(true)}
-                  data-testid="plan-ai-open"
-                  className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white bg-gradient-to-r ${ac.bgGradient} shadow-lg transition hover:brightness-110 active:scale-[0.99]`}
-                >
-                  <RefreshCcw className="h-4 w-4" />
-                  Ajustar con IA
-                </button>
-              </div>
-
-              <div className="relative mt-4 grid gap-2 sm:grid-cols-2">
-                {[
-                  'Solo cambia lo que pidas',
-                  'O rehacelo completo si hace falta',
-                ].map((line) => (
-                  <div
-                    key={line}
-                    className={`rounded-2xl px-3 py-2.5 text-xs font-semibold ${
-                      isDarkMode
-                        ? 'bg-slate-950/65 text-slate-300'
-                        : 'bg-white/75 text-slate-600'
-                    }`}
-                  >
-                    {line}
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={() => setIsPlanAiSheetOpen(true)}
+              data-testid="plan-ai-open"
+              className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white bg-gradient-to-r ${ac.bgGradient} shadow-lg transition hover:brightness-110 active:scale-[0.99]`}
+            >
+              <RefreshCcw className="h-4 w-4" />
+              Ajustar mi plan
+            </button>
           </div>
 
           {perfilBase.momentos.map((momento) => {
@@ -879,6 +909,7 @@ export default function PlanView() {
         open={isPlanAiSheetOpen}
         onClose={() => setIsPlanAiSheetOpen(false)}
         onSubmit={(payload) => handlePlanAiSubmit(payload)}
+        onOpenQuestionnaire={(targetProfile) => handleOpenQuestionnaireFromPlanAi(targetProfile)}
         isDarkMode={isDarkMode}
         accentClasses={ac}
         loading={planRevisionLoading}

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Flame, ShieldCheck, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { estimateDailyCaloriesFromObjectives, estimateDailyMacroTargetsFromObjectives } from '../../utils/nutrition';
+import { getMonitoringPalette } from '../../utils/theme';
 
 const STATUS_LABELS = {
   low: 'Lejos de meta',
@@ -90,71 +91,7 @@ export default function CalorieMonitoringView() {
     return Math.abs(item.delta) < Math.abs(best.delta) ? item : best;
   }, daySummaries[0]);
 
-  const palette = isDarkMode
-    ? isAmbos || perfilActivo === 'ambos'
-      ? {
-          hero: 'from-emerald-900 via-teal-900 to-cyan-900',
-          soft: 'bg-emerald-950/70 border-emerald-900/70 text-emerald-100',
-          bar: 'bg-emerald-400',
-          mutedBar: 'bg-emerald-700',
-          accent: 'text-emerald-300',
-          activeCard: 'bg-gradient-to-br from-emerald-950 to-teal-950 text-white shadow-[0_16px_32px_rgba(4,120,87,0.28)]',
-          inactiveCard: 'bg-slate-950/92 text-slate-100',
-          cardTrack: 'bg-slate-800',
-        }
-      : perfilActivo === 'ella'
-        ? {
-            hero: 'from-rose-900 via-fuchsia-900 to-pink-950',
-            soft: 'bg-fuchsia-950/70 border-fuchsia-900/70 text-rose-100',
-            bar: 'bg-pink-400',
-            mutedBar: 'bg-pink-700',
-            accent: 'text-pink-300',
-            activeCard: 'bg-gradient-to-br from-fuchsia-950 to-rose-950 text-white shadow-[0_16px_32px_rgba(157,23,77,0.28)]',
-            inactiveCard: 'bg-slate-950/92 text-slate-100',
-            cardTrack: 'bg-slate-800',
-          }
-        : {
-            hero: 'from-sky-900 via-blue-900 to-indigo-950',
-            soft: 'bg-sky-950/70 border-sky-900/70 text-sky-100',
-            bar: 'bg-sky-400',
-            mutedBar: 'bg-sky-700',
-            accent: 'text-sky-300',
-            activeCard: 'bg-gradient-to-br from-sky-950 to-indigo-950 text-white shadow-[0_16px_32px_rgba(14,116,144,0.28)]',
-            inactiveCard: 'bg-slate-950/92 text-slate-100',
-            cardTrack: 'bg-slate-800',
-          }
-    : isAmbos || perfilActivo === 'ambos'
-    ? {
-        hero: 'from-emerald-500 via-teal-500 to-cyan-500',
-        soft: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-        bar: 'bg-emerald-500',
-        mutedBar: 'bg-emerald-300',
-        accent: 'text-emerald-700',
-        activeCard: 'bg-emerald-600 text-white',
-        inactiveCard: 'bg-slate-50 text-slate-900',
-        cardTrack: 'bg-white',
-      }
-    : perfilActivo === 'ella'
-      ? {
-          hero: 'from-rose-500 via-pink-500 to-fuchsia-500',
-          soft: 'bg-rose-50 border-rose-200 text-rose-900',
-          bar: 'bg-rose-500',
-          mutedBar: 'bg-rose-300',
-          accent: 'text-rose-700',
-          activeCard: 'bg-rose-600 text-white',
-          inactiveCard: 'bg-slate-50 text-slate-900',
-          cardTrack: 'bg-white',
-        }
-      : {
-          hero: 'from-blue-500 via-indigo-500 to-cyan-500',
-          soft: 'bg-blue-50 border-blue-200 text-blue-900',
-          bar: 'bg-blue-500',
-          mutedBar: 'bg-blue-300',
-          accent: 'text-blue-700',
-          activeCard: 'bg-blue-600 text-white',
-          inactiveCard: 'bg-slate-50 text-slate-900',
-          cardTrack: 'bg-white',
-        };
+  const palette = getMonitoringPalette(perfilActivo ?? (isAmbos ? 'ambos' : 'el'), isDarkMode);
 
   const statusPills: Record<StatusKey, string> = {
     low: isDarkMode ? 'bg-amber-950/60 text-amber-200' : 'bg-amber-50 text-amber-700',

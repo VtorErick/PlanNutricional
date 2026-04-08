@@ -37,6 +37,7 @@ import {
 import { buildExportData, downloadJsonFile } from '../dataManager';
 import { persistGeminiApiKey } from '../utils/geminiKey';
 import { showAppAlert } from '../utils/appDialogs';
+import { getQuestionnaireTheme } from '../utils/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type TargetProfile = 'el' | 'ella' | 'ambos';
@@ -236,27 +237,9 @@ const slideVariants = {
 
 // ─── Theme by profile ─────────────────────────────────────────────────────────
 const THEME = {
-  el: {
-    accent: '#3b82f6',
-    light: 'bg-blue-50 dark:bg-sky-950/50',
-    text: 'text-blue-600 dark:text-sky-200',
-    border: 'border-blue-200 dark:border-sky-900/60',
-    grad: 'from-blue-500 to-indigo-600',
-  },
-  ella: {
-    accent: '#f43f5e',
-    light: 'bg-rose-50 dark:bg-rose-950/50',
-    text: 'text-rose-600 dark:text-rose-200',
-    border: 'border-rose-200 dark:border-rose-900/60',
-    grad: 'from-rose-500 to-pink-600',
-  },
-  ambos: {
-    accent: '#10b981',
-    light: 'bg-emerald-50 dark:bg-emerald-950/50',
-    text: 'text-emerald-600 dark:text-emerald-200',
-    border: 'border-emerald-200 dark:border-emerald-900/60',
-    grad: 'from-emerald-500 to-teal-600',
-  },
+  el: getQuestionnaireTheme('el'),
+  ella: getQuestionnaireTheme('ella'),
+  ambos: getQuestionnaireTheme('ambos'),
 };
 
 const STEP_META: Record<StepType, { label: string; Icon: any }> = {
@@ -1080,7 +1063,7 @@ export default function NutritionQuestionnaire({
                   </p>
                 </div>
 
-                {active && <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-500" />}
+                {active && <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${t.text}`} />}
               </button>
             );
           })}
@@ -2037,7 +2020,7 @@ export default function NutritionQuestionnaire({
 
                 downloadJsonFile('plan_generado.json', JSON.stringify(rawFormat, null, 2));
               }}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold border-2 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all active:scale-[.98] dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:bg-emerald-950/55"
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold border-2 transition-all active:scale-[.98] ${tc.border} ${tc.light} ${tc.text} hover:brightness-[0.98]`}
             >
               <Download className="w-4 h-4" />
               Descargar JSON generado
@@ -2079,7 +2062,7 @@ export default function NutritionQuestionnaire({
             <button
               onClick={() => onViewPlan(targetProfile)}
               data-testid="questionnaire-view-plan"
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white"
+              className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] bg-gradient-to-r ${tc.grad} hover:brightness-110 text-white`}
             >
               <CheckCircle2 className="w-5 h-5" />
               ¡Listo! Revisa tu plan
@@ -2136,7 +2119,7 @@ export default function NutritionQuestionnaire({
       <div className="mt-4 rounded-[28px] bg-white border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-950 dark:border-slate-800">
         <div className="h-2 bg-slate-100 dark:bg-slate-900">
           <motion.div
-            className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500"
+            className={`h-full bg-gradient-to-r ${tc.grad}`}
             animate={{ width: `${progress * 100}%` }}
             transition={{ type: 'spring', stiffness: 80, damping: 20 }}
           />
