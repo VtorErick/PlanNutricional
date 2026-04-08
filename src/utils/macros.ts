@@ -1,13 +1,13 @@
 import { Profile } from '../types';
 
 export const macroPortionCategories = [
-  { key: 'frutas', label: 'Frutas', icon: 'Fr' },
-  { key: 'verduras', label: 'Verduras', icon: 'Ve' },
-  { key: 'cereales', label: 'Cereales', icon: 'Ce' },
-  { key: 'proteina', label: 'Proteina', icon: 'Pr' },
-  { key: 'grasas', label: 'Grasas', icon: 'Gr' },
-  { key: 'lacteos', label: 'Lacteos', icon: 'La' },
-  { key: 'leguminosas', label: 'Leguminosas', icon: 'Le' },
+  { key: 'frutas', label: 'Frutas', icon: '🍎' },
+  { key: 'verduras', label: 'Verduras', icon: '🥦' },
+  { key: 'cereales', label: 'Cereales', icon: '🌾' },
+  { key: 'proteina', label: 'Proteina', icon: '🥩' },
+  { key: 'grasas', label: 'Grasas', icon: '🥑' },
+  { key: 'lacteos', label: 'Lacteos', icon: '🥛' },
+  { key: 'leguminosas', label: 'Leguminosas', icon: '🫘' },
 ] as const;
 
 export const getMomentMacroPortions = (profile: Profile, momentoKey: string) => {
