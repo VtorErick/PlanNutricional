@@ -222,6 +222,73 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await expect(page.getByText(untouchedTuesdayBreakfast)).toBeVisible();
 });
 
+test('AI regenerate tolerates patch-shaped responses and still refreshes the visible plan', async ({
+  page,
+}) => {
+  const updatedBreakfast = 'Desayuno regenerado por IA';
+
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Martes'] });
+  await mockGeminiStatusApi(page);
+  await page.route('**/api/generate-plan', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        responseMode: 'regenerate',
+        elData: {
+          summary: ['Se regenero el desayuno del lunes.'],
+          planPatch: {
+            Lunes: {
+              desayuno: [
+                {
+                  nombre: updatedBreakfast,
+                  porciones: '1 porcion',
+                  detalle: 'Nueva opcion regenerada para la prueba',
+                  tags: ['regenerado'],
+                  super: ['avena', 'berries'],
+                  caloriasKcal: 330,
+                  proteinaG: 21,
+                  grasasG: 10,
+                },
+                {
+                  nombre: 'Segunda opcion regenerada',
+                  porciones: '1 porcion',
+                  detalle: 'Alternativa regenerada',
+                  tags: ['regenerado'],
+                  super: ['pan', 'huevo'],
+                  caloriasKcal: 340,
+                  proteinaG: 22,
+                  grasasG: 11,
+                },
+                {
+                  nombre: 'Tercera opcion regenerada',
+                  porciones: '1 porcion',
+                  detalle: 'Tercera alternativa regenerada',
+                  tags: ['regenerado'],
+                  super: ['yogur', 'fruta'],
+                  caloriasKcal: 300,
+                  proteinaG: 18,
+                  grasasG: 8,
+                },
+              ],
+            },
+          },
+        },
+      }),
+    });
+  });
+
+  await page.goto('/miplan?profile=el');
+  await page.getByTestId('plan-ai-open').click();
+  await page.getByTestId('plan-ai-mode-regenerate').click();
+  await page.getByTestId('plan-ai-instruction').fill('Rehaz el plan con desayunos mas ligeros.');
+  await page.getByTestId('plan-ai-submit').click();
+
+  await expect(page.getByText(/Plan recreado/i)).toBeVisible();
+  await page.getByRole('button', { name: /Aceptar/i }).click();
+  await expect(page.getByText(updatedBreakfast)).toBeVisible();
+});
+
 test('recreate from zero can reopen the questionnaire with saved answers', async ({ page }) => {
   await seedGeneratedPlans(page, {
     selectedDays: ['Lunes'],

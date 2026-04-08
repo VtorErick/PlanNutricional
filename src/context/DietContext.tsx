@@ -1385,6 +1385,40 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
+        if (
+          isPlainObject(responseData) &&
+          (
+            Object.prototype.hasOwnProperty.call(responseData, 'planPatch') ||
+            Object.prototype.hasOwnProperty.call(responseData, 'profilePatch') ||
+            Object.prototype.hasOwnProperty.call(responseData, 'summary')
+          )
+        ) {
+          const patch = responseData as PlanRevisionProfilePatch;
+          const currentBucket = buildCurrentRawBucket(perfilId);
+          const previousPlan = perfilesData[perfilId].plan;
+          const parsedBucket = applyPlanRevisionPatchToBucket(perfilId, currentBucket, patch);
+          const nextPlan = perfilId === 'el' ? parsedBucket.planEL : parsedBucket.planELLA;
+          const affectedSlots = getAffectedPlanSlotsFromPatch(patch);
+
+          syncSelectionsForUpdatedSlots(
+            perfilId,
+            previousPlan,
+            nextPlan,
+            affectedSlots.length > 0 ? affectedSlots : getAllPlanSlots(nextPlan)
+          );
+
+          updatedBuckets[perfilId] = parsedBucket;
+          versionUpdates[perfilId] = 'custom';
+          summaries.push(
+            ...(
+              getPatchSummaryLines(patch).length > 0
+                ? getPatchSummaryLines(patch).map((line) => `${perfilId === 'el' ? 'El' : 'Ella'}: ${line}`)
+                : [`${perfilId === 'el' ? 'El' : 'Ella'}: Plan recreado con la nueva instruccion.`]
+            )
+          );
+          return;
+        }
+
         const parsedBucket = parseObjectToData(
           responseData,
           perfilId === 'el' ? 'EL' : 'ELLA'

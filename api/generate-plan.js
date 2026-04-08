@@ -12,8 +12,283 @@ const ALLOWED_ICONS = [
   'AlertTriangle',
   'Heart',
 ];
+const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+const MEAL_MOMENT_KEYS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
+const FOOD_GROUP_KEYS = [
+  'frutas',
+  'verduras',
+  'cereales',
+  'leguminosas',
+  'lacteos',
+  'proteina',
+  'grasas',
+];
+const MEAL_ITEM_REQUIRED_KEYS = [
+  'nombre',
+  'porciones',
+  'detalle',
+  'tags',
+  'super',
+  'caloriasKcal',
+  'proteinaG',
+  'grasasG',
+];
+const SUPPLEMENT_REQUIRED_KEYS = [
+  'name',
+  'goalSupport',
+  'whyItMayHelp',
+  'howToUse',
+  'timing',
+  'notes',
+  'caution',
+];
+const PROFILE_REQUIRED_KEYS = [
+  'id',
+  'nombre',
+  'perfil',
+  'detallesPerfil',
+  'meta',
+  'metaCaloricaKcalDia',
+  'descripcion',
+  'edad',
+  'horariosTexto',
+  'notaSalud',
+  'momentos',
+  'objetivosPorMomento',
+  'distribucionDiaria',
+  'resumenPersonal',
+];
 const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
+
+function buildMealItemSchema() {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: MEAL_ITEM_REQUIRED_KEYS,
+    properties: {
+      nombre: { type: 'string' },
+      porciones: { type: 'string' },
+      detalle: { type: 'string' },
+      tags: { type: 'array', items: { type: 'string' } },
+      super: { type: 'array', items: { type: 'string' } },
+      caloriasKcal: { type: 'integer' },
+      proteinaG: { type: 'integer' },
+      grasasG: { type: 'integer' },
+    },
+  };
+}
+
+function buildMomentDistributionSchema() {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: FOOD_GROUP_KEYS,
+    properties: Object.fromEntries(
+      FOOD_GROUP_KEYS.map((groupKey) => [groupKey, { type: 'integer' }])
+    ),
+  };
+}
+
+function buildMomentTimeSchema() {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['key', 'label', 'hora'],
+    properties: {
+      key: { type: 'string' },
+      label: { type: 'string' },
+      hora: { type: 'string' },
+    },
+  };
+}
+
+function buildProfileSchema(partial = false) {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: partial ? [] : PROFILE_REQUIRED_KEYS,
+    properties: {
+      id: { type: 'string' },
+      nombre: { type: 'string' },
+      perfil: { type: 'string' },
+      detallesPerfil: { type: 'string' },
+      meta: { type: 'string' },
+      metaCaloricaKcalDia: { type: 'integer' },
+      descripcion: { type: 'string' },
+      edad: { type: 'integer' },
+      horariosTexto: { type: 'string' },
+      notaSalud: { type: 'string' },
+      momentos: {
+        type: 'array',
+        minItems: 1,
+        items: buildMomentTimeSchema(),
+      },
+      objetivosPorMomento: {
+        type: 'object',
+        additionalProperties: false,
+        required: partial ? [] : MEAL_MOMENT_KEYS,
+        properties: Object.fromEntries(
+          MEAL_MOMENT_KEYS.map((momentKey) => [momentKey, buildMomentDistributionSchema()])
+        ),
+      },
+      distribucionDiaria: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['grupo', 'total', 'detalle'],
+          properties: {
+            grupo: { type: 'string' },
+            total: { type: 'integer' },
+            detalle: { type: 'string' },
+          },
+        },
+      },
+      resumenPersonal: {
+        type: 'array',
+        minItems: 1,
+        items: { type: 'string' },
+      },
+    },
+  };
+}
+
+function buildEquivalenciasSchema() {
+  return {
+    type: 'array',
+    minItems: 1,
+    items: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['titulo', 'icon', 'items'],
+      properties: {
+        titulo: { type: 'string' },
+        icon: { type: 'string', enum: ALLOWED_ICONS },
+        items: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'string' },
+        },
+      },
+    },
+  };
+}
+
+function buildSuplementosSchema() {
+  return {
+    type: 'array',
+    items: {
+      type: 'object',
+      additionalProperties: false,
+      required: SUPPLEMENT_REQUIRED_KEYS,
+      properties: {
+        name: { type: 'string' },
+        goalSupport: { type: 'string' },
+        whyItMayHelp: { type: 'string' },
+        howToUse: { type: 'string' },
+        timing: { type: 'string' },
+        notes: { type: 'string' },
+        caution: { type: 'string' },
+      },
+    },
+  };
+}
+
+function buildPlanDaySchema(requireAllMoments) {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: requireAllMoments ? MEAL_MOMENT_KEYS : [],
+    properties: Object.fromEntries(
+      MEAL_MOMENT_KEYS.map((momentKey) => [
+        momentKey,
+        {
+          type: 'array',
+          minItems: 3,
+          maxItems: 3,
+          items: buildMealItemSchema(),
+        },
+      ])
+    ),
+  };
+}
+
+function buildPlanSchema(requireAllDays, requireAllMoments) {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: requireAllDays ? WEEK_DAYS : [],
+    properties: Object.fromEntries(
+      WEEK_DAYS.map((dayKey) => [dayKey, buildPlanDaySchema(requireAllMoments)])
+    ),
+  };
+}
+
+function buildFullResponseSchema(prefix) {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: [
+      `perfil${prefix}`,
+      `equivalencias${prefix}`,
+      `suplementos${prefix}`,
+      `plan${prefix}`,
+    ],
+    propertyOrdering: [
+      `perfil${prefix}`,
+      `equivalencias${prefix}`,
+      `suplementos${prefix}`,
+      `plan${prefix}`,
+    ],
+    properties: {
+      [`perfil${prefix}`]: buildProfileSchema(false),
+      [`equivalencias${prefix}`]: buildEquivalenciasSchema(),
+      [`suplementos${prefix}`]: buildSuplementosSchema(),
+      [`plan${prefix}`]: buildPlanSchema(true, true),
+    },
+  };
+}
+
+function buildAdjustResponseSchema() {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['summary'],
+    propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'equivalencias', 'suplementos', 'planPatch'],
+    properties: {
+      summary: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 4,
+        items: { type: 'string' },
+      },
+      noChangesReason: { type: 'string' },
+      profilePatch: buildProfileSchema(true),
+      equivalencias: buildEquivalenciasSchema(),
+      suplementos: buildSuplementosSchema(),
+      planPatch: buildPlanSchema(false, false),
+    },
+  };
+}
+
+function buildGenerationOutputContract(prefix) {
+  return {
+    rootKeys: [
+      `perfil${prefix}`,
+      `equivalencias${prefix}`,
+      `suplementos${prefix}`,
+      `plan${prefix}`,
+    ],
+    fixedDays: WEEK_DAYS,
+    fixedMoments: MEAL_MOMENT_KEYS,
+    fixedFoodGroups: FOOD_GROUP_KEYS,
+    profileRequiredKeys: PROFILE_REQUIRED_KEYS,
+    mealsRequiredKeys: MEAL_ITEM_REQUIRED_KEYS,
+    supplementRequiredKeys: SUPPLEMENT_REQUIRED_KEYS,
+  };
+}
 
 function isPlanRevisionRequest(payload) {
   return payload?.requestMode === 'adjust' || payload?.requestMode === 'regenerate';
@@ -99,74 +374,38 @@ function getOptionalPdfParts(payload) {
 
 function buildSystemPrompt(prefix) {
   const lowerPrefix = prefix.toLowerCase();
+  const profileLabel = prefix === 'EL' ? 'El' : 'Ella';
 
   return `Eres un nutricionista clinico experto. Genera un plan semanal completo, realista y consistente con el cuestionario.
 
-Debes responder SOLO con JSON valido y seguir exactamente esta estructura:
+Debes responder con un unico objeto JSON valido. No uses markdown, comentarios, texto fuera del JSON ni claves adicionales.
 
-1. perfil${prefix}: {
-  id: "${lowerPrefix}",
-  nombre: "${prefix === 'EL' ? 'El' : 'Ella'}",
-  perfil: string,
-  detallesPerfil: string,
-  meta: string,
-  metaCaloricaKcalDia: number,
-  descripcion: string,
-  edad: number,
-  horariosTexto: string,
-  notaSalud: string,
-  momentos: [{ key, label, hora }],
-  objetivosPorMomento: {
-    desayuno: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas },
-    colacion_am: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas },
-    comida: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas },
-    colacion_pm: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas },
-    cena: { frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas }
-  },
-  distribucionDiaria: [{ grupo, total, detalle }],
-  resumenPersonal: string[],
-}
+Perfil objetivo:
+- id fijo: "${lowerPrefix}"
+- nombre fijo: "${profileLabel}"
 
-2. equivalencias${prefix}: [
-  { titulo: string, icon: enum[${ALLOWED_ICONS.join(', ')}], items: string[] }
-]
-
-3. suplementos${prefix}: [
-  {
-    name: string,
-    goalSupport: string,
-    whyItMayHelp: string,
-    howToUse: string,
-    timing: string,
-    notes: string,
-    caution: string
-  }
-]
-
-4. plan${prefix}: {
-  Lunes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Martes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Miercoles: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Jueves: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Viernes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Sabado: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Domingo: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] }
-}
+Claves raiz obligatorias:
+- perfil${prefix}
+- equivalencias${prefix}
+- suplementos${prefix}
+- plan${prefix}
 
 Reglas criticas:
 - No cambies id ni nombre.
-- "perfil" debe ser SIEMPRE un resumen compacto en una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>". Ejemplo valido: "67 kg | 1.60 m | 32 anos | IMC 26.2".
-- No pongas parrafos, explicaciones clinicas ni texto narrativo dentro de "perfil".
-- Usa "detallesPerfil" para guardar el analisis narrativo completo del caso, incluyendo contexto corporal, actividad, hallazgos del PDF, riesgos y consideraciones relevantes.
-- Cada comida debe incluir: nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG.
+- Usa exactamente estos dias dentro del JSON: ${WEEK_DAYS.join(', ')}.
+- Usa exactamente estos momentos: ${MEAL_MOMENT_KEYS.join(', ')}.
+- "perfil" debe ser SIEMPRE una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>".
+- No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
+- Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
+- Cada momento del plan debe devolver exactamente 3 opciones de comida.
 - Las calorias y macros deben ser enteros realistas.
-- Las equivalencias deben alinearse con los ingredientes usados en el plan.
-- Los suplementos deben ser EXTRA opcional. Nunca deben ser necesarios para cumplir calorias, macros o el objetivo.
-- No pongas suplementos dentro de plan${prefix}. El plan debe usar alimentos reales.
+- Las equivalencias deben alinearse con los ingredientes del plan y usar solo iconos permitidos: ${ALLOWED_ICONS.join(', ')}.
+- Los suplementos son opcionales y nunca deben ser necesarios para cumplir calorias, macros u objetivo.
+- No pongas suplementos dentro del plan.
 - Si el usuario adjunto PDF o medidas corporales, usalos como contexto complementario.
-- Si hay conflicto entre el PDF y las respuestas manuales, prioriza las respuestas manuales del cuestionario.
-- Si targetProfile = "ambos" y recibes companionPlan, conserva las mismas preparaciones base por dia, momento e indice, ajustando solo porciones y macros.
-- Responde solo con JSON, sin markdown ni texto adicional.`;
+- Si hay conflicto entre PDF y cuestionario, prioriza el cuestionario.
+- Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
+- No devuelvas null, undefined, placeholders, alias de claves ni dias con acentos distintos a los pedidos.`;
 }
 
 function buildUserPrompt(payload, prefix) {
@@ -174,132 +413,69 @@ function buildUserPrompt(payload, prefix) {
     profilePrefix: prefix,
     questionnaire: sanitizePromptPayload(payload),
     outputContract: {
-      rootKeys: [
-        `perfil${prefix}`,
-        `equivalencias${prefix}`,
-        `suplementos${prefix}`,
-        `plan${prefix}`,
-      ],
-      fixedDays: ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'],
+      ...buildGenerationOutputContract(prefix),
       momentsSource: 'questionnaire.planConfig.selectedMoments',
-      profileRequiredKeys: [
-        'perfil',
-        'detallesPerfil',
-        'meta',
-        'metaCaloricaKcalDia',
-        'descripcion',
-        'edad',
-        'horariosTexto',
-        'notaSalud',
-        'momentos',
-        'objetivosPorMomento',
-        'distribucionDiaria',
-        'resumenPersonal',
-      ],
       profileFormat: {
         perfil: '<peso> kg | <altura> m | <edad> anos | IMC <valor>',
         detallesPerfil: 'Resumen narrativo del caso y contexto clinico.',
       },
-      mealsRequiredKeys: [
-        'nombre',
-        'porciones',
-        'detalle',
-        'tags',
-        'super',
-        'caloriasKcal',
-        'proteinaG',
-        'grasasG',
-      ],
-      supplementRequiredKeys: [
-        'name',
-        'goalSupport',
-        'whyItMayHelp',
-        'howToUse',
-        'timing',
-        'notes',
-        'caution',
-      ],
+      mealOptionsPerMoment: 3,
     },
   });
 }
 
 function buildRevisionSystemPrompt(prefix, mode) {
   const lowerPrefix = prefix.toLowerCase();
-  const baseGoal =
-    mode === 'regenerate'
-      ? 'Reconstruye el plan semanal completo desde cero usando el contexto disponible y las nuevas instrucciones del usuario.'
-      : 'Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, sin reescribir secciones que no cambian.';
+  if (mode === 'regenerate') {
+    return `Eres un nutricionista clinico experto. Reconstruye el plan semanal completo desde cero usando el contexto disponible y las nuevas instrucciones del usuario.
 
-  return `Eres un nutricionista clinico experto. ${baseGoal}
+Debes responder con un unico objeto JSON valido. No uses markdown, comentarios ni texto fuera del JSON.
 
-Debes responder SOLO con JSON valido.
+El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
+
+Debes devolver el plan COMPLETO con el mismo contrato de una generacion normal:
+- perfil${prefix}
+- equivalencias${prefix}
+- suplementos${prefix}
+- plan${prefix}
+
+Reglas criticas:
+- Usa exactamente los dias ${WEEK_DAYS.join(', ')}.
+- Usa exactamente los momentos ${MEAL_MOMENT_KEYS.join(', ')}.
+- Cada momento debe regresar exactamente 3 opciones completas.
+- Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
+- Mantente consistente con el cuestionario, la instruccion nueva y las restricciones activas.
+- Si reutilizas ideas del plan actual, hazlo solo cuando siga siendo conveniente, no por copiarlo ciegamente.
+- No devuelvas summary, profilePatch ni planPatch en modo regenerate. Devuelve el objeto completo listo para parsearse.`;
+  }
+
+  return `Eres un nutricionista clinico experto. Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, sin reescribir secciones que no cambian.
+
+Debes responder con un unico objeto JSON valido. No uses markdown, comentarios, texto fuera del JSON ni claves adicionales.
 
 El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
 
 Contrato exacto de salida:
-{
-  "summary": string[],
-  "noChangesReason"?: string,
-  "profilePatch"?: {
-    "perfil"?: string,
-    "detallesPerfil"?: string,
-    "meta"?: string,
-    "metaCaloricaKcalDia"?: number,
-    "descripcion"?: string,
-    "edad"?: number,
-    "horariosTexto"?: string,
-    "notaSalud"?: string,
-    "momentos"?: [{ key, label, hora }],
-    "objetivosPorMomento"?: object,
-    "distribucionDiaria"?: [{ grupo, total, detalle }],
-    "resumenPersonal"?: string[]
-  },
-  "equivalencias"?: [
-    { "titulo": string, "icon": enum[${ALLOWED_ICONS.join(', ')}], "items": string[] }
-  ],
-  "suplementos"?: [
-    {
-      "name": string,
-      "goalSupport": string,
-      "whyItMayHelp": string,
-      "howToUse": string,
-      "timing": string,
-      "notes": string,
-      "caution": string
-    }
-  ],
-  "planPatch"?: {
-    "Lunes"?: {
-      "desayuno"?: [MealItem, MealItem, MealItem],
-      "colacion_am"?: [MealItem, MealItem, MealItem],
-      "comida"?: [MealItem, MealItem, MealItem],
-      "colacion_pm"?: [MealItem, MealItem, MealItem],
-      "cena"?: [MealItem, MealItem, MealItem]
-    },
-    "Martes"?: object,
-    "Miercoles"?: object,
-    "Jueves"?: object,
-    "Viernes"?: object,
-    "Sabado"?: object,
-    "Domingo"?: object
-  }
-}
+- summary: arreglo obligatorio de 1 a 4 lineas cortas
+- noChangesReason: string opcional si no hace falta cambiar nada
+- profilePatch: objeto opcional con solo campos cambiados del perfil
+- equivalencias: arreglo opcional si cambian equivalencias
+- suplementos: arreglo opcional si cambian suplementos
+- planPatch: objeto opcional con solo dias y momentos modificados
 
 Reglas criticas:
-- summary siempre debe incluir entre 1 y 4 lineas cortas explicando lo que cambiaste.
+- summary siempre debe explicar lo que cambiaste o por que no cambiaste nada.
 - Si realmente no hace falta modificar nada, responde con summary y noChangesReason. No inventes cambios.
 - Si usas planPatch, incluye SOLO los dias y momentos modificados.
-- Cada momento incluido en planPatch debe regresar el arreglo completo de opciones para ese momento, no cambios parciales dentro de una sola comida.
-- Nunca devuelvas el plan completo si el usuario no pidio recrearlo desde cero.
-- Cada MealItem debe incluir: nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG.
-- Las calorias y macros deben ser enteros realistas.
-- profilePatch, equivalencias y suplementos son opcionales; incluyelos solo si tu respuesta necesita cambiar esas secciones.
-- Mantente consistente con el contexto del cuestionario, el plan actual, las ediciones manuales y las restricciones pedidas por el usuario.
-- Si el usuario pide recrear desde cero y aun asi conservas algo del plan actual, debe ser por conveniencia nutricional, no por copiarlo automaticamente.
-- Responde solo con JSON, sin markdown ni texto adicional.`;
+- Cada momento incluido en planPatch debe regresar el arreglo completo de 3 opciones para ese momento.
+- Nunca devuelvas el plan completo en modo adjust.
+- Cada MealItem debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
+- profilePatch, equivalencias y suplementos son opcionales; omitelos si no cambian.
+- Mantente consistente con el cuestionario, el plan actual, las ediciones manuales y las restricciones del usuario.`;
 }
 
 function buildRevisionUserPrompt(prefix, payload, profilePayload) {
+  const outputMode = payload.requestMode === 'regenerate' ? 'full_regeneration' : 'delta_patch';
   return JSON.stringify({
     profilePrefix: prefix,
     mode: payload.requestMode,
@@ -308,26 +484,22 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
     currentContext: profilePayload.currentContext,
     originalContext: profilePayload.originalContext,
     companionContext: profilePayload.companionContext,
+    outputMode,
     outputNotes: {
+      fixedDays: WEEK_DAYS,
+      fixedMoments: MEAL_MOMENT_KEYS,
+      fixedFoodGroups: FOOD_GROUP_KEYS,
       returnOnlyChangedSections: payload.requestMode === 'adjust',
       preserveUntouchedMoments: payload.requestMode === 'adjust',
-      mealItemRequiredKeys: [
-        'nombre',
-        'porciones',
-        'detalle',
-        'tags',
-        'super',
-        'caloriasKcal',
-        'proteinaG',
-        'grasasG',
-      ],
+      mealOptionsPerMoment: 3,
+      mealItemRequiredKeys: MEAL_ITEM_REQUIRED_KEYS,
+      fullOutputRootKeys: buildGenerationOutputContract(prefix).rootKeys,
     },
   });
 }
 
 function buildRequestParts(prefix, payload) {
   return [
-    { text: buildSystemPrompt(prefix) },
     { text: buildUserPrompt(payload, prefix) },
     ...getOptionalPdfParts(payload),
   ];
@@ -335,7 +507,6 @@ function buildRequestParts(prefix, payload) {
 
 function buildRevisionRequestParts(prefix, payload, profilePayload) {
   return [
-    { text: buildRevisionSystemPrompt(prefix, payload.requestMode) },
     { text: buildRevisionUserPrompt(prefix, payload, profilePayload) },
   ];
 }
@@ -423,8 +594,11 @@ function buildRevisionScopedPayload(payload, profileId) {
   };
 }
 
-async function generateWithGemini(parts, apiKey, modelName) {
+async function generateWithGemini(parts, apiKey, modelName, systemInstruction, responseSchema) {
   const body = {
+    system_instruction: {
+      parts: [{ text: systemInstruction }],
+    },
     contents: [
       {
         role: 'user',
@@ -432,8 +606,9 @@ async function generateWithGemini(parts, apiKey, modelName) {
       },
     ],
     generationConfig: {
-      temperature: 0.35,
+      temperature: 0.2,
       responseMimeType: 'application/json',
+      responseSchema,
     },
   };
 
@@ -577,7 +752,11 @@ export default async function handler(req, res) {
         elData = await generateWithGemini(
           buildRevisionRequestParts('EL', payload, buildRevisionScopedPayload(payload, 'el')),
           apiKey,
-          selectedModel
+          selectedModel,
+          buildRevisionSystemPrompt('EL', payload.requestMode),
+          payload.requestMode === 'regenerate'
+            ? buildFullResponseSchema('EL')
+            : buildAdjustResponseSchema()
         );
       }
 
@@ -585,7 +764,11 @@ export default async function handler(req, res) {
         ellaData = await generateWithGemini(
           buildRevisionRequestParts('ELLA', payload, buildRevisionScopedPayload(payload, 'ella')),
           apiKey,
-          selectedModel
+          selectedModel,
+          buildRevisionSystemPrompt('ELLA', payload.requestMode),
+          payload.requestMode === 'regenerate'
+            ? buildFullResponseSchema('ELLA')
+            : buildAdjustResponseSchema()
         );
       }
 
@@ -599,7 +782,13 @@ export default async function handler(req, res) {
 
     if (target === 'el' || target === 'ambos') {
       const payloadEl = target === 'ambos' ? buildScopedPayload(payload, payload.el) : payload;
-      elData = await generateWithGemini(buildRequestParts('EL', payloadEl), apiKey, selectedModel);
+      elData = await generateWithGemini(
+        buildRequestParts('EL', payloadEl),
+        apiKey,
+        selectedModel,
+        buildSystemPrompt('EL'),
+        buildFullResponseSchema('EL')
+      );
     }
 
     if (target === 'ella' || target === 'ambos') {
@@ -611,7 +800,9 @@ export default async function handler(req, res) {
       ellaData = await generateWithGemini(
         buildRequestParts('ELLA', payloadElla),
         apiKey,
-        selectedModel
+        selectedModel,
+        buildSystemPrompt('ELLA'),
+        buildFullResponseSchema('ELLA')
       );
     }
 
