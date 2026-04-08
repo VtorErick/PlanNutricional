@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { Clock3, Pill, ShieldAlert, Sparkles } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
-import SectionBackdrop from './SectionBackdrop';
 
 export default function SupplementsView() {
   const { perfilActivo, perfilesData, supplementsData, isAmbos, ac, isDarkMode } = useDiet();
@@ -23,46 +22,69 @@ export default function SupplementsView() {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="space-y-4"
     >
-      <SectionBackdrop
-        eyebrow="Suplementos"
-        title="Apoyos opcionales, sin robar foco al plan"
-        description="Consulta sugerencias puntuales para complementar el objetivo de cada perfil sin convertir la pantalla en un catalogo pesado."
-        imageSrc="/images/meal-prep.png"
-        accentGradientClass={ac.bgGradient}
-        icon={Pill}
-        aside={isAmbos ? (
-          <div className="flex w-full rounded-2xl border border-white/14 bg-white/12 p-1 backdrop-blur-md sm:w-auto sm:min-w-[220px]">
-            <button
-              onClick={() => setAmbosSubTab('el')}
-              className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
-                ambosSubTab === 'el'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-white/72'
-              }`}
-            >
-              {perfilesData.el.nombre}
-            </button>
-            <button
-              onClick={() => setAmbosSubTab('ella')}
-              className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
-                ambosSubTab === 'ella'
-                  ? 'bg-white text-rose-600 shadow-sm'
-                  : 'text-white/72'
-              }`}
-            >
-              {perfilesData.ella.nombre}
-            </button>
+      <section
+        className={`relative overflow-hidden rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}
+      >
+        <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-28"
+            style={{ backgroundImage: "url('/images/meal-prep.png')" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/88 via-white/74 to-white/88 dark:from-slate-950/86 dark:via-slate-950/74 dark:to-slate-950/88" />
+        </div>
+
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className={`flex h-11 w-11 items-center justify-center rounded-[18px] bg-gradient-to-br ${ac.bgGradient} shadow-sm`}>
+              <Pill className="h-5 w-5 text-white" />
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h2 className={`text-xl font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                  Suplementos
+                </h2>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-300">
+                  Opcional
+                </span>
+              </div>
+
+              <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                Son apoyos adicionales. No forman parte de la alimentacion necesaria para cumplir tu meta o tus calorias.
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="inline-flex items-center rounded-full border border-white/14 bg-white/12 px-3 py-1.5 text-xs font-bold text-white/86 backdrop-blur-md">
-            Opcional
-          </div>
-        )}
-        stats={profilesToRender.map((profileId) => ({
-          label: perfilesData[profileId].nombre,
-          value: `${(supplementsData[profileId] || []).length}`,
-        }))}
-      />
+
+          {isAmbos && (
+            <div className={`flex w-full rounded-2xl p-1 sm:w-auto sm:min-w-[200px] ${isDarkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
+              <button
+                onClick={() => setAmbosSubTab('el')}
+                className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
+                  ambosSubTab === 'el'
+                    ? `${elAccent.bgLight} shadow-sm ${elAccent.text}`
+                    : isDarkMode
+                      ? 'text-slate-400'
+                      : 'text-slate-500'
+                }`}
+              >
+                {perfilesData.el.nombre}
+              </button>
+              <button
+                onClick={() => setAmbosSubTab('ella')}
+                className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
+                  ambosSubTab === 'ella'
+                    ? `${ellaAccent.bgLight} shadow-sm ${ellaAccent.text}`
+                    : isDarkMode
+                      ? 'text-slate-400'
+                      : 'text-slate-500'
+                }`}
+              >
+                {perfilesData.ella.nombre}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
       <div className={isAmbos ? 'grid gap-4 lg:grid-cols-2' : 'space-y-4'}>
         {profilesToRender.map((profileId, index) => {

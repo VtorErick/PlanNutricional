@@ -110,28 +110,16 @@ export default function SummaryView() {
                 </h3>
               )}
 
-              <div className="relative rounded-2xl overflow-hidden shadow-sm">
-                <img
-                  src="/images/meal-prep.png"
-                  alt="Plan de comidas"
-                  className="w-full h-32 sm:h-40 object-cover"
-                />
-                <div
-                  className={`absolute inset-0 bg-gradient-to-r ${dynamicAc.bgGradient} opacity-60`}
-                />
-                <div className="absolute inset-0 flex items-center justify-center px-4 text-center">
-                  <h2 className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3">
-                    <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
-                    Sobre {p.nombre}
-                  </h2>
-                </div>
-              </div>
-
               <div className={`rounded-2xl p-4 sm:p-6 shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
-                <h3 className={`font-bold mb-3 flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
-                  <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
-                  Puntos clave de tu plan
-                </h3>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className={`font-bold flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                    <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
+                    {isAmbos ? `Puntos clave de ${p.nombre}` : 'Puntos clave de tu plan'}
+                  </h3>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
+                    {p.nombre}
+                  </span>
+                </div>
 
                 <div className="space-y-2.5">
                   {summaryPoints.map((linea, idx) => (

@@ -91,13 +91,20 @@ export default function DailyProgress() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-      className={`sticky top-[52px] sm:top-[56px] z-40 backdrop-blur-xl ${
+      className={`sticky top-[52px] sm:top-[56px] z-40 overflow-hidden backdrop-blur-xl ${
         isDarkMode
           ? 'bg-slate-950/96 shadow-[0_10px_30px_rgba(2,6,23,0.42)]'
           : 'bg-white/96 shadow-[0_10px_30px_rgba(15,23,42,0.08)]'
       }`}
     >
-      <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-3 pb-2">
+      <div aria-hidden="true" className="absolute inset-0 z-0 pointer-events-none">
+        <div className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-r ${accentColors.bgGradient} opacity-[0.12] dark:opacity-[0.18]`} />
+        <div className={`absolute -left-6 top-2 h-16 w-16 rounded-full bg-gradient-to-br ${accentColors.bgGradient} blur-2xl opacity-[0.18] dark:opacity-[0.24]`} />
+        <div className={`absolute right-6 top-3 h-14 w-14 rounded-full bg-gradient-to-br ${accentColors.bgGradient} blur-2xl opacity-[0.12] dark:opacity-[0.18]`} />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/18 via-white/90 to-white/96 dark:from-slate-950/16 dark:via-slate-950/86 dark:to-slate-950/96" />
+      </div>
+
+      <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 pt-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="flex-1 overflow-x-auto snap-x scrollbar-none">
             <div className="inline-flex gap-2 items-center min-w-max">
@@ -138,7 +145,7 @@ export default function DailyProgress() {
       </div>
 
       <div
-        className="max-w-5xl mx-auto px-3 sm:px-6 py-3 flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none"
+        className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 py-3 flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none"
         onClick={() => setProgressExpanded((expanded) => !expanded)}
       >
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
@@ -232,7 +239,7 @@ export default function DailyProgress() {
             transition={{ type: 'spring', stiffness: 400, damping: 35 }}
             className="overflow-hidden"
           >
-            <div className="max-w-5xl mx-auto px-3 sm:px-6 pb-4 pt-1">
+            <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 pb-4 pt-1">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <p className={`text-[11px] sm:text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   {completadosCount} de {totalMomentCount} momentos completados

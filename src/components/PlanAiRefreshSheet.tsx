@@ -361,25 +361,7 @@ export default function PlanAiRefreshSheet({
                   ) : null}
                 </div>
 
-                {isQuestionnaireRegenerate ? (
-                  <div className={`rounded-[24px] border px-4 py-4 ${
-                    isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
-                  }`}>
-                    <div className="flex items-start gap-3">
-                      <FileText className={`mt-0.5 h-4 w-4 flex-shrink-0 ${accentClasses.text}`} />
-                      <div>
-                        <p className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                          {hasQuestionnaireContext ? 'Vamos a revisar tu perfil guardado' : 'Vamos a revisar tus datos'}
-                        </p>
-                        <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {hasQuestionnaireContext
-                            ? 'Asi podras corregir lo que no quedo bien antes de pedir un nuevo plan.'
-                            : 'Asi podras corregir lo necesario antes de pedir un nuevo plan.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
+                {isQuestionnaireRegenerate ? null : (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -445,8 +427,8 @@ export default function PlanAiRefreshSheet({
                       <p className="text-sm font-black">
                         {isQuestionnaireRegenerate
                           ? hasQuestionnaireContext
-                            ? 'Tus respuestas tambien cuentan'
-                            : 'Podras corregir antes de rehacer'
+                            ? 'Vamos a revisar tu perfil guardado'
+                            : 'Vamos a revisar tus datos'
                           : hasQuestionnaireContext
                             ? 'Usaremos tu informacion previa'
                             : 'Usaremos tu plan actual'}
@@ -454,8 +436,8 @@ export default function PlanAiRefreshSheet({
                       <p className="mt-1 text-xs leading-relaxed opacity-90">
                         {isQuestionnaireRegenerate
                           ? hasQuestionnaireContext
-                            ? 'Abriremos tus respuestas guardadas para que ajustes solo lo necesario.'
-                            : 'Revisaras tus datos antes de generar de nuevo.'
+                            ? 'Asi podras corregir lo que no quedo bien antes de pedir un nuevo plan.'
+                            : 'Asi podras corregir lo necesario antes de pedir un nuevo plan.'
                           : hasQuestionnaireContext
                             ? 'Tambien tomaremos en cuenta lo ultimo que hayas compartido sobre tus objetivos y preferencias.'
                             : 'Tomaremos en cuenta tu plan actual y los cambios que ya hiciste manualmente.'}

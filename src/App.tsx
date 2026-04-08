@@ -217,6 +217,43 @@ export default function App() {
     resumen: 'text-violet-500 dark:text-violet-300',
   };
 
+  const desktopTabBackdrop = useMemo(() => {
+    switch (activeTab) {
+      case 'plan':
+        return {
+          imageSrc: '/images/hero.png',
+          imagePosition: 'center 22%',
+          overlay: 'from-sky-200/45 via-white/40 to-transparent',
+        };
+      case 'equivalencias':
+        return {
+          imageSrc: '/images/hero.png',
+          imagePosition: 'center 18%',
+          overlay: 'from-emerald-200/40 via-white/35 to-transparent',
+        };
+      case 'suplementos':
+        return {
+          imageSrc: '/images/meal-prep.png',
+          imagePosition: 'center 24%',
+          overlay: 'from-fuchsia-200/35 via-white/35 to-transparent',
+        };
+      case 'compras':
+        return {
+          imageSrc: '/images/meal-prep.png',
+          imagePosition: 'center 26%',
+          overlay: 'from-emerald-200/40 via-white/35 to-transparent',
+        };
+      case 'resumen':
+        return {
+          imageSrc: '/images/hero.png',
+          imagePosition: 'center 18%',
+          overlay: 'from-violet-200/38 via-white/34 to-transparent',
+        };
+      default:
+        return null;
+    }
+  }, [activeTab]);
+
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
@@ -226,13 +263,31 @@ export default function App() {
 
       <AnimatePresence>{activeTab === 'plan' && <DailyProgress />}</AnimatePresence>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-4">
-        <div className="hidden sm:block">
+      <main className="relative z-0 max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-4">
+        {desktopTabBackdrop ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-6 top-4 -z-10 hidden h-[360px] overflow-hidden rounded-[36px] sm:block"
+          >
+            <div
+              className="absolute inset-0 scale-105 bg-cover bg-no-repeat opacity-95"
+              style={{
+                backgroundImage: `url('${desktopTabBackdrop.imageSrc}')`,
+                backgroundPosition: desktopTabBackdrop.imagePosition,
+              }}
+            />
+            <div className={`absolute inset-0 bg-gradient-to-br ${desktopTabBackdrop.overlay}`} />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/12 via-white/50 to-white/92 dark:from-slate-950/20 dark:via-slate-950/45 dark:to-slate-950/88" />
+            <div className="absolute inset-0 backdrop-blur-[2px]" />
+          </div>
+        ) : null}
+
+        <div className="hidden sm:block sticky top-[72px] z-40">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="flex gap-1 bg-slate-100/80 p-1.5 rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:bg-slate-800/80"
+            className="flex gap-1 rounded-2xl bg-white/88 p-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:bg-slate-900/88"
           >
             {tabItems.map((tabItem) => (
               <button
