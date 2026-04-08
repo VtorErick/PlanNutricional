@@ -55,7 +55,7 @@ export default function SummaryView() {
                 onClick={() => setAmbosSubTab('el')}
                 className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
                   ambosSubTab === 'el'
-                    ? `${elAccent.bgLight} shadow-sm ${elAccent.text}`
+                    ? `${elAccent.btnActive} shadow-sm`
                     : isDarkMode ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >
@@ -65,7 +65,7 @@ export default function SummaryView() {
                 onClick={() => setAmbosSubTab('ella')}
                 className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
                   ambosSubTab === 'ella'
-                    ? `${ellaAccent.bgLight} shadow-sm ${ellaAccent.text}`
+                    ? `${ellaAccent.btnActive} shadow-sm`
                     : isDarkMode ? 'text-slate-400' : 'text-slate-500'
                 }`}
               >

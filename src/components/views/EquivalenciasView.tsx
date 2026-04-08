@@ -54,9 +54,7 @@ export default function EquivalenciasView() {
                   onClick={() => setAmbosSubTab('el')}
                   className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
                     ambosSubTab === 'el'
-                      ? isDarkMode
-                        ? `${elAccent.bgLight} shadow-sm ${elAccent.text}`
-                        : 'bg-white text-blue-600 shadow-sm'
+                      ? `${elAccent.btnActive} shadow-sm`
                       : isDarkMode
                         ? 'text-slate-400'
                         : 'text-slate-500'
@@ -68,9 +66,7 @@ export default function EquivalenciasView() {
                   onClick={() => setAmbosSubTab('ella')}
                   className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
                     ambosSubTab === 'ella'
-                      ? isDarkMode
-                        ? `${ellaAccent.bgLight} shadow-sm ${ellaAccent.text}`
-                        : 'bg-white text-rose-600 shadow-sm'
+                      ? `${ellaAccent.btnActive} shadow-sm`
                       : isDarkMode
                         ? 'text-slate-400'
                         : 'text-slate-500'
