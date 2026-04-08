@@ -18,6 +18,7 @@ import { normalizeProfileSummary } from '../utils/profileSummary';
 import { getStoredGeminiApiKey, persistGeminiApiKey } from '../utils/geminiKey';
 import { fetchGeminiStatus, type GeminiStatusResponse } from '../services/geminiStatusService';
 import { APP_STORAGE_ERROR_EVENT, type AppStorageErrorDetail } from '../utils/storageEvents';
+import { readStorageValue, removeStorageValue, writeStorageValue } from '../utils/safeStorage';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
 export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias' | 'suplementos';
@@ -722,7 +723,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   });
   const [geminiModel, setGeminiModel] = useState(() => {
     try {
-      const saved = localStorage.getItem('geminiModel');
+      const saved = readStorageValue(
+        typeof window !== 'undefined' ? window.localStorage : undefined,
+        'geminiModel'
+      );
       const validModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-pro', 'gemini-2.5-flash'];
       if (!saved || !validModels.includes(saved)) return '';
       return saved;
@@ -1131,12 +1135,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
       setCustomData((prev: any) => {
         const updated = { ...prev };
-        try {
-          if (json.elData) updated.el = parseObjectToData(json.elData, 'EL');
-          if (json.ellaData) updated.ella = parseObjectToData(json.ellaData, 'ELLA');
-        } catch (parseErr: any) {
-          throw new Error(`Error en los datos generados: ${parseErr.message}. La IA no generó la estructura esperada.`);
-        }
+        if (parsedElData) updated.el = parsedElData;
+        if (parsedEllaData) updated.ella = parsedEllaData;
         return updated;
       });
 
@@ -1340,10 +1340,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     try {
       if (!geminiModel) {
-        localStorage.removeItem('geminiModel');
+        removeStorageValue(window.localStorage, 'geminiModel');
         return;
       }
-      localStorage.setItem('geminiModel', geminiModel);
+      writeStorageValue(window.localStorage, 'geminiModel', geminiModel);
     } catch (error) {
       console.warn('Failed to persist geminiModel:', error);
     }
@@ -1351,10 +1351,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     try {
       if (perfilActivo) {
-        localStorage.setItem('perfilActivo', perfilActivo);
+        writeStorageValue(window.localStorage, 'perfilActivo', perfilActivo);
         return;
       }
-      localStorage.removeItem('perfilActivo');
+      removeStorageValue(window.localStorage, 'perfilActivo');
     } catch (error) {
       console.warn('Failed to persist active profile:', error);
     }

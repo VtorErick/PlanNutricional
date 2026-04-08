@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dispatchAppStorageError } from '../utils/storageEvents';
+import { readStorageValue, writeStorageValue } from '../utils/safeStorage';
 
 type Sanitizer<T> = (value: unknown) => T;
 
@@ -15,7 +16,7 @@ export function useLocalStorage<T>(
 
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const item = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+      const item = typeof window !== 'undefined' ? readStorageValue(window.localStorage, key) : '';
       return item ? normalizeValue(JSON.parse(item)) : normalizeValue(initialValue);
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
@@ -42,7 +43,7 @@ export function useLocalStorage<T>(
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(normalizeValue(storedValue)));
+        writeStorageValue(window.localStorage, key, JSON.stringify(normalizeValue(storedValue)));
       }
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
