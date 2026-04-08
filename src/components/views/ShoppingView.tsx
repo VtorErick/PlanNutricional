@@ -14,7 +14,9 @@ import { getAccentColors } from '../../utils/theme';
 type ShoppingUsage = {
   texto: string;
   perfil: 'el' | 'ella';
+  dayKey: string;
   dayLabel: string;
+  mealTimeKey: string;
   mealLabel: string;
   mealName: string;
   signature: string;
@@ -24,6 +26,29 @@ type ShoppingUsageDisplay = {
   id: string;
   texto: string;
   perfiles: Array<'el' | 'ella'>;
+  dayOrder: number;
+  mealOrder: number;
+  mealName: string;
+};
+
+const DAY_ORDER: Record<string, number> = {
+  lunes: 0,
+  martes: 1,
+  miercoles: 2,
+  miércoles: 2,
+  jueves: 3,
+  viernes: 4,
+  sabado: 5,
+  sábado: 5,
+  domingo: 6,
+};
+
+const MEAL_ORDER: Record<string, number> = {
+  desayuno: 0,
+  colacion_am: 1,
+  comida: 2,
+  colacion_pm: 3,
+  cena: 4,
 };
 
 export default function ShoppingView() {
@@ -79,7 +104,9 @@ export default function ShoppingView() {
             ? `${dayLabel} | ${mealLabel} | ${profile.nombre}: ${meal.nombre}`
             : `${dayLabel} | ${mealLabel}: ${meal.nombre}`,
           perfil: profileId as 'el' | 'ella',
+          dayKey: day,
           dayLabel,
+          mealTimeKey,
           mealLabel,
           mealName: meal.nombre,
           signature: `${dayLabel}|${mealLabel}|${meal.nombre}`,
@@ -130,11 +157,20 @@ export default function ShoppingView() {
 
   const getDisplayUsos = React.useCallback((usos: ShoppingUsage[]): ShoppingUsageDisplay[] => {
     if (!isAmbos) {
-      return usos.map((uso) => ({
-        id: `${uso.signature}-${uso.perfil}`,
-        texto: uso.texto,
-        perfiles: [uso.perfil],
-      }));
+      return usos
+        .map((uso) => ({
+          id: `${uso.signature}-${uso.perfil}`,
+          texto: uso.texto,
+          perfiles: [uso.perfil],
+          dayOrder: DAY_ORDER[uso.dayKey.toLowerCase()] ?? 999,
+          mealOrder: MEAL_ORDER[uso.mealTimeKey] ?? 999,
+          mealName: uso.mealName,
+        }))
+        .sort((left, right) =>
+          left.dayOrder - right.dayOrder ||
+          left.mealOrder - right.mealOrder ||
+          left.mealName.localeCompare(right.mealName, 'es', { sensitivity: 'base' })
+        );
     }
 
     const grouped = usos.reduce<Record<string, ShoppingUsageDisplay>>((acc, uso) => {
@@ -143,6 +179,9 @@ export default function ShoppingView() {
           id: uso.signature,
           texto: `${uso.dayLabel} | ${uso.mealLabel}: ${uso.mealName}`,
           perfiles: [],
+          dayOrder: DAY_ORDER[uso.dayKey.toLowerCase()] ?? 999,
+          mealOrder: MEAL_ORDER[uso.mealTimeKey] ?? 999,
+          mealName: uso.mealName,
         };
       }
 
@@ -153,7 +192,11 @@ export default function ShoppingView() {
       return acc;
     }, {});
 
-    return Object.values(grouped);
+    return Object.values(grouped).sort((left, right) =>
+      left.dayOrder - right.dayOrder ||
+      left.mealOrder - right.mealOrder ||
+      left.mealName.localeCompare(right.mealName, 'es', { sensitivity: 'base' })
+    );
   }, [isAmbos]);
 
   return (
