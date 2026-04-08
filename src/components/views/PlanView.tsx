@@ -709,8 +709,8 @@ export default function PlanView() {
           referencePortions={mealEditor.meal.porciones}
           onDraftChange={handleMealDraftChange}
           onClose={closeMealEditor}
-          onSave={() => {
-            void handleMealEditorSave();
+          onSave={(selectedOccurrenceIds) => {
+            void handleMealEditorSave(selectedOccurrenceIds);
           }}
           affectedMeals={mealEditorOccurrences}
           suggestions={mealEditor.suggestions}
