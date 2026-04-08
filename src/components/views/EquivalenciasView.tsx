@@ -4,6 +4,7 @@ import { Repeat } from 'lucide-react';
 import EquivalenciasCard from '../EquivalenciasCard';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
+import SectionBackdrop from './SectionBackdrop';
 
 export default function EquivalenciasView() {
   const { perfilActivo, perfilesData, equivalenciasData, ac, isAmbos, isDarkMode } = useDiet();
@@ -27,28 +28,21 @@ export default function EquivalenciasView() {
     >
       {isAmbos ? (
         <>
-          <div className={`rounded-2xl bg-gradient-to-br p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${ac.bgGradientLight}`}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
-                  <Repeat className={`h-5 w-5 ${ac.text}`} />
-                </div>
-                <h2 className={`truncate text-base font-extrabold sm:text-lg ${ac.textDark}`}>
-                  Equivalencias
-                </h2>
-              </div>
-
-              <div className={`flex w-full rounded-2xl p-1 sm:w-auto sm:min-w-[200px] ${isDarkMode ? 'bg-slate-900' : 'bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]'}`}>
+          <SectionBackdrop
+            eyebrow="Equivalencias"
+            title="Cambios rapidos sin perder estructura"
+            description="Ten a mano sustituciones utiles para mover tu plan con flexibilidad y seguir dentro de la misma logica nutricional."
+            imageSrc="/images/hero.png"
+            accentGradientClass={ac.bgGradient}
+            icon={Repeat}
+            aside={(
+              <div className="flex w-full rounded-2xl border border-white/14 bg-white/12 p-1 backdrop-blur-md sm:w-auto sm:min-w-[220px]">
                 <button
                   onClick={() => setAmbosSubTab('el')}
                   className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
                     ambosSubTab === 'el'
-                      ? isDarkMode
-                        ? `${elAccent.bgLight} shadow-sm ${elAccent.text}`
-                        : 'bg-white text-blue-600 shadow-sm'
-                      : isDarkMode
-                        ? 'text-slate-400'
-                        : 'text-slate-500'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-white/72'
                   }`}
                 >
                   {perfilesData.el.nombre}
@@ -57,19 +51,19 @@ export default function EquivalenciasView() {
                   onClick={() => setAmbosSubTab('ella')}
                   className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
                     ambosSubTab === 'ella'
-                      ? isDarkMode
-                        ? `${ellaAccent.bgLight} shadow-sm ${ellaAccent.text}`
-                        : 'bg-white text-rose-600 shadow-sm'
-                      : isDarkMode
-                        ? 'text-slate-400'
-                        : 'text-slate-500'
+                      ? 'bg-white text-rose-600 shadow-sm'
+                      : 'text-white/72'
                   }`}
                 >
                   {perfilesData.ella.nombre}
                 </button>
               </div>
-            </div>
-          </div>
+            )}
+            stats={[
+              { label: perfilesData.el.nombre, value: `${equivalenciasData.el.length}` },
+              { label: perfilesData.ella.nombre, value: `${equivalenciasData.ella.length}` },
+            ]}
+          />
 
           <div className="grid gap-6 lg:grid-cols-2">
             <div className={`${ambosSubTab === 'el' ? 'block' : 'hidden lg:block'}`}>
@@ -103,18 +97,18 @@ export default function EquivalenciasView() {
         </>
       ) : (
         <div className="space-y-4">
-          <div className={`rounded-2xl bg-gradient-to-br p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${ac.bgGradientLight}`}>
-            <div className="flex items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
-                <Repeat className={`h-5 w-5 ${ac.text}`} />
-              </div>
-              <div className="min-w-0">
-                <h3 className={`truncate text-base font-extrabold sm:text-lg ${ac.textDark}`}>
-                  {`Equivalencias ${perfilActivo === 'ella' ? perfilesData.ella.nombre : perfilesData.el.nombre}`}
-                </h3>
-              </div>
-            </div>
-          </div>
+          <SectionBackdrop
+            eyebrow="Equivalencias"
+            title={`Ajustes para ${perfilActivo === 'ella' ? perfilesData.ella.nombre : perfilesData.el.nombre}`}
+            description="Sustituye alimentos con referencias claras para mantener la experiencia simple y el plan consistente."
+            imageSrc="/images/hero.png"
+            accentGradientClass={ac.bgGradient}
+            icon={Repeat}
+            stats={[
+              { label: 'Opciones', value: `${equivalencias.length}` },
+              { label: 'Perfil', value: perfilActivo === 'ella' ? perfilesData.ella.nombre : perfilesData.el.nombre },
+            ]}
+          />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             {equivalencias.map((eq, idx) => (

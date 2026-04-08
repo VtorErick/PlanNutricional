@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
+import SectionBackdrop from './SectionBackdrop';
 
 export default function ShoppingView() {
   const {
@@ -102,6 +103,20 @@ export default function ShoppingView() {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="space-y-4"
     >
+      <SectionBackdrop
+        eyebrow="Compras"
+        title="Convierte tu seleccion en una lista clara"
+        description="Agrupa ingredientes desde las comidas elegidas para comprar con menos ruido y revisar rapido lo que falta."
+        imageSrc="/images/meal-prep.png"
+        accentGradientClass="from-emerald-500 to-teal-600"
+        icon={ShoppingCart}
+        stats={[
+          { label: 'Ingredientes', value: `${shoppingList.length}` },
+          { label: 'Pendientes', value: `${pendingCount}` },
+          { label: 'Marcados', value: `${checkedCount}` },
+        ]}
+      />
+
       <div
         className={`rounded-[28px] overflow-hidden relative p-4 sm:p-6 ${
           isDarkMode
@@ -114,33 +129,6 @@ export default function ShoppingView() {
             isDarkMode ? 'bg-emerald-900/30' : 'bg-emerald-50'
           }`}
         />
-
-        <div className="mb-4 flex items-start gap-3 sm:gap-4">
-          <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm flex items-center justify-center flex-shrink-0">
-            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-          </div>
-
-          <div className="min-w-0">
-            <h2
-              className={`text-xl sm:text-2xl font-black tracking-tight leading-tight ${
-                isDarkMode ? 'text-slate-50' : 'text-slate-900'
-              }`}
-            >
-              Supermercado
-            </h2>
-            <p
-              className={`mt-1 max-w-xl text-xs sm:text-sm font-medium leading-relaxed ${
-                isDarkMode ? 'text-slate-300' : 'text-slate-500'
-              }`}
-            >
-              Tienes{' '}
-              <strong className={isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}>
-                {shoppingList.length} ingredientes
-              </strong>{' '}
-              generados a partir de tus comidas seleccionadas.
-            </p>
-          </div>
-        </div>
 
         {shoppingList.length > 0 && (
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">

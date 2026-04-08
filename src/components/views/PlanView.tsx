@@ -15,6 +15,7 @@ import {
 import MealSelector from '../MealSelector';
 import MealEditSheet from '../MealEditSheet';
 import PlanAiRefreshSheet from '../PlanAiRefreshSheet';
+import SectionBackdrop from './SectionBackdrop';
 import type { QuestionnairePayload } from '../NutritionQuestionnaire';
 import { useDiet } from '../../context/DietContext';
 import { getMomentMacroPortions } from '../../utils/macros';
@@ -525,6 +526,24 @@ export default function PlanView() {
         className="space-y-4"
       >
         <div className="space-y-4">
+          <SectionBackdrop
+            eyebrow="Mi plan"
+            title={isAmbos ? 'Coordina el dia de ambos perfiles' : `Organiza el dia de ${perfilBase.nombre}`}
+            description={
+              isAmbos
+                ? 'Elige, compara y ajusta platillos sin perder el ritmo entre los dos perfiles.'
+                : 'Revisa horarios, cambia platillos y afina detalles sin salir del flujo del dia.'
+            }
+            imageSrc="/images/hero.png"
+            accentGradientClass={ac.bgGradient}
+            icon={FileText}
+            stats={[
+              { label: 'Dia activo', value: diaActivo },
+              { label: 'Momentos', value: `${perfilBase.momentos.length}` },
+              { label: 'Vista', value: isAmbos ? 'Ambos' : perfilBase.nombre },
+            ]}
+          />
+
           <div className="flex justify-start">
             <button
               type="button"
