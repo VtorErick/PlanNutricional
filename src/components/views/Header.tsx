@@ -10,8 +10,6 @@ export default function Header() {
   const {
     setPerfilActivo: setActiveProfile,
     perfilActivo: activeProfile,
-    setDiaActivo: setActiveDay,
-    setTab: setActiveTab,
     perfilesData: profilesData,
     diaActivo: activeDay,
     selecciones: selections,
@@ -189,8 +187,6 @@ export default function Header() {
                 key={profileId}
                 onClick={() => {
                   setActiveProfile(profileId);
-                  setActiveDay('Lunes');
-                  setActiveTab('plan');
                 }}
                 data-testid={`header-profile-${profileId}`}
                 className={`
