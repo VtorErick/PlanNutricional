@@ -17,6 +17,7 @@ import {
 import { normalizeProfileSummary } from '../utils/profileSummary';
 import { getStoredGeminiApiKey, persistGeminiApiKey } from '../utils/geminiKey';
 import { fetchGeminiStatus, type GeminiStatusResponse } from '../services/geminiStatusService';
+import { APP_STORAGE_ERROR_EVENT, type AppStorageErrorDetail } from '../utils/storageEvents';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
 export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias' | 'suplementos';
@@ -756,6 +757,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [pendingAutoScrollMomento, setPendingAutoScrollMomento] = useState<string | null>(null);
   const hasInitializedRouteRef = useRef(false);
+  const lastStorageErrorRef = useRef<Record<string, number>>({});
 
   // ─── Utilities ─────────────────────────────────────────────────────
   const notify = useCallback(async (title: string, message: string) => { await showAppAlert({ title, message }); }, []);
@@ -1116,6 +1118,15 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         throw new Error('La respuesta no contiene datos del plan. Intenta de nuevo.');
       }
 
+      let parsedElData: any;
+      let parsedEllaData: any;
+      try {
+        if (json.elData) parsedElData = parseObjectToData(json.elData, 'EL');
+        if (json.ellaData) parsedEllaData = parseObjectToData(json.ellaData, 'ELLA');
+      } catch (parseErr: any) {
+        throw new Error(`Error en los datos generados: ${parseErr.message}. La IA no generó la estructura esperada.`);
+      }
+
       setLastGeneratedData(json);
 
       setCustomData((prev: any) => {
@@ -1298,6 +1309,31 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       return changed ? next : prev;
     });
   }, [perfilesData, setSelecciones]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleStorageError = (event: Event) => {
+      const detail = (event as CustomEvent<AppStorageErrorDetail>).detail;
+      if (!detail?.key) return;
+
+      const dedupeKey = `${detail.operation}:${detail.key}`;
+      const now = Date.now();
+      const lastShownAt = lastStorageErrorRef.current[dedupeKey] || 0;
+      if (now - lastShownAt < 8000) return;
+
+      lastStorageErrorRef.current[dedupeKey] = now;
+      void notify(
+        'No se pudo guardar localmente',
+        'El navegador bloqueó o saturó el almacenamiento local. Exporta tu respaldo JSON antes de recargar para no perder cambios recientes.'
+      );
+    };
+
+    window.addEventListener(APP_STORAGE_ERROR_EVENT, handleStorageError as EventListener);
+    return () => {
+      window.removeEventListener(APP_STORAGE_ERROR_EVENT, handleStorageError as EventListener);
+    };
+  }, [notify]);
 
   // Persist Gemini settings
   useEffect(() => { persistGeminiApiKey(geminiApiKey); }, [geminiApiKey]);

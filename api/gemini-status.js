@@ -1,65 +1,8 @@
+import { applyCorsHeaders, enforceRateLimit } from './_requestGuard.js';
+
 function normalizeModelName(modelName) {
   if (!modelName) return '';
   return modelName.replace(/^models\//, '').trim();
-}
-
-function normalizeHostCandidate(value) {
-  if (!value || typeof value !== 'string') return '';
-
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-
-  try {
-    const normalized = trimmed.includes('://') ? trimmed : `https://${trimmed}`;
-    return new URL(normalized).host.toLowerCase();
-  } catch {
-    return trimmed.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
-  }
-}
-
-function resolveAllowedOrigin(req) {
-  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin.trim() : '';
-  if (!requestOrigin) {
-    return { requestOrigin: '', allowedOrigin: '' };
-  }
-
-  let originUrl;
-  try {
-    originUrl = new URL(requestOrigin);
-  } catch {
-    return { requestOrigin, allowedOrigin: null };
-  }
-
-  const allowedHosts = new Set(
-    [
-      req.headers['x-forwarded-host'],
-      req.headers.host,
-      process.env.VERCEL_URL,
-      process.env.VERCEL_PROJECT_PRODUCTION_URL,
-      process.env.APP_URL,
-      process.env.SITE_URL,
-    ]
-      .map(normalizeHostCandidate)
-      .filter(Boolean)
-  );
-
-  return {
-    requestOrigin,
-    allowedOrigin: allowedHosts.has(originUrl.host.toLowerCase()) ? originUrl.origin : null,
-  };
-}
-
-function applyCorsHeaders(req, res) {
-  const cors = resolveAllowedOrigin(req);
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Vary', 'Origin');
-
-  if (cors.allowedOrigin) {
-    res.setHeader('Access-Control-Allow-Origin', cors.allowedOrigin);
-  }
-
-  return cors;
 }
 
 function modelSupportsGenerateContent(model) {
@@ -76,10 +19,6 @@ async function listAvailableModels(apiKey) {
   }
 
   return (json?.models || []).filter(modelSupportsGenerateContent);
-}
-
-function pickBestModel(models, preferredModelRaw) {
-  return getOrderedModels(models, preferredModelRaw)[0] || '';
 }
 
 function getModelPriority(name) {
@@ -156,11 +95,11 @@ function buildUserMessage({ keySource, selectedModel, envModel, generationChecke
 }
 
 export default async function handler(req, res) {
-  const cors = applyCorsHeaders(req, res);
+  const requestMeta = applyCorsHeaders(req, res);
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
-    if (cors.requestOrigin && !cors.allowedOrigin) {
+    if (!requestMeta.trustedRequest) {
       return res.status(403).end();
     }
     return res.status(204).end();
@@ -170,15 +109,44 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  if (cors.requestOrigin && !cors.allowedOrigin) {
-    return res.status(403).json({ ok: false, error: 'Origen no permitido.' });
+  if (!requestMeta.trustedRequest) {
+    return res.status(403).json({
+      ok: false,
+      error: 'Origen no permitido. Usa la app desde el mismo dominio para validar Gemini.',
+    });
+  }
+
+  const rateLimit = enforceRateLimit(req, {
+    bucket: 'gemini-status',
+    windowMs: 60 * 1000,
+    maxRequests: 20,
+  });
+
+  res.setHeader('X-RateLimit-Remaining', String(rateLimit.remaining));
+  if (!rateLimit.ok) {
+    res.setHeader('Retry-After', String(rateLimit.retryAfterSeconds));
+    return res.status(429).json({
+      ok: false,
+      error: `Demasiadas validaciones seguidas. Intenta de nuevo en ${rateLimit.retryAfterSeconds} segundos.`,
+      availableModels: [],
+      selectedModel: '',
+    });
   }
 
   try {
     let payload = req.body;
 
     if (typeof payload === 'string') {
-      payload = JSON.parse(payload);
+      try {
+        payload = JSON.parse(payload);
+      } catch {
+        return res.status(400).json({
+          ok: false,
+          error: 'Body inválido. Debe ser JSON.',
+          availableModels: [],
+          selectedModel: '',
+        });
+      }
     }
 
     payload = payload && typeof payload === 'object' ? payload : {};

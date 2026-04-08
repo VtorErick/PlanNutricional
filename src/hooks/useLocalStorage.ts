@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { dispatchAppStorageError } from '../utils/storageEvents';
 
 type Sanitizer<T> = (value: unknown) => T;
 
@@ -18,6 +19,11 @@ export function useLocalStorage<T>(
       return item ? normalizeValue(JSON.parse(item)) : normalizeValue(initialValue);
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
+      dispatchAppStorageError({
+        key,
+        operation: 'read',
+        message: `No se pudo leer el almacenamiento local para "${key}".`,
+      });
       return normalizeValue(initialValue);
     }
   });
@@ -40,6 +46,11 @@ export function useLocalStorage<T>(
       }
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
+      dispatchAppStorageError({
+        key,
+        operation: 'write',
+        message: `No se pudo guardar el almacenamiento local para "${key}".`,
+      });
     }
   }, [key, normalizeValue, storedValue]);
 

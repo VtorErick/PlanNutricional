@@ -1,3 +1,5 @@
+import { applyCorsHeaders, enforceRateLimit } from './_requestGuard.js';
+
 const ALLOWED_ICONS = [
   'Apple',
   'Carrot',
@@ -12,65 +14,6 @@ const ALLOWED_ICONS = [
 ];
 const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
-
-function normalizeHostCandidate(value) {
-  if (!value || typeof value !== 'string') return '';
-
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-
-  try {
-    const normalized = trimmed.includes('://') ? trimmed : `https://${trimmed}`;
-    return new URL(normalized).host.toLowerCase();
-  } catch {
-    return trimmed.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
-  }
-}
-
-function resolveAllowedOrigin(req) {
-  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin.trim() : '';
-  if (!requestOrigin) {
-    return { requestOrigin: '', allowedOrigin: '' };
-  }
-
-  let originUrl;
-  try {
-    originUrl = new URL(requestOrigin);
-  } catch {
-    return { requestOrigin, allowedOrigin: null };
-  }
-
-  const allowedHosts = new Set(
-    [
-      req.headers['x-forwarded-host'],
-      req.headers.host,
-      process.env.VERCEL_URL,
-      process.env.VERCEL_PROJECT_PRODUCTION_URL,
-      process.env.APP_URL,
-      process.env.SITE_URL,
-    ]
-      .map(normalizeHostCandidate)
-      .filter(Boolean)
-  );
-
-  return {
-    requestOrigin,
-    allowedOrigin: allowedHosts.has(originUrl.host.toLowerCase()) ? originUrl.origin : null,
-  };
-}
-
-function applyCorsHeaders(req, res) {
-  const cors = resolveAllowedOrigin(req);
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Vary', 'Origin');
-
-  if (cors.allowedOrigin) {
-    res.setHeader('Access-Control-Allow-Origin', cors.allowedOrigin);
-  }
-
-  return cors;
-}
 
 function estimateBase64Size(base64Value) {
   const sanitized = typeof base64Value === 'string' ? base64Value.replace(/\s/g, '') : '';
@@ -428,11 +371,11 @@ async function generateWithGemini(payload, prefix, apiKey, modelName) {
 }
 
 export default async function handler(req, res) {
-  const cors = applyCorsHeaders(req, res);
+  const requestMeta = applyCorsHeaders(req, res);
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
-    if (cors.requestOrigin && !cors.allowedOrigin) {
+    if (!requestMeta.trustedRequest) {
       return res.status(403).end();
     }
     return res.status(204).end();
@@ -442,8 +385,24 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (cors.requestOrigin && !cors.allowedOrigin) {
-    return res.status(403).json({ error: 'Origen no permitido.' });
+  if (!requestMeta.trustedRequest) {
+    return res.status(403).json({
+      error: 'Origen no permitido. Usa la app desde el mismo dominio para generar planes.',
+    });
+  }
+
+  const rateLimit = enforceRateLimit(req, {
+    bucket: 'generate-plan',
+    windowMs: 60 * 1000,
+    maxRequests: 8,
+  });
+
+  res.setHeader('X-RateLimit-Remaining', String(rateLimit.remaining));
+  if (!rateLimit.ok) {
+    res.setHeader('Retry-After', String(rateLimit.retryAfterSeconds));
+    return res.status(429).json({
+      error: `Demasiadas generaciones seguidas. Intenta de nuevo en ${rateLimit.retryAfterSeconds} segundos.`,
+    });
   }
 
   try {
