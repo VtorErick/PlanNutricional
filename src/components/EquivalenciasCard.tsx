@@ -22,10 +22,10 @@ export default function EquivalenciasCard({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       whileTap={{ scale: 0.985 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30, delay }}
-      className={`group rounded-[24px] sm:rounded-[28px] p-4 sm:p-5 border transition-all duration-300 overflow-hidden relative z-0 ${
+      className={`group rounded-[24px] sm:rounded-[28px] p-4 sm:p-5 transition-all duration-300 overflow-hidden relative z-0 ${
         isDarkMode
-          ? 'bg-slate-950/92 border-slate-800 shadow-[0_12px_30px_rgba(2,6,23,0.38)] hover:shadow-[0_16px_36px_rgba(2,6,23,0.48)]'
-          : 'bg-white border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_10px_34px_rgb(0,0,0,0.08)]'
+          ? 'bg-slate-950/92 shadow-[0_12px_30px_rgba(2,6,23,0.36)] hover:shadow-[0_16px_36px_rgba(2,6,23,0.46)]'
+          : 'bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_10px_34px_rgb(0,0,0,0.08)]'
       }`}
     >
       {/* Watermark */}
@@ -46,7 +46,7 @@ export default function EquivalenciasCard({
             {equivalencia.titulo}
           </h3>
           <p className={`text-[11px] sm:text-xs mt-1 font-semibold ${accentClasses.text}`}>
-            Cada elemento = 1 porción
+            Cada elemento = 1 porcion
           </p>
         </div>
       </div>
@@ -61,8 +61,8 @@ export default function EquivalenciasCard({
             transition={{ delay: delay + idx * 0.03 }}
             className={`flex items-start gap-3 p-3 rounded-[18px] transition-colors ${
               isDarkMode
-                ? 'bg-slate-900 border border-slate-800'
-                : 'bg-slate-50 border border-slate-100'
+                ? 'bg-slate-900'
+                : 'bg-slate-50/80'
             }`}
           >
             <div

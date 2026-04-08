@@ -23,7 +23,7 @@ export default function SupplementsView() {
       className="space-y-4"
     >
       <section
-        className={`rounded-[28px] border p-4 shadow-sm ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-200 bg-white'}`}
+        className={`rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3 min-w-0">
@@ -92,10 +92,10 @@ export default function SupplementsView() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.06 + itemIndex * 0.04 }}
-                    className={`rounded-[28px] border p-4 shadow-sm ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-200 bg-white'}`}
+                    className={`rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border bg-gradient-to-br ${ac.bgGradientLight} ${ac.borderLight}`}>
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${ac.bgGradientLight}`}>
                         <Sparkles className={`h-5 w-5 ${ac.text}`} />
                       </div>
 
@@ -110,7 +110,7 @@ export default function SupplementsView() {
                     </div>
 
                     <div className="mt-4 space-y-3 text-sm">
-                      <div className={`rounded-2xl border p-3 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
+                      <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50/80'}`}>
                         <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                           Por que podria ayudar
                         </p>
@@ -120,7 +120,7 @@ export default function SupplementsView() {
                       </div>
 
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div className={`rounded-2xl border p-3 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
+                        <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50/80'}`}>
                           <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                             Como usarlo
                           </p>
@@ -129,7 +129,7 @@ export default function SupplementsView() {
                           </p>
                         </div>
 
-                        <div className={`rounded-2xl border p-3 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50'}`}>
+                        <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50/80'}`}>
                           <p className={`flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                             <Clock3 className="h-3.5 w-3.5" />
                             Momento
@@ -140,7 +140,7 @@ export default function SupplementsView() {
                         </div>
                       </div>
 
-                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+                      <div className="rounded-2xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
                         <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
                           Nota
                         </p>
@@ -150,7 +150,7 @@ export default function SupplementsView() {
                       </div>
 
                       {supplement.caution && (
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/60 dark:bg-amber-950/30">
+                        <div className="rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/30">
                           <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
                             <ShieldAlert className="h-3.5 w-3.5" />
                             Precaucion

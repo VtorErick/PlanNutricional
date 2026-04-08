@@ -65,7 +65,7 @@ function buildMealMacroLine(meal: MealItem) {
     parts.push(`${meal.grasasG}g grasas`);
   }
 
-  return parts.join(' · ');
+  return parts.join(' - ');
 }
 
 export default function PlanView() {
@@ -377,10 +377,10 @@ export default function PlanView() {
           onChangeMeal();
         }
       }}
-      className={`p-4 rounded-2xl border bg-gradient-to-br ${
+      className={`p-4 rounded-2xl bg-gradient-to-br ${
         isDarkMode
-          ? `${accent.bgGradientLight} ${accent.borderLight} shadow-[0_14px_28px_rgba(2,6,23,0.38)]`
-          : `border-white/70 ${accent.bgLight} via-white to-white shadow-[0_10px_24px_rgba(15,23,42,0.06)]`
+          ? `${accent.bgGradientLight} shadow-[0_14px_28px_rgba(2,6,23,0.32)]`
+          : `${accent.bgLight} via-white to-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]`
       } cursor-pointer transition-all hover:opacity-95 active:scale-[0.99]`}
     >
       <h4 className={`font-bold text-sm mb-1 ${accent.textDark}`}>
@@ -426,10 +426,10 @@ export default function PlanView() {
           onOpen();
         }
       }}
-      className={`flex items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-5 text-center transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] ${
+      className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-5 text-center transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] ${
         isDarkMode
-          ? `${accent.bgLight} ${accent.border}`
-          : `${accent.bgLight} ${accent.border}`
+          ? `${accent.bgLight} shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]`
+          : `${accent.bgLight} shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]`
       }`}
     >
       <Zap className={`w-4 h-4 flex-shrink-0 ${accent.text}`} />
@@ -450,13 +450,13 @@ export default function PlanView() {
         className="space-y-4"
       >
         <div className="space-y-4">
-          <div className={`rounded-[24px] sm:rounded-[28px] overflow-hidden border ${
+          <div className={`rounded-[24px] sm:rounded-[28px] overflow-hidden ${
             isDarkMode
-              ? 'border-slate-800 bg-slate-950/92 shadow-[0_12px_32px_rgba(2,6,23,0.42)]'
-              : 'border-white/70 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]'
+              ? 'bg-slate-950/92 shadow-[0_12px_32px_rgba(2,6,23,0.42)]'
+              : 'bg-white shadow-[0_10px_28px_rgba(15,23,42,0.05)]'
           }`}>
             <div className={`relative overflow-hidden p-4 sm:p-5 ${
-              isDarkMode ? 'bg-slate-900' : 'bg-slate-50/80'
+              isDarkMode ? 'bg-slate-900' : 'bg-slate-50/70'
             }`}>
               <div className={`absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl ${
                 isDarkMode ? 'bg-cyan-500/15' : 'bg-cyan-200/50'
@@ -466,10 +466,10 @@ export default function PlanView() {
                 <div className="space-y-2">
                   <div>
                     <h3 className={`text-lg font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
-                      Ajusta tu plan con una instruccion
+                      Ajusta tu plan
                     </h3>
                     <p className={`mt-1 max-w-2xl text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                      Ejemplo: menos pescado por la noche, evita ciertas combinaciones o recrea el plan completo.
+                      Pide cambios puntuales o rehace el plan sin repetir todo el formulario.
                     </p>
                   </div>
                 </div>
@@ -487,15 +487,15 @@ export default function PlanView() {
 
               <div className="relative mt-4 grid gap-2 sm:grid-cols-2">
                 {[
-                  'Cambia solo lo que pidas',
-                  'Tambien puedes rehacerlo completo',
+                  'Solo cambia lo que pidas',
+                  'O rehacelo completo si hace falta',
                 ].map((line) => (
                   <div
                     key={line}
-                    className={`rounded-2xl border px-3 py-2.5 text-xs font-semibold ${
+                    className={`rounded-2xl px-3 py-2.5 text-xs font-semibold ${
                       isDarkMode
-                        ? 'border-slate-800 bg-slate-950/70 text-slate-300'
-                        : 'border-white/70 bg-white/80 text-slate-600'
+                        ? 'bg-slate-950/65 text-slate-300'
+                        : 'bg-white/75 text-slate-600'
                     }`}
                   >
                     {line}
@@ -554,10 +554,14 @@ export default function PlanView() {
                 data-testid={`moment-section-${momento.key}`}
                 className={`rounded-[24px] sm:rounded-[28px] overflow-hidden transition-shadow duration-300 ${
                   isDarkMode
-                    ? 'bg-slate-950/92 border border-slate-800 shadow-[0_12px_32px_rgba(2,6,23,0.42)] hover:shadow-[0_16px_40px_rgba(2,6,23,0.52)]'
-                    : 'bg-white border border-white/70 shadow-[0_10px_28px_rgba(15,23,42,0.06)] hover:shadow-[0_14px_32px_rgba(15,23,42,0.08)]'
+                    ? 'bg-slate-950/92 shadow-[0_12px_32px_rgba(2,6,23,0.42)] hover:shadow-[0_16px_40px_rgba(2,6,23,0.5)]'
+                    : 'bg-white shadow-[0_10px_28px_rgba(15,23,42,0.05)] hover:shadow-[0_14px_32px_rgba(15,23,42,0.07)]'
                 } ${
-                  done ? ac.borderAccent : ''
+                  done
+                    ? isDarkMode
+                      ? 'shadow-[0_14px_36px_rgba(14,165,233,0.14)]'
+                      : 'shadow-[0_14px_34px_rgba(59,130,246,0.10)]'
+                    : ''
                 }`}
               >
                 <button
@@ -573,7 +577,7 @@ export default function PlanView() {
                     done
                       ? isDarkMode
                         ? ac.bgLight
-                        : 'bg-slate-50/60'
+                        : 'bg-slate-50/55'
                       : isDarkMode
                         ? 'hover:bg-slate-900'
                         : 'hover:bg-slate-50'
@@ -593,9 +597,9 @@ export default function PlanView() {
                     </div>
 
                     <div className="min-w-0 flex items-center gap-2">
-                        <h3 className={`text-sm sm:text-[15px] font-bold truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                          {momento.label}
-                        </h3>
+                      <h3 className={`text-sm sm:text-[15px] font-bold truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {momento.label}
+                      </h3>
                       <p className={`text-[11px] ml-auto whitespace-nowrap ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>
                         {momento.hora}
                       </p>
@@ -726,7 +730,7 @@ export default function PlanView() {
                                       )}
                                     </>
                                   ) : (
-                                    <div className={`p-3 rounded-2xl border ${isDarkMode ? `${elAccent.bgLight} ${elAccent.border}` : 'bg-blue-50/50 border-blue-100'}`}>
+                                    <div className={`p-3 rounded-2xl ${isDarkMode ? `${elAccent.bgLight}` : 'bg-blue-50/50'}`}>
                                       <MealSelector
                                         perfil="el"
                                         comidas={mealsElAll}
@@ -787,7 +791,7 @@ export default function PlanView() {
                                       )}
                                     </>
                                   ) : (
-                                    <div className={`p-3 rounded-2xl border ${isDarkMode ? `${ellaAccent.bgLight} ${ellaAccent.border}` : 'bg-rose-50/50 border-rose-100'}`}>
+                                    <div className={`p-3 rounded-2xl ${isDarkMode ? `${ellaAccent.bgLight}` : 'bg-rose-50/50'}`}>
                                       <MealSelector
                                         perfil="ella"
                                         comidas={mealsEllaAll}

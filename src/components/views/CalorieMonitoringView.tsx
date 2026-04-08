@@ -98,8 +98,8 @@ export default function CalorieMonitoringView() {
           bar: 'bg-emerald-400',
           mutedBar: 'bg-emerald-700',
           accent: 'text-emerald-300',
-          activeCard: 'border-emerald-400 bg-gradient-to-br from-emerald-950 to-teal-950 text-white shadow-[0_16px_32px_rgba(4,120,87,0.28)]',
-          inactiveCard: 'border-slate-800 bg-slate-950/92 text-slate-100',
+          activeCard: 'bg-gradient-to-br from-emerald-950 to-teal-950 text-white shadow-[0_16px_32px_rgba(4,120,87,0.28)]',
+          inactiveCard: 'bg-slate-950/92 text-slate-100',
           cardTrack: 'bg-slate-800',
         }
       : perfilActivo === 'ella'
@@ -109,8 +109,8 @@ export default function CalorieMonitoringView() {
             bar: 'bg-pink-400',
             mutedBar: 'bg-pink-700',
             accent: 'text-pink-300',
-            activeCard: 'border-pink-400 bg-gradient-to-br from-fuchsia-950 to-rose-950 text-white shadow-[0_16px_32px_rgba(157,23,77,0.28)]',
-            inactiveCard: 'border-slate-800 bg-slate-950/92 text-slate-100',
+            activeCard: 'bg-gradient-to-br from-fuchsia-950 to-rose-950 text-white shadow-[0_16px_32px_rgba(157,23,77,0.28)]',
+            inactiveCard: 'bg-slate-950/92 text-slate-100',
             cardTrack: 'bg-slate-800',
           }
         : {
@@ -119,8 +119,8 @@ export default function CalorieMonitoringView() {
             bar: 'bg-sky-400',
             mutedBar: 'bg-sky-700',
             accent: 'text-sky-300',
-            activeCard: 'border-sky-400 bg-gradient-to-br from-sky-950 to-indigo-950 text-white shadow-[0_16px_32px_rgba(14,116,144,0.28)]',
-            inactiveCard: 'border-slate-800 bg-slate-950/92 text-slate-100',
+            activeCard: 'bg-gradient-to-br from-sky-950 to-indigo-950 text-white shadow-[0_16px_32px_rgba(14,116,144,0.28)]',
+            inactiveCard: 'bg-slate-950/92 text-slate-100',
             cardTrack: 'bg-slate-800',
           }
     : isAmbos || perfilActivo === 'ambos'
@@ -130,8 +130,8 @@ export default function CalorieMonitoringView() {
         bar: 'bg-emerald-500',
         mutedBar: 'bg-emerald-300',
         accent: 'text-emerald-700',
-        activeCard: 'border-emerald-500 bg-emerald-600 text-white',
-        inactiveCard: 'border-slate-200 bg-slate-50 text-slate-900',
+        activeCard: 'bg-emerald-600 text-white',
+        inactiveCard: 'bg-slate-50 text-slate-900',
         cardTrack: 'bg-white',
       }
     : perfilActivo === 'ella'
@@ -141,8 +141,8 @@ export default function CalorieMonitoringView() {
           bar: 'bg-rose-500',
           mutedBar: 'bg-rose-300',
           accent: 'text-rose-700',
-          activeCard: 'border-rose-500 bg-rose-600 text-white',
-          inactiveCard: 'border-slate-200 bg-slate-50 text-slate-900',
+          activeCard: 'bg-rose-600 text-white',
+          inactiveCard: 'bg-slate-50 text-slate-900',
           cardTrack: 'bg-white',
         }
       : {
@@ -151,15 +151,15 @@ export default function CalorieMonitoringView() {
           bar: 'bg-blue-500',
           mutedBar: 'bg-blue-300',
           accent: 'text-blue-700',
-          activeCard: 'border-blue-500 bg-blue-600 text-white',
-          inactiveCard: 'border-slate-200 bg-slate-50 text-slate-900',
+          activeCard: 'bg-blue-600 text-white',
+          inactiveCard: 'bg-slate-50 text-slate-900',
           cardTrack: 'bg-white',
         };
 
   const statusPills: Record<StatusKey, string> = {
-    low: isDarkMode ? 'bg-amber-950/60 border-amber-900/70 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-700',
+    low: isDarkMode ? 'bg-amber-950/60 text-amber-200' : 'bg-amber-50 text-amber-700',
     near: `${palette.soft}`,
-    high: isDarkMode ? 'bg-rose-950/60 border-rose-900/70 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-700',
+    high: isDarkMode ? 'bg-rose-950/60 text-rose-200' : 'bg-rose-50 text-rose-700',
   };
 
   const MetricCard = ({
@@ -176,7 +176,7 @@ export default function CalorieMonitoringView() {
     const percent = target > 0 ? clampPercent((value / target) * 100) : 0;
 
     return (
-      <div className={`rounded-3xl border p-4 shadow-sm ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-200 bg-white'}`}>
+      <div className={`rounded-3xl p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className={`text-[11px] uppercase tracking-[0.18em] font-extrabold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{label}</p>
@@ -185,7 +185,7 @@ export default function CalorieMonitoringView() {
               <span className={`text-sm font-bold ml-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{unit}</span>
             </p>
           </div>
-          <div className={`rounded-2xl px-2.5 py-1 text-[11px] font-bold border ${statusPills[percent > 110 ? 'high' : percent >= 85 ? 'near' : 'low']}`}>
+          <div className={`rounded-2xl px-2.5 py-1 text-[11px] font-bold ${statusPills[percent > 110 ? 'high' : percent >= 85 ? 'near' : 'low']}`}>
             {percent}%
           </div>
         </div>
@@ -213,7 +213,7 @@ export default function CalorieMonitoringView() {
       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
       className="space-y-4"
     >
-      <section className={`rounded-[28px] border p-4 shadow-sm ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-200 bg-white'}`}>
+      <section className={`rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className={`text-sm font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>Semana en un vistazo</h3>
@@ -221,7 +221,7 @@ export default function CalorieMonitoringView() {
               Toca una tarjeta para cambiar el día seleccionado.
             </p>
           </div>
-          <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold ${isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+          <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold ${isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-50 text-slate-600'}`}>
             <ShieldCheck className="w-3.5 h-3.5" />
             {adherenceDays} dias en rango
           </div>
@@ -236,13 +236,13 @@ export default function CalorieMonitoringView() {
                 key={item.dia}
                 type="button"
                 onClick={() => setDiaActivo(item.dia)}
-                className={`min-w-[180px] snap-start rounded-[24px] border p-4 shadow-sm text-left transition-transform active:scale-[0.98] ${
+                className={`min-w-[180px] snap-start rounded-[24px] p-4 shadow-sm text-left transition-transform active:scale-[0.98] ${
                   isActive ? palette.activeCard : palette.inactiveCard
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-black">{item.dia}</p>
-                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${isActive ? 'border-white/20 bg-white/10 text-white' : statusPills[item.status]}`}>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${isActive ? 'bg-white/10 text-white' : statusPills[item.status]}`}>
                     {STATUS_LABELS[item.status]}
                   </span>
                 </div>
@@ -281,7 +281,7 @@ export default function CalorieMonitoringView() {
             </p>
           </div>
 
-          <div className="rounded-2xl bg-white/14 border border-white/15 px-3 py-2 backdrop-blur-sm text-right min-w-[112px]">
+          <div className="rounded-2xl bg-white/14 px-3 py-2 backdrop-blur-sm text-right min-w-[112px]">
             <p className="text-[10px] uppercase tracking-[0.18em] text-white/60 font-bold">{diaActivo}</p>
             <p className="mt-1 text-lg font-black">
               {activeDaySummary?.delta > 0 ? '+' : ''}{activeDaySummary?.delta || 0}
@@ -293,15 +293,15 @@ export default function CalorieMonitoringView() {
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2.5">
-          <div className="rounded-2xl bg-white/12 px-3 py-3 border border-white/12 backdrop-blur-sm">
+          <div className="rounded-2xl bg-white/12 px-3 py-3 backdrop-blur-sm">
             <p className="text-[10px] uppercase tracking-[0.16em] text-white/65 font-bold">Promedio</p>
             <p className="mt-1 text-lg font-black">{weeklyAverage}</p>
           </div>
-          <div className="rounded-2xl bg-white/12 px-3 py-3 border border-white/12 backdrop-blur-sm">
+          <div className="rounded-2xl bg-white/12 px-3 py-3 backdrop-blur-sm">
             <p className="text-[10px] uppercase tracking-[0.16em] text-white/65 font-bold">En rango</p>
             <p className="mt-1 text-lg font-black">{adherenceDays}/7</p>
           </div>
-          <div className="rounded-2xl bg-white/12 px-3 py-3 border border-white/12 backdrop-blur-sm">
+          <div className="rounded-2xl bg-white/12 px-3 py-3 backdrop-blur-sm">
             <p className="text-[10px] uppercase tracking-[0.16em] text-white/65 font-bold">Mejor dia</p>
             <p className="mt-1 text-lg font-black truncate">{bestDay?.dia || '-'}</p>
           </div>
@@ -316,20 +316,20 @@ export default function CalorieMonitoringView() {
         </div>
       </section>
 
-      <section className={`rounded-[28px] border p-4 shadow-sm ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-200 bg-white'}`}>
+      <section className={`rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
         <div className="flex items-center gap-2">
           <Flame className={`w-4 h-4 ${palette.accent}`} />
           <h3 className={`text-sm font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>Lectura rapida</h3>
         </div>
 
         <div className={`mt-3 space-y-2.5 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-          <div className={`rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-50 border border-slate-200'}`}>
+          <div className={`rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
             Hoy vas en <span className={`font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>{clampPercent((selectedDayTotals.kcal / Math.max(metaCaloricaTotal, 1)) * 100)}%</span> de tu meta.
           </div>
-          <div className={`rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-50 border border-slate-200'}`}>
+          <div className={`rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
             Tu día más equilibrado hasta ahora es <span className={`font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>{bestDay?.dia || '-'}</span>.
           </div>
-          <div className={`rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900 border border-slate-800' : 'bg-slate-50 border border-slate-200'}`}>
+          <div className={`rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
             Esta semana promedias <span className={`font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>{weeklyAverage} kcal</span> por día seleccionado.
           </div>
         </div>

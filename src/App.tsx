@@ -232,7 +232,7 @@ export default function App() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="flex gap-1 bg-slate-100/80 p-1.5 rounded-2xl dark:bg-slate-800/80"
+            className="flex gap-1 bg-slate-100/80 p-1.5 rounded-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:bg-slate-800/80"
           >
             {tabItems.map((tabItem) => (
               <button
@@ -252,7 +252,7 @@ export default function App() {
         </div>
 
         <div
-          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-2 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 shadow-[0_-4px_30px_rgba(0,0,0,0.04)] dark:bg-slate-950/95 dark:border-slate-800"
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-2 bg-white/95 backdrop-blur-xl shadow-[0_-10px_30px_rgba(15,23,42,0.08)] dark:bg-slate-950/95"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <div className="flex justify-around items-center max-w-md mx-auto pt-1.5 pb-1.5">
@@ -273,7 +273,7 @@ export default function App() {
                   <div
                     className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300 ${
                       active
-                        ? `bg-gradient-to-br ${staticColors.bgGradientLight} shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border ${staticColors.borderLight} dark:from-slate-800 dark:to-slate-700 dark:border-slate-700`
+                        ? `bg-gradient-to-br ${staticColors.bgGradientLight} shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] dark:from-slate-800 dark:to-slate-700`
                         : 'bg-transparent'
                     }`}
                   >
@@ -312,7 +312,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="border-t border-slate-100 bg-white/50 mt-10 dark:border-slate-800 dark:bg-slate-950/60">
+      <footer className="bg-white/40 mt-10 dark:bg-slate-950/60">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 text-center text-slate-500 text-xs sm:text-sm dark:text-slate-400">
           <p className="flex items-center justify-center gap-2">
             <ChefHat className="w-3.5 h-3.5" />

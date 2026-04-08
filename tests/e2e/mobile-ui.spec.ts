@@ -98,7 +98,7 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
 
   const dayPdfDownload = page.waitForEvent('download');
   await page.getByTestId('header-pdf-button').click();
-  await page.getByRole('button', { name: /PDF del d/i }).click();
+  await page.getByRole('button', { name: /Menu de hoy/i }).click();
   const download = await dayPdfDownload;
   expect(download.suggestedFilename()).toContain('Menu_Seleccionado_Lunes');
 
@@ -198,7 +198,7 @@ test('combined mobile navigation renders every major view with populated data', 
 
   const fullPlanDownload = page.waitForEvent('download');
   await page.getByTestId('header-pdf-button').click();
-  await page.getByRole('button', { name: /PDF plan completo/i }).click();
+  await page.getByRole('button', { name: /Plan completo/i }).click();
   const download = await fullPlanDownload;
   expect(download.suggestedFilename()).toBe('Plan_Nutricional_Ambos.pdf');
 

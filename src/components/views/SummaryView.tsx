@@ -38,7 +38,7 @@ export default function SummaryView() {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="w-full flex flex-col"
     >
-      <section className={`mb-4 rounded-[28px] border p-4 shadow-sm ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-200 bg-white'}`}>
+      <section className={`mb-4 rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`w-11 h-11 rounded-[18px] bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center shadow-sm`}>
@@ -100,10 +100,10 @@ export default function SummaryView() {
             <div key={p.perfil} className={`space-y-4 ${hiddenClass}`}>
               {isAmbos && (
                 <h3
-                  className={`text-base font-bold pb-2 border-b-2 ${
+                  className={`text-base font-bold ${
                     isFirst
-                      ? `${elAccent.textDark} ${elAccent.border}`
-                      : `${ellaAccent.textDark} ${ellaAccent.border}`
+                      ? `${elAccent.textDark}`
+                      : `${ellaAccent.textDark}`
                   }`}
                 >
                   Resumen de {p.nombre}
@@ -127,7 +127,7 @@ export default function SummaryView() {
                 </div>
               </div>
 
-              <div className={`rounded-2xl p-4 sm:p-6 shadow-sm border ${isDarkMode ? 'bg-slate-950/92 border-slate-800' : 'bg-white border-slate-100'}`}>
+              <div className={`rounded-2xl p-4 sm:p-6 shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
                 <h3 className={`font-bold mb-3 flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                   <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
                   Puntos clave de tu plan
@@ -155,13 +155,13 @@ export default function SummaryView() {
               </div>
 
               {p.objetivosPorMomento && (
-                <div className={`rounded-2xl p-4 sm:p-5 shadow-sm border overflow-hidden relative w-full ${isDarkMode ? 'bg-slate-950/92 border-slate-800' : 'bg-white border-slate-100/80'}`}>
+                <div className={`rounded-2xl p-4 sm:p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] overflow-hidden relative w-full ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
                   <div className={`absolute top-0 right-0 w-28 h-28 rounded-full blur-3xl -z-10 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`} />
 
                   {/* Goal and profile summary */}
                   <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-2">
                     <div
-                      className={`bg-gradient-to-br ${dynamicAc.bgGradientLight} rounded-2xl p-4 border ${dynamicAc.border}`}
+                      className={`bg-gradient-to-br ${dynamicAc.bgGradientLight} rounded-2xl p-4`}
                     >
                       <h3
                         className={`font-bold ${dynamicAc.textDark} mb-1.5 flex items-center gap-2 text-xs sm:text-sm`}
@@ -175,12 +175,12 @@ export default function SummaryView() {
                     </div>
 
                     <div
-                      className={`rounded-2xl p-4 border ${
+                      className={`rounded-2xl p-4 ${
                         isAmbos
                           ? isFirst
-                            ? `${elAccent.bgGradientLight} ${elAccent.border}`
-                            : `${ellaAccent.bgGradientLight} ${ellaAccent.border}`
-                          : `${dynamicAc.bgGradientLight} ${dynamicAc.border}`
+                            ? `${elAccent.bgGradientLight}`
+                            : `${ellaAccent.bgGradientLight}`
+                          : `${dynamicAc.bgGradientLight}`
                       }`}
                     >
                       <h3
@@ -211,10 +211,10 @@ export default function SummaryView() {
 
                   {p.detallesPerfil && (
                     <div
-                      className={`mb-4 rounded-2xl border p-4 ${
+                      className={`mb-4 rounded-2xl p-4 ${
                         isDarkMode
-                          ? 'border-slate-800 bg-slate-900/80'
-                          : 'border-slate-100 bg-slate-50/80'
+                          ? 'bg-slate-900/80'
+                          : 'bg-slate-50/80'
                       }`}
                     >
                       <h3
@@ -235,7 +235,7 @@ export default function SummaryView() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-3.5 dark:border-amber-900/60 dark:bg-amber-950/40"
+                      className="mb-4 flex items-start gap-3 rounded-2xl bg-amber-50 p-3.5 dark:bg-amber-950/40"
                     >
                       <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
                       <p className="text-xs font-medium leading-relaxed text-amber-800 dark:text-amber-100 sm:text-sm">
@@ -260,7 +260,7 @@ export default function SummaryView() {
                       return (
                         <div
                           key={cat.key}
-                          className={`rounded-2xl p-3 border ${isDarkMode ? 'bg-slate-900 border-slate-800' : `${cat.bg} border-slate-100`}`}
+                          className={`rounded-2xl p-3 ${isDarkMode ? 'bg-slate-900' : `${cat.bg}`}`}
                         >
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2 min-w-0">
@@ -290,14 +290,14 @@ export default function SummaryView() {
                               return (
                                 <div
                                   key={m}
-                                  className={`rounded-xl px-1.5 py-2 text-center border ${
+                                  className={`rounded-xl px-1.5 py-2 text-center ${
                                     active
                                       ? isDarkMode
-                                        ? 'bg-slate-950 border-slate-700 shadow-sm'
-                                        : 'bg-white border-white shadow-sm'
+                                        ? 'bg-slate-950 shadow-sm'
+                                        : 'bg-white shadow-sm'
                                       : isDarkMode
-                                        ? 'bg-slate-900 border-slate-800'
-                                        : 'bg-white/50 border-white/60'
+                                        ? 'bg-slate-900'
+                                        : 'bg-white/50'
                                   }`}
                                 >
                                   <div
@@ -332,7 +332,7 @@ export default function SummaryView() {
                     <table className="w-full text-left text-sm min-w-max">
                       <thead>
                         <tr
-                          className={`border-b-2 ${dynamicAc.border} font-bold uppercase tracking-wider text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                          className={`font-bold uppercase tracking-wider text-[11px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                         >
                           <th className={`p-3 pb-3 sticky left-0 backdrop-blur-md z-10 w-32 ${isDarkMode ? 'bg-slate-950/95' : 'bg-white/95'}`}>
                             Grupo
@@ -360,7 +360,7 @@ export default function SummaryView() {
                               key={cat.key}
                               className={`transition-colors group ${isDarkMode ? 'hover:bg-slate-900/70' : 'hover:bg-slate-50/70'}`}
                             >
-                              <td className={`p-3 sticky left-0 backdrop-blur-md z-10 font-bold border-r border-transparent transition-colors ${isDarkMode ? 'bg-slate-950/95 group-hover:bg-slate-900/95 text-slate-100 group-hover:border-slate-800' : 'bg-white/95 group-hover:bg-slate-50/95 text-slate-700 group-hover:border-slate-100/50'}`}>
+                              <td className={`p-3 sticky left-0 backdrop-blur-md z-10 font-bold transition-colors ${isDarkMode ? 'bg-slate-950/95 group-hover:bg-slate-900/95 text-slate-100' : 'bg-white/95 group-hover:bg-slate-50/95 text-slate-700'}`}>
                                 <div className="flex items-center gap-2">
                                   <span className="text-base">{cat.icon}</span>
                                   {cat.label}
