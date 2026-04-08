@@ -18,6 +18,7 @@ export default function Header() {
     ac: accentColors,
     isDarkMode,
     setIsDarkMode,
+    notify,
   } = useDiet();
 
   React.useEffect(() => {
@@ -36,53 +37,61 @@ export default function Header() {
 
   const handleDownloadDayPdf = React.useCallback(async () => {
     if (!activeProfile) return;
-    const { downloadDaySelectionPdf } = await import('../../services/pdfService');
+    try {
+      const { downloadDaySelectionPdf } = await import('../../services/pdfService');
 
-    if (activeProfile === 'ambos') {
+      if (activeProfile === 'ambos') {
+        downloadDaySelectionPdf(
+          activeDay,
+          [
+            { perfilData: profilesData.el, color: [37, 99, 235], planObj: profilesData.el.plan, perfilId: 'el' },
+            { perfilData: profilesData.ella, color: [225, 29, 72], planObj: profilesData.ella.plan, perfilId: 'ella' },
+          ],
+          selections
+        );
+        return;
+      }
+
+      const isElla = activeProfile === 'ella';
       downloadDaySelectionPdf(
         activeDay,
         [
-          { perfilData: profilesData.el, color: [37, 99, 235], planObj: profilesData.el.plan, perfilId: 'el' },
-          { perfilData: profilesData.ella, color: [225, 29, 72], planObj: profilesData.ella.plan, perfilId: 'ella' },
+          {
+            perfilData: profilesData[activeProfile],
+            color: isElla ? [225, 29, 72] : [37, 99, 235],
+            planObj: profilesData[activeProfile].plan,
+            perfilId: activeProfile,
+          },
         ],
         selections
       );
-      return;
+    } catch (error: any) {
+      await notify('Error al exportar PDF', error?.message || 'No fue posible generar el PDF del dia.');
     }
-
-    const isElla = activeProfile === 'ella';
-    downloadDaySelectionPdf(
-      activeDay,
-      [
-        {
-          perfilData: profilesData[activeProfile],
-          color: isElla ? [225, 29, 72] : [37, 99, 235],
-          planObj: profilesData[activeProfile].plan,
-          perfilId: activeProfile,
-        },
-      ],
-      selections
-    );
-  }, [activeProfile, activeDay, profilesData, selections]);
+  }, [activeProfile, activeDay, notify, profilesData, selections]);
 
   const handleDownloadFullPlanPdf = React.useCallback(async () => {
     if (!activeProfile) return;
-    const { downloadCombinedDietPdf, downloadDietPdf } = await import('../../services/pdfService');
+    try {
+      const { downloadCombinedDietPdf, downloadDietPdf } = await import('../../services/pdfService');
 
-    if (activeProfile === 'ambos') {
-      downloadCombinedDietPdf([
-        { perfilData: profilesData.el, planObj: profilesData.el.plan, isVA: false },
-        { perfilData: profilesData.ella, planObj: profilesData.ella.plan, isVA: true },
-      ]);
-      return;
+      if (activeProfile === 'ambos') {
+        downloadCombinedDietPdf([
+          { perfilData: profilesData.el, planObj: profilesData.el.plan, isVA: false },
+          { perfilData: profilesData.ella, planObj: profilesData.ella.plan, isVA: true },
+        ]);
+        return;
+      }
+
+      downloadDietPdf(
+        profilesData[activeProfile],
+        profilesData[activeProfile].plan,
+        activeProfile === 'ella'
+      );
+    } catch (error: any) {
+      await notify('Error al exportar PDF', error?.message || 'No fue posible generar el plan completo en PDF.');
     }
-
-    downloadDietPdf(
-      profilesData[activeProfile],
-      profilesData[activeProfile].plan,
-      activeProfile === 'ella'
-    );
-  }, [activeProfile, profilesData]);
+  }, [activeProfile, notify, profilesData]);
 
   return (
     <motion.header
@@ -154,7 +163,7 @@ export default function Header() {
                     : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                PDF del día
+                PDF del dia
               </button>
               <button
                 onClick={() => {

@@ -92,34 +92,38 @@ export default function PlanView() {
 
   const handleDownloadDayPdf = React.useCallback(async () => {
     if (!perfilActivo) return;
-    const { downloadDaySelectionPdf } = await import('../../services/pdfService');
+    try {
+      const { downloadDaySelectionPdf } = await import('../../services/pdfService');
 
-    if (perfilActivo === 'ambos') {
+      if (perfilActivo === 'ambos') {
+        downloadDaySelectionPdf(
+          diaActivo,
+          [
+            { perfilData: perfilesData.el, color: [37, 99, 235], planObj: perfilesData.el.plan, perfilId: 'el' },
+            { perfilData: perfilesData.ella, color: [225, 29, 72], planObj: perfilesData.ella.plan, perfilId: 'ella' },
+          ],
+          selecciones
+        );
+        return;
+      }
+
+      const isElla = perfilActivo === 'ella';
       downloadDaySelectionPdf(
         diaActivo,
         [
-          { perfilData: perfilesData.el, color: [37, 99, 235], planObj: perfilesData.el.plan, perfilId: 'el' },
-          { perfilData: perfilesData.ella, color: [225, 29, 72], planObj: perfilesData.ella.plan, perfilId: 'ella' },
+          {
+            perfilData: perfilesData[perfilActivo],
+            color: isElla ? [225, 29, 72] : [37, 99, 235],
+            planObj: perfilesData[perfilActivo].plan,
+            perfilId: perfilActivo,
+          },
         ],
         selecciones
       );
-      return;
+    } catch (error: any) {
+      await notify('Error al exportar PDF', error?.message || 'No fue posible generar el PDF del dia.');
     }
-
-    const isElla = perfilActivo === 'ella';
-    downloadDaySelectionPdf(
-      diaActivo,
-      [
-        {
-          perfilData: perfilesData[perfilActivo],
-          color: isElla ? [225, 29, 72] : [37, 99, 235],
-          planObj: perfilesData[perfilActivo].plan,
-          perfilId: perfilActivo,
-        },
-      ],
-      selecciones
-    );
-  }, [perfilActivo, diaActivo, perfilesData, selecciones]);
+  }, [perfilActivo, diaActivo, notify, perfilesData, selecciones]);
 
   const closeMealEditor = React.useCallback(() => {
     setMealEditor(null);
