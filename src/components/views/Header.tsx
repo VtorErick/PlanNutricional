@@ -95,10 +95,10 @@ export default function Header() {
     <motion.header
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`sticky top-0 z-50 backdrop-blur-xl border-b shadow-[0_6px_20px_rgba(15,23,42,0.06)] ${
+      className={`sticky top-0 z-50 backdrop-blur-xl shadow-[0_10px_30px_rgba(15,23,42,0.08)] ${
         isDarkMode
-          ? 'bg-slate-950/95 border-slate-800'
-          : 'bg-white/95 border-slate-200/60'
+          ? 'bg-slate-950/92'
+          : 'bg-white/92'
       }`}
     >
       <div className="max-w-5xl mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-2">
@@ -121,10 +121,10 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setIsDarkMode((prev) => !prev)}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-bold transition-colors ${
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-bold transition-colors ${
               isDarkMode
-                ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                ? 'bg-slate-900/90 text-slate-100 hover:bg-slate-800'
+                : 'bg-slate-100/90 text-slate-700 hover:bg-slate-200/80'
             }`}
             title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           >
@@ -135,19 +135,19 @@ export default function Header() {
           <button
             onClick={() => setShowPdfMenu((value) => !value)}
             data-testid="header-pdf-button"
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all ${accentColors.border} ${accentColors.bgLight} ${accentColors.text}`}
-            title="Descargar PDF"
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl transition-all ${accentColors.bgLight} ${accentColors.text} shadow-sm hover:opacity-95`}
+            title="Descargar plan"
           >
             <FileText className="w-4 h-4" />
-            <span className="text-xs font-bold">PDF</span>
+            <span className="hidden sm:inline text-xs font-bold">Descargar</span>
           </button>
 
           {showPdfMenu && (
             <div
-              className={`absolute top-12 right-0 z-50 w-48 rounded-2xl border shadow-xl p-1.5 ${
+              className={`absolute top-12 right-0 z-50 w-48 rounded-2xl shadow-xl p-1.5 ${
                 isDarkMode
-                  ? 'border-slate-700 bg-slate-950'
-                  : 'border-slate-200 bg-white'
+                  ? 'bg-slate-950'
+                  : 'bg-white'
               }`}
             >
               <button
@@ -161,7 +161,7 @@ export default function Header() {
                     : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                PDF del dia
+                Menu de hoy
               </button>
               <button
                 onClick={() => {
@@ -174,7 +174,7 @@ export default function Header() {
                     : 'text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                PDF plan completo
+                Plan completo
               </button>
             </div>
           )}
@@ -195,11 +195,12 @@ export default function Header() {
                   text-[11px] sm:text-xs font-bold
                   transition-all duration-300
                   whitespace-nowrap
-                  border
                   ${
                     isActive
-                      ? `${accentColors.btnActive} shadow-sm scale-[1.03] border-transparent`
-                      : accentColors.btnInactive
+                      ? `${accentColors.btnActive} shadow-sm scale-[1.03]`
+                      : isDarkMode
+                        ? 'bg-slate-900/90 text-slate-300 hover:bg-slate-800'
+                        : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/80'
                   }
                 `}
               >

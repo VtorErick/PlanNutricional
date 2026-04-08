@@ -10,8 +10,8 @@ interface MealSelectorProps {
   momento: string;
   selecciones: Record<string, boolean>;
   onToggle: (perfil: string, dia: string, momento: string, nombre: string) => void;
-  onEditMeal?: (meal: MealItem) => void;
-  onRestoreMeal?: (meal: MealItem) => void;
+  onEditMeal?: (meal: MealItem, occurrenceId: string) => void;
+  onRestoreMeal?: (meal: MealItem, occurrenceId: string) => void;
   accentClasses: Record<string, string>;
   porciones?: { key: string; label: string; icon: string; cantidad: number }[];
   isDarkMode?: boolean;
@@ -81,7 +81,7 @@ export default function MealSelector({
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation();
-                            onRestoreMeal(comida);
+                            onRestoreMeal(comida, `${dia}::${momento}::${idx}`);
                           }}
                           data-testid={`meal-restore-${perfil}-${dia}-${momento}-${idx}`}
                           className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
@@ -100,7 +100,7 @@ export default function MealSelector({
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation();
-                            onEditMeal(comida);
+                            onEditMeal(comida, `${dia}::${momento}::${idx}`);
                           }}
                           data-testid={`meal-edit-${perfil}-${dia}-${momento}-${idx}`}
                           className={`w-8 h-8 rounded-full border flex items-center justify-center transition ${

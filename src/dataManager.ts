@@ -3,6 +3,10 @@ import { normalizeProfileSummary } from './utils/profileSummary';
 
 type RawProfilePrefix = 'EL' | 'ELLA';
 
+function cloneSerializableData<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 /**
  * Normalizes a day name by removing accents and standardizing capitalization.
  * Miercoles -> Miercoles, Sabado -> Sabado, lunes -> Lunes
@@ -122,7 +126,7 @@ export function buildExportData(parsed: any, expectedPrefix: RawProfilePrefix) {
   const planKey = `plan${expectedPrefix}`;
   const supplementsKey = `suplementos${expectedPrefix}`;
 
-  const normalized = parseObjectToData(parsed, expectedPrefix);
+  const normalized = parseObjectToData(cloneSerializableData(parsed), expectedPrefix);
 
   return {
     [perfilKey]: normalized[perfilKey],

@@ -26,8 +26,11 @@ function createBaseDialog({ title, message, confirmText = 'Aceptar', cancelText 
   card.style.background = '#ffffff';
   card.style.borderRadius = '20px';
   card.style.padding = '20px';
+  card.style.maxHeight = 'min(560px, 80vh)';
   card.style.boxShadow = '0 20px 45px rgba(2, 6, 23, 0.2)';
   card.style.border = '1px solid #e2e8f0';
+  card.style.display = 'flex';
+  card.style.flexDirection = 'column';
 
   const titleEl = document.createElement('h3');
   titleEl.textContent = title;
@@ -42,12 +45,18 @@ function createBaseDialog({ title, message, confirmText = 'Aceptar', cancelText 
   messageEl.style.fontSize = '14px';
   messageEl.style.lineHeight = '1.45';
   messageEl.style.color = '#475569';
+  messageEl.style.whiteSpace = 'pre-line';
+  messageEl.style.overflowWrap = 'anywhere';
+  messageEl.style.overflowY = 'auto';
+  messageEl.style.maxHeight = '50vh';
+  messageEl.style.paddingRight = '4px';
 
   const actions = document.createElement('div');
   actions.style.marginTop = '18px';
   actions.style.display = 'flex';
   actions.style.justifyContent = 'flex-end';
   actions.style.gap = '10px';
+  actions.style.flexWrap = 'wrap';
 
   const confirmBtn = document.createElement('button');
   confirmBtn.textContent = confirmText;

@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import {
+  buildAdjustPlanResponse,
+  getFirstMealName,
+  mockGeminiStatusApi,
   mockPlanGenerationApis,
   saveDocScreenshot,
   seedGeneratedPlans,
@@ -72,28 +75,56 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
 test('single-profile plan flow supports selecting meals, editing, and downloading PDF on mobile', async ({
   page,
 }) => {
-  await seedGeneratedPlans(page);
+  const originalLinkedBreakfast = 'Tostadas de Aguacate y Huevo';
+
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Sabado'] });
   await page.goto('/miplan?profile=el');
 
-  await expect(page.getByTestId('moment-empty-desayuno-single')).toBeVisible();
-  await page.getByTestId('moment-empty-desayuno-single').click();
-  await expect(page.getByTestId('meal-option-el-Lunes-desayuno-0')).toBeVisible();
-  await page.getByTestId('meal-option-el-Lunes-desayuno-0').click();
+  await page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first().click();
+  await page.getByTestId('meal-option-el-Lunes-desayuno-2').click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+
+  await page.getByRole('button', { name: /^Sab/i }).click();
+  await page.locator('[data-testid^="selected-meal-el-Sabado-desayuno-"]').first().click();
+  await page.getByTestId('meal-option-el-Sabado-desayuno-2').click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+
+  await page.getByRole('button', { name: /^Lun/i }).click();
 
   const selectedMeal = page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first();
   await expect(selectedMeal).toBeVisible();
   await selectedMeal.click();
-  await page.getByTestId('meal-edit-el-Lunes-desayuno-0').click();
+  await page.getByTestId('meal-edit-el-Lunes-desayuno-2').click();
 
   await page.getByPlaceholder('Ej. Omelette con fruta').fill('Desayuno de prueba Playwright');
-  await page.getByRole('button', { name: /Confirmar y reemplazar/i }).click();
+  await expect(page.getByText(/Los cambios se aplicaran solo en esta comida/i)).toBeVisible();
+  await page.getByTestId('meal-edit-save').click();
+  await page.getByRole('button', { name: /Confirmar/i }).click();
   await expect(page.getByText(/Platillo actualizado/i)).toBeVisible();
   await page.getByRole('button', { name: /Aceptar/i }).click();
   await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
 
+  await page.getByRole('button', { name: /^Sab/i }).click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+
+  await page.getByRole('button', { name: /^Lun/i }).click();
+  await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
+  await page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first().click();
+  await page.getByTestId('meal-restore-el-Lunes-desayuno-2').click();
+  await page.getByRole('button', { name: /Confirmar/i }).click();
+  await expect(page.getByText(/Platillo restaurado/i)).toBeVisible();
+  await page.getByRole('button', { name: /Aceptar/i }).click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+  await expect(page.getByText('Desayuno de prueba Playwright')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /^Sab/i }).click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+
+  await page.getByRole('button', { name: /^Lun/i }).click();
+
   const dayPdfDownload = page.waitForEvent('download');
   await page.getByTestId('header-pdf-button').click();
-  await page.getByRole('button', { name: /PDF del d/i }).click();
+  await page.getByRole('button', { name: /Menu de hoy/i }).click();
   const download = await dayPdfDownload;
   expect(download.suggestedFilename()).toContain('Menu_Seleccionado_Lunes');
 
@@ -124,13 +155,116 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   expect(originalDownload.suggestedFilename()).toBe('perfil-el.json');
 });
 
+test('mobile flow supports AI plan adjustment without recreating the whole plan', async ({ page }) => {
+  const originalBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
+  const untouchedTuesdayBreakfast = getFirstMealName('el', 'Martes', 'desayuno');
+  const updatedBreakfast = 'Desayuno ajustado por IA';
+
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Martes'] });
+  await mockGeminiStatusApi(page);
+  await page.route('**/api/generate-plan', async (route) => {
+    const response = buildAdjustPlanResponse('el', 'Lunes', 'desayuno', [
+      {
+        nombre: updatedBreakfast,
+        porciones: '1 porcion',
+        detalle: 'Opcion ajustada para la prueba de IA',
+        tags: ['ajuste'],
+        super: ['avena', 'fruta'],
+        caloriasKcal: 320,
+        proteinaG: 20,
+        grasasG: 10,
+      },
+      {
+        nombre: 'Alternativa ligera de IA',
+        porciones: '1 porcion',
+        detalle: 'Segunda opcion ajustada',
+        tags: ['ajuste'],
+        super: ['yogur', 'fruta'],
+        caloriasKcal: 290,
+        proteinaG: 18,
+        grasasG: 8,
+      },
+      {
+        nombre: 'Tercera opcion IA',
+        porciones: '1 porcion',
+        detalle: 'Tercera opcion del parche',
+        tags: ['ajuste'],
+        super: ['pan', 'huevo'],
+        caloriasKcal: 340,
+        proteinaG: 22,
+        grasasG: 11,
+      },
+    ]);
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(response),
+    });
+  });
+
+  await page.goto('/miplan?profile=el');
+
+  await expect(page.getByText(originalBreakfast)).toBeVisible();
+  await page.getByTestId('plan-ai-open').click();
+  await expect(page.getByTestId('plan-ai-mode-adjust')).toBeVisible();
+  await page.getByTestId('plan-ai-mode-adjust').click();
+  await page.getByTestId('plan-ai-target-el').click();
+  await page.getByTestId('plan-ai-instruction').fill('Menos pescado en la noche y cambia el desayuno del lunes.');
+  await page.getByTestId('plan-ai-submit').click();
+
+  await expect(page.getByText(/Plan actualizado con IA/i)).toBeVisible();
+  await page.getByRole('button', { name: /Aceptar/i }).click();
+  await expect(page.getByText(updatedBreakfast)).toBeVisible();
+  await expect(page.getByText(originalBreakfast)).toHaveCount(0);
+
+  await page.getByRole('button', { name: /^Mar/i }).click();
+  await expect(page.getByText(untouchedTuesdayBreakfast)).toBeVisible();
+});
+
+test('recreate from zero can reopen the questionnaire with saved answers', async ({ page }) => {
+  await seedGeneratedPlans(page, {
+    selectedDays: ['Lunes'],
+    lastQuestionnaireContext: {
+      targetProfile: 'el',
+      profileToUpdate: 'el',
+      portionMode: 'manual',
+      planConfig: {
+        mealsPerDay: '5',
+        selectedMoments: [],
+        manualPortions: {
+          desayuno: {
+            proteina: 2,
+          },
+        },
+        additionalNotes: 'Sin lactosa y con desayunos sencillos.',
+      },
+      el: {
+        age: '41',
+        currentWeightKg: '82',
+        heightCm: '178',
+      },
+    },
+  });
+  await mockGeminiStatusApi(page);
+  await page.goto('/miplan?profile=el');
+
+  await page.getByTestId('plan-ai-open').click();
+  await page.getByTestId('plan-ai-mode-regenerate').click();
+  await page.getByTestId('plan-ai-regenerate-path-questionnaire').click();
+  await page.getByTestId('plan-ai-submit').click();
+
+  await expect(page.getByTestId('questionnaire-step-fisica-el')).toBeVisible();
+  await expect(page.getByRole('spinbutton').first()).toHaveValue('41');
+});
+
 test('combined mobile navigation renders every major view with populated data', async ({ page }) => {
   await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Martes'] });
   await page.goto('/miplan?profile=ambos');
 
   const fullPlanDownload = page.waitForEvent('download');
   await page.getByTestId('header-pdf-button').click();
-  await page.getByRole('button', { name: /PDF plan completo/i }).click();
+  await page.getByRole('button', { name: /Plan completo/i }).click();
   const download = await fullPlanDownload;
   expect(download.suggestedFilename()).toBe('Plan_Nutricional_Ambos.pdf');
 

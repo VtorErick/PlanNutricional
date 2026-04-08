@@ -27,7 +27,7 @@ export default function EquivalenciasView() {
     >
       {isAmbos ? (
         <>
-          <div className={`rounded-2xl border bg-gradient-to-br p-4 ${ac.bgGradientLight} ${ac.border}`}>
+          <div className={`rounded-2xl bg-gradient-to-br p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${ac.bgGradientLight}`}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
@@ -38,7 +38,7 @@ export default function EquivalenciasView() {
                 </h2>
               </div>
 
-              <div className={`flex w-full rounded-2xl p-1 sm:w-auto sm:min-w-[200px] ${isDarkMode ? 'bg-slate-900' : 'bg-white/80'}`}>
+              <div className={`flex w-full rounded-2xl p-1 sm:w-auto sm:min-w-[200px] ${isDarkMode ? 'bg-slate-900' : 'bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]'}`}>
                 <button
                   onClick={() => setAmbosSubTab('el')}
                   className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
@@ -103,7 +103,7 @@ export default function EquivalenciasView() {
         </>
       ) : (
         <div className="space-y-4">
-          <div className={`rounded-2xl border bg-gradient-to-br p-4 ${ac.bgGradientLight} ${ac.border}`}>
+          <div className={`rounded-2xl bg-gradient-to-br p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${ac.bgGradientLight}`}>
             <div className="flex items-center gap-3">
               <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
                 <Repeat className={`h-5 w-5 ${ac.text}`} />

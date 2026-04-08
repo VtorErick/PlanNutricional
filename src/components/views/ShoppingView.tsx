@@ -103,10 +103,10 @@ export default function ShoppingView() {
       className="space-y-4"
     >
       <div
-        className={`rounded-[28px] border overflow-hidden relative p-4 sm:p-6 ${
+        className={`rounded-[28px] overflow-hidden relative p-4 sm:p-6 ${
           isDarkMode
-            ? 'bg-slate-950/92 border-slate-800 shadow-[0_14px_32px_rgba(2,6,23,0.42)]'
-            : 'bg-white border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
+            ? 'bg-slate-950/92 shadow-[0_14px_32px_rgba(2,6,23,0.42)]'
+            : 'bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
         }`}
       >
         <div
@@ -145,10 +145,10 @@ export default function ShoppingView() {
         {shoppingList.length > 0 && (
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div
-              className={`rounded-2xl border p-3 ${
+              className={`rounded-2xl p-3 ${
                 isDarkMode
-                  ? 'border-emerald-900/60 bg-emerald-950/45'
-                  : 'border-emerald-100 bg-emerald-50'
+                  ? 'bg-emerald-950/45'
+                  : 'bg-emerald-50'
               }`}
             >
               <div className="mb-1 flex items-center gap-2">
@@ -167,10 +167,10 @@ export default function ShoppingView() {
             </div>
 
             <div
-              className={`rounded-2xl border p-3 ${
+              className={`rounded-2xl p-3 ${
                 isDarkMode
-                  ? 'border-amber-900/60 bg-amber-950/45'
-                  : 'border-amber-100 bg-amber-50'
+                  ? 'bg-amber-950/45'
+                  : 'bg-amber-50'
               }`}
             >
               <div className="mb-1 flex items-center gap-2">
@@ -189,8 +189,8 @@ export default function ShoppingView() {
             </div>
 
             <div
-              className={`rounded-2xl border p-3 col-span-2 sm:col-span-1 ${
-                isDarkMode ? 'border-sky-900/60 bg-sky-950/45' : 'border-blue-100 bg-blue-50'
+              className={`rounded-2xl p-3 col-span-2 sm:col-span-1 ${
+                isDarkMode ? 'bg-sky-950/45' : 'bg-blue-50'
               }`}
             >
               <div className="mb-1 flex items-center gap-2">
@@ -212,8 +212,8 @@ export default function ShoppingView() {
 
         {shoppingList.length === 0 ? (
           <div
-            className={`rounded-[20px] border-dashed border-2 py-10 sm:py-12 text-center ${
-              isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'
+            className={`rounded-[20px] py-10 sm:py-12 text-center ${
+              isDarkMode ? 'bg-slate-900 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]' : 'bg-slate-50 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]'
             }`}
           >
             <ShoppingCart
@@ -237,14 +237,14 @@ export default function ShoppingView() {
                 <motion.div
                   whileTap={{ scale: 0.985 }}
                   key={item.ingrediente}
-                  className={`group rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden flex items-stretch ${
+                  className={`group rounded-2xl transition-all duration-200 cursor-pointer overflow-hidden flex items-stretch ${
                     isChecked
                       ? isDarkMode
-                        ? 'bg-slate-900 border-emerald-900/70 opacity-85'
-                        : 'bg-slate-50 border-emerald-200 opacity-70'
+                        ? 'bg-slate-900 opacity-85'
+                        : 'bg-slate-50 opacity-70'
                       : isDarkMode
-                        ? 'bg-slate-950 border-slate-800 shadow-[0_10px_24px_rgba(2,6,23,0.38)] hover:shadow-[0_14px_28px_rgba(2,6,23,0.48)]'
-                        : 'bg-white border-slate-100 shadow-sm hover:shadow-md'
+                        ? 'bg-slate-950 shadow-[0_10px_24px_rgba(2,6,23,0.38)] hover:shadow-[0_14px_28px_rgba(2,6,23,0.48)]'
+                        : 'bg-white shadow-sm hover:shadow-md'
                   }`}
                 >
                   <div
@@ -310,10 +310,10 @@ export default function ShoppingView() {
                             [item.ingrediente]: !prev[item.ingrediente],
                           }))
                         }
-                        className={`flex-shrink-0 rounded-lg border px-2 py-1 text-[10px] font-bold active:scale-95 ${
+                        className={`flex-shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold active:scale-95 ${
                           isDarkMode
-                            ? 'border-slate-700 text-slate-200 bg-slate-900'
-                            : 'border-slate-200 text-slate-500 bg-white'
+                            ? 'text-slate-200 bg-slate-900'
+                            : 'text-slate-500 bg-slate-100'
                         }`}
                         aria-label={`${
                           expandedIngredients[item.ingrediente] ? 'Colapsar' : 'Expandir'
@@ -341,7 +341,7 @@ export default function ShoppingView() {
                                   ? 'bg-slate-800/90'
                                   : 'bg-slate-100/70'
                                 : isDarkMode
-                                  ? 'bg-slate-900 border border-slate-800'
+                                  ? 'bg-slate-900'
                                   : 'bg-slate-50'
                             }`}
                           >
@@ -352,7 +352,7 @@ export default function ShoppingView() {
                                   : `${ellaAccent.tagBg} ${ellaAccent.tagText}`
                               }`}
                             >
-                              {uso.perfil === 'el' ? 'Él' : 'Ella'}
+                              {uso.perfil === 'el' ? 'El' : 'Ella'}
                             </span>
 
                             <span

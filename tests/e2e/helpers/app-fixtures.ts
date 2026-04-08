@@ -18,7 +18,38 @@ const ellaFixture = JSON.parse(
 
 type SeedPlanOptions = {
   selectedDays?: string[];
+  lastQuestionnaireContext?: Record<string, unknown> | null;
 };
+
+export function getFirstMealName(
+  profileId: 'el' | 'ella',
+  day: string,
+  momento: string
+) {
+  const source = profileId === 'el' ? elFixture.planEL : ellaFixture.planELLA;
+  return source?.[day]?.[momento]?.[0]?.nombre || '';
+}
+
+export function buildAdjustPlanResponse(
+  profileId: 'el' | 'ella',
+  day: string,
+  momento: string,
+  nextMeals: Array<Record<string, unknown>>
+) {
+  const profileKey = profileId === 'el' ? 'elData' : 'ellaData';
+
+  return {
+    responseMode: 'adjust',
+    [profileKey]: {
+      summary: ['Se ajusto el plan segun tu instruccion.'],
+      planPatch: {
+        [day]: {
+          [momento]: nextMeals,
+        },
+      },
+    },
+  };
+}
 
 export async function resetAppStorage(page: Page) {
   await page.addInitScript(() => {
@@ -66,17 +97,22 @@ export async function seedGeneratedPlans(
 ) {
   const selectedDays = options.selectedDays ?? [];
   const selecciones = buildSelectionSeed(selectedDays);
+  const lastQuestionnaireContext = options.lastQuestionnaireContext ?? null;
 
   await resetAppStorage(page);
 
   await page.addInitScript(
-    ({ customData, dataVersions, seleccionesDieta }) => {
+    ({ customData, dataVersions, seleccionesDieta, savedQuestionnaireContext }) => {
       window.localStorage.setItem('darkMode', JSON.stringify(false));
       window.localStorage.setItem('customData', JSON.stringify(customData));
       window.localStorage.setItem('dataVersions', JSON.stringify(dataVersions));
       window.localStorage.setItem('seleccionesDieta', JSON.stringify(seleccionesDieta));
       window.localStorage.setItem('comprasCheck', JSON.stringify({}));
       window.localStorage.setItem('diaActivo', JSON.stringify('Lunes'));
+
+      if (savedQuestionnaireContext) {
+        window.localStorage.setItem('lastQuestionnaireContext', JSON.stringify(savedQuestionnaireContext));
+      }
     },
     {
       customData: {
@@ -88,6 +124,7 @@ export async function seedGeneratedPlans(
         ella: 'custom',
       },
       seleccionesDieta: selecciones,
+      savedQuestionnaireContext: lastQuestionnaireContext,
     }
   );
 }
@@ -95,6 +132,21 @@ export async function seedGeneratedPlans(
 export async function mockPlanGenerationApis(page: Page) {
   await resetAppStorage(page);
 
+  await mockGeminiStatusApi(page);
+
+  await page.route('**/api/generate-plan', async (route) => {
+    const rawBody = route.request().postData() || '{}';
+    const payload = JSON.parse(rawBody) as { targetProfile?: 'el' | 'ella' | 'ambos' };
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(getGeneratedPlanResponse(payload.targetProfile || 'ambos')),
+    });
+  });
+}
+
+export async function mockGeminiStatusApi(page: Page) {
   await page.route('**/api/gemini-status', async (route) => {
     await route.fulfill({
       status: 200,
@@ -106,17 +158,6 @@ export async function mockPlanGenerationApis(page: Page) {
         availableModels: ['gemini-2.5-flash', 'gemini-2.0-flash'],
         generationChecked: true,
       }),
-    });
-  });
-
-  await page.route('**/api/generate-plan', async (route) => {
-    const rawBody = route.request().postData() || '{}';
-    const payload = JSON.parse(rawBody) as { targetProfile?: 'el' | 'ella' | 'ambos' };
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(getGeneratedPlanResponse(payload.targetProfile || 'ambos')),
     });
   });
 }
