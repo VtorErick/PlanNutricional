@@ -15,6 +15,10 @@ const ALLOWED_ICONS = [
 const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
 
+function isPlanRevisionRequest(payload) {
+  return payload?.requestMode === 'adjust' || payload?.requestMode === 'regenerate';
+}
+
 function estimateBase64Size(base64Value) {
   const sanitized = typeof base64Value === 'string' ? base64Value.replace(/\s/g, '') : '';
   if (!sanitized) return 0;
@@ -26,7 +30,7 @@ function estimateBase64Size(base64Value) {
 function validateAssessmentPdf(pdf) {
   if (!pdf) return { ok: true };
   if (typeof pdf !== 'object') {
-    return { ok: false, status: 400, error: 'assessmentReportPdf inválido.' };
+    return { ok: false, status: 400, error: 'assessmentReportPdf invalido.' };
   }
 
   if (pdf.mimeType !== 'application/pdf') {
@@ -34,14 +38,14 @@ function validateAssessmentPdf(pdf) {
   }
 
   if (typeof pdf.dataBase64 !== 'string' || !pdf.dataBase64.trim()) {
-    return { ok: false, status: 400, error: 'El PDF adjunto está vacío o no se pudo leer.' };
+    return { ok: false, status: 400, error: 'El PDF adjunto esta vacio o no se pudo leer.' };
   }
 
   if (estimateBase64Size(pdf.dataBase64) > MAX_ASSESSMENT_PDF_BYTES) {
     return {
       ok: false,
       status: 413,
-      error: `El reporte corporal adjunto supera el límite de ${MAX_ASSESSMENT_PDF_MB} MB.`,
+      error: `El reporte corporal adjunto supera el limite de ${MAX_ASSESSMENT_PDF_MB} MB.`,
     };
   }
 
@@ -82,7 +86,7 @@ function getOptionalPdfParts(payload) {
   return [
     {
       text:
-        'Archivo adjunto opcional: reporte corporal del usuario en PDF. Úsalo como contexto complementario junto con el cuestionario.',
+        'Archivo adjunto opcional: reporte corporal del usuario en PDF. Usalo como contexto complementario junto con el cuestionario.',
     },
     {
       inlineData: {
@@ -96,9 +100,9 @@ function getOptionalPdfParts(payload) {
 function buildSystemPrompt(prefix) {
   const lowerPrefix = prefix.toLowerCase();
 
-  return `Eres un nutricionista clínico experto. Genera un plan semanal completo, realista y consistente con el cuestionario.
+  return `Eres un nutricionista clinico experto. Genera un plan semanal completo, realista y consistente con el cuestionario.
 
-Debes responder SOLO con JSON válido y seguir exactamente esta estructura:
+Debes responder SOLO con JSON valido y seguir exactamente esta estructura:
 
 1. perfil${prefix}: {
   id: "${lowerPrefix}",
@@ -142,26 +146,26 @@ Debes responder SOLO con JSON válido y seguir exactamente esta estructura:
 4. plan${prefix}: {
   Lunes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
   Martes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Miércoles: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Miercoles: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
   Jueves: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
   Viernes: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
-  Sábado: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
+  Sabado: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] },
   Domingo: { desayuno: [3 comidas], colacion_am: [3 comidas], comida: [3 comidas], colacion_pm: [3 comidas], cena: [3 comidas] }
 }
 
-Reglas críticas:
+Reglas criticas:
 - No cambies id ni nombre.
-- "perfil" debe ser SIEMPRE un resumen compacto en una sola linea con este formato: "<peso> kg • <altura> m • <edad> años • IMC <valor>". Ejemplo valido: "67 kg • 1.60 m • 32 años • IMC 26.2".
+- "perfil" debe ser SIEMPRE un resumen compacto en una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>". Ejemplo valido: "67 kg | 1.60 m | 32 anos | IMC 26.2".
 - No pongas parrafos, explicaciones clinicas ni texto narrativo dentro de "perfil".
 - Usa "detallesPerfil" para guardar el analisis narrativo completo del caso, incluyendo contexto corporal, actividad, hallazgos del PDF, riesgos y consideraciones relevantes.
 - Cada comida debe incluir: nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG.
-- Las calorías y macros deben ser enteros realistas.
+- Las calorias y macros deben ser enteros realistas.
 - Las equivalencias deben alinearse con los ingredientes usados en el plan.
-- Los suplementos deben ser EXTRA opcional. Nunca deben ser necesarios para cumplir calorías, macros o el objetivo.
+- Los suplementos deben ser EXTRA opcional. Nunca deben ser necesarios para cumplir calorias, macros o el objetivo.
 - No pongas suplementos dentro de plan${prefix}. El plan debe usar alimentos reales.
-- Si el usuario adjuntó PDF o medidas corporales, úsalos como contexto complementario.
+- Si el usuario adjunto PDF o medidas corporales, usalos como contexto complementario.
 - Si hay conflicto entre el PDF y las respuestas manuales, prioriza las respuestas manuales del cuestionario.
-- Si targetProfile = "ambos" y recibes companionPlan, conserva las mismas preparaciones base por día, momento e índice, ajustando solo porciones y macros.
+- Si targetProfile = "ambos" y recibes companionPlan, conserva las mismas preparaciones base por dia, momento e indice, ajustando solo porciones y macros.
 - Responde solo con JSON, sin markdown ni texto adicional.`;
 }
 
@@ -176,7 +180,7 @@ function buildUserPrompt(payload, prefix) {
         `suplementos${prefix}`,
         `plan${prefix}`,
       ],
-      fixedDays: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+      fixedDays: ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'],
       momentsSource: 'questionnaire.planConfig.selectedMoments',
       profileRequiredKeys: [
         'perfil',
@@ -193,7 +197,7 @@ function buildUserPrompt(payload, prefix) {
         'resumenPersonal',
       ],
       profileFormat: {
-        perfil: '<peso> kg • <altura> m • <edad> años • IMC <valor>',
+        perfil: '<peso> kg | <altura> m | <edad> anos | IMC <valor>',
         detallesPerfil: 'Resumen narrativo del caso y contexto clinico.',
       },
       mealsRequiredKeys: [
@@ -219,11 +223,120 @@ function buildUserPrompt(payload, prefix) {
   });
 }
 
+function buildRevisionSystemPrompt(prefix, mode) {
+  const lowerPrefix = prefix.toLowerCase();
+  const baseGoal =
+    mode === 'regenerate'
+      ? 'Reconstruye el plan semanal completo desde cero usando el contexto disponible y las nuevas instrucciones del usuario.'
+      : 'Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, sin reescribir secciones que no cambian.';
+
+  return `Eres un nutricionista clinico experto. ${baseGoal}
+
+Debes responder SOLO con JSON valido.
+
+El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
+
+Contrato exacto de salida:
+{
+  "summary": string[],
+  "noChangesReason"?: string,
+  "profilePatch"?: {
+    "perfil"?: string,
+    "detallesPerfil"?: string,
+    "meta"?: string,
+    "metaCaloricaKcalDia"?: number,
+    "descripcion"?: string,
+    "edad"?: number,
+    "horariosTexto"?: string,
+    "notaSalud"?: string,
+    "momentos"?: [{ key, label, hora }],
+    "objetivosPorMomento"?: object,
+    "distribucionDiaria"?: [{ grupo, total, detalle }],
+    "resumenPersonal"?: string[]
+  },
+  "equivalencias"?: [
+    { "titulo": string, "icon": enum[${ALLOWED_ICONS.join(', ')}], "items": string[] }
+  ],
+  "suplementos"?: [
+    {
+      "name": string,
+      "goalSupport": string,
+      "whyItMayHelp": string,
+      "howToUse": string,
+      "timing": string,
+      "notes": string,
+      "caution": string
+    }
+  ],
+  "planPatch"?: {
+    "Lunes"?: {
+      "desayuno"?: [MealItem, MealItem, MealItem],
+      "colacion_am"?: [MealItem, MealItem, MealItem],
+      "comida"?: [MealItem, MealItem, MealItem],
+      "colacion_pm"?: [MealItem, MealItem, MealItem],
+      "cena"?: [MealItem, MealItem, MealItem]
+    },
+    "Martes"?: object,
+    "Miercoles"?: object,
+    "Jueves"?: object,
+    "Viernes"?: object,
+    "Sabado"?: object,
+    "Domingo"?: object
+  }
+}
+
+Reglas criticas:
+- summary siempre debe incluir entre 1 y 4 lineas cortas explicando lo que cambiaste.
+- Si realmente no hace falta modificar nada, responde con summary y noChangesReason. No inventes cambios.
+- Si usas planPatch, incluye SOLO los dias y momentos modificados.
+- Cada momento incluido en planPatch debe regresar el arreglo completo de opciones para ese momento, no cambios parciales dentro de una sola comida.
+- Nunca devuelvas el plan completo si el usuario no pidio recrearlo desde cero.
+- Cada MealItem debe incluir: nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG.
+- Las calorias y macros deben ser enteros realistas.
+- profilePatch, equivalencias y suplementos son opcionales; incluyelos solo si tu respuesta necesita cambiar esas secciones.
+- Mantente consistente con el contexto del cuestionario, el plan actual, las ediciones manuales y las restricciones pedidas por el usuario.
+- Si el usuario pide recrear desde cero y aun asi conservas algo del plan actual, debe ser por conveniencia nutricional, no por copiarlo automaticamente.
+- Responde solo con JSON, sin markdown ni texto adicional.`;
+}
+
+function buildRevisionUserPrompt(prefix, payload, profilePayload) {
+  return JSON.stringify({
+    profilePrefix: prefix,
+    mode: payload.requestMode,
+    userInstruction: payload.instruction,
+    questionnaireContext: sanitizePromptPayload(payload.questionnaireContext),
+    currentContext: profilePayload.currentContext,
+    originalContext: profilePayload.originalContext,
+    companionContext: profilePayload.companionContext,
+    outputNotes: {
+      returnOnlyChangedSections: payload.requestMode === 'adjust',
+      preserveUntouchedMoments: payload.requestMode === 'adjust',
+      mealItemRequiredKeys: [
+        'nombre',
+        'porciones',
+        'detalle',
+        'tags',
+        'super',
+        'caloriasKcal',
+        'proteinaG',
+        'grasasG',
+      ],
+    },
+  });
+}
+
 function buildRequestParts(prefix, payload) {
   return [
     { text: buildSystemPrompt(prefix) },
     { text: buildUserPrompt(payload, prefix) },
     ...getOptionalPdfParts(payload),
+  ];
+}
+
+function buildRevisionRequestParts(prefix, payload, profilePayload) {
+  return [
+    { text: buildRevisionSystemPrompt(prefix, payload.requestMode) },
+    { text: buildRevisionUserPrompt(prefix, payload, profilePayload) },
   ];
 }
 
@@ -301,12 +414,21 @@ function buildScopedPayload(payload, profileData) {
   };
 }
 
-async function generateWithGemini(payload, prefix, apiKey, modelName) {
+function buildRevisionScopedPayload(payload, profileId) {
+  const companionId = profileId === 'el' ? 'ella' : 'el';
+  return {
+    currentContext: payload.currentContext?.[profileId] || null,
+    originalContext: payload.originalContext?.[profileId] || null,
+    companionContext: payload.currentContext?.[companionId] || null,
+  };
+}
+
+async function generateWithGemini(parts, apiKey, modelName) {
   const body = {
     contents: [
       {
         role: 'user',
-        parts: buildRequestParts(prefix, payload),
+        parts,
       },
     ],
     generationConfig: {
@@ -335,7 +457,7 @@ async function generateWithGemini(payload, prefix, apiKey, modelName) {
     }
 
     if (response.status === 429 || errorMessage.toLowerCase().includes('quota exceeded')) {
-      errorMessage = 'Límite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.';
+      errorMessage = 'Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.';
     }
 
     if (response.status === 404) {
@@ -349,17 +471,17 @@ async function generateWithGemini(payload, prefix, apiKey, modelName) {
   const candidates = responseJson?.candidates;
 
   if (!Array.isArray(candidates) || !candidates.length) {
-    throw new Error('La IA no generó una respuesta válida. Intenta de nuevo.');
+    throw new Error('La IA no genero una respuesta valida. Intenta de nuevo.');
   }
 
-  const parts = candidates[0]?.content?.parts;
-  if (!Array.isArray(parts) || !parts.length) {
-    throw new Error('La IA devolvió una respuesta vacía. Intenta de nuevo.');
+  const responseParts = candidates[0]?.content?.parts;
+  if (!Array.isArray(responseParts) || !responseParts.length) {
+    throw new Error('La IA devolvio una respuesta vacia. Intenta de nuevo.');
   }
 
-  const generatedText = parts.map((part) => part?.text || '').join('\n').trim();
+  const generatedText = responseParts.map((part) => part?.text || '').join('\n').trim();
   if (!generatedText) {
-    throw new Error('La IA devolvió texto vacío. Intenta de nuevo con otro modelo.');
+    throw new Error('La IA devolvio texto vacio. Intenta de nuevo con otro modelo.');
   }
 
   const finishReason = candidates[0]?.finishReason;
@@ -411,12 +533,12 @@ export default async function handler(req, res) {
       try {
         payload = JSON.parse(payload);
       } catch {
-        return res.status(400).json({ error: 'Body no es JSON válido' });
+        return res.status(400).json({ error: 'Body no es JSON valido' });
       }
     }
 
     if (!payload || typeof payload !== 'object') {
-      return res.status(400).json({ error: 'Body vacío o inválido' });
+      return res.status(400).json({ error: 'Body vacio o invalido' });
     }
 
     const pdfValidation = validatePayloadAssessmentPdfs(payload);
@@ -433,14 +555,14 @@ export default async function handler(req, res) {
     if (!apiKey) {
       return res.status(500).json({
         error:
-          'Falta configurar tu GEMINI API KEY. Ve al panel de Administración y configúrala.',
+          'Falta configurar tu GEMINI API KEY. Ve al panel de Administracion y configúrala.',
       });
     }
 
     const target = payload?.targetProfile;
     if (!target || !['el', 'ella', 'ambos'].includes(target)) {
       return res.status(400).json({
-        error: 'targetProfile inválido. Debe ser: el, ella, o ambos.',
+        error: 'targetProfile invalido. Debe ser: el, ella, o ambos.',
       });
     }
 
@@ -450,9 +572,34 @@ export default async function handler(req, res) {
     let elData = null;
     let ellaData = null;
 
+    if (isPlanRevisionRequest(payload)) {
+      if (target === 'el' || target === 'ambos') {
+        elData = await generateWithGemini(
+          buildRevisionRequestParts('EL', payload, buildRevisionScopedPayload(payload, 'el')),
+          apiKey,
+          selectedModel
+        );
+      }
+
+      if (target === 'ella' || target === 'ambos') {
+        ellaData = await generateWithGemini(
+          buildRevisionRequestParts('ELLA', payload, buildRevisionScopedPayload(payload, 'ella')),
+          apiKey,
+          selectedModel
+        );
+      }
+
+      return res.status(200).json({
+        responseMode: payload.requestMode,
+        elData,
+        ellaData,
+        modelUsed: selectedModel,
+      });
+    }
+
     if (target === 'el' || target === 'ambos') {
       const payloadEl = target === 'ambos' ? buildScopedPayload(payload, payload.el) : payload;
-      elData = await generateWithGemini(payloadEl, 'EL', apiKey, selectedModel);
+      elData = await generateWithGemini(buildRequestParts('EL', payloadEl), apiKey, selectedModel);
     }
 
     if (target === 'ella' || target === 'ambos') {
@@ -461,7 +608,11 @@ export default async function handler(req, res) {
         payloadElla.companionPlan = elData.planEL;
       }
 
-      ellaData = await generateWithGemini(payloadElla, 'ELLA', apiKey, selectedModel);
+      ellaData = await generateWithGemini(
+        buildRequestParts('ELLA', payloadElla),
+        apiKey,
+        selectedModel
+      );
     }
 
     return res.status(200).json({ elData, ellaData, modelUsed: selectedModel });

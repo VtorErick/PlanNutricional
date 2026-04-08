@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import {
+  buildAdjustPlanResponse,
+  getFirstMealName,
+  mockGeminiStatusApi,
   mockPlanGenerationApis,
   saveDocScreenshot,
   seedGeneratedPlans,
@@ -86,7 +89,9 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   await page.getByTestId('meal-edit-el-Lunes-desayuno-0').click();
 
   await page.getByPlaceholder('Ej. Omelette con fruta').fill('Desayuno de prueba Playwright');
-  await page.getByRole('button', { name: /Confirmar y reemplazar/i }).click();
+  await expect(page.getByText(/Los cambios se aplicaran solo en esta comida/i)).toBeVisible();
+  await page.getByTestId('meal-edit-save').click();
+  await page.getByRole('button', { name: /Confirmar/i }).click();
   await expect(page.getByText(/Platillo actualizado/i)).toBeVisible();
   await page.getByRole('button', { name: /Aceptar/i }).click();
   await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
@@ -122,6 +127,69 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   await page.getByTestId('admin-export-json-el').click();
   const originalDownload = await originalJsonDownload;
   expect(originalDownload.suggestedFilename()).toBe('perfil-el.json');
+});
+
+test('mobile flow supports AI plan adjustment without recreating the whole plan', async ({ page }) => {
+  const originalBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
+  const updatedBreakfast = 'Desayuno ajustado por IA';
+
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes'] });
+  await mockGeminiStatusApi(page);
+  await page.route('**/api/generate-plan', async (route) => {
+    const response = buildAdjustPlanResponse('el', 'Lunes', 'desayuno', [
+      {
+        nombre: updatedBreakfast,
+        porciones: '1 porcion',
+        detalle: 'Opcion ajustada para la prueba de IA',
+        tags: ['ajuste'],
+        super: ['avena', 'fruta'],
+        caloriasKcal: 320,
+        proteinaG: 20,
+        grasasG: 10,
+      },
+      {
+        nombre: 'Alternativa ligera de IA',
+        porciones: '1 porcion',
+        detalle: 'Segunda opcion ajustada',
+        tags: ['ajuste'],
+        super: ['yogur', 'fruta'],
+        caloriasKcal: 290,
+        proteinaG: 18,
+        grasasG: 8,
+      },
+      {
+        nombre: 'Tercera opcion IA',
+        porciones: '1 porcion',
+        detalle: 'Tercera opcion del parche',
+        tags: ['ajuste'],
+        super: ['pan', 'huevo'],
+        caloriasKcal: 340,
+        proteinaG: 22,
+        grasasG: 11,
+      },
+    ]);
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(response),
+    });
+  });
+
+  await page.goto('/miplan?profile=el');
+
+  await expect(page.getByText(originalBreakfast)).toBeVisible();
+  await page.getByTestId('plan-ai-open').click();
+  await expect(page.getByTestId('plan-ai-mode-adjust')).toBeVisible();
+  await page.getByTestId('plan-ai-mode-adjust').click();
+  await page.getByTestId('plan-ai-target-el').click();
+  await page.getByTestId('plan-ai-instruction').fill('Menos pescado en la noche y cambia el desayuno del lunes.');
+  await page.getByTestId('plan-ai-submit').click();
+
+  await expect(page.getByText(/Plan actualizado con IA/i)).toBeVisible();
+  await page.getByRole('button', { name: /Aceptar/i }).click();
+  await expect(page.getByText(updatedBreakfast)).toBeVisible();
+  await expect(page.getByText(originalBreakfast)).toHaveCount(0);
 });
 
 test('combined mobile navigation renders every major view with populated data', async ({ page }) => {

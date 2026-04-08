@@ -13,6 +13,7 @@ interface MealEditSheetProps {
   onClose: () => void;
   onSave: (selectedOccurrenceIds: string[]) => void;
   affectedMeals: MealOccurrence[];
+  currentOccurrenceId?: string;
   suggestions: { key: string; label: string; icon: string; cantidad: number }[];
   isDarkMode?: boolean;
   accentClasses: AccentColors;
@@ -48,26 +49,42 @@ export default function MealEditSheet({
   onClose,
   onSave,
   affectedMeals,
+  currentOccurrenceId,
   suggestions,
   isDarkMode = false,
   accentClasses,
   isSaving = false,
 }: MealEditSheetProps) {
   const [showAllAffected, setShowAllAffected] = React.useState(false);
+  const [showLinkedSelector, setShowLinkedSelector] = React.useState(false);
   const [selectedOccurrenceIds, setSelectedOccurrenceIds] = React.useState<string[]>([]);
-  const visibleAffected = showAllAffected ? affectedMeals : affectedMeals.slice(0, 4);
+
+  const currentOccurrence = currentOccurrenceId
+    ? affectedMeals.find((occurrence) => occurrence.id === currentOccurrenceId) || null
+    : null;
+  const otherOccurrences = currentOccurrence
+    ? affectedMeals.filter((occurrence) => occurrence.id !== currentOccurrence.id)
+    : affectedMeals;
+  const visibleOtherOccurrences = showAllAffected ? otherOccurrences : otherOccurrences.slice(0, 4);
+  const linkedCount = otherOccurrences.length;
+  const multiModeActive = showLinkedSelector;
 
   React.useEffect(() => {
     if (!open) {
       setShowAllAffected(false);
+      setShowLinkedSelector(false);
       setSelectedOccurrenceIds([]);
     }
   }, [open]);
 
   React.useEffect(() => {
     if (!open) return;
+    if (currentOccurrenceId) {
+      setSelectedOccurrenceIds([currentOccurrenceId]);
+      return;
+    }
     setSelectedOccurrenceIds(affectedMeals.map((occurrence) => occurrence.id));
-  }, [affectedMeals, open]);
+  }, [affectedMeals, currentOccurrenceId, open]);
 
   if (!open) return null;
 
@@ -84,6 +101,15 @@ export default function MealEditSheet({
     draft.grasasG.trim(),
   ].every(Boolean);
   const canConfirmSelection = selectedOccurrenceIds.length > 0;
+  const selectedSummary = selectedOccurrenceIds.length === 1
+    ? 'Los cambios se aplicaran solo en esta comida'
+    : `Los cambios se aplicaran en ${selectedOccurrenceIds.length} comidas`;
+  const linkedSummary = linkedCount === 0
+    ? 'Esta comida no aparece en otros horarios'
+    : `Tambien aparece en ${linkedCount} ${linkedCount === 1 ? 'comida' : 'comidas'} mas`;
+  const actionLabel = selectedOccurrenceIds.length === 1
+    ? 'Actualizar esta comida'
+    : `Actualizar ${selectedOccurrenceIds.length} comidas`;
 
   const handleNumericChange = (field: 'caloriasKcal' | 'proteinaG' | 'grasasG', value: string) => {
     const sanitized = value.replace(/[^\d]/g, '');
@@ -91,6 +117,7 @@ export default function MealEditSheet({
   };
 
   const toggleOccurrence = (occurrenceId: string) => {
+    if (occurrenceId === currentOccurrenceId) return;
     setSelectedOccurrenceIds((prev) => (
       prev.includes(occurrenceId)
         ? prev.filter((id) => id !== occurrenceId)
@@ -101,6 +128,15 @@ export default function MealEditSheet({
   const handlePrimaryAction = () => {
     if (!canConfirmSelection) return;
     onSave(selectedOccurrenceIds);
+  };
+
+  const selectAllOccurrences = () => {
+    setSelectedOccurrenceIds(affectedMeals.map((occurrence) => occurrence.id));
+  };
+
+  const selectOnlyCurrentOccurrence = () => {
+    if (!currentOccurrenceId) return;
+    setSelectedOccurrenceIds([currentOccurrenceId]);
   };
 
   return (
@@ -141,7 +177,7 @@ export default function MealEditSheet({
                     {title}
                   </h3>
                   <p className={`mt-1 text-xs leading-relaxed sm:text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
-                    Ajusta la descripcion y los macros visibles del platillo. El cambio se aplica en todas sus apariciones vinculadas.
+                    Edita esta comida. Si quieres, tambien puedes aplicar el cambio en otros horarios donde aparece.
                   </p>
                 </div>
 
@@ -162,6 +198,211 @@ export default function MealEditSheet({
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <div className="space-y-5">
+                <div className={`rounded-[22px] border p-4 ${
+                  isDarkMode ? `${accentClasses.bgLight} ${accentClasses.border}` : `${accentClasses.bgLight} ${accentClasses.border}`
+                }`}>
+                  <p className={`text-[11px] font-black uppercase tracking-[0.16em] ${accentClasses.text}`}>
+                    Alcance de la edicion
+                  </p>
+                  <p className={`mt-1 text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                    {selectedSummary}
+                  </p>
+                  <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {linkedSummary}.
+                  </p>
+
+                  {currentOccurrence ? (
+                    <div className={`mt-3 rounded-[22px] border px-3.5 py-3 text-xs ${
+                      isDarkMode ? `${accentClasses.border} bg-slate-950 text-slate-100` : `${accentClasses.border} bg-white text-slate-800`
+                    }`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${accentClasses.tagBg} ${accentClasses.tagText}`}>
+                          <CheckCircle className="h-3.5 w-3.5" />
+                          Actual
+                        </span>
+                        <span className={`text-[11px] font-semibold ${accentClasses.text}`}>
+                          Siempre incluida
+                        </span>
+                      </div>
+                      <div className="mt-2 text-sm font-bold">
+                        {currentOccurrence.dia} · {currentOccurrence.momentoLabel}
+                      </div>
+                      <div className={`mt-1 text-[11px] ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                        {currentOccurrence.profileLabel || 'El'}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {linkedCount > 0 ? (
+                    <div className="mt-3 space-y-3">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowLinkedSelector(false);
+                            selectOnlyCurrentOccurrence();
+                          }}
+                          data-testid="meal-edit-scope-single"
+                          className={`rounded-[22px] border px-3.5 py-3 text-left transition ${
+                            !multiModeActive
+                              ? `${accentClasses.border} ${accentClasses.bgLight}`
+                              : isDarkMode
+                                ? 'border-slate-800 bg-slate-950 text-slate-200 hover:border-slate-700'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="flex items-start gap-3">
+                            {!multiModeActive ? (
+                              <CheckCircle className={`mt-0.5 h-4 w-4 flex-shrink-0 ${accentClasses.text}`} />
+                            ) : (
+                              <Circle className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className={`block text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                Solo esta comida
+                              </span>
+                              <span className={`mt-1 block text-[11px] leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                Cambia solo el horario actual.
+                              </span>
+                            </span>
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowLinkedSelector(true);
+                            selectAllOccurrences();
+                          }}
+                          data-testid="meal-edit-scope-multiple"
+                          className={`rounded-[22px] border px-3.5 py-3 text-left transition ${
+                            multiModeActive
+                              ? `${accentClasses.border} ${accentClasses.bgLight}`
+                              : isDarkMode
+                                ? 'border-slate-800 bg-slate-950 text-slate-200 hover:border-slate-700'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                          }`}
+                        >
+                          <span className="flex items-start gap-3">
+                            {multiModeActive ? (
+                              <CheckCircle className={`mt-0.5 h-4 w-4 flex-shrink-0 ${accentClasses.text}`} />
+                            ) : (
+                              <Circle className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
+                            )}
+                            <span className="min-w-0 flex-1">
+                              <span className={`block text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                Varias comidas
+                              </span>
+                              <span className={`mt-1 block text-[11px] leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                Aplica el cambio aqui y en otras {linkedCount} comida{linkedCount === 1 ? '' : 's'}.
+                              </span>
+                            </span>
+                          </span>
+                        </button>
+                      </div>
+
+                      {showLinkedSelector ? (
+                        <div className={`rounded-[22px] border p-3 ${
+                          isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-white/80'
+                        }`}>
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className={`text-[11px] font-black uppercase tracking-[0.14em] ${accentClasses.text}`}>
+                              Tambien actualizar
+                            </p>
+                            <button
+                              type="button"
+                              onClick={selectAllOccurrences}
+                              data-testid="meal-edit-select-all"
+                              className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+                                selectedOccurrenceIds.length === affectedMeals.length
+                                  ? `${accentClasses.tagBg} ${accentClasses.tagText}`
+                                  : isDarkMode
+                                    ? 'border border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900'
+                                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                              }`}
+                            >
+                              Seleccionar todas
+                            </button>
+                          </div>
+
+                          {currentOccurrence ? (
+                            <div className={`mb-2 rounded-2xl border px-3 py-3 ${
+                              isDarkMode ? `${accentClasses.border} bg-slate-950 text-slate-100` : `${accentClasses.border} bg-white text-slate-800`
+                            }`}>
+                              <span className="flex items-start gap-3">
+                                <CheckCircle className={`mt-0.5 h-4 w-4 flex-shrink-0 ${accentClasses.text}`} />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-sm font-bold leading-tight">
+                                    {currentOccurrence.dia} · {currentOccurrence.momentoLabel}
+                                  </span>
+                                  <span className={`mt-1 block text-[11px] ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                                    Actual · {currentOccurrence.profileLabel || 'El'}
+                                  </span>
+                                </span>
+                              </span>
+                            </div>
+                          ) : null}
+
+                          <div className="space-y-2">
+                            {visibleOtherOccurrences.map((meal) => {
+                              const isSelected = selectedOccurrenceIds.includes(meal.id);
+
+                              return (
+                                <button
+                                  type="button"
+                                  key={meal.id}
+                                  onClick={() => toggleOccurrence(meal.id)}
+                                  aria-pressed={isSelected}
+                                  data-testid={`meal-edit-occurrence-${meal.id}`}
+                                  className={`w-full rounded-2xl border px-3 py-3 text-left transition ${
+                                    isSelected
+                                      ? isDarkMode
+                                        ? `${accentClasses.border} bg-slate-950 text-slate-100`
+                                        : `${accentClasses.border} bg-white text-slate-800`
+                                      : isDarkMode
+                                        ? 'border-slate-800 bg-slate-950/70 text-slate-200 hover:border-slate-700'
+                                        : 'border-white/70 bg-white/70 text-slate-700 hover:border-slate-200'
+                                  }`}
+                                >
+                                  <span className="flex items-start gap-3">
+                                    {isSelected ? (
+                                      <CheckCircle className={`mt-0.5 h-4 w-4 flex-shrink-0 ${accentClasses.text}`} />
+                                    ) : (
+                                      <Circle className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
+                                    )}
+
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block text-sm font-bold leading-tight">
+                                        {meal.dia} · {meal.momentoLabel}
+                                      </span>
+                                      <span className={`mt-1 block text-[11px] ${
+                                        isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                                      }`}>
+                                        {meal.profileLabel || 'El'}
+                                      </span>
+                                    </span>
+                                  </span>
+                                </button>
+                              );
+                            })}
+
+                            {otherOccurrences.length > 4 ? (
+                              <button
+                                type="button"
+                                onClick={() => setShowAllAffected((prev) => !prev)}
+                                className={`inline-flex items-center gap-1.5 text-[11px] font-bold ${accentClasses.text}`}
+                              >
+                                {showAllAffected ? 'Mostrar menos' : `Ver ${otherOccurrences.length - 4} mas`}
+                                {showAllAffected ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+
                 <div className="grid gap-4">
                   <Field label="Nombre">
                     <input
@@ -277,53 +518,6 @@ export default function MealEditSheet({
                     </div>
                   ) : null}
                 </div>
-
-                <div className={`rounded-[22px] border p-4 ${
-                  isDarkMode ? `${accentClasses.bgLight} ${accentClasses.border}` : `${accentClasses.bgLight} ${accentClasses.border}`
-                }`}>
-                  <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                    Este platillo se encontro en los dias y horarios, revisa cual(les) deseas actualizar.
-                  </p>
-                  <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                    Selecciona al menos una comida.
-                  </p>
-
-                  <div className="mt-3 space-y-2">
-                    {visibleAffected.map((meal) => {
-                      const isSelected = selectedOccurrenceIds.includes(meal.id);
-                      return (
-                        <button
-                          type="button"
-                          key={meal.id}
-                          onClick={() => toggleOccurrence(meal.id)}
-                          className={`w-full rounded-2xl px-3 py-2.5 text-xs ${
-                            isDarkMode ? 'bg-slate-950/70 text-slate-200' : 'bg-white/70 text-slate-700'
-                          }`}
-                        >
-                          <span className="flex items-center gap-2">
-                            {isSelected ? (
-                              <CheckCircle className={`h-4 w-4 ${accentClasses.text}`} />
-                            ) : (
-                              <Circle className="h-4 w-4 text-slate-400" />
-                            )}
-                            <span>{meal.dia} · {meal.momentoLabel} · {meal.profileLabel || 'El'}</span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {affectedMeals.length > 4 ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllAffected((prev) => !prev)}
-                      className={`mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold ${accentClasses.text}`}
-                    >
-                      {showAllAffected ? 'Mostrar menos' : `Ver ${affectedMeals.length - 4} mas`}
-                      {showAllAffected ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                    </button>
-                  ) : null}
-                </div>
               </div>
             </div>
 
@@ -331,28 +525,37 @@ export default function MealEditSheet({
               isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'
             }`}>
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${
-                    isDarkMode
-                      ? 'border border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  Cancelar
-                </button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:flex-1">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${
+                      isDarkMode
+                        ? 'border border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+
+                  <p className={`text-xs sm:text-right ${
+                    isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                  }`}>
+                    {selectedOccurrenceIds.length} de {affectedMeals.length} comidas seleccionadas
+                  </p>
+                </div>
 
                 <button
                   type="button"
                   onClick={handlePrimaryAction}
+                  data-testid="meal-edit-save"
                   disabled={isSaving || !canSave || !canConfirmSelection}
                   className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black text-white bg-gradient-to-r ${accentClasses.bgGradient} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <Save className="w-4 h-4" />
                   {isSaving
                     ? 'Guardando...'
-                    : `Actualizar ${selectedOccurrenceIds.length} comida${selectedOccurrenceIds.length === 1 ? '' : 's'}`}
+                    : actionLabel}
                 </button>
               </div>
             </div>

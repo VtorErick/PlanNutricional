@@ -1,3 +1,45 @@
+import type { MealItem, SupplementRecommendation } from '../types';
+
+export type PlanRevisionMode = 'adjust' | 'regenerate';
+
+export interface SerializableEquivalencia {
+  titulo: string;
+  icon: string;
+  items: string[];
+}
+
+export interface SerializableProfileSnapshot {
+  perfil: Record<string, unknown>;
+  equivalencias: SerializableEquivalencia[];
+  suplementos: SupplementRecommendation[];
+  plan: Record<string, Record<string, MealItem[]>>;
+}
+
+export interface PlanRevisionRequest {
+  requestMode: PlanRevisionMode;
+  targetProfile: 'el' | 'ella' | 'ambos';
+  instruction: string;
+  questionnaireContext?: Record<string, unknown> | null;
+  currentContext: Partial<Record<'el' | 'ella', SerializableProfileSnapshot>>;
+  originalContext: Partial<Record<'el' | 'ella', SerializableProfileSnapshot>>;
+}
+
+export interface PlanRevisionProfilePatch {
+  summary?: string[];
+  noChangesReason?: string;
+  profilePatch?: Record<string, unknown>;
+  equivalencias?: SerializableEquivalencia[];
+  suplementos?: SupplementRecommendation[];
+  planPatch?: Record<string, Record<string, MealItem[]>>;
+}
+
+export interface PlanRevisionResponse {
+  responseMode: PlanRevisionMode;
+  elData: Record<string, unknown> | PlanRevisionProfilePatch | null;
+  ellaData: Record<string, unknown> | PlanRevisionProfilePatch | null;
+  modelUsed?: string;
+}
+
 type GeminiPart =
   | { text: string }
   | { inlineData: { mimeType: string; data: string } };
@@ -14,6 +56,10 @@ const ALLOWED_ICONS = [
   'AlertTriangle',
   'Heart',
 ];
+
+function isPlanRevisionRequest(payload: any): payload is PlanRevisionRequest {
+  return payload?.requestMode === 'adjust' || payload?.requestMode === 'regenerate';
+}
 
 function sanitizePromptPayload(payload: any) {
   if (!payload || typeof payload !== 'object') return payload;
@@ -176,11 +222,124 @@ function buildUserPrompt(payload: any, prefix: string) {
   });
 }
 
+function buildRevisionSystemPrompt(prefix: string, mode: PlanRevisionMode) {
+  const lowerPrefix = prefix.toLowerCase();
+  const baseGoal =
+    mode === 'regenerate'
+      ? 'Reconstruye el plan semanal completo desde cero usando el contexto disponible y las nuevas instrucciones del usuario.'
+      : 'Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, sin reescribir secciones que no cambian.';
+
+  return `Eres un nutricionista clinico experto. ${baseGoal}
+
+Debes responder SOLO con JSON valido.
+
+El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
+
+Contrato exacto de salida:
+{
+  "summary": string[],
+  "noChangesReason"?: string,
+  "profilePatch"?: {
+    "perfil"?: string,
+    "detallesPerfil"?: string,
+    "meta"?: string,
+    "metaCaloricaKcalDia"?: number,
+    "descripcion"?: string,
+    "edad"?: number,
+    "horariosTexto"?: string,
+    "notaSalud"?: string,
+    "momentos"?: [{ key, label, hora }],
+    "objetivosPorMomento"?: object,
+    "distribucionDiaria"?: [{ grupo, total, detalle }],
+    "resumenPersonal"?: string[]
+  },
+  "equivalencias"?: [
+    { "titulo": string, "icon": enum[${ALLOWED_ICONS.join(', ')}], "items": string[] }
+  ],
+  "suplementos"?: [
+    {
+      "name": string,
+      "goalSupport": string,
+      "whyItMayHelp": string,
+      "howToUse": string,
+      "timing": string,
+      "notes": string,
+      "caution": string
+    }
+  ],
+  "planPatch"?: {
+    "Lunes"?: {
+      "desayuno"?: [MealItem, MealItem, MealItem],
+      "colacion_am"?: [MealItem, MealItem, MealItem],
+      "comida"?: [MealItem, MealItem, MealItem],
+      "colacion_pm"?: [MealItem, MealItem, MealItem],
+      "cena"?: [MealItem, MealItem, MealItem]
+    },
+    "Martes"?: object,
+    "Miercoles"?: object,
+    "Jueves"?: object,
+    "Viernes"?: object,
+    "Sabado"?: object,
+    "Domingo"?: object
+  }
+}
+
+Reglas criticas:
+- summary siempre debe incluir entre 1 y 4 lineas cortas explicando lo que cambiaste.
+- Si realmente no hace falta modificar nada, responde con summary y noChangesReason. No inventes cambios.
+- Si usas planPatch, incluye SOLO los dias y momentos modificados.
+- Cada momento incluido en planPatch debe regresar el arreglo completo de opciones para ese momento, no cambios parciales dentro de una sola comida.
+- Nunca devuelvas el plan completo si el usuario no pidio recrearlo desde cero.
+- Cada MealItem debe incluir: nombre, porciones, detalle, tags, super, caloriasKcal, proteinaG, grasasG.
+- Las calorias y macros deben ser enteros realistas.
+- profilePatch, equivalencias y suplementos son opcionales; incluyelos solo si tu respuesta necesita cambiar esas secciones.
+- Mantente consistente con el contexto del cuestionario, el plan actual, las ediciones manuales y las restricciones pedidas por el usuario.
+- Si el usuario pide recrear desde cero y aun asi conservas algo del plan actual, debe ser por conveniencia nutricional, no por copiarlo automaticamente.
+- Responde solo con JSON, sin markdown ni texto adicional.`;
+}
+
+function buildRevisionUserPrompt(prefix: string, payload: PlanRevisionRequest, profilePayload: any) {
+  return JSON.stringify({
+    profilePrefix: prefix,
+    mode: payload.requestMode,
+    userInstruction: payload.instruction,
+    questionnaireContext: sanitizePromptPayload(payload.questionnaireContext),
+    currentContext: profilePayload.currentContext,
+    originalContext: profilePayload.originalContext,
+    companionContext: profilePayload.companionContext,
+    outputNotes: {
+      returnOnlyChangedSections: payload.requestMode === 'adjust',
+      preserveUntouchedMoments: payload.requestMode === 'adjust',
+      mealItemRequiredKeys: [
+        'nombre',
+        'porciones',
+        'detalle',
+        'tags',
+        'super',
+        'caloriasKcal',
+        'proteinaG',
+        'grasasG',
+      ],
+    },
+  });
+}
+
 function buildRequestParts(prefix: string, payload: any): GeminiPart[] {
   return [
     { text: buildSystemPrompt(prefix) },
     { text: buildUserPrompt(payload, prefix) },
     ...getOptionalPdfPart(payload),
+  ];
+}
+
+function buildRevisionRequestParts(
+  prefix: string,
+  payload: PlanRevisionRequest,
+  profilePayload: any
+): GeminiPart[] {
+  return [
+    { text: buildRevisionSystemPrompt(prefix, payload.requestMode) },
+    { text: buildRevisionUserPrompt(prefix, payload, profilePayload) },
   ];
 }
 
@@ -204,59 +363,105 @@ function buildScopedPayload(payload: any, profileData?: any) {
   };
 }
 
-export async function callGeminiDirectly(payload: any, apiKey: string, modelName: string) {
-  const generateForProfile = async (prefix: 'EL' | 'ELLA', profilePayload: any) => {
-    const body = {
-      contents: [
-        {
-          role: 'user',
-          parts: buildRequestParts(prefix, profilePayload),
-        },
-      ],
-      generationConfig: {
-        temperature: 0.35,
-        responseMimeType: 'application/json',
+function buildRevisionScopedPayload(
+  payload: PlanRevisionRequest,
+  profileId: 'el' | 'ella'
+) {
+  const companionId = profileId === 'el' ? 'ella' : 'el';
+  return {
+    currentContext: payload.currentContext?.[profileId] || null,
+    originalContext: payload.originalContext?.[profileId] || null,
+    companionContext: payload.currentContext?.[companionId] || null,
+  };
+}
+
+async function generateContent(
+  parts: GeminiPart[],
+  apiKey: string,
+  modelName: string
+) {
+  const body = {
+    contents: [
+      {
+        role: 'user',
+        parts,
       },
-    };
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      let errorMessage = `Error ${response.status}`;
-
-      try {
-        const errorJson = JSON.parse(responseText);
-        errorMessage = errorJson?.error?.message || errorMessage;
-      } catch {
-        // Ignore JSON parse errors for API failures.
-      }
-
-      throw new Error(`Gemini API Error: ${errorMessage}`);
-    }
-
-    const responseJson = JSON.parse(responseText);
-    const generatedText =
-      responseJson?.candidates?.[0]?.content?.parts
-        ?.map((part: any) => part?.text || '')
-        .join('\n') || '';
-
-    return JSON.parse(sanitizeAiJson(generatedText));
+    ],
+    generationConfig: {
+      temperature: 0.35,
+      responseMimeType: 'application/json',
+    },
   };
 
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    let errorMessage = `Error ${response.status}`;
+
+    try {
+      const errorJson = JSON.parse(responseText);
+      errorMessage = errorJson?.error?.message || errorMessage;
+    } catch {
+      // Ignore JSON parse errors for API failures.
+    }
+
+    throw new Error(`Gemini API Error: ${errorMessage}`);
+  }
+
+  const responseJson = JSON.parse(responseText);
+  const generatedText =
+    responseJson?.candidates?.[0]?.content?.parts
+      ?.map((part: any) => part?.text || '')
+      .join('\n') || '';
+
+  return JSON.parse(sanitizeAiJson(generatedText));
+}
+
+export async function callGeminiDirectly(
+  payload: any,
+  apiKey: string,
+  modelName: string
+): Promise<any> {
   const target = payload?.targetProfile || 'ambos';
   let elData = null;
   let ellaData = null;
 
+  if (isPlanRevisionRequest(payload)) {
+    if (target === 'el' || target === 'ambos') {
+      const elPayload = buildRevisionScopedPayload(payload, 'el');
+      elData = await generateContent(
+        buildRevisionRequestParts('EL', payload, elPayload),
+        apiKey,
+        modelName
+      );
+    }
+
+    if (target === 'ella' || target === 'ambos') {
+      const ellaPayload = buildRevisionScopedPayload(payload, 'ella');
+      ellaData = await generateContent(
+        buildRevisionRequestParts('ELLA', payload, ellaPayload),
+        apiKey,
+        modelName
+      );
+    }
+
+    return {
+      responseMode: payload.requestMode,
+      elData,
+      ellaData,
+    } satisfies PlanRevisionResponse;
+  }
+
   if (target === 'el' || target === 'ambos') {
     const elPayload = target === 'ambos' ? buildScopedPayload(payload, payload?.el) : payload;
-    elData = await generateForProfile('EL', elPayload);
+    elData = await generateContent(buildRequestParts('EL', elPayload), apiKey, modelName);
   }
 
   if (target === 'ella' || target === 'ambos') {
@@ -267,7 +472,7 @@ export async function callGeminiDirectly(payload: any, apiKey: string, modelName
       ellaPayload.companionPlan = elData.planEL;
     }
 
-    ellaData = await generateForProfile('ELLA', ellaPayload);
+    ellaData = await generateContent(buildRequestParts('ELLA', ellaPayload), apiKey, modelName);
   }
 
   return { elData, ellaData };

@@ -5,6 +5,7 @@ import {
   ChevronUp,
   Coffee,
   FileText,
+  RefreshCcw,
   Moon,
   Sun,
   UtensilsCrossed,
@@ -13,10 +14,18 @@ import {
 } from 'lucide-react';
 import MealSelector from '../MealSelector';
 import MealEditSheet from '../MealEditSheet';
+import PlanAiRefreshSheet from '../PlanAiRefreshSheet';
 import { useDiet } from '../../context/DietContext';
 import { getMomentMacroPortions } from '../../utils/macros';
 import { type AccentColors, getAccentColors } from '../../utils/theme';
 import type { MealItem } from '../../types';
+import type { PlanRevisionRequest } from '../../services/aiService';
+import {
+  equivalenciasData as defaultEquivalenciasData,
+  perfilesData as defaultPerfilesData,
+  supplementsData as defaultSupplementsData,
+} from '../../data';
+import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
 import {
   createMealEditorDraft,
   getMealOccurrences,
@@ -42,6 +51,7 @@ type ActiveMealEditor = {
   dia: string;
   momentoKey: string;
   editStateKey: string;
+  currentOccurrenceId: string;
 };
 
 function buildMealMacroLine(meal: MealItem) {
@@ -63,10 +73,11 @@ export default function PlanView() {
     perfilActivo,
     perfilBase,
     perfilesData,
+    equivalenciasData,
+    supplementsData,
     diaActivo,
     isAmbos,
     selecciones,
-    setSelecciones,
     toggleSeleccion,
     editMealRecipe,
     restoreMealRecipe,
@@ -79,6 +90,10 @@ export default function PlanView() {
     ac,
     mealSectionRefs,
     isDarkMode,
+    planRevisionLoading,
+    planRevisionError,
+    lastQuestionnaireContext,
+    handleRevisePlanWithAi,
     notify,
     confirmAction,
   } = useDiet();
@@ -86,6 +101,7 @@ export default function PlanView() {
   const [mealEditor, setMealEditor] = React.useState<ActiveMealEditor | null>(null);
   const [mealEditorDraft, setMealEditorDraft] = React.useState<MealEditorDraft | null>(null);
   const [isSavingMealEdit, setIsSavingMealEdit] = React.useState(false);
+  const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
 
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
@@ -137,7 +153,8 @@ export default function PlanView() {
     suggestions: { key: string; label: string; icon: string; cantidad: number }[],
     accent: AccentColors,
     momentoKey: string,
-    editStateKey: string
+    editStateKey: string,
+    currentOccurrenceId: string
   ) => {
     setMealEditor({
       profileId,
@@ -148,6 +165,7 @@ export default function PlanView() {
       dia: diaActivo,
       momentoKey,
       editStateKey,
+      currentOccurrenceId,
     });
     setMealEditorDraft(createMealEditorDraft(meal));
   }, [diaActivo]);
@@ -155,11 +173,21 @@ export default function PlanView() {
   const mealEditorOccurrences = React.useMemo(() => {
     if (!mealEditor) return [];
     const profileLabel = mealEditor.profileId === 'el' ? 'El' : 'Ella';
-    return getMealOccurrences(perfilesData[mealEditor.profileId], mealEditor.meal).map((occurrence) => ({
+    const occurrences = getMealOccurrences(perfilesData[mealEditor.profileId], mealEditor.meal).map((occurrence) => ({
       ...occurrence,
       profileId: mealEditor.profileId,
       profileLabel,
     }));
+
+    if (!mealEditor.currentOccurrenceId) {
+      return occurrences;
+    }
+
+    return [...occurrences].sort((left, right) => {
+      if (left.id === mealEditor.currentOccurrenceId) return -1;
+      if (right.id === mealEditor.currentOccurrenceId) return 1;
+      return 0;
+    });
   }, [mealEditor, perfilesData]);
 
   const handleMealDraftChange = React.useCallback((field: keyof MealEditorDraft, value: string) => {
@@ -172,13 +200,14 @@ export default function PlanView() {
     const selectedOccurrences = mealEditorOccurrences.filter((occurrence) => (
       selectedOccurrenceIds.includes(occurrence.id)
     ));
+    const selectedCount = selectedOccurrenceIds.length;
     const confirmationLines = selectedOccurrences.map(
       (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel} - ${occurrence.profileLabel || 'El'}`
     );
 
     const accepted = await confirmAction(
-      'Confirmar actualizacion',
-      `Se actualizaran ${selectedOccurrenceIds.length} comida${selectedOccurrenceIds.length === 1 ? '' : 's'}:\n${confirmationLines.join('\n')}`
+      selectedCount === 1 ? 'Confirmar edicion' : 'Confirmar cambios',
+      `${selectedCount === 1 ? 'Se actualizara esta comida' : `Se actualizaran ${selectedCount} comidas`}:\n${confirmationLines.join('\n')}`
     );
 
     if (!accepted) {
@@ -194,19 +223,6 @@ export default function PlanView() {
         mealEditorDraft,
         selectedOccurrenceIds
       );
-      setSelecciones((prev) => {
-        const next = { ...prev };
-        const prefix = `${mealEditor.profileId}-${mealEditor.dia}-${mealEditor.momentoKey}-`;
-
-        Object.keys(next).forEach((key) => {
-          if (key.startsWith(prefix)) {
-            delete next[key];
-          }
-        });
-
-        next[`${prefix}${result.updatedMeal.nombre}`] = true;
-        return next;
-      });
       setMomentosEnEdicion((prev) => ({
         ...prev,
         [mealEditor.editStateKey]: false,
@@ -217,10 +233,13 @@ export default function PlanView() {
       const extra = result.affectedLabels.length > 4
         ? `\ny ${result.affectedLabels.length - 4} mas`
         : '';
+      const affectedCountLabel = result.affectedCount === 1
+        ? 'Se actualizo esta comida'
+        : `Se actualizaron ${result.affectedCount} comidas`;
 
       await notify(
         'Platillo actualizado',
-        `Se reemplazo en ${result.affectedCount} comida${result.affectedCount === 1 ? '' : 's'}:\n${visibleRows.join('\n')}${extra}`
+        `${affectedCountLabel}:\n${visibleRows.join('\n')}${extra}`
       );
     } catch (error) {
       console.error('Failed to save meal edition:', error);
@@ -230,7 +249,7 @@ export default function PlanView() {
         'Ocurrio un error al actualizar el platillo. Intenta nuevamente.'
       );
     }
-  }, [closeMealEditor, confirmAction, editMealRecipe, mealEditor, mealEditorDraft, mealEditorOccurrences, notify, setMomentosEnEdicion, setSelecciones]);
+  }, [closeMealEditor, confirmAction, editMealRecipe, mealEditor, mealEditorDraft, mealEditorOccurrences, notify, setMomentosEnEdicion]);
 
   const handleRestoreMeal = React.useCallback(async (
     profileId: EditableProfileId,
@@ -264,6 +283,79 @@ export default function PlanView() {
       );
     }
   }, [confirmAction, notify, restoreMealRecipe]);
+
+  const planAiTargetOptions = React.useMemo(() => {
+    if (perfilActivo === 'ambos') {
+      return [
+        { id: 'ambos' as const, label: 'Ambos perfiles', description: 'Ajusta o recrea los dos planes al mismo tiempo.' },
+        { id: 'el' as const, label: perfilesData.el.nombre, description: 'Solo cambia el plan de este perfil.' },
+        { id: 'ella' as const, label: perfilesData.ella.nombre, description: 'Solo cambia el plan de este perfil.' },
+      ];
+    }
+
+    const currentProfileId = (perfilActivo || 'el') as 'el' | 'ella';
+
+    return [
+      {
+        id: currentProfileId,
+        label: `Solo ${perfilesData[currentProfileId].nombre}`,
+        description: 'Aplica cambios solo al perfil que estas viendo.',
+      },
+      {
+        id: 'ambos' as const,
+        label: 'Ambos perfiles',
+        description: 'Mantiene la experiencia alineada para los dos perfiles.',
+      },
+    ];
+  }, [perfilActivo, perfilesData]);
+
+  const defaultPlanAiTarget = (perfilActivo === 'ambos' ? 'ambos' : (perfilActivo || 'el')) as 'el' | 'ella' | 'ambos';
+
+  const handlePlanAiSubmit = React.useCallback(async ({
+    requestMode,
+    targetProfile,
+    instruction,
+  }: {
+    requestMode: PlanRevisionRequest['requestMode'];
+    targetProfile: PlanRevisionRequest['targetProfile'];
+    instruction: string;
+  }) => {
+    const buildSnapshot = (perfilId: 'el' | 'ella') => buildSerializableProfileSnapshot(
+      perfilesData[perfilId],
+      equivalenciasData[perfilId],
+      supplementsData[perfilId]
+    );
+
+    const buildDefaultSnapshot = (perfilId: 'el' | 'ella') => buildSerializableProfileSnapshot(
+      defaultPerfilesData[perfilId],
+      defaultEquivalenciasData[perfilId],
+      defaultSupplementsData[perfilId]
+    );
+
+    const revisionPayload: PlanRevisionRequest = {
+      requestMode,
+      targetProfile,
+      instruction,
+      questionnaireContext: lastQuestionnaireContext || null,
+      currentContext: {
+        ...(targetProfile === 'el' || targetProfile === 'ambos' ? { el: buildSnapshot('el') } : {}),
+        ...(targetProfile === 'ella' || targetProfile === 'ambos' ? { ella: buildSnapshot('ella') } : {}),
+      },
+      originalContext: {
+        ...(targetProfile === 'el' || targetProfile === 'ambos' ? { el: buildDefaultSnapshot('el') } : {}),
+        ...(targetProfile === 'ella' || targetProfile === 'ambos' ? { ella: buildDefaultSnapshot('ella') } : {}),
+      },
+    };
+
+    await handleRevisePlanWithAi(revisionPayload);
+    setIsPlanAiSheetOpen(false);
+  }, [
+    equivalenciasData,
+    handleRevisePlanWithAi,
+    lastQuestionnaireContext,
+    perfilesData,
+    supplementsData,
+  ]);
 
   const renderSelectedMealCard = React.useCallback((
     meal: MealItem,
@@ -358,6 +450,61 @@ export default function PlanView() {
         className="space-y-4"
       >
         <div className="space-y-4">
+          <div className={`rounded-[24px] sm:rounded-[28px] overflow-hidden border ${
+            isDarkMode
+              ? 'border-slate-800 bg-slate-950/92 shadow-[0_12px_32px_rgba(2,6,23,0.42)]'
+              : 'border-white/70 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]'
+          }`}>
+            <div className={`relative overflow-hidden p-4 sm:p-5 ${
+              isDarkMode ? 'bg-slate-900' : 'bg-slate-50/80'
+            }`}>
+              <div className={`absolute -right-10 -top-10 h-28 w-28 rounded-full blur-2xl ${
+                isDarkMode ? 'bg-cyan-500/15' : 'bg-cyan-200/50'
+              }`} />
+
+              <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <div>
+                    <h3 className={`text-lg font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                      Ajusta tu plan con una instruccion
+                    </h3>
+                    <p className={`mt-1 max-w-2xl text-sm leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                      Ejemplo: menos pescado por la noche, evita ciertas combinaciones o recrea el plan completo.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsPlanAiSheetOpen(true)}
+                  data-testid="plan-ai-open"
+                  className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white bg-gradient-to-r ${ac.bgGradient} shadow-lg transition hover:brightness-110 active:scale-[0.99]`}
+                >
+                  <RefreshCcw className="h-4 w-4" />
+                  Ajustar con IA
+                </button>
+              </div>
+
+              <div className="relative mt-4 grid gap-2 sm:grid-cols-2">
+                {[
+                  'Cambia solo lo que pidas',
+                  'Tambien puedes rehacerlo completo',
+                ].map((line) => (
+                  <div
+                    key={line}
+                    className={`rounded-2xl border px-3 py-2.5 text-xs font-semibold ${
+                      isDarkMode
+                        ? 'border-slate-800 bg-slate-950/70 text-slate-300'
+                        : 'border-white/70 bg-white/80 text-slate-600'
+                    }`}
+                  >
+                    {line}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {perfilBase.momentos.map((momento) => {
             const Icon = momentoIcons[momento.key] || UtensilsCrossed;
             const done = momentoCompletado[momento.key];
@@ -526,14 +673,15 @@ export default function PlanView() {
                                       [momentoKey]: false,
                                     }));
                                   }}
-                                  onEditMeal={(meal) => {
+                                  onEditMeal={(meal, occurrenceId) => {
                                     openMealEditor(
                                       perfilActivo as EditableProfileId,
                                       meal,
                                       porcionesSingleMomento,
                                       ac,
                                       momento.key,
-                                      momento.key
+                                      momento.key,
+                                      occurrenceId
                                     );
                                   }}
                                   onRestoreMeal={(meal) => {
@@ -593,8 +741,8 @@ export default function PlanView() {
                                             [`${momentoKey}-el`]: false,
                                           }));
                                         }}
-                                        onEditMeal={(meal) => {
-                                          openMealEditor('el', meal, porcionesElMomento, elAccent, momento.key, `${momento.key}-el`);
+                                        onEditMeal={(meal, occurrenceId) => {
+                                          openMealEditor('el', meal, porcionesElMomento, elAccent, momento.key, `${momento.key}-el`, occurrenceId);
                                         }}
                                         onRestoreMeal={(meal) => {
                                           void handleRestoreMeal('el', meal);
@@ -654,8 +802,8 @@ export default function PlanView() {
                                             [`${momentoKey}-ella`]: false,
                                           }));
                                         }}
-                                        onEditMeal={(meal) => {
-                                          openMealEditor('ella', meal, porcionesEllaMomento, ellaAccent, momento.key, `${momento.key}-ella`);
+                                        onEditMeal={(meal, occurrenceId) => {
+                                          openMealEditor('ella', meal, porcionesEllaMomento, ellaAccent, momento.key, `${momento.key}-ella`, occurrenceId);
                                         }}
                                         onRestoreMeal={(meal) => {
                                           void handleRestoreMeal('ella', meal);
@@ -717,6 +865,19 @@ export default function PlanView() {
         ) : null}
       </motion.div>
 
+      <PlanAiRefreshSheet
+        open={isPlanAiSheetOpen}
+        onClose={() => setIsPlanAiSheetOpen(false)}
+        onSubmit={(payload) => handlePlanAiSubmit(payload)}
+        isDarkMode={isDarkMode}
+        accentClasses={ac}
+        loading={planRevisionLoading}
+        errorMessage={planRevisionError}
+        hasQuestionnaireContext={Boolean(lastQuestionnaireContext)}
+        defaultTarget={defaultPlanAiTarget}
+        targetOptions={planAiTargetOptions}
+      />
+
       {mealEditor && mealEditorDraft ? (
         <MealEditSheet
           open
@@ -729,6 +890,7 @@ export default function PlanView() {
             void handleMealEditorSave(selectedOccurrenceIds);
           }}
           affectedMeals={mealEditorOccurrences}
+          currentOccurrenceId={mealEditor.currentOccurrenceId}
           suggestions={mealEditor.suggestions}
           isDarkMode={isDarkMode}
           accentClasses={mealEditor.accent}

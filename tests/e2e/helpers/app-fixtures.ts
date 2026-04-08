@@ -20,6 +20,36 @@ type SeedPlanOptions = {
   selectedDays?: string[];
 };
 
+export function getFirstMealName(
+  profileId: 'el' | 'ella',
+  day: string,
+  momento: string
+) {
+  const source = profileId === 'el' ? elFixture.planEL : ellaFixture.planELLA;
+  return source?.[day]?.[momento]?.[0]?.nombre || '';
+}
+
+export function buildAdjustPlanResponse(
+  profileId: 'el' | 'ella',
+  day: string,
+  momento: string,
+  nextMeals: Array<Record<string, unknown>>
+) {
+  const profileKey = profileId === 'el' ? 'elData' : 'ellaData';
+
+  return {
+    responseMode: 'adjust',
+    [profileKey]: {
+      summary: ['Se ajusto el plan segun tu instruccion.'],
+      planPatch: {
+        [day]: {
+          [momento]: nextMeals,
+        },
+      },
+    },
+  };
+}
+
 export async function resetAppStorage(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.clear();
@@ -95,6 +125,21 @@ export async function seedGeneratedPlans(
 export async function mockPlanGenerationApis(page: Page) {
   await resetAppStorage(page);
 
+  await mockGeminiStatusApi(page);
+
+  await page.route('**/api/generate-plan', async (route) => {
+    const rawBody = route.request().postData() || '{}';
+    const payload = JSON.parse(rawBody) as { targetProfile?: 'el' | 'ella' | 'ambos' };
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(getGeneratedPlanResponse(payload.targetProfile || 'ambos')),
+    });
+  });
+}
+
+export async function mockGeminiStatusApi(page: Page) {
   await page.route('**/api/gemini-status', async (route) => {
     await route.fulfill({
       status: 200,
@@ -106,17 +151,6 @@ export async function mockPlanGenerationApis(page: Page) {
         availableModels: ['gemini-2.5-flash', 'gemini-2.0-flash'],
         generationChecked: true,
       }),
-    });
-  });
-
-  await page.route('**/api/generate-plan', async (route) => {
-    const rawBody = route.request().postData() || '{}';
-    const payload = JSON.parse(rawBody) as { targetProfile?: 'el' | 'ella' | 'ambos' };
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(getGeneratedPlanResponse(payload.targetProfile || 'ambos')),
     });
   });
 }

@@ -5,7 +5,11 @@ import { getRawDataText, perfilesData as origPerfilesData, equivalenciasData as 
 import { AccentColors, getAccentColors } from '../utils/theme';
 import { Heart } from 'lucide-react';
 import { parseObjectToData } from '../dataManager';
-import { callGeminiDirectly } from '../services/aiService';
+import {
+  callGeminiDirectly,
+  type PlanRevisionProfilePatch,
+  type PlanRevisionRequest,
+} from '../services/aiService';
 import { showAppAlert, showAppConfirm } from '../utils/appDialogs';
 import type { QuestionnairePayload, TargetProfile } from '../components/NutritionQuestionnaire';
 import { enrichPlanWithNutrition } from '../utils/nutrition';
@@ -19,6 +23,14 @@ import { getStoredGeminiApiKey, persistGeminiApiKey } from '../utils/geminiKey';
 import { fetchGeminiStatus, type GeminiStatusResponse } from '../services/geminiStatusService';
 import { APP_STORAGE_ERROR_EVENT, type AppStorageErrorDetail } from '../utils/storageEvents';
 import { readStorageValue, removeStorageValue, writeStorageValue } from '../utils/safeStorage';
+import {
+  applyPlanRevisionPatchToBucket,
+  buildRawBucketFromSnapshot,
+  buildSerializableProfileSnapshot,
+  getAffectedPlanSlotsFromPatch,
+  getPatchSummaryLines,
+  hasPlanRevisionPatchChanges,
+} from '../utils/planAiUtils';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
 export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias' | 'suplementos';
@@ -91,6 +103,10 @@ function sanitizeCustomData(value: unknown) {
   if (isPlainObject(value.el)) next.el = value.el;
   if (isPlainObject(value.ella)) next.ella = value.ella;
   return next;
+}
+
+function sanitizeNullableObject(value: unknown) {
+  return isPlainObject(value) ? value : null;
 }
 
 function isEquivalencesLike(value: unknown): value is any[] {
@@ -594,7 +610,11 @@ interface DietContextType {
   generationLoading: boolean;
   generationError: string;
   lastGeneratedData: any;
+  planRevisionLoading: boolean;
+  planRevisionError: string;
+  lastQuestionnaireContext: any;
   handleGenerateWithAi: (payload: QuestionnairePayload) => Promise<void>;
+  handleRevisePlanWithAi: (payload: PlanRevisionRequest) => Promise<void>;
 
   // Questionnaire state
   questionnaireTargetProfile: TargetProfile;
@@ -739,7 +759,14 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [geminiAvailabilityMessage, setGeminiAvailabilityMessage] = useState('');
   const [generationLoading, setGenerationLoading] = useState(false);
   const [generationError, setGenerationError] = useState('');
+  const [planRevisionLoading, setPlanRevisionLoading] = useState(false);
+  const [planRevisionError, setPlanRevisionError] = useState('');
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
+  const [lastQuestionnaireContext, setLastQuestionnaireContext] = useLocalStorage<any>(
+    'lastQuestionnaireContext',
+    null,
+    sanitizeNullableObject
+  );
   const geminiModelRef = useRef(geminiModel);
 
   const getDefaultCustomBucket = useCallback(
@@ -823,6 +850,85 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     }),
     [dataVersions, customData]
   );
+
+  const sanitizeQuestionnairePayloadForMemory = useCallback((payload: QuestionnairePayload | null | undefined) => {
+    if (!payload || typeof payload !== 'object') return null;
+
+    const clone = JSON.parse(JSON.stringify(payload));
+    const stripPdfPayload = (scope: any) => {
+      if (!isPlainObject(scope?.assessmentReportPdf)) return;
+      scope.assessmentReportPdf = {
+        name: scope.assessmentReportPdf.name,
+        mimeType: scope.assessmentReportPdf.mimeType,
+      };
+    };
+
+    stripPdfPayload(clone);
+    stripPdfPayload(clone.el);
+    stripPdfPayload(clone.ella);
+
+    return clone;
+  }, []);
+
+  const buildCurrentProfileSnapshot = useCallback((perfilId: 'el' | 'ella') => (
+    buildSerializableProfileSnapshot(
+      perfilesData[perfilId],
+      equivalenciasData[perfilId],
+      supplementsData[perfilId]
+    )
+  ), [equivalenciasData, perfilesData, supplementsData]);
+
+  const buildCurrentRawBucket = useCallback((perfilId: 'el' | 'ella') => (
+    buildRawBucketFromSnapshot(perfilId, buildCurrentProfileSnapshot(perfilId))
+  ), [buildCurrentProfileSnapshot]);
+
+  const syncSelectionsForUpdatedSlots = useCallback((
+    perfilId: 'el' | 'ella',
+    previousPlan: Record<string, Record<string, MealItem[]>>,
+    nextPlan: Record<string, Record<string, MealItem[]>>,
+    affectedSlots: { dia: string; momento: string }[]
+  ) => {
+    if (affectedSlots.length === 0) return;
+
+    setSelecciones((prev) => {
+      const next = { ...prev };
+
+      affectedSlots.forEach(({ dia, momento }) => {
+        const keyPrefix = `${perfilId}-${dia}-${momento}-`;
+        const previousMeals = previousPlan[dia]?.[momento] || [];
+        const nextMeals = nextPlan[dia]?.[momento] || [];
+        const previousSelectedNames = previousMeals
+          .filter((meal) => prev[`${keyPrefix}${meal.nombre}`])
+          .map((meal) => meal.nombre);
+
+        Object.keys(next).forEach((key) => {
+          if (key.startsWith(keyPrefix)) {
+            delete next[key];
+          }
+        });
+
+        if (previousSelectedNames.length === 0) {
+          return;
+        }
+
+        const preservedName =
+          nextMeals.find((meal) => previousSelectedNames.includes(meal.nombre))?.nombre ||
+          nextMeals[0]?.nombre;
+
+        if (preservedName) {
+          next[`${keyPrefix}${preservedName}`] = true;
+        }
+      });
+
+      return next;
+    });
+  }, [setSelecciones]);
+
+  const getAllPlanSlots = useCallback((plan: Record<string, Record<string, MealItem[]>>) => (
+    Object.entries(plan).flatMap(([dia, dayPlan]) => (
+      Object.keys(dayPlan || {}).map((momento) => ({ dia, momento }))
+    ))
+  ), []);
 
   // ─── Computed: Derived state ───────────────────────────────────────
   const isAmbos = perfilActivo === 'ambos';
@@ -1078,6 +1184,55 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const totalMomentosProgress = isAmbos ? perfilBase.momentos.length * 2 : perfilBase.momentos.length;
 
   // ─── AI Generation Handler ─────────────────────────────────────────
+  const requestAiResponse = useCallback(async (payload: any) => {
+    const customApiKey = geminiApiKey.trim();
+    const payloadWithKey = {
+      ...payload,
+      customApiKey: customApiKey || undefined,
+      preferredModel: geminiModel,
+    };
+    let json: any;
+    let usedDirectApi = false;
+
+    try {
+      const res = await fetch('/api/generate-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadWithKey),
+      });
+      const responseText = await res.text();
+      if (!responseText || responseText.trim() === '') throw new Error('SERVER_UNAVAILABLE');
+      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+        throw new Error('SERVER_UNAVAILABLE');
+      }
+      try {
+        json = JSON.parse(responseText);
+      } catch {
+        throw new Error('SERVER_UNAVAILABLE');
+      }
+      if (!res.ok) throw new Error(json?.error || `Error ${res.status}`);
+    } catch (serverErr: any) {
+      const isServerUnavailable = serverErr.message === 'SERVER_UNAVAILABLE' ||
+        serverErr.message?.includes('fetch') ||
+        serverErr.message?.includes('Failed to fetch') ||
+        serverErr.message?.includes('NetworkError');
+
+      if (isServerUnavailable) {
+        if (!customApiKey) {
+          throw new Error(
+            'No fue posible contactar la API del servidor. Para seguir desde el navegador, pega una clave personalizada en el panel de Administracion.'
+          );
+        }
+        usedDirectApi = true;
+        json = await callGeminiDirectly(payloadWithKey, customApiKey, geminiModel);
+      } else {
+        throw serverErr;
+      }
+    }
+
+    return { json, usedDirectApi };
+  }, [geminiApiKey, geminiModel]);
+
   const handleGenerateWithAi = useCallback(async (payload: QuestionnairePayload) => {
     setGenerationError('');
     setGenerationLoading(true);
@@ -1135,6 +1290,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setLastGeneratedData(json);
+      setLastQuestionnaireContext(sanitizeQuestionnairePayloadForMemory(payload));
 
       setCustomData((prev: any) => {
         const updated = { ...prev };
@@ -1156,7 +1312,114 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setGenerationLoading(false);
     }
-  }, [geminiApiKey, geminiModel, notify]);
+  }, [geminiApiKey, geminiModel, notify, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContext]);
+
+  const handleRevisePlanWithAi = useCallback(async (payload: PlanRevisionRequest) => {
+    setPlanRevisionError('');
+    setPlanRevisionLoading(true);
+
+    try {
+      const { json, usedDirectApi } = await requestAiResponse(payload);
+
+      if (!json?.elData && !json?.ellaData) {
+        throw new Error('La IA no devolvio cambios aplicables para el plan.');
+      }
+
+      const updatedBuckets: Partial<Record<'el' | 'ella', any>> = {};
+      const versionUpdates: Partial<Record<'el' | 'ella', 'custom'>> = {};
+      const summaries: string[] = [];
+
+      (['el', 'ella'] as const).forEach((perfilId) => {
+        const responseData = json?.[perfilId === 'el' ? 'elData' : 'ellaData'];
+        if (!responseData) return;
+
+        if (json.responseMode === 'adjust') {
+          const patch = responseData as PlanRevisionProfilePatch;
+          const summaryLines = getPatchSummaryLines(patch);
+          const hasChanges = hasPlanRevisionPatchChanges(patch);
+
+          if (!hasChanges) {
+            const noChangesSummary = patch.noChangesReason || summaryLines[0];
+            if (noChangesSummary) {
+              summaries.push(`${perfilId === 'el' ? 'El' : 'Ella'}: ${noChangesSummary}`);
+            }
+            return;
+          }
+
+          const currentBucket = buildCurrentRawBucket(perfilId);
+          const previousPlan = perfilesData[perfilId].plan;
+          const parsedBucket = applyPlanRevisionPatchToBucket(perfilId, currentBucket, patch);
+          const nextPlan = perfilId === 'el' ? parsedBucket.planEL : parsedBucket.planELLA;
+          const affectedSlots = getAffectedPlanSlotsFromPatch(patch);
+
+          if (affectedSlots.length > 0) {
+            syncSelectionsForUpdatedSlots(perfilId, previousPlan, nextPlan, affectedSlots);
+          }
+
+          updatedBuckets[perfilId] = parsedBucket;
+          versionUpdates[perfilId] = 'custom';
+          summaries.push(
+            ...(
+              summaryLines.length > 0
+                ? summaryLines.map((line) => `${perfilId === 'el' ? 'El' : 'Ella'}: ${line}`)
+                : [`${perfilId === 'el' ? 'El' : 'Ella'}: Se actualizaron partes del plan.`]
+            )
+          );
+          return;
+        }
+
+        const parsedBucket = parseObjectToData(
+          responseData,
+          perfilId === 'el' ? 'EL' : 'ELLA'
+        );
+        const previousPlan = perfilesData[perfilId].plan;
+        const nextPlan = perfilId === 'el' ? parsedBucket.planEL : parsedBucket.planELLA;
+        syncSelectionsForUpdatedSlots(perfilId, previousPlan, nextPlan, getAllPlanSlots(nextPlan));
+        updatedBuckets[perfilId] = parsedBucket;
+        versionUpdates[perfilId] = 'custom';
+        summaries.push(`${perfilId === 'el' ? 'El' : 'Ella'}: Plan recreado con la nueva instruccion.`);
+      });
+
+      if (Object.keys(updatedBuckets).length === 0) {
+        const summaryMessage = summaries.join('\n');
+        await notify(
+          'Sin cambios',
+          summaryMessage || 'La IA considero que no hacia falta modificar el plan actual.'
+        );
+        return;
+      }
+
+      setCustomData((prev: any) => ({
+        ...prev,
+        ...updatedBuckets,
+      }));
+
+      setDataVersions((prev) => ({
+        ...prev,
+        ...versionUpdates,
+      }));
+
+      setLastGeneratedData(json);
+
+      await notify(
+        payload.requestMode === 'regenerate' ? 'Plan recreado' : 'Plan actualizado con IA',
+        `${usedDirectApi ? 'Se uso Gemini en modo directo.\n' : ''}${summaries.join('\n')}`
+      );
+    } catch (error: any) {
+      console.error('Error en handleRevisePlanWithAi:', error);
+      setPlanRevisionError(error?.message || 'No se pudo actualizar el plan con IA.');
+      throw error;
+    } finally {
+      setPlanRevisionLoading(false);
+    }
+  }, [
+    buildCurrentRawBucket,
+    getAllPlanSlots,
+    notify,
+    perfilesData,
+    requestAiResponse,
+    syncSelectionsForUpdatedSlots,
+  ]);
 
   const refreshGeminiAvailability = useCallback(async (options?: {
     customApiKey?: string;
@@ -1416,7 +1679,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     geminiAvailabilityMessage,
     refreshGeminiAvailability,
     generationLoading, generationError, lastGeneratedData,
-    handleGenerateWithAi,
+    planRevisionLoading, planRevisionError, lastQuestionnaireContext,
+    handleGenerateWithAi, handleRevisePlanWithAi,
     questionnaireTargetProfile, setQuestionnaireTargetProfile,
     questionnaireStepIdx, setQuestionnaireStepIdx,
     questionnaireEl, setQuestionnaireEl,
