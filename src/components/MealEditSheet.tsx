@@ -54,14 +54,12 @@ export default function MealEditSheet({
   isSaving = false,
 }: MealEditSheetProps) {
   const [showAllAffected, setShowAllAffected] = React.useState(false);
-  const [showSelectionStep, setShowSelectionStep] = React.useState(false);
   const [selectedOccurrenceIds, setSelectedOccurrenceIds] = React.useState<string[]>([]);
   const visibleAffected = showAllAffected ? affectedMeals : affectedMeals.slice(0, 4);
 
   React.useEffect(() => {
     if (!open) {
       setShowAllAffected(false);
-      setShowSelectionStep(false);
       setSelectedOccurrenceIds([]);
     }
   }, [open]);
@@ -101,11 +99,6 @@ export default function MealEditSheet({
   };
 
   const handlePrimaryAction = () => {
-    if (!showSelectionStep) {
-      setShowSelectionStep(true);
-      return;
-    }
-
     if (!canConfirmSelection) return;
     onSave(selectedOccurrenceIds);
   };
@@ -285,54 +278,52 @@ export default function MealEditSheet({
                   ) : null}
                 </div>
 
-                {showSelectionStep ? (
-                  <div className={`rounded-[22px] border p-4 ${
-                    isDarkMode ? `${accentClasses.bgLight} ${accentClasses.border}` : `${accentClasses.bgLight} ${accentClasses.border}`
-                  }`}>
-                    <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                      Este platillo se encontro en los dias y horarios, revisa cual(les) deseas actualizar.
-                    </p>
-                    <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                      Selecciona al menos una comida.
-                    </p>
+                <div className={`rounded-[22px] border p-4 ${
+                  isDarkMode ? `${accentClasses.bgLight} ${accentClasses.border}` : `${accentClasses.bgLight} ${accentClasses.border}`
+                }`}>
+                  <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                    Este platillo se encontro en los dias y horarios, revisa cual(les) deseas actualizar.
+                  </p>
+                  <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                    Selecciona al menos una comida.
+                  </p>
 
-                    <div className="mt-3 space-y-2">
-                      {visibleAffected.map((meal) => {
-                        const isSelected = selectedOccurrenceIds.includes(meal.id);
-                        return (
-                          <button
-                            type="button"
-                            key={meal.id}
-                            onClick={() => toggleOccurrence(meal.id)}
-                            className={`w-full rounded-2xl px-3 py-2.5 text-xs ${
-                              isDarkMode ? 'bg-slate-950/70 text-slate-200' : 'bg-white/70 text-slate-700'
-                            }`}
-                          >
-                            <span className="flex items-center gap-2">
-                              {isSelected ? (
-                                <CheckCircle className={`h-4 w-4 ${accentClasses.text}`} />
-                              ) : (
-                                <Circle className="h-4 w-4 text-slate-400" />
-                              )}
-                              <span>{meal.dia} · {meal.momentoLabel} · {meal.profileLabel || 'El'}</span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {affectedMeals.length > 4 ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowAllAffected((prev) => !prev)}
-                        className={`mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold ${accentClasses.text}`}
-                      >
-                        {showAllAffected ? 'Mostrar menos' : `Ver ${affectedMeals.length - 4} mas`}
-                        {showAllAffected ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                      </button>
-                    ) : null}
+                  <div className="mt-3 space-y-2">
+                    {visibleAffected.map((meal) => {
+                      const isSelected = selectedOccurrenceIds.includes(meal.id);
+                      return (
+                        <button
+                          type="button"
+                          key={meal.id}
+                          onClick={() => toggleOccurrence(meal.id)}
+                          className={`w-full rounded-2xl px-3 py-2.5 text-xs ${
+                            isDarkMode ? 'bg-slate-950/70 text-slate-200' : 'bg-white/70 text-slate-700'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            {isSelected ? (
+                              <CheckCircle className={`h-4 w-4 ${accentClasses.text}`} />
+                            ) : (
+                              <Circle className="h-4 w-4 text-slate-400" />
+                            )}
+                            <span>{meal.dia} · {meal.momentoLabel} · {meal.profileLabel || 'El'}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : null}
+
+                  {affectedMeals.length > 4 ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllAffected((prev) => !prev)}
+                      className={`mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold ${accentClasses.text}`}
+                    >
+                      {showAllAffected ? 'Mostrar menos' : `Ver ${affectedMeals.length - 4} mas`}
+                      {showAllAffected ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
 
@@ -355,15 +346,13 @@ export default function MealEditSheet({
                 <button
                   type="button"
                   onClick={handlePrimaryAction}
-                  disabled={isSaving || !canSave || (showSelectionStep && !canConfirmSelection)}
+                  disabled={isSaving || !canSave || !canConfirmSelection}
                   className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black text-white bg-gradient-to-r ${accentClasses.bgGradient} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <Save className="w-4 h-4" />
                   {isSaving
                     ? 'Guardando...'
-                    : showSelectionStep
-                      ? `Actualizar ${selectedOccurrenceIds.length} comida${selectedOccurrenceIds.length === 1 ? '' : 's'}`
-                      : `Continuar (${affectedMeals.length} comida${affectedMeals.length === 1 ? '' : 's'})`}
+                    : `Actualizar ${selectedOccurrenceIds.length} comida${selectedOccurrenceIds.length === 1 ? '' : 's'}`}
                 </button>
               </div>
             </div>

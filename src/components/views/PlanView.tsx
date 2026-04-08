@@ -169,6 +169,22 @@ export default function PlanView() {
   const handleMealEditorSave = React.useCallback(async (selectedOccurrenceIds: string[]) => {
     if (!mealEditor || !mealEditorDraft) return;
 
+    const selectedOccurrences = mealEditorOccurrences.filter((occurrence) => (
+      selectedOccurrenceIds.includes(occurrence.id)
+    ));
+    const confirmationLines = selectedOccurrences.map(
+      (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel} - ${occurrence.profileLabel || 'El'}`
+    );
+
+    const accepted = await confirmAction(
+      'Confirmar actualizacion',
+      `Se actualizaran ${selectedOccurrenceIds.length} comida${selectedOccurrenceIds.length === 1 ? '' : 's'}:\n${confirmationLines.join('\n')}`
+    );
+
+    if (!accepted) {
+      return;
+    }
+
     setIsSavingMealEdit(true);
 
     try {
@@ -197,9 +213,9 @@ export default function PlanView() {
       }));
       closeMealEditor();
 
-      const visibleRows = result.affectedLabels.slice(0, 4).map((label) => `• ${label}`);
+      const visibleRows = result.affectedLabels.slice(0, 4);
       const extra = result.affectedLabels.length > 4
-        ? `\n• y ${result.affectedLabels.length - 4} mas`
+        ? `\ny ${result.affectedLabels.length - 4} mas`
         : '';
 
       await notify(
@@ -214,7 +230,7 @@ export default function PlanView() {
         'Ocurrio un error al actualizar el platillo. Intenta nuevamente.'
       );
     }
-  }, [closeMealEditor, editMealRecipe, mealEditor, mealEditorDraft, notify, setMomentosEnEdicion, setSelecciones]);
+  }, [closeMealEditor, confirmAction, editMealRecipe, mealEditor, mealEditorDraft, mealEditorOccurrences, notify, setMomentosEnEdicion, setSelecciones]);
 
   const handleRestoreMeal = React.useCallback(async (
     profileId: EditableProfileId,
