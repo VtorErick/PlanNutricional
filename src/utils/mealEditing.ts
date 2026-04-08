@@ -234,7 +234,11 @@ export function applyMealDraftToPlan(
   };
 }
 
-export function restoreMealInPlan(profile: Profile, meal: MealItem) {
+export function restoreMealInPlan(
+  profile: Profile,
+  meal: MealItem,
+  targetOccurrenceIds?: string[]
+) {
   const linkKey = getMealLinkKey(meal);
   const selectionRenames: Array<{
     dia: string;
@@ -242,6 +246,11 @@ export function restoreMealInPlan(profile: Profile, meal: MealItem) {
     previousName: string;
     nextName: string;
   }> = [];
+  const occurrences = getMealOccurrences(profile, meal);
+  const restoredOccurrenceIds = new Set<string>();
+  const selectedIds = targetOccurrenceIds && targetOccurrenceIds.length > 0
+    ? new Set(targetOccurrenceIds)
+    : null;
 
   const nextPlan = Object.fromEntries(
     Object.entries(profile.plan || {}).map(([dia, momentos]) => [
@@ -249,8 +258,10 @@ export function restoreMealInPlan(profile: Profile, meal: MealItem) {
       Object.fromEntries(
         Object.entries(momentos || {}).map(([momentoKey, comidas]) => [
           momentoKey,
-          (comidas || []).map((candidate) => {
+          (comidas || []).map((candidate, index) => {
             if (getMealLinkKey(candidate) !== linkKey) return candidate;
+            const occurrenceId = `${dia}::${momentoKey}::${index}`;
+            if (selectedIds && !selectedIds.has(occurrenceId)) return candidate;
             if (!candidate.editMeta?.original) return candidate;
 
             const restoredMeal = restoreMealToOriginal(candidate);
@@ -264,6 +275,8 @@ export function restoreMealInPlan(profile: Profile, meal: MealItem) {
               });
             }
 
+            restoredOccurrenceIds.add(occurrenceId);
+
             return restoredMeal;
           }),
         ])
@@ -274,7 +287,9 @@ export function restoreMealInPlan(profile: Profile, meal: MealItem) {
   return {
     nextPlan,
     restoredMeal: restoreMealToOriginal(meal),
-    occurrences: getMealOccurrences(profile, meal),
+    occurrences: occurrences.filter((occurrence) => (
+      restoredOccurrenceIds.has(occurrence.id) && (selectedIds ? selectedIds.has(occurrence.id) : true)
+    )),
     selectionRenames,
   };
 }

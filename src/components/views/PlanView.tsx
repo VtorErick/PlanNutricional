@@ -253,27 +253,33 @@ export default function PlanView() {
 
   const handleRestoreMeal = React.useCallback(async (
     profileId: EditableProfileId,
-    meal: MealItem
+    meal: MealItem,
+    occurrenceId?: string
   ) => {
     try {
+      const totalLinkedOccurrences = getMealOccurrences(perfilesData[profileId], meal).length;
       const accepted = await confirmAction(
         'Restaurar platillo',
-        'Se desharan tus cambios en este platillo y en todas sus apariciones vinculadas. ¿Deseas continuar?'
+        occurrenceId && totalLinkedOccurrences > 1
+          ? 'Se restaurara solo esta comida. Las otras apariciones editadas se conservaran como estan. ¿Deseas continuar?'
+          : totalLinkedOccurrences > 1
+            ? 'Se restauraran todas las apariciones editadas de este platillo. ¿Deseas continuar?'
+          : 'Se restaurara esta comida a su version original. ¿Deseas continuar?'
       );
 
       if (!accepted) {
         return;
       }
 
-      const result = restoreMealRecipe(profileId, meal);
-      const summary = result.affectedLabels.slice(0, 4).join(', ');
+      const result = restoreMealRecipe(profileId, meal, occurrenceId ? [occurrenceId] : undefined);
+      const visibleRows = result.affectedLabels.slice(0, 4);
       const extra = result.affectedLabels.length > 4
-        ? ` y ${result.affectedLabels.length - 4} mas`
+        ? `\ny ${result.affectedLabels.length - 4} mas`
         : '';
 
       await notify(
         'Platillo restaurado',
-        `Se restauro en ${result.affectedCount} comida${result.affectedCount === 1 ? '' : 's'}: ${summary}${extra}.`
+        `Se restauro en ${result.affectedCount} comida${result.affectedCount === 1 ? '' : 's'}:\n${visibleRows.join('\n')}${extra}`
       );
     } catch (error) {
       console.error('Failed to restore meal edition:', error);
@@ -282,7 +288,7 @@ export default function PlanView() {
         'Ocurrio un error al restaurar el platillo.'
       );
     }
-  }, [confirmAction, notify, restoreMealRecipe]);
+  }, [confirmAction, notify, perfilesData, restoreMealRecipe]);
 
   const planAiTargetOptions = React.useMemo(() => {
     if (perfilActivo === 'ambos') {
@@ -688,8 +694,8 @@ export default function PlanView() {
                                       occurrenceId
                                     );
                                   }}
-                                  onRestoreMeal={(meal) => {
-                                    void handleRestoreMeal(perfilActivo as EditableProfileId, meal);
+                                  onRestoreMeal={(meal, occurrenceId) => {
+                                    void handleRestoreMeal(perfilActivo as EditableProfileId, meal, occurrenceId);
                                   }}
                                   accentClasses={ac}
                                   isDarkMode={isDarkMode}
@@ -748,8 +754,8 @@ export default function PlanView() {
                                         onEditMeal={(meal, occurrenceId) => {
                                           openMealEditor('el', meal, porcionesElMomento, elAccent, momento.key, `${momento.key}-el`, occurrenceId);
                                         }}
-                                        onRestoreMeal={(meal) => {
-                                          void handleRestoreMeal('el', meal);
+                                        onRestoreMeal={(meal, occurrenceId) => {
+                                          void handleRestoreMeal('el', meal, occurrenceId);
                                         }}
                                         accentClasses={elAccent}
                                         isDarkMode={isDarkMode}
@@ -809,8 +815,8 @@ export default function PlanView() {
                                         onEditMeal={(meal, occurrenceId) => {
                                           openMealEditor('ella', meal, porcionesEllaMomento, ellaAccent, momento.key, `${momento.key}-ella`, occurrenceId);
                                         }}
-                                        onRestoreMeal={(meal) => {
-                                          void handleRestoreMeal('ella', meal);
+                                        onRestoreMeal={(meal, occurrenceId) => {
+                                          void handleRestoreMeal('ella', meal, occurrenceId);
                                         }}
                                         accentClasses={ellaAccent}
                                         isDarkMode={isDarkMode}

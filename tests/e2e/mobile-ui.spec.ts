@@ -75,18 +75,26 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
 test('single-profile plan flow supports selecting meals, editing, and downloading PDF on mobile', async ({
   page,
 }) => {
-  await seedGeneratedPlans(page);
+  const originalLinkedBreakfast = 'Tostadas de Aguacate y Huevo';
+
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Sabado'] });
   await page.goto('/miplan?profile=el');
 
-  await expect(page.getByTestId('moment-empty-desayuno-single')).toBeVisible();
-  await page.getByTestId('moment-empty-desayuno-single').click();
-  await expect(page.getByTestId('meal-option-el-Lunes-desayuno-0')).toBeVisible();
-  await page.getByTestId('meal-option-el-Lunes-desayuno-0').click();
+  await page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first().click();
+  await page.getByTestId('meal-option-el-Lunes-desayuno-2').click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+
+  await page.getByRole('button', { name: /^Sab/i }).click();
+  await page.locator('[data-testid^="selected-meal-el-Sabado-desayuno-"]').first().click();
+  await page.getByTestId('meal-option-el-Sabado-desayuno-2').click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+
+  await page.getByRole('button', { name: /^Lun/i }).click();
 
   const selectedMeal = page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first();
   await expect(selectedMeal).toBeVisible();
   await selectedMeal.click();
-  await page.getByTestId('meal-edit-el-Lunes-desayuno-0').click();
+  await page.getByTestId('meal-edit-el-Lunes-desayuno-2').click();
 
   await page.getByPlaceholder('Ej. Omelette con fruta').fill('Desayuno de prueba Playwright');
   await expect(page.getByText(/Los cambios se aplicaran solo en esta comida/i)).toBeVisible();
@@ -95,6 +103,24 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   await expect(page.getByText(/Platillo actualizado/i)).toBeVisible();
   await page.getByRole('button', { name: /Aceptar/i }).click();
   await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
+
+  await page.getByRole('button', { name: /^Sab/i }).click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+
+  await page.getByRole('button', { name: /^Lun/i }).click();
+  await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
+  await page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first().click();
+  await page.getByTestId('meal-restore-el-Lunes-desayuno-2').click();
+  await page.getByRole('button', { name: /Confirmar/i }).click();
+  await expect(page.getByText(/Platillo restaurado/i)).toBeVisible();
+  await page.getByRole('button', { name: /Aceptar/i }).click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+  await expect(page.getByText('Desayuno de prueba Playwright')).toHaveCount(0);
+
+  await page.getByRole('button', { name: /^Sab/i }).click();
+  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+
+  await page.getByRole('button', { name: /^Lun/i }).click();
 
   const dayPdfDownload = page.waitForEvent('download');
   await page.getByTestId('header-pdf-button').click();
@@ -131,9 +157,10 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
 
 test('mobile flow supports AI plan adjustment without recreating the whole plan', async ({ page }) => {
   const originalBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
+  const untouchedTuesdayBreakfast = getFirstMealName('el', 'Martes', 'desayuno');
   const updatedBreakfast = 'Desayuno ajustado por IA';
 
-  await seedGeneratedPlans(page, { selectedDays: ['Lunes'] });
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Martes'] });
   await mockGeminiStatusApi(page);
   await page.route('**/api/generate-plan', async (route) => {
     const response = buildAdjustPlanResponse('el', 'Lunes', 'desayuno', [
@@ -190,6 +217,9 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await page.getByRole('button', { name: /Aceptar/i }).click();
   await expect(page.getByText(updatedBreakfast)).toBeVisible();
   await expect(page.getByText(originalBreakfast)).toHaveCount(0);
+
+  await page.getByRole('button', { name: /^Mar/i }).click();
+  await expect(page.getByText(untouchedTuesdayBreakfast)).toBeVisible();
 });
 
 test('combined mobile navigation renders every major view with populated data', async ({ page }) => {

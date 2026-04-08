@@ -574,7 +574,8 @@ interface DietContextType {
   };
   restoreMealRecipe: (
     perfilId: 'el' | 'ella',
-    meal: MealItem
+    meal: MealItem,
+    targetOccurrenceIds?: string[]
   ) => {
     restoredMeal: MealItem;
     affectedCount: number;
@@ -1043,12 +1044,14 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
   const restoreMealRecipe = useCallback((
     perfilId: 'el' | 'ella',
-    meal: MealItem
+    meal: MealItem,
+    targetOccurrenceIds?: string[]
   ) => {
     const profileData = perfilesData[perfilId];
     const { nextPlan, restoredMeal, occurrences, selectionRenames } = restoreMealInPlan(
       profileData,
-      meal
+      meal,
+      targetOccurrenceIds
     );
     const profileBucketKey = perfilId;
     const planKey = perfilId === 'ella' ? 'planELLA' : 'planEL';
