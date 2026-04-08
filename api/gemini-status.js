@@ -3,6 +3,65 @@ function normalizeModelName(modelName) {
   return modelName.replace(/^models\//, '').trim();
 }
 
+function normalizeHostCandidate(value) {
+  if (!value || typeof value !== 'string') return '';
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  try {
+    const normalized = trimmed.includes('://') ? trimmed : `https://${trimmed}`;
+    return new URL(normalized).host.toLowerCase();
+  } catch {
+    return trimmed.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
+  }
+}
+
+function resolveAllowedOrigin(req) {
+  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin.trim() : '';
+  if (!requestOrigin) {
+    return { requestOrigin: '', allowedOrigin: '' };
+  }
+
+  let originUrl;
+  try {
+    originUrl = new URL(requestOrigin);
+  } catch {
+    return { requestOrigin, allowedOrigin: null };
+  }
+
+  const allowedHosts = new Set(
+    [
+      req.headers['x-forwarded-host'],
+      req.headers.host,
+      process.env.VERCEL_URL,
+      process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      process.env.APP_URL,
+      process.env.SITE_URL,
+    ]
+      .map(normalizeHostCandidate)
+      .filter(Boolean)
+  );
+
+  return {
+    requestOrigin,
+    allowedOrigin: allowedHosts.has(originUrl.host.toLowerCase()) ? originUrl.origin : null,
+  };
+}
+
+function applyCorsHeaders(req, res) {
+  const cors = resolveAllowedOrigin(req);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Vary', 'Origin');
+
+  if (cors.allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', cors.allowedOrigin);
+  }
+
+  return cors;
+}
+
 function modelSupportsGenerateContent(model) {
   const methods = model?.supportedGenerationMethods || [];
   return methods.includes('generateContent');
@@ -97,17 +156,22 @@ function buildUserMessage({ keySource, selectedModel, envModel, generationChecke
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const cors = applyCorsHeaders(req, res);
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    if (cors.requestOrigin && !cors.allowedOrigin) {
+      return res.status(403).end();
+    }
+    return res.status(204).end();
   }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  }
+
+  if (cors.requestOrigin && !cors.allowedOrigin) {
+    return res.status(403).json({ ok: false, error: 'Origen no permitido.' });
   }
 
   try {

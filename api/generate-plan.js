@@ -10,6 +10,111 @@ const ALLOWED_ICONS = [
   'AlertTriangle',
   'Heart',
 ];
+const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
+const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
+
+function normalizeHostCandidate(value) {
+  if (!value || typeof value !== 'string') return '';
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  try {
+    const normalized = trimmed.includes('://') ? trimmed : `https://${trimmed}`;
+    return new URL(normalized).host.toLowerCase();
+  } catch {
+    return trimmed.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
+  }
+}
+
+function resolveAllowedOrigin(req) {
+  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin.trim() : '';
+  if (!requestOrigin) {
+    return { requestOrigin: '', allowedOrigin: '' };
+  }
+
+  let originUrl;
+  try {
+    originUrl = new URL(requestOrigin);
+  } catch {
+    return { requestOrigin, allowedOrigin: null };
+  }
+
+  const allowedHosts = new Set(
+    [
+      req.headers['x-forwarded-host'],
+      req.headers.host,
+      process.env.VERCEL_URL,
+      process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      process.env.APP_URL,
+      process.env.SITE_URL,
+    ]
+      .map(normalizeHostCandidate)
+      .filter(Boolean)
+  );
+
+  return {
+    requestOrigin,
+    allowedOrigin: allowedHosts.has(originUrl.host.toLowerCase()) ? originUrl.origin : null,
+  };
+}
+
+function applyCorsHeaders(req, res) {
+  const cors = resolveAllowedOrigin(req);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Vary', 'Origin');
+
+  if (cors.allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', cors.allowedOrigin);
+  }
+
+  return cors;
+}
+
+function estimateBase64Size(base64Value) {
+  const sanitized = typeof base64Value === 'string' ? base64Value.replace(/\s/g, '') : '';
+  if (!sanitized) return 0;
+
+  const padding = sanitized.endsWith('==') ? 2 : sanitized.endsWith('=') ? 1 : 0;
+  return Math.floor((sanitized.length * 3) / 4) - padding;
+}
+
+function validateAssessmentPdf(pdf) {
+  if (!pdf) return { ok: true };
+  if (typeof pdf !== 'object') {
+    return { ok: false, status: 400, error: 'assessmentReportPdf inválido.' };
+  }
+
+  if (pdf.mimeType !== 'application/pdf') {
+    return { ok: false, status: 400, error: 'El reporte corporal adjunto debe ser un PDF.' };
+  }
+
+  if (typeof pdf.dataBase64 !== 'string' || !pdf.dataBase64.trim()) {
+    return { ok: false, status: 400, error: 'El PDF adjunto está vacío o no se pudo leer.' };
+  }
+
+  if (estimateBase64Size(pdf.dataBase64) > MAX_ASSESSMENT_PDF_BYTES) {
+    return {
+      ok: false,
+      status: 413,
+      error: `El reporte corporal adjunto supera el límite de ${MAX_ASSESSMENT_PDF_MB} MB.`,
+    };
+  }
+
+  return { ok: true };
+}
+
+function validatePayloadAssessmentPdfs(payload) {
+  const scopes = [payload, payload?.el, payload?.ella];
+
+  for (const scope of scopes) {
+    const result = validateAssessmentPdf(scope?.assessmentReportPdf);
+    if (!result.ok) return result;
+  }
+
+  return { ok: true };
+}
 
 function sanitizePromptPayload(payload) {
   if (!payload || typeof payload !== 'object') return payload;
@@ -323,17 +428,22 @@ async function generateWithGemini(payload, prefix, apiKey, modelName) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const cors = applyCorsHeaders(req, res);
   res.setHeader('Content-Type', 'application/json');
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    if (cors.requestOrigin && !cors.allowedOrigin) {
+      return res.status(403).end();
+    }
+    return res.status(204).end();
   }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (cors.requestOrigin && !cors.allowedOrigin) {
+    return res.status(403).json({ error: 'Origen no permitido.' });
   }
 
   try {
@@ -348,6 +458,11 @@ export default async function handler(req, res) {
 
     if (!payload || typeof payload !== 'object') {
       return res.status(400).json({ error: 'Body vacío o inválido' });
+    }
+
+    const pdfValidation = validatePayloadAssessmentPdfs(payload);
+    if (!pdfValidation.ok) {
+      return res.status(pdfValidation.status).json({ error: pdfValidation.error });
     }
 
     const customApiKey =

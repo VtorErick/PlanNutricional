@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { buildExportData, downloadJsonFile } from '../dataManager';
 import { persistGeminiApiKey } from '../utils/geminiKey';
+import { showAppAlert } from '../utils/appDialogs';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type TargetProfile = 'el' | 'ella' | 'ambos';
@@ -286,6 +287,8 @@ const QUICK_TAGS = {
 const TRAINING_FREQUENCY_CHIPS = ['1-2 días', '3-4 días', '5+ días', 'Diario'];
 const CUISINE_STYLE_OPTIONS = ['Mexicana', 'Italiana', 'Asiática', 'Mediterránea', 'Casera', 'Vegetariana'];
 const COOKING_TIME_OPTIONS = ['5-10 min', '15 min', '20 min', '30 min', '45 min', '1 hora', '1.5 horas', '+2 horas (meal prep)'];
+const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
+const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
 
 // ─── Small UI helpers ─────────────────────────────────────────────────────────
 function CardSection({
@@ -894,7 +897,21 @@ export default function NutritionQuestionnaire({
     event.target.value = '';
 
     if (!file) return;
-    if (file.type !== 'application/pdf') return;
+    if (file.type !== 'application/pdf') {
+      await showAppAlert({
+        title: 'Archivo no válido',
+        message: 'Adjunta un archivo PDF para usarlo como reporte corporal.',
+      });
+      return;
+    }
+
+    if (file.size > MAX_ASSESSMENT_PDF_BYTES) {
+      await showAppAlert({
+        title: 'PDF demasiado grande',
+        message: `El reporte corporal debe pesar máximo ${MAX_ASSESSMENT_PDF_MB} MB.`,
+      });
+      return;
+    }
 
     try {
       const dataBase64 = await new Promise<string>((resolve, reject) => {
@@ -921,6 +938,10 @@ export default function NutritionQuestionnaire({
       } as Partial<Person>);
     } catch (error) {
       console.error('Failed to read assessment PDF:', error);
+      await showAppAlert({
+        title: 'No se pudo leer el PDF',
+        message: 'Intenta de nuevo con otro archivo o vuelve a exportarlo desde tu báscula.',
+      });
     }
   };
 
@@ -1290,7 +1311,7 @@ export default function NutritionQuestionnaire({
 
           <CardSection
             title="Reporte corporal en PDF"
-            hint="Ejemplo: un resumen tipo Renpho con grasa, músculo, agua corporal o métricas similares."
+            hint={`Ejemplo: un resumen tipo Renpho con grasa, músculo, agua corporal o métricas similares. Máximo ${MAX_ASSESSMENT_PDF_MB} MB.`}
           >
             <label className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer active:scale-[.99] transition dark:border-slate-700 dark:bg-slate-950">
               <div className="flex items-start gap-3">
@@ -1948,7 +1969,7 @@ export default function NutritionQuestionnaire({
             <CardSection title="Clave de respaldo (si falló Google/Gemini)">
               <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 space-y-2 dark:border-indigo-900/60 dark:bg-indigo-950/40">
                 <p className="text-[11px] text-indigo-700 dark:text-indigo-200">
-                  Si tienes otra API key, agrégala aquí para reintentar sin salir del cuestionario.
+                  Si tienes otra API key, agrégala aquí para reintentar sin salir del cuestionario. Solo se guarda durante esta sesión.
                 </p>
                 <input
                   type="password"
@@ -1966,7 +1987,7 @@ export default function NutritionQuestionnaire({
                   }}
                   className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 active:scale-[.98]"
                 >
-                  Guardar clave para reintentar
+                  Guardar clave de esta sesión
                 </button>
               </div>
             </CardSection>
