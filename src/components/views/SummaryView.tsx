@@ -80,6 +80,9 @@ export default function SummaryView() {
         {(isAmbos ? [perfilesData.el, perfilesData.ella] : [perfil]).map((p, pIdx) => {
           if (!p) return null;
           const summaryPoints = Array.isArray(p.resumenPersonal) ? p.resumenPersonal : [];
+          const activeCategoryCount = categories.filter((cat) =>
+            mealKeys.some((mealKey) => (p.objetivosPorMomento?.[mealKey]?.[cat.key] || 0) > 0)
+          ).length;
 
           const isFirst = pIdx === 0;
           const pfKey = isFirst ? 'el' : 'ella';
@@ -116,9 +119,27 @@ export default function SummaryView() {
                     <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
                     {isAmbos ? `Puntos clave de ${p.nombre}` : 'Puntos clave de tu plan'}
                   </h3>
+                  {isAmbos ? (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
+                      {p.nombre}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mb-3 flex flex-wrap gap-1.5">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
-                    {p.nombre}
+                    {summaryPoints.length} puntos
                   </span>
+                  {p.objetivosPorMomento ? (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+                      {activeCategoryCount} grupos activos
+                    </span>
+                  ) : null}
+                  {p.notaSalud ? (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                      Nota de salud
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="space-y-2.5">
@@ -131,9 +152,9 @@ export default function SummaryView() {
                       className={`flex gap-3 p-3 rounded-xl ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}
                       style={{ borderLeft: `3px solid ${dynamicAc.color500}` }}
                     >
-                      <div
-                        className={`w-1.5 h-1.5 rounded-full ${dynamicAc.dot} mt-1.5 flex-shrink-0`}
-                      />
+                      <span className={`inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-black ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
+                        {idx + 1}
+                      </span>
                       <p className={`text-xs sm:text-sm leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                         {linea}
                       </p>

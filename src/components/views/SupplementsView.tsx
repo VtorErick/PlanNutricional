@@ -52,6 +52,26 @@ export default function SupplementsView() {
               <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
                 Son apoyos adicionales. No forman parte de la alimentacion necesaria para cumplir tu meta o tus calorias.
               </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {isAmbos ? (
+                  profilesToRender.map((profileId) => (
+                    <span
+                      key={`supplement-count-${profileId}`}
+                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
+                        profileId === 'el'
+                          ? `${elAccent.tagBg} ${elAccent.tagText}`
+                          : `${ellaAccent.tagBg} ${ellaAccent.tagText}`
+                      }`}
+                    >
+                      {perfilesData[profileId].nombre}: {(supplementsData[profileId] || []).length}
+                    </span>
+                  ))
+                ) : (
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ac.tagBg} ${ac.tagText}`}>
+                    {(supplementsData[profilesToRender[0]] || []).length} opciones
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -114,6 +134,11 @@ export default function SupplementsView() {
                         <p className={`mt-1 text-sm font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-600'}`}>
                           {supplement.goalSupport}
                         </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ac.tagBg} ${ac.tagText}`}>
+                            {supplement.timing}
+                          </span>
+                        </div>
                       </div>
                     </div>
 

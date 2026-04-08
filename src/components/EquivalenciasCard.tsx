@@ -42,12 +42,19 @@ export default function EquivalenciasCard({
         </div>
 
         <div className="min-w-0 flex-1 pt-0.5">
-          <h3 className={`font-black text-base sm:text-lg tracking-tight leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-            {equivalencia.titulo}
-          </h3>
-          <p className={`text-[11px] sm:text-xs mt-1 font-semibold ${accentClasses.text}`}>
-            Cada elemento = 1 porcion
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className={`font-black text-base sm:text-lg tracking-tight leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                {equivalencia.titulo}
+              </h3>
+              <p className={`text-[11px] sm:text-xs mt-1 font-semibold ${accentClasses.text}`}>
+                Cada elemento = 1 porcion
+              </p>
+            </div>
+            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${accentClasses.tagBg} ${accentClasses.tagText}`}>
+              {equivalencia.items.length} opciones
+            </span>
+          </div>
         </div>
       </div>
 
@@ -65,9 +72,9 @@ export default function EquivalenciasCard({
                 : 'bg-slate-50/80'
             }`}
           >
-            <div
-              className={`w-2 h-2 rounded-full ${accentClasses.dot} mt-1.5 flex-shrink-0 shadow-sm`}
-            />
+            <span className={`mt-0.5 inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-black ${accentClasses.tagBg} ${accentClasses.tagText}`}>
+              {idx + 1}
+            </span>
             <p className={`text-sm font-medium leading-snug break-words ${isDarkMode ? 'text-slate-200' : 'text-slate-600'}`}>
               {item}
             </p>

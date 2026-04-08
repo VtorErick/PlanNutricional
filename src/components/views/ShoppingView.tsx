@@ -11,6 +11,21 @@ import {
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
 
+type ShoppingUsage = {
+  texto: string;
+  perfil: 'el' | 'ella';
+  dayLabel: string;
+  mealLabel: string;
+  mealName: string;
+  signature: string;
+};
+
+type ShoppingUsageDisplay = {
+  id: string;
+  texto: string;
+  perfiles: Array<'el' | 'ella'>;
+};
+
 export default function ShoppingView() {
   const {
     selecciones,
@@ -23,9 +38,10 @@ export default function ShoppingView() {
   const [expandedIngredients, setExpandedIngredients] = useState<Record<string, boolean>>({});
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
+  const isAmbos = perfilActivo === 'ambos';
 
   const shoppingList = useMemo(() => {
-    const ingredientMap: Record<string, { texto: string; perfil: string }[]> = {};
+    const ingredientMap: Record<string, ShoppingUsage[]> = {};
 
     Object.entries(selecciones).forEach(([key, isSelected]) => {
       if (!isSelected) return;
@@ -59,8 +75,14 @@ export default function ShoppingView() {
         if (!ingredientMap[ingredient]) ingredientMap[ingredient] = [];
 
         ingredientMap[ingredient].push({
-          texto: `${dayLabel} | ${mealLabel} | ${profile.nombre}: ${meal.nombre}`,
-          perfil: profileId,
+          texto: isAmbos
+            ? `${dayLabel} | ${mealLabel} | ${profile.nombre}: ${meal.nombre}`
+            : `${dayLabel} | ${mealLabel}: ${meal.nombre}`,
+          perfil: profileId as 'el' | 'ella',
+          dayLabel,
+          mealLabel,
+          mealName: meal.nombre,
+          signature: `${dayLabel}|${mealLabel}|${meal.nombre}`,
         });
       });
     });
@@ -71,7 +93,7 @@ export default function ShoppingView() {
         ingrediente: ingredient,
         usos: ingredientMap[ingredient],
       }));
-  }, [selecciones, perfilActivo, perfilesData]);
+  }, [selecciones, perfilActivo, perfilesData, isAmbos]);
 
   useEffect(() => {
     const validIngredients = new Set(shoppingList.map((item) => item.ingrediente));
@@ -92,6 +114,47 @@ export default function ShoppingView() {
 
   const checkedCount = shoppingList.filter((item) => comprasCheck[item.ingrediente]).length;
   const pendingCount = shoppingList.length - checkedCount;
+
+  const getUsageSummary = React.useCallback((usos: ShoppingUsage[]) => {
+    const summary = usos.reduce((acc, uso) => {
+      if (uso.perfil === 'el') {
+        acc.el += 1;
+      } else if (uso.perfil === 'ella') {
+        acc.ella += 1;
+      }
+      return acc;
+    }, { el: 0, ella: 0 });
+
+    return summary;
+  }, []);
+
+  const getDisplayUsos = React.useCallback((usos: ShoppingUsage[]): ShoppingUsageDisplay[] => {
+    if (!isAmbos) {
+      return usos.map((uso) => ({
+        id: `${uso.signature}-${uso.perfil}`,
+        texto: uso.texto,
+        perfiles: [uso.perfil],
+      }));
+    }
+
+    const grouped = usos.reduce<Record<string, ShoppingUsageDisplay>>((acc, uso) => {
+      if (!acc[uso.signature]) {
+        acc[uso.signature] = {
+          id: uso.signature,
+          texto: `${uso.dayLabel} | ${uso.mealLabel}: ${uso.mealName}`,
+          perfiles: [],
+        };
+      }
+
+      if (!acc[uso.signature].perfiles.includes(uso.perfil)) {
+        acc[uso.signature].perfiles.push(uso.perfil);
+      }
+
+      return acc;
+    }, {});
+
+    return Object.values(grouped);
+  }, [isAmbos]);
 
   return (
     <motion.div
@@ -124,6 +187,7 @@ export default function ShoppingView() {
           }`}
         />
 
+        <div className="relative z-10">
         <div className="relative mb-4 flex items-start gap-3 sm:gap-4">
           <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-[16px] bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm flex items-center justify-center flex-shrink-0">
             <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -241,6 +305,8 @@ export default function ShoppingView() {
           <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
             {shoppingList.map((item) => {
               const isChecked = comprasCheck[item.ingrediente];
+              const usageSummary = getUsageSummary(item.usos);
+              const displayUsos = getDisplayUsos(item.usos);
 
               return (
                 <motion.div
@@ -306,9 +372,22 @@ export default function ShoppingView() {
                             isDarkMode ? 'text-slate-400' : 'text-slate-400'
                           }`}
                         >
-                          {item.usos.length} receta{item.usos.length > 1 ? 's' : ''} lo
-                          ocupa{item.usos.length > 1 ? 'n' : ''}
+                          Aparece en {displayUsos.length} comida{displayUsos.length > 1 ? 's' : ''} seleccionada{displayUsos.length > 1 ? 's' : ''}
                         </p>
+                        {isAmbos && (usageSummary.el > 0 || usageSummary.ella > 0) ? (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {usageSummary.el > 0 ? (
+                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-black ${elAccent.tagBg} ${elAccent.tagText}`}>
+                                El {usageSummary.el}
+                              </span>
+                            ) : null}
+                            {usageSummary.ella > 0 ? (
+                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-black ${ellaAccent.tagBg} ${ellaAccent.tagText}`}>
+                                Ella {usageSummary.ella}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
 
                       <button
@@ -341,9 +420,9 @@ export default function ShoppingView() {
 
                     {expandedIngredients[item.ingrediente] ? (
                       <div className="ml-9 space-y-2">
-                        {item.usos.map((uso, index) => (
+                        {displayUsos.map((uso) => (
                           <div
-                            key={index}
+                            key={uso.id}
                             className={`rounded-xl p-2.5 flex items-start gap-2 ${
                               isChecked
                                 ? isDarkMode
@@ -354,15 +433,22 @@ export default function ShoppingView() {
                                   : 'bg-slate-50'
                             }`}
                           >
-                            <span
-                              className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider flex-shrink-0 ${
-                                uso.perfil === 'el'
-                                  ? `${elAccent.tagBg} ${elAccent.tagText}`
-                                  : `${ellaAccent.tagBg} ${ellaAccent.tagText}`
-                              }`}
-                            >
-                              {uso.perfil === 'el' ? 'El' : 'Ella'}
-                            </span>
+                            {isAmbos ? (
+                              <div className="flex flex-shrink-0 flex-wrap gap-1">
+                                {uso.perfiles.map((perfil) => (
+                                  <span
+                                    key={`${uso.id}-${perfil}`}
+                                    className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                                      perfil === 'el'
+                                        ? `${elAccent.tagBg} ${elAccent.tagText}`
+                                        : `${ellaAccent.tagBg} ${ellaAccent.tagText}`
+                                    }`}
+                                  >
+                                    {perfil === 'el' ? 'El' : 'Ella'}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
 
                             <span
                               className={`text-[11px] sm:text-xs font-medium leading-snug break-words ${
@@ -385,6 +471,7 @@ export default function ShoppingView() {
             })}
           </div>
         )}
+        </div>
       </div>
     </motion.div>
   );

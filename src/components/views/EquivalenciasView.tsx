@@ -44,9 +44,22 @@ export default function EquivalenciasView() {
                 <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
                   <Repeat className={`h-5 w-5 ${ac.text}`} />
                 </div>
-                <h2 className={`truncate text-base font-extrabold sm:text-lg ${ac.textDark}`}>
-                  Equivalencias
-                </h2>
+                <div className="min-w-0">
+                  <h2 className={`truncate text-base font-extrabold sm:text-lg ${ac.textDark}`}>
+                    Equivalencias
+                  </h2>
+                  <p className={`mt-0.5 text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Sustituciones rapidas para ambos perfiles.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${elAccent.tagBg} ${elAccent.tagText}`}>
+                      {perfilesData.el.nombre}: {equivalenciasData.el.length}
+                    </span>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ellaAccent.tagBg} ${ellaAccent.tagText}`}>
+                      {perfilesData.ella.nombre}: {equivalenciasData.ella.length}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className={`flex w-full rounded-2xl p-1 sm:w-auto sm:min-w-[200px] ${isDarkMode ? 'bg-slate-900' : 'bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]'}`}>
@@ -128,8 +141,11 @@ export default function EquivalenciasView() {
               </div>
               <div className="min-w-0">
                 <h3 className={`truncate text-base font-extrabold sm:text-lg ${ac.textDark}`}>
-                  {`Equivalencias ${perfilActivo === 'ella' ? perfilesData.ella.nombre : perfilesData.el.nombre}`}
+                  Equivalencias
                 </h3>
+                <p className={`mt-0.5 text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {equivalencias.length} grupos con opciones listas para intercambiar.
+                </p>
               </div>
             </div>
           </div>
