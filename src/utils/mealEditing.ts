@@ -2,10 +2,13 @@ import type { MealItem, MealOriginalSnapshot, Profile } from '../types';
 import { ensureMealNutrition } from './nutrition';
 
 export interface MealOccurrence {
+  id: string;
   dia: string;
   momento: string;
   momentoLabel: string;
   nombreAnterior: string;
+  profileId?: 'el' | 'ella';
+  profileLabel?: string;
 }
 
 export interface MealEditorDraft {
@@ -151,10 +154,11 @@ export function getMealOccurrences(profile: Profile, meal: MealItem): MealOccurr
 
   Object.entries(profile.plan || {}).forEach(([dia, momentos]) => {
     Object.entries(momentos || {}).forEach(([momentoKey, comidas]) => {
-      (comidas || []).forEach((candidate) => {
+      (comidas || []).forEach((candidate, index) => {
         if (getMealLinkKey(candidate) !== linkKey) return;
 
         occurrences.push({
+          id: `${dia}::${momentoKey}::${index}`,
           dia,
           momento: momentoKey,
           momentoLabel: getMomentLabel(profile, momentoKey),
@@ -170,10 +174,14 @@ export function getMealOccurrences(profile: Profile, meal: MealItem): MealOccurr
 export function applyMealDraftToPlan(
   profile: Profile,
   meal: MealItem,
-  draft: MealEditorDraft
+  draft: MealEditorDraft,
+  targetOccurrenceIds?: string[]
 ) {
   const linkKey = getMealLinkKey(meal);
   const referenceMeal = buildMealFromDraft(meal, draft);
+  const selectedIds = targetOccurrenceIds && targetOccurrenceIds.length > 0
+    ? new Set(targetOccurrenceIds)
+    : null;
   const selectionRenames: Array<{
     dia: string;
     momento: string;
@@ -187,8 +195,10 @@ export function applyMealDraftToPlan(
       Object.fromEntries(
         Object.entries(momentos || {}).map(([momentoKey, comidas]) => [
           momentoKey,
-          (comidas || []).map((candidate) => {
+          (comidas || []).map((candidate, index) => {
             if (getMealLinkKey(candidate) !== linkKey) return candidate;
+            const occurrenceId = `${dia}::${momentoKey}::${index}`;
+            if (selectedIds && !selectedIds.has(occurrenceId)) return candidate;
 
             const updatedMeal = ensureMealNutrition({
               ...referenceMeal,
@@ -217,7 +227,9 @@ export function applyMealDraftToPlan(
   return {
     nextPlan,
     updatedMeal: referenceMeal,
-    occurrences: getMealOccurrences(profile, meal),
+    occurrences: getMealOccurrences(profile, meal).filter((occurrence) => (
+      selectedIds ? selectedIds.has(occurrence.id) : true
+    )),
     selectionRenames,
   };
 }

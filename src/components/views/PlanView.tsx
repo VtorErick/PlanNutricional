@@ -154,20 +154,30 @@ export default function PlanView() {
 
   const mealEditorOccurrences = React.useMemo(() => {
     if (!mealEditor) return [];
-    return getMealOccurrences(perfilesData[mealEditor.profileId], mealEditor.meal);
+    const profileLabel = mealEditor.profileId === 'el' ? 'El' : 'Ella';
+    return getMealOccurrences(perfilesData[mealEditor.profileId], mealEditor.meal).map((occurrence) => ({
+      ...occurrence,
+      profileId: mealEditor.profileId,
+      profileLabel,
+    }));
   }, [mealEditor, perfilesData]);
 
   const handleMealDraftChange = React.useCallback((field: keyof MealEditorDraft, value: string) => {
     setMealEditorDraft((prev) => (prev ? { ...prev, [field]: value } : prev));
   }, []);
 
-  const handleMealEditorSave = React.useCallback(async () => {
+  const handleMealEditorSave = React.useCallback(async (selectedOccurrenceIds: string[]) => {
     if (!mealEditor || !mealEditorDraft) return;
 
     setIsSavingMealEdit(true);
 
     try {
-      const result = editMealRecipe(mealEditor.profileId, mealEditor.meal, mealEditorDraft);
+      const result = editMealRecipe(
+        mealEditor.profileId,
+        mealEditor.meal,
+        mealEditorDraft,
+        selectedOccurrenceIds
+      );
       setSelecciones((prev) => {
         const next = { ...prev };
         const prefix = `${mealEditor.profileId}-${mealEditor.dia}-${mealEditor.momentoKey}-`;
@@ -187,14 +197,14 @@ export default function PlanView() {
       }));
       closeMealEditor();
 
-      const summary = result.affectedLabels.slice(0, 4).join(', ');
+      const visibleRows = result.affectedLabels.slice(0, 4).map((label) => `• ${label}`);
       const extra = result.affectedLabels.length > 4
-        ? ` y ${result.affectedLabels.length - 4} mas`
+        ? `\n• y ${result.affectedLabels.length - 4} mas`
         : '';
 
       await notify(
         'Platillo actualizado',
-        `Se reemplazo en ${result.affectedCount} comida${result.affectedCount === 1 ? '' : 's'}: ${summary}${extra}.`
+        `Se reemplazo en ${result.affectedCount} comida${result.affectedCount === 1 ? '' : 's'}:\n${visibleRows.join('\n')}${extra}`
       );
     } catch (error) {
       console.error('Failed to save meal edition:', error);

@@ -549,7 +549,8 @@ interface DietContextType {
   editMealRecipe: (
     perfilId: 'el' | 'ella',
     meal: MealItem,
-    draft: MealEditorDraft
+    draft: MealEditorDraft,
+    targetOccurrenceIds?: string[]
   ) => {
     updatedMeal: MealItem;
     affectedCount: number;
@@ -867,13 +868,15 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const editMealRecipe = useCallback((
     perfilId: 'el' | 'ella',
     meal: MealItem,
-    draft: MealEditorDraft
+    draft: MealEditorDraft,
+    targetOccurrenceIds?: string[]
   ) => {
     const profileData = perfilesData[perfilId];
     const { nextPlan, updatedMeal, occurrences, selectionRenames } = applyMealDraftToPlan(
       profileData,
       meal,
-      draft
+      draft,
+      targetOccurrenceIds
     );
     const profileBucketKey = perfilId;
     const planKey = perfilId === 'ella' ? 'planELLA' : 'planEL';
@@ -927,7 +930,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       updatedMeal,
       affectedCount: occurrences.length,
       affectedLabels: occurrences.map(
-        (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel}`
+        (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel} - ${perfilId === 'el' ? 'El' : 'Ella'}`
       ),
     };
   }, [getDefaultCustomBucket, perfilesData, setCustomData, setDataVersions, setSelecciones]);
