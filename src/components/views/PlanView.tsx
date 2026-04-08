@@ -243,10 +243,6 @@ export default function PlanView() {
         mealEditorDraft,
         selectedOccurrenceIds
       );
-      setMomentosEnEdicion((prev) => ({
-        ...prev,
-        [mealEditor.editStateKey]: false,
-      }));
       closeMealEditor();
 
       const visibleRows = result.affectedLabels.slice(0, 4);
@@ -269,7 +265,7 @@ export default function PlanView() {
         'Ocurrio un error al actualizar el platillo. Intenta nuevamente.'
       );
     }
-  }, [closeMealEditor, confirmAction, editMealRecipe, mealEditor, mealEditorDraft, mealEditorOccurrences, notify, setMomentosEnEdicion]);
+  }, [closeMealEditor, confirmAction, editMealRecipe, mealEditor, mealEditorDraft, mealEditorOccurrences, notify]);
 
   const handleRestoreMeal = React.useCallback(async (
     profileId: EditableProfileId,

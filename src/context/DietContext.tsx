@@ -951,9 +951,23 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     const profileData = perfilId === 'ella' ? perfilesData.ella : perfilesData.el;
     const comidasMomento = profileData.plan[dia]?.[momento] || [];
     const nextMomento = getNextMomentoKey(momento);
-    const wasCompleted = comidasMomento.some((item) => selecciones[`${perfilId}-${dia}-${momento}-${item.nombre}`]);
+    const wasCompletedForProfile = comidasMomento.some((item) => selecciones[`${perfilId}-${dia}-${momento}-${item.nombre}`]);
     const willSelectCurrentMeal = !selecciones[key];
-    const isNowCompleted = wasCompleted || willSelectCurrentMeal;
+    const isNowCompletedForProfile = willSelectCurrentMeal;
+    const shouldAutoScroll = (() => {
+      if (!nextMomento) return false;
+      if (perfilActivo !== 'ambos') {
+        return !wasCompletedForProfile && isNowCompletedForProfile;
+      }
+
+      const otherProfileId = perfilId === 'el' ? 'ella' : 'el';
+      const otherProfileData = otherProfileId === 'ella' ? perfilesData.ella : perfilesData.el;
+      const otherProfileCompleted = (otherProfileData.plan[dia]?.[momento] || []).some(
+        (item) => selecciones[`${otherProfileId}-${dia}-${momento}-${item.nombre}`]
+      );
+
+      return !wasCompletedForProfile && isNowCompletedForProfile && otherProfileCompleted;
+    })();
 
     setSelecciones((prev) => {
       const next = { ...prev };
@@ -967,10 +981,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       return next;
     });
 
-    if (!wasCompleted && isNowCompleted && nextMomento) {
+    if (shouldAutoScroll) {
       setPendingAutoScrollMomento(nextMomento);
     }
-  }, [getNextMomentoKey, perfilesData.ella, perfilesData.el, selecciones]);
+  }, [getNextMomentoKey, perfilActivo, perfilesData.ella, perfilesData.el, selecciones]);
 
   const editMealRecipe = useCallback((
     perfilId: 'el' | 'ella',
