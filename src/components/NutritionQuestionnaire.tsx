@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { buildExportData, downloadJsonFile } from '../dataManager';
 import { persistGeminiApiKey } from '../utils/geminiKey';
+import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
 import { getQuestionnaireTheme } from '../utils/theme';
 
@@ -85,6 +86,7 @@ interface Props {
   onViewPlan?: (profile: TargetProfile) => void;
   loading: boolean;
   errorMessage?: string;
+  aiErrorLog?: AiDebugLog | null;
   geminiModel?: string;
   setGeminiModel?: (m: string) => void;
   availableGeminiModels?: string[];
@@ -631,6 +633,7 @@ export default function NutritionQuestionnaire({
   onViewPlan,
   loading,
   errorMessage,
+  aiErrorLog,
   geminiModel,
   setGeminiModel,
   availableGeminiModels,
@@ -753,15 +756,15 @@ export default function NutritionQuestionnaire({
   const steps = useMemo(() => buildSteps(targetProfile), [targetProfile]);
   const showApiRecovery = useMemo(() => {
     const msg = (errorMessage || '').toLowerCase();
-    return !!msg && (
+    return Boolean(aiErrorLog) || (!!msg && (
       msg.includes('gemini') ||
       msg.includes('api') ||
       msg.includes('fetch') ||
       msg.includes('network') ||
       msg.includes('429') ||
       msg.includes('quota')
-    );
-  }, [errorMessage]);
+    ));
+  }, [aiErrorLog, errorMessage]);
   const currentStep = steps[stepIdx] ?? steps[0];
   const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
   const stepsLeft = Math.max(steps.length - (stepIdx + 1), 0);
@@ -1943,8 +1946,18 @@ export default function NutritionQuestionnaire({
           })}
 
           {errorMessage && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 leading-relaxed dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-200">
-              {errorMessage}
+            <div className="space-y-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs leading-relaxed text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
+              <p>{errorMessage}</p>
+              {aiErrorLog ? (
+                <button
+                  type="button"
+                  onClick={() => downloadAiDebugLog(aiErrorLog)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-rose-300 bg-white px-3 py-2 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-800 dark:bg-slate-950 dark:text-rose-100 dark:hover:bg-rose-950/60"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Descargar logs detallados
+                </button>
+              ) : null}
             </div>
           )}
 

@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Bot,
   CheckCircle2,
+  Download,
   FileText,
   Users,
   MessageSquareText,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { AccentColors } from '../utils/theme';
 import type { PlanRevisionMode } from '../services/aiService';
+import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
 
 type TargetProfile = 'el' | 'ella' | 'ambos';
 type RegeneratePath = 'instruction' | 'questionnaire';
@@ -106,6 +108,7 @@ interface PlanAiRefreshSheetProps {
   accentClasses: AccentColors;
   loading?: boolean;
   errorMessage?: string;
+  aiErrorLog?: AiDebugLog | null;
   hasQuestionnaireContext: boolean;
   defaultTarget: TargetProfile;
   targetOptions: TargetOption[];
@@ -126,6 +129,7 @@ export default function PlanAiRefreshSheet({
   accentClasses,
   loading = false,
   errorMessage = '',
+  aiErrorLog,
   hasQuestionnaireContext,
   defaultTarget,
   targetOptions,
@@ -447,12 +451,26 @@ export default function PlanAiRefreshSheet({
                 </div>
 
                 {errorMessage ? (
-                  <div className={`rounded-[24px] border px-4 py-3 text-sm ${
+                  <div className={`space-y-3 rounded-[24px] border px-4 py-3 text-sm ${
                     isDarkMode
                       ? 'border-rose-900/70 bg-rose-950/30 text-rose-100'
                       : 'border-rose-200 bg-rose-50 text-rose-700'
                   }`}>
-                    {errorMessage}
+                    <p>{errorMessage}</p>
+                    {aiErrorLog ? (
+                      <button
+                        type="button"
+                        onClick={() => downloadAiDebugLog(aiErrorLog)}
+                        className={`inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-bold transition ${
+                          isDarkMode
+                            ? 'border-rose-800 bg-slate-950 text-rose-100 hover:bg-rose-950/40'
+                            : 'border-rose-300 bg-white text-rose-700 hover:bg-rose-100'
+                        }`}
+                      >
+                        <Download className="h-4 w-4" />
+                        Descargar logs detallados
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

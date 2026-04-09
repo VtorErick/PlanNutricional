@@ -1,4 +1,9 @@
 import type { MealItem, SupplementRecommendation } from '../types';
+import {
+  AI_GENERIC_ERROR_MESSAGE,
+  type AiDebugLog,
+  type AiErrorWithLog,
+} from '../utils/aiDiagnostics';
 
 export type PlanRevisionMode = 'adjust' | 'regenerate';
 
@@ -103,6 +108,172 @@ const PROFILE_REQUIRED_KEYS = [
   'distribucionDiaria',
   'resumenPersonal',
 ];
+
+type GeminiDebugContext = {
+  flow: AiDebugLog['flow'];
+  transport: AiDebugLog['transport'];
+  stage: AiDebugLog['stage'];
+  payload: unknown;
+  targetProfile: 'el' | 'ella' | 'ambos';
+  profilePrefix?: 'EL' | 'ELLA';
+  requestMode: 'generate' | PlanRevisionMode;
+  requestedModel: string;
+  selectedModel?: string;
+  apiKeySource: AiDebugLog['apiKeySource'];
+};
+
+function createDebugLogId(flow: AiDebugLog['flow']) {
+  return `${flow}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function maskApiKey(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return '[redacted]';
+  if (trimmed.length <= 8) return '[redacted]';
+  return `${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
+}
+
+function estimateBase64Size(base64Value: string) {
+  const sanitized = base64Value.replace(/\s/g, '');
+  if (!sanitized) return 0;
+
+  const padding = sanitized.endsWith('==') ? 2 : sanitized.endsWith('=') ? 1 : 0;
+  return Math.floor((sanitized.length * 3) / 4) - padding;
+}
+
+function sanitizeDebugValue(value: unknown, path: string[] = []): unknown {
+  if (typeof value === 'string') {
+    const currentKey = path[path.length - 1] || '';
+    const parentKey = path[path.length - 2] || '';
+
+    if (/api[-_]?key/i.test(currentKey)) {
+      return maskApiKey(value);
+    }
+
+    if (currentKey === 'dataBase64' || (currentKey === 'data' && parentKey === 'inlineData')) {
+      return {
+        omitted: true,
+        base64Length: value.length,
+        approxBytes: estimateBase64Size(value),
+      };
+    }
+
+    if (value.length > 8000) {
+      return `${value.slice(0, 8000)}... [truncated ${value.length - 8000} chars]`;
+    }
+
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry, index) => sanitizeDebugValue(entry, [...path, String(index)]));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entryValue]) => [
+        key,
+        sanitizeDebugValue(entryValue, [...path, key]),
+      ])
+    );
+  }
+
+  return value;
+}
+
+function safeParseJson(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function normalizeModelName(modelName: string) {
+  return modelName.replace(/^models\//, '').trim();
+}
+
+function createLoggedAiError(
+  debugContext: GeminiDebugContext,
+  options: {
+    rawMessage: string;
+    statusCode?: number;
+    geminiRequest?: unknown;
+    geminiResponse?: { status?: number; body?: unknown };
+    stage?: AiDebugLog['stage'];
+  }
+) {
+  const error = new Error(AI_GENERIC_ERROR_MESSAGE) as AiErrorWithLog;
+  error.userMessage = AI_GENERIC_ERROR_MESSAGE;
+  error.statusCode = options.statusCode && options.statusCode >= 400 ? options.statusCode : 502;
+  error.aiDebugLog = {
+    id: createDebugLogId(debugContext.flow),
+    occurredAt: new Date().toISOString(),
+    flow: debugContext.flow,
+    transport: debugContext.transport,
+    stage: options.stage || debugContext.stage,
+    targetProfile: debugContext.targetProfile,
+    profilePrefix: debugContext.profilePrefix,
+    requestMode: debugContext.requestMode,
+    requestedModel: debugContext.requestedModel,
+    selectedModel: debugContext.selectedModel,
+    apiKeySource: debugContext.apiKeySource,
+    requestPayload: sanitizeDebugValue(debugContext.payload),
+    geminiRequest: sanitizeDebugValue(options.geminiRequest),
+    geminiResponse: options.geminiResponse
+      ? {
+          status: options.geminiResponse.status,
+          body: sanitizeDebugValue(options.geminiResponse.body),
+        }
+      : undefined,
+    error: {
+      message: AI_GENERIC_ERROR_MESSAGE,
+      rawMessage: options.rawMessage,
+    },
+  };
+  return error;
+}
+
+function getMaxOutputTokens(modelName: string, requestMode: GeminiDebugContext['requestMode']) {
+  const normalized = normalizeModelName(modelName).toLowerCase();
+  const hardLimit = normalized.includes('gemini-2.0') || normalized.includes('gemma') ? 8192 : 65536;
+  const desired = requestMode === 'adjust' ? 8192 : 32768;
+  return Math.min(desired, hardLimit);
+}
+
+function getDirectFallbackModels(primaryModel: string) {
+  const orderedCandidates = [
+    normalizeModelName(primaryModel),
+    'gemini-2.5-flash-lite',
+    'gemini-flash-lite-latest',
+    'gemini-flash-latest',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash',
+    'gemini-2.5-pro',
+    'gemini-pro-latest',
+    'gemini-1.5-pro',
+  ].filter(Boolean);
+
+  return Array.from(new Set(orderedCandidates));
+}
+
+function shouldRetryWithDifferentModel(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+
+  const candidate = error as AiErrorWithLog;
+  const statusCode = candidate.statusCode || candidate.aiDebugLog?.geminiResponse?.status;
+  const rawMessage = candidate.aiDebugLog?.error?.rawMessage || candidate.message || '';
+  const normalizedMessage = String(rawMessage).toLowerCase();
+
+  return (
+    statusCode === 429 ||
+    statusCode === 503 ||
+    normalizedMessage.includes('high demand') ||
+    normalizedMessage.includes('unavailable') ||
+    normalizedMessage.includes('max_tokens')
+  );
+}
 
 function buildMealItemSchema() {
   return {
@@ -281,7 +452,6 @@ function buildPlanSchema(requireAllDays: boolean, requireAllMoments: boolean) {
 function buildFullResponseSchema(prefix: string) {
   return {
     type: 'object',
-    additionalProperties: false,
     required: [
       `perfil${prefix}`,
       `equivalencias${prefix}`,
@@ -295,10 +465,16 @@ function buildFullResponseSchema(prefix: string) {
       `plan${prefix}`,
     ],
     properties: {
-      [`perfil${prefix}`]: buildProfileSchema(false),
-      [`equivalencias${prefix}`]: buildEquivalenciasSchema(),
-      [`suplementos${prefix}`]: buildSuplementosSchema(),
-      [`plan${prefix}`]: buildPlanSchema(true, true),
+      [`perfil${prefix}`]: { type: 'object' },
+      [`equivalencias${prefix}`]: {
+        type: 'array',
+        items: { type: 'object' },
+      },
+      [`suplementos${prefix}`]: {
+        type: 'array',
+        items: { type: 'object' },
+      },
+      [`plan${prefix}`]: { type: 'object' },
     },
   };
 }
@@ -306,21 +482,24 @@ function buildFullResponseSchema(prefix: string) {
 function buildAdjustResponseSchema() {
   return {
     type: 'object',
-    additionalProperties: false,
     required: ['summary'],
     propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'equivalencias', 'suplementos', 'planPatch'],
     properties: {
       summary: {
         type: 'array',
-        minItems: 1,
-        maxItems: 4,
         items: { type: 'string' },
       },
       noChangesReason: { type: 'string' },
-      profilePatch: buildProfileSchema(true),
-      equivalencias: buildEquivalenciasSchema(),
-      suplementos: buildSuplementosSchema(),
-      planPatch: buildPlanSchema(false, false),
+      profilePatch: { type: 'object' },
+      equivalencias: {
+        type: 'array',
+        items: { type: 'object' },
+      },
+      suplementos: {
+        type: 'array',
+        items: { type: 'object' },
+      },
+      planPatch: { type: 'object' },
     },
   };
 }
@@ -561,7 +740,8 @@ async function generateContent(
   apiKey: string,
   modelName: string,
   systemInstruction: string,
-  responseSchema: Record<string, unknown>
+  responseSchema: Record<string, unknown>,
+  debugContext: GeminiDebugContext
 ) {
   const body = {
     system_instruction: {
@@ -576,7 +756,8 @@ async function generateContent(
     generationConfig: {
       temperature: 0.2,
       responseMimeType: 'application/json',
-      responseSchema,
+      responseJsonSchema: responseSchema,
+      maxOutputTokens: getMaxOutputTokens(modelName || 'gemini-2.5-flash', debugContext.requestMode),
     },
   };
 
@@ -599,18 +780,84 @@ async function generateContent(
       // Ignore JSON parse errors for API failures.
     }
 
-    throw new Error(`Gemini API Error: ${errorMessage}`);
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'generate-content',
+        selectedModel: modelName || 'gemini-2.5-flash',
+      },
+      {
+        rawMessage: `Gemini API Error: ${errorMessage}`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: safeParseJson(responseText),
+        },
+      }
+    );
   }
 
-  const responseJson = JSON.parse(responseText);
+  let responseJson: any;
+  try {
+    responseJson = JSON.parse(responseText);
+  } catch (error) {
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName || 'gemini-2.5-flash',
+      },
+      {
+        rawMessage: `La respuesta 200 de Gemini no fue JSON valido: ${error instanceof Error ? error.message : String(error)}`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseText,
+        },
+      }
+    );
+  }
+
   const candidates = responseJson?.candidates;
   if (!Array.isArray(candidates) || candidates.length === 0) {
-    throw new Error('La IA no genero candidatos validos para esta solicitud.');
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName || 'gemini-2.5-flash',
+      },
+      {
+        rawMessage: 'La IA no genero candidatos validos para esta solicitud.',
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseJson,
+        },
+      }
+    );
   }
 
   const finishReason = candidates[0]?.finishReason;
   if (finishReason && finishReason !== 'STOP') {
-    throw new Error(`La IA no pudo completar la respuesta (${finishReason}).`);
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName || 'gemini-2.5-flash',
+      },
+      {
+        rawMessage: `La IA no pudo completar la respuesta (${finishReason}).`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseJson,
+        },
+      }
+    );
   }
 
   const generatedText =
@@ -620,10 +867,86 @@ async function generateContent(
       .trim() || '';
 
   if (!generatedText) {
-    throw new Error('La IA devolvio una respuesta vacia.');
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName || 'gemini-2.5-flash',
+      },
+      {
+        rawMessage: 'La IA devolvio una respuesta vacia.',
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseJson,
+        },
+      }
+    );
   }
 
-  return JSON.parse(sanitizeAiJson(generatedText));
+  try {
+    return JSON.parse(sanitizeAiJson(generatedText));
+  } catch (error) {
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName || 'gemini-2.5-flash',
+      },
+      {
+        rawMessage: `La IA devolvio JSON no parseable: ${error instanceof Error ? error.message : String(error)}`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseJson,
+        },
+      }
+    );
+  }
+}
+
+async function generateContentWithFallback(
+  parts: GeminiPart[],
+  apiKey: string,
+  modelCandidates: string[],
+  systemInstruction: string,
+  responseSchema: Record<string, unknown>,
+  debugContext: GeminiDebugContext
+) {
+  let lastError: unknown;
+
+  for (let index = 0; index < modelCandidates.length; index += 1) {
+    const modelName = modelCandidates[index];
+
+    try {
+      const data = await generateContent(
+        parts,
+        apiKey,
+        modelName,
+        systemInstruction,
+        responseSchema,
+        {
+          ...debugContext,
+          selectedModel: modelName,
+        }
+      );
+
+      return {
+        data,
+        modelUsed: modelName,
+      };
+    } catch (error) {
+      lastError = error;
+
+      if (index === modelCandidates.length - 1 || !shouldRetryWithDifferentModel(error)) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 export async function callGeminiDirectly(
@@ -631,53 +954,106 @@ export async function callGeminiDirectly(
   apiKey: string,
   modelName: string
 ): Promise<any> {
-  const target = payload?.targetProfile || 'ambos';
+  const target: 'el' | 'ella' | 'ambos' =
+    payload?.targetProfile === 'el' || payload?.targetProfile === 'ella'
+      ? payload.targetProfile
+      : 'ambos';
+  const flow: AiDebugLog['flow'] = isPlanRevisionRequest(payload)
+    ? 'plan-revision'
+    : 'questionnaire-submit';
+  const requestMode: 'generate' | PlanRevisionMode = isPlanRevisionRequest(payload)
+    ? payload.requestMode
+    : 'generate';
+  const requestedModel = modelName || 'gemini-2.5-flash';
+  const modelCandidates = getDirectFallbackModels(requestedModel);
   let elData = null;
   let ellaData = null;
+  let elModelUsed: string | null = null;
+  let ellaModelUsed: string | null = null;
 
   if (isPlanRevisionRequest(payload)) {
     if (target === 'el' || target === 'ambos') {
       const elPayload = buildRevisionScopedPayload(payload, 'el');
-      elData = await generateContent(
+      const result = await generateContentWithFallback(
         buildRevisionRequestParts('EL', payload, elPayload),
         apiKey,
-        modelName,
+        modelCandidates,
         buildRevisionSystemPrompt('EL', payload.requestMode),
         payload.requestMode === 'regenerate'
           ? buildFullResponseSchema('EL')
-          : buildAdjustResponseSchema()
+          : buildAdjustResponseSchema(),
+        {
+          flow,
+          transport: 'direct-browser',
+          stage: 'generate-content',
+          payload,
+          targetProfile: target,
+          profilePrefix: 'EL',
+          requestMode,
+          requestedModel,
+          apiKeySource: 'custom-browser',
+        }
       );
+      elData = result.data;
+      elModelUsed = result.modelUsed;
     }
 
     if (target === 'ella' || target === 'ambos') {
       const ellaPayload = buildRevisionScopedPayload(payload, 'ella');
-      ellaData = await generateContent(
+      const result = await generateContentWithFallback(
         buildRevisionRequestParts('ELLA', payload, ellaPayload),
         apiKey,
-        modelName,
+        modelCandidates,
         buildRevisionSystemPrompt('ELLA', payload.requestMode),
         payload.requestMode === 'regenerate'
           ? buildFullResponseSchema('ELLA')
-          : buildAdjustResponseSchema()
+          : buildAdjustResponseSchema(),
+        {
+          flow,
+          transport: 'direct-browser',
+          stage: 'generate-content',
+          payload,
+          targetProfile: target,
+          profilePrefix: 'ELLA',
+          requestMode,
+          requestedModel,
+          apiKeySource: 'custom-browser',
+        }
       );
+      ellaData = result.data;
+      ellaModelUsed = result.modelUsed;
     }
 
     return {
       responseMode: payload.requestMode,
       elData,
       ellaData,
+      modelUsed: Array.from(new Set([elModelUsed, ellaModelUsed].filter(Boolean))).join(', '),
     } satisfies PlanRevisionResponse;
   }
 
   if (target === 'el' || target === 'ambos') {
     const elPayload = target === 'ambos' ? buildScopedPayload(payload, payload?.el) : payload;
-    elData = await generateContent(
+    const result = await generateContentWithFallback(
       buildRequestParts('EL', elPayload),
       apiKey,
-      modelName,
+      modelCandidates,
       buildSystemPrompt('EL'),
-      buildFullResponseSchema('EL')
+      buildFullResponseSchema('EL'),
+      {
+        flow,
+        transport: 'direct-browser',
+        stage: 'generate-content',
+        payload,
+        targetProfile: target,
+        profilePrefix: 'EL',
+        requestMode,
+        requestedModel,
+        apiKeySource: 'custom-browser',
+      }
     );
+    elData = result.data;
+    elModelUsed = result.modelUsed;
   }
 
   if (target === 'ella' || target === 'ambos') {
@@ -688,14 +1064,31 @@ export async function callGeminiDirectly(
       ellaPayload.companionPlan = elData.planEL;
     }
 
-    ellaData = await generateContent(
+    const result = await generateContentWithFallback(
       buildRequestParts('ELLA', ellaPayload),
       apiKey,
-      modelName,
+      modelCandidates,
       buildSystemPrompt('ELLA'),
-      buildFullResponseSchema('ELLA')
+      buildFullResponseSchema('ELLA'),
+      {
+        flow,
+        transport: 'direct-browser',
+        stage: 'generate-content',
+        payload,
+        targetProfile: target,
+        profilePrefix: 'ELLA',
+        requestMode,
+        requestedModel,
+        apiKeySource: 'custom-browser',
+      }
     );
+    ellaData = result.data;
+    ellaModelUsed = result.modelUsed;
   }
 
-  return { elData, ellaData };
+  return {
+    elData,
+    ellaData,
+    modelUsed: Array.from(new Set([elModelUsed, ellaModelUsed].filter(Boolean))).join(', '),
+  };
 }

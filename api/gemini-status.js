@@ -10,6 +10,24 @@ function modelSupportsGenerateContent(model) {
   return methods.includes('generateContent');
 }
 
+function isTextGenerationModel(modelName) {
+  const normalized = normalizeModelName(modelName).toLowerCase();
+  const allowedPatterns = [
+    /^gemini-2\.5-flash$/,
+    /^gemini-2\.5-flash-lite$/,
+    /^gemini-2\.5-pro$/,
+    /^gemini-2\.0-flash(?:-001)?$/,
+    /^gemini-2\.0-flash-lite(?:-001)?$/,
+    /^gemini-1\.5-flash$/,
+    /^gemini-1\.5-pro$/,
+    /^gemini-flash-latest$/,
+    /^gemini-flash-lite-latest$/,
+    /^gemini-pro-latest$/,
+  ];
+
+  return allowedPatterns.some((pattern) => pattern.test(normalized));
+}
+
 async function listAvailableModels(apiKey) {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
   const json = await res.json();
@@ -18,7 +36,9 @@ async function listAvailableModels(apiKey) {
     throw new Error(json?.error?.message || 'No fue posible listar modelos disponibles de Gemini.');
   }
 
-  return (json?.models || []).filter(modelSupportsGenerateContent);
+  return (json?.models || []).filter(
+    (model) => modelSupportsGenerateContent(model) && isTextGenerationModel(model?.name)
+  );
 }
 
 function getModelPriority(name) {

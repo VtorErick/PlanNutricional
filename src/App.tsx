@@ -49,6 +49,7 @@ export default function App() {
     handleGenerateWithAi,
     generationLoading,
     generationError,
+    generationErrorLog,
     geminiModel,
     setGeminiModel,
     geminiAvailableModels,
@@ -124,6 +125,7 @@ export default function App() {
                 }}
                 loading={generationLoading}
                 errorMessage={generationError}
+                aiErrorLog={generationErrorLog}
                 geminiModel={geminiModel}
                 setGeminiModel={setGeminiModel}
                 availableGeminiModels={geminiAvailableModels}

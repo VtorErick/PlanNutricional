@@ -26,6 +26,24 @@ function modelSupportsGenerateContent(model: any) {
   return (model?.supportedGenerationMethods || []).includes('generateContent');
 }
 
+function isTextGenerationModel(modelName: string) {
+  const normalized = normalizeModelName(modelName).toLowerCase();
+  const allowedPatterns = [
+    /^gemini-2\.5-flash$/,
+    /^gemini-2\.5-flash-lite$/,
+    /^gemini-2\.5-pro$/,
+    /^gemini-2\.0-flash(?:-001)?$/,
+    /^gemini-2\.0-flash-lite(?:-001)?$/,
+    /^gemini-1\.5-flash$/,
+    /^gemini-1\.5-pro$/,
+    /^gemini-flash-latest$/,
+    /^gemini-flash-lite-latest$/,
+    /^gemini-pro-latest$/,
+  ];
+
+  return allowedPatterns.some((pattern) => pattern.test(normalized));
+}
+
 function getModelPriority(name: string) {
   const normalized = normalizeModelName(name);
   const priorityMatchers = [
@@ -68,7 +86,9 @@ async function listAvailableModelsDirect(apiKey: string) {
     throw new Error(json?.error?.message || `Error ${response.status} validando Gemini.`);
   }
 
-  return (json?.models || []).filter(modelSupportsGenerateContent);
+  return (json?.models || []).filter(
+    (model: any) => modelSupportsGenerateContent(model) && isTextGenerationModel(model?.name)
+  );
 }
 
 async function verifyGenerationDirect(apiKey: string, modelName: string) {

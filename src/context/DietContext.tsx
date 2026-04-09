@@ -24,6 +24,11 @@ import { fetchGeminiStatus, type GeminiStatusResponse } from '../services/gemini
 import { APP_STORAGE_ERROR_EVENT, type AppStorageErrorDetail } from '../utils/storageEvents';
 import { readStorageValue, removeStorageValue, writeStorageValue } from '../utils/safeStorage';
 import {
+  extractAiDebugLog,
+  resolveAiErrorMessage,
+  type AiDebugLog,
+} from '../utils/aiDiagnostics';
+import {
   applyPlanRevisionPatchToBucket,
   buildRawBucketFromSnapshot,
   buildSerializableProfileSnapshot,
@@ -610,9 +615,11 @@ interface DietContextType {
   }) => Promise<GeminiStatusResponse | null>;
   generationLoading: boolean;
   generationError: string;
+  generationErrorLog: AiDebugLog | null;
   lastGeneratedData: any;
   planRevisionLoading: boolean;
   planRevisionError: string;
+  planRevisionErrorLog: AiDebugLog | null;
   lastQuestionnaireContext: any;
   handleGenerateWithAi: (payload: QuestionnairePayload) => Promise<void>;
   handleRevisePlanWithAi: (payload: PlanRevisionRequest) => Promise<void>;
@@ -760,8 +767,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [geminiAvailabilityMessage, setGeminiAvailabilityMessage] = useState('');
   const [generationLoading, setGenerationLoading] = useState(false);
   const [generationError, setGenerationError] = useState('');
+  const [generationErrorLog, setGenerationErrorLog] = useState<AiDebugLog | null>(null);
   const [planRevisionLoading, setPlanRevisionLoading] = useState(false);
   const [planRevisionError, setPlanRevisionError] = useState('');
+  const [planRevisionErrorLog, setPlanRevisionErrorLog] = useState<AiDebugLog | null>(null);
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
   const [lastQuestionnaireContext, setLastQuestionnaireContext] = useLocalStorage<any>(
     'lastQuestionnaireContext',
@@ -1227,7 +1236,13 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       } catch {
         throw new Error('SERVER_UNAVAILABLE');
       }
-      if (!res.ok) throw new Error(json?.error || `Error ${res.status}`);
+      if (!res.ok) {
+        const serverError = new Error(json?.error || `Error ${res.status}`) as Error & {
+          aiDebugLog?: AiDebugLog | null;
+        };
+        serverError.aiDebugLog = json?.aiDebugLog || null;
+        throw serverError;
+      }
     } catch (serverErr: any) {
       const isServerUnavailable = serverErr.message === 'SERVER_UNAVAILABLE' ||
         serverErr.message?.includes('fetch') ||
@@ -1252,6 +1267,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
   const handleGenerateWithAi = useCallback(async (payload: QuestionnairePayload) => {
     setGenerationError('');
+    setGenerationErrorLog(null);
     setGenerationLoading(true);
     try {
       const customApiKey = geminiApiKey.trim();
@@ -1273,7 +1289,13 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         if (!responseText || responseText.trim() === '') throw new Error('SERVER_UNAVAILABLE');
         if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) throw new Error('SERVER_UNAVAILABLE');
         try { json = JSON.parse(responseText); } catch { throw new Error('SERVER_UNAVAILABLE'); }
-        if (!res.ok) throw new Error(json?.error || `Error ${res.status}`);
+        if (!res.ok) {
+          const serverError = new Error(json?.error || `Error ${res.status}`) as Error & {
+            aiDebugLog?: AiDebugLog | null;
+          };
+          serverError.aiDebugLog = json?.aiDebugLog || null;
+          throw serverError;
+        }
       } catch (serverErr: any) {
         const isServerUnavailable = serverErr.message === 'SERVER_UNAVAILABLE' ||
           serverErr.message?.includes('fetch') ||
@@ -1321,11 +1343,15 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         ella: json.ellaData ? 'custom' : prev.ella,
       }));
 
+      setGenerationErrorLog(null);
       setShowQuestionnaire(false);
       await notify('Plan generado', usedDirectApi ? '¡Plan generado con IA (modo directo)!' : '¡Plan generado con IA y cargado automáticamente!');
     } catch (err: any) {
       console.error('Error en handleGenerateWithAi:', err);
-      setGenerationError(err?.message || 'Error desconocido al generar con IA.');
+      setGenerationErrorLog(extractAiDebugLog(err));
+      setGenerationError(
+        resolveAiErrorMessage(err, 'Error desconocido al generar con IA.')
+      );
     } finally {
       setGenerationLoading(false);
     }
@@ -1333,6 +1359,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
   const handleRevisePlanWithAi = useCallback(async (payload: PlanRevisionRequest) => {
     setPlanRevisionError('');
+    setPlanRevisionErrorLog(null);
     setPlanRevisionLoading(true);
 
     try {
@@ -1451,6 +1478,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       }));
 
       setLastGeneratedData(json);
+      setPlanRevisionErrorLog(null);
 
       await notify(
         payload.requestMode === 'regenerate' ? 'Plan recreado' : 'Plan actualizado con IA',
@@ -1458,7 +1486,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       );
     } catch (error: any) {
       console.error('Error en handleRevisePlanWithAi:', error);
-      setPlanRevisionError(error?.message || 'No se pudo actualizar el plan con IA.');
+      setPlanRevisionErrorLog(extractAiDebugLog(error));
+      setPlanRevisionError(
+        resolveAiErrorMessage(error, 'No se pudo actualizar el plan con IA.')
+      );
       throw error;
     } finally {
       setPlanRevisionLoading(false);
@@ -1602,6 +1633,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     if (showQuestionnaire && !questionnaireStepIdx) {
       setLastGeneratedData(null);
       setGenerationError('');
+      setGenerationErrorLog(null);
     }
   }, [showQuestionnaire, questionnaireStepIdx]);
 
@@ -1729,8 +1761,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     geminiAvailabilityLoading,
     geminiAvailabilityMessage,
     refreshGeminiAvailability,
-    generationLoading, generationError, lastGeneratedData,
-    planRevisionLoading, planRevisionError, lastQuestionnaireContext,
+    generationLoading, generationError, generationErrorLog, lastGeneratedData,
+    planRevisionLoading, planRevisionError, planRevisionErrorLog, lastQuestionnaireContext,
     handleGenerateWithAi, handleRevisePlanWithAi,
     questionnaireTargetProfile, setQuestionnaireTargetProfile,
     questionnaireStepIdx, setQuestionnaireStepIdx,

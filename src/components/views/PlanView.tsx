@@ -101,6 +101,7 @@ export default function PlanView() {
     isDarkMode,
     planRevisionLoading,
     planRevisionError,
+    planRevisionErrorLog,
     lastQuestionnaireContext,
     handleRevisePlanWithAi,
     geminiApiKey,
@@ -910,6 +911,7 @@ export default function PlanView() {
         accentClasses={ac}
         loading={planRevisionLoading}
         errorMessage={planRevisionError}
+        aiErrorLog={planRevisionErrorLog}
         hasQuestionnaireContext={Boolean(lastQuestionnaireContext)}
         defaultTarget={defaultPlanAiTarget}
         targetOptions={planAiTargetOptions}
