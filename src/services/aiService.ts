@@ -556,6 +556,87 @@ function sanitizeAiJson(text: string) {
   return cleaned.slice(firstBrace, lastBrace + 1);
 }
 
+function normalizeModelName(modelName: string) {
+  if (!modelName) return '';
+  return modelName.replace(/^models\//, '').trim();
+}
+
+function modelSupportsGenerateContent(model: any) {
+  return (model?.supportedGenerationMethods || []).includes('generateContent');
+}
+
+async function listAvailableModels(apiKey: string) {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+  const json = await response.json();
+
+  if (!response.ok) {
+    throw new Error(json?.error?.message || 'No fue posible listar modelos disponibles de Gemini.');
+  }
+
+  return (json?.models || []).filter(modelSupportsGenerateContent);
+}
+
+function pickBestModel(models: any[], preferredModelRaw: string) {
+  const preferredModel = normalizeModelName(preferredModelRaw);
+  if (!models.length) {
+    throw new Error('No hay modelos compatibles con generateContent en tu API key.');
+  }
+
+  const modelNames = models.map((model) => normalizeModelName(model.name));
+
+  if (preferredModel && modelNames.includes(preferredModel)) {
+    return preferredModel;
+  }
+
+  const priorityMatchers = [
+    /^gemini-2\.5-pro/i,
+    /^gemini-2\.5-flash/i,
+    /^gemini-2\.0-flash/i,
+    /^gemini-2\.5-flash-lite/i,
+    /^gemini-2\.0-flash-lite/i,
+    /^gemini-1\.5-pro/i,
+    /^gemini-1\.5-flash/i,
+    /^gemini-flash-latest/i,
+    /^gemini-2\.0-pro/i,
+  ];
+
+  for (const matcher of priorityMatchers) {
+    const match = modelNames.find((name) => matcher.test(name));
+    if (match) return match;
+  }
+
+  return modelNames[0];
+}
+
+function getModelAttemptOrder(models: any[], preferredModelRaw: string) {
+  const preferredModel = normalizeModelName(preferredModelRaw);
+  const modelNames = models.map((model) => normalizeModelName(model.name)).filter(Boolean);
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+
+  const pushModel = (name: string) => {
+    if (!name || seen.has(name) || !modelNames.includes(name)) return;
+    seen.add(name);
+    ordered.push(name);
+  };
+
+  pushModel(preferredModel);
+  pushModel(pickBestModel(models, preferredModelRaw));
+  modelNames.forEach(pushModel);
+
+  return ordered;
+}
+
+function isQuotaError(status: number, message: string) {
+  const normalized = String(message || '').toLowerCase();
+  return (
+    status === 429 ||
+    normalized.includes('quota exceeded') ||
+    normalized.includes('rate limit') ||
+    normalized.includes('resource has been exhausted')
+  );
+}
+
 function buildScopedPayload(payload: any, profileData?: any) {
   const { el, ella, ...basePayload } = payload || {};
   return {
@@ -642,9 +723,15 @@ async function generateContent(
         } catch {
           // Ignore JSON parse errors for API failures.
         }
+        if (isQuotaError(response.status, fallbackErrorMessage)) {
+          throw new Error('Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.');
+        }
         throw new Error(`Gemini API Error: ${fallbackErrorMessage}`);
       }
     } else {
+      if (isQuotaError(response.status, errorMessage)) {
+        throw new Error('Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.');
+      }
       throw new Error(`Gemini API Error: ${errorMessage}`);
     }
   }
@@ -673,11 +760,40 @@ async function generateContent(
   return JSON.parse(sanitizeAiJson(generatedText));
 }
 
+async function generateWithModelFallback({
+  attemptModels,
+  runForModel,
+}: {
+  attemptModels: string[];
+  runForModel: (modelName: string) => Promise<any>;
+}) {
+  const triedModels: string[] = [];
+
+  for (const modelName of attemptModels) {
+    triedModels.push(modelName);
+    try {
+      const data = await runForModel(modelName);
+      return { data, modelUsed: modelName };
+    } catch (error: any) {
+      if (isQuotaError(0, error?.message || '')) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(
+    `Limite de solicitudes rebasado (Error 429) en todos los modelos intentados: ${triedModels.join(', ')}. Intenta de nuevo en 1 minuto o usa otra API key.`
+  );
+}
+
 export async function callGeminiDirectly(
   payload: any,
   apiKey: string,
   modelName: string
 ): Promise<any> {
+  const models = await listAvailableModels(apiKey);
+  const modelAttemptOrder = getModelAttemptOrder(models, modelName);
   const target = payload?.targetProfile || 'ambos';
   let elData = null;
   let ellaData = null;
@@ -685,28 +801,36 @@ export async function callGeminiDirectly(
   if (isPlanRevisionRequest(payload)) {
     if (target === 'el' || target === 'ambos') {
       const elPayload = buildRevisionScopedPayload(payload, 'el');
-      elData = await generateContent(
-        buildRevisionRequestParts('EL', payload, elPayload),
-        apiKey,
-        modelName,
-        buildRevisionSystemPrompt('EL', payload.requestMode),
-        payload.requestMode === 'regenerate'
-          ? buildFullResponseSchema('EL')
-          : buildAdjustResponseSchema()
-      );
+      const elResult = await generateWithModelFallback({
+        attemptModels: modelAttemptOrder,
+        runForModel: (attemptModelName) => generateContent(
+          buildRevisionRequestParts('EL', payload, elPayload),
+          apiKey,
+          attemptModelName,
+          buildRevisionSystemPrompt('EL', payload.requestMode),
+          payload.requestMode === 'regenerate'
+            ? buildFullResponseSchema('EL')
+            : buildAdjustResponseSchema()
+        ),
+      });
+      elData = elResult.data;
     }
 
     if (target === 'ella' || target === 'ambos') {
       const ellaPayload = buildRevisionScopedPayload(payload, 'ella');
-      ellaData = await generateContent(
-        buildRevisionRequestParts('ELLA', payload, ellaPayload),
-        apiKey,
-        modelName,
-        buildRevisionSystemPrompt('ELLA', payload.requestMode),
-        payload.requestMode === 'regenerate'
-          ? buildFullResponseSchema('ELLA')
-          : buildAdjustResponseSchema()
-      );
+      const ellaResult = await generateWithModelFallback({
+        attemptModels: modelAttemptOrder,
+        runForModel: (attemptModelName) => generateContent(
+          buildRevisionRequestParts('ELLA', payload, ellaPayload),
+          apiKey,
+          attemptModelName,
+          buildRevisionSystemPrompt('ELLA', payload.requestMode),
+          payload.requestMode === 'regenerate'
+            ? buildFullResponseSchema('ELLA')
+            : buildAdjustResponseSchema()
+        ),
+      });
+      ellaData = ellaResult.data;
     }
 
     return {
@@ -718,13 +842,17 @@ export async function callGeminiDirectly(
 
   if (target === 'el' || target === 'ambos') {
     const elPayload = target === 'ambos' ? buildScopedPayload(payload, payload?.el) : payload;
-    elData = await generateContent(
-      buildRequestParts('EL', elPayload),
-      apiKey,
-      modelName,
-      buildSystemPrompt('EL'),
-      buildFullResponseSchema('EL')
-    );
+    const elResult = await generateWithModelFallback({
+      attemptModels: modelAttemptOrder,
+      runForModel: (attemptModelName) => generateContent(
+        buildRequestParts('EL', elPayload),
+        apiKey,
+        attemptModelName,
+        buildSystemPrompt('EL'),
+        buildFullResponseSchema('EL')
+      ),
+    });
+    elData = elResult.data;
   }
 
   if (target === 'ella' || target === 'ambos') {
@@ -735,13 +863,17 @@ export async function callGeminiDirectly(
       ellaPayload.companionPlan = elData.planEL;
     }
 
-    ellaData = await generateContent(
-      buildRequestParts('ELLA', ellaPayload),
-      apiKey,
-      modelName,
-      buildSystemPrompt('ELLA'),
-      buildFullResponseSchema('ELLA')
-    );
+    const ellaResult = await generateWithModelFallback({
+      attemptModels: modelAttemptOrder,
+      runForModel: (attemptModelName) => generateContent(
+        buildRequestParts('ELLA', ellaPayload),
+        apiKey,
+        attemptModelName,
+        buildSystemPrompt('ELLA'),
+        buildFullResponseSchema('ELLA')
+      ),
+    });
+    ellaData = ellaResult.data;
   }
 
   return { elData, ellaData };

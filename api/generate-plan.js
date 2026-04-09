@@ -597,6 +597,46 @@ function pickBestModel(models, preferredModelRaw) {
   return modelNames[0];
 }
 
+function getModelAttemptOrder(models, preferredModelRaw) {
+  const preferredModel = normalizeModelName(preferredModelRaw);
+  const modelNames = models.map((model) => normalizeModelName(model.name)).filter(Boolean);
+  const seen = new Set();
+  const ordered = [];
+
+  const pushModel = (name) => {
+    if (!name || seen.has(name) || !modelNames.includes(name)) return;
+    seen.add(name);
+    ordered.push(name);
+  };
+
+  pushModel(preferredModel);
+  pushModel(pickBestModel(models, preferredModelRaw));
+  modelNames.forEach(pushModel);
+
+  return ordered;
+}
+
+function parseGeminiErrorMessage(status, responseText) {
+  let errorMessage = `Error ${status} llamando a Gemini`;
+  try {
+    const errorJson = JSON.parse(responseText);
+    errorMessage = errorJson?.error?.message || errorMessage;
+  } catch {
+    // Ignore parse errors for API failures.
+  }
+  return errorMessage;
+}
+
+function isQuotaError(status, message) {
+  const normalized = String(message || '').toLowerCase();
+  return (
+    status === 429 ||
+    normalized.includes('quota exceeded') ||
+    normalized.includes('rate limit') ||
+    normalized.includes('resource has been exhausted')
+  );
+}
+
 function buildScopedPayload(payload, profileData) {
   const { el, ella, ...basePayload } = payload || {};
   return {
@@ -652,14 +692,7 @@ async function generateWithGemini(parts, apiKey, modelName, systemInstruction, r
   let { response, responseText } = await requestGemini(true);
 
   if (!response.ok) {
-    let errorMessage = `Error ${response.status} llamando a Gemini`;
-
-    try {
-      const errorJson = JSON.parse(responseText);
-      errorMessage = errorJson?.error?.message || errorMessage;
-    } catch {
-      // Ignore parse errors for API failures.
-    }
+    let errorMessage = parseGeminiErrorMessage(response.status, responseText);
 
     const statesConstraintError =
       errorMessage.toLowerCase().includes('too many states for serving');
@@ -667,15 +700,9 @@ async function generateWithGemini(parts, apiKey, modelName, systemInstruction, r
     if (statesConstraintError) {
       ({ response, responseText } = await requestGemini(false));
       if (!response.ok) {
-        let fallbackErrorMessage = `Error ${response.status} llamando a Gemini`;
-        try {
-          const fallbackErrorJson = JSON.parse(responseText);
-          fallbackErrorMessage = fallbackErrorJson?.error?.message || fallbackErrorMessage;
-        } catch {
-          // Ignore parse errors for API failures.
-        }
+        let fallbackErrorMessage = parseGeminiErrorMessage(response.status, responseText);
 
-        if (response.status === 429 || fallbackErrorMessage.toLowerCase().includes('quota exceeded')) {
+        if (isQuotaError(response.status, fallbackErrorMessage)) {
           fallbackErrorMessage = 'Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.';
         }
 
@@ -686,7 +713,7 @@ async function generateWithGemini(parts, apiKey, modelName, systemInstruction, r
         throw new Error(fallbackErrorMessage);
       }
     } else {
-      if (response.status === 429 || errorMessage.toLowerCase().includes('quota exceeded')) {
+      if (isQuotaError(response.status, errorMessage)) {
         errorMessage = 'Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.';
       }
 
@@ -721,6 +748,27 @@ async function generateWithGemini(parts, apiKey, modelName, systemInstruction, r
   }
 
   return JSON.parse(sanitizeAiJson(generatedText));
+}
+
+async function generateWithModelFallback({ attemptModels, runForModel }) {
+  const triedModels = [];
+
+  for (const modelName of attemptModels) {
+    triedModels.push(modelName);
+    try {
+      const data = await runForModel(modelName);
+      return { data, modelUsed: modelName };
+    } catch (error) {
+      if (isQuotaError(0, error?.message)) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(
+    `Limite de solicitudes rebasado (Error 429) en todos los modelos intentados: ${triedModels.join(', ')}. Intenta de nuevo en 1 minuto o usa otra API key.`
+  );
 }
 
 export default async function handler(req, res) {
@@ -798,34 +846,43 @@ export default async function handler(req, res) {
     }
 
     const models = await listAvailableModels(apiKey);
-    const selectedModel = pickBestModel(models, preferredModel);
+    const modelAttemptOrder = getModelAttemptOrder(models, preferredModel);
+    const selectedModel = modelAttemptOrder[0];
 
     let elData = null;
     let ellaData = null;
 
     if (isPlanRevisionRequest(payload)) {
       if (target === 'el' || target === 'ambos') {
-        elData = await generateWithGemini(
-          buildRevisionRequestParts('EL', payload, buildRevisionScopedPayload(payload, 'el')),
-          apiKey,
-          selectedModel,
-          buildRevisionSystemPrompt('EL', payload.requestMode),
-          payload.requestMode === 'regenerate'
-            ? buildFullResponseSchema('EL')
-            : buildAdjustResponseSchema()
-        );
+        const elResult = await generateWithModelFallback({
+          attemptModels: modelAttemptOrder,
+          runForModel: (modelName) => generateWithGemini(
+            buildRevisionRequestParts('EL', payload, buildRevisionScopedPayload(payload, 'el')),
+            apiKey,
+            modelName,
+            buildRevisionSystemPrompt('EL', payload.requestMode),
+            payload.requestMode === 'regenerate'
+              ? buildFullResponseSchema('EL')
+              : buildAdjustResponseSchema()
+          ),
+        });
+        elData = elResult.data;
       }
 
       if (target === 'ella' || target === 'ambos') {
-        ellaData = await generateWithGemini(
-          buildRevisionRequestParts('ELLA', payload, buildRevisionScopedPayload(payload, 'ella')),
-          apiKey,
-          selectedModel,
-          buildRevisionSystemPrompt('ELLA', payload.requestMode),
-          payload.requestMode === 'regenerate'
-            ? buildFullResponseSchema('ELLA')
-            : buildAdjustResponseSchema()
-        );
+        const ellaResult = await generateWithModelFallback({
+          attemptModels: modelAttemptOrder,
+          runForModel: (modelName) => generateWithGemini(
+            buildRevisionRequestParts('ELLA', payload, buildRevisionScopedPayload(payload, 'ella')),
+            apiKey,
+            modelName,
+            buildRevisionSystemPrompt('ELLA', payload.requestMode),
+            payload.requestMode === 'regenerate'
+              ? buildFullResponseSchema('ELLA')
+              : buildAdjustResponseSchema()
+          ),
+        });
+        ellaData = ellaResult.data;
       }
 
       return res.status(200).json({
@@ -838,13 +895,17 @@ export default async function handler(req, res) {
 
     if (target === 'el' || target === 'ambos') {
       const payloadEl = target === 'ambos' ? buildScopedPayload(payload, payload.el) : payload;
-      elData = await generateWithGemini(
-        buildRequestParts('EL', payloadEl),
-        apiKey,
-        selectedModel,
-        buildSystemPrompt('EL'),
-        buildFullResponseSchema('EL')
-      );
+      const elResult = await generateWithModelFallback({
+        attemptModels: modelAttemptOrder,
+        runForModel: (modelName) => generateWithGemini(
+          buildRequestParts('EL', payloadEl),
+          apiKey,
+          modelName,
+          buildSystemPrompt('EL'),
+          buildFullResponseSchema('EL')
+        ),
+      });
+      elData = elResult.data;
     }
 
     if (target === 'ella' || target === 'ambos') {
@@ -853,13 +914,17 @@ export default async function handler(req, res) {
         payloadElla.companionPlan = elData.planEL;
       }
 
-      ellaData = await generateWithGemini(
-        buildRequestParts('ELLA', payloadElla),
-        apiKey,
-        selectedModel,
-        buildSystemPrompt('ELLA'),
-        buildFullResponseSchema('ELLA')
-      );
+      const ellaResult = await generateWithModelFallback({
+        attemptModels: modelAttemptOrder,
+        runForModel: (modelName) => generateWithGemini(
+          buildRequestParts('ELLA', payloadElla),
+          apiKey,
+          modelName,
+          buildSystemPrompt('ELLA'),
+          buildFullResponseSchema('ELLA')
+        ),
+      });
+      ellaData = ellaResult.data;
     }
 
     return res.status(200).json({ elData, ellaData, modelUsed: selectedModel });
