@@ -91,10 +91,17 @@ function truncateText(value: unknown, max = 180): string {
 }
 
 export function buildCompactRevisionSnapshot(
-  snapshot: SerializableProfileSnapshot
+  snapshot: SerializableProfileSnapshot,
+  options?: {
+    allowedMoments?: string[];
+  }
 ): SerializableProfileSnapshot {
   const perfil = snapshot?.perfil || {};
   const plan = snapshot?.plan || {};
+  const allowedMoments = new Set(
+    Array.isArray(options?.allowedMoments) ? options.allowedMoments : []
+  );
+  const filterByMoment = allowedMoments.size > 0;
 
   const compactPlan = Object.fromEntries(
     Object.entries(plan).map(([dayKey, dayValue]) => {
@@ -102,13 +109,14 @@ export function buildCompactRevisionSnapshot(
 
       const compactDay = Object.fromEntries(
         Object.entries(dayValue).map(([momentKey, meals]) => {
+          if (filterByMoment && !allowedMoments.has(momentKey)) return [momentKey, []];
           if (!Array.isArray(meals)) return [momentKey, []];
           return [
             momentKey,
-            meals.slice(0, 3).map((meal: any) => ({
+            meals.slice(0, 1).map((meal: any) => ({
               nombre: truncateText(meal?.nombre, 100),
               porciones: truncateText(meal?.porciones, 120),
-              detalle: truncateText(meal?.detalle, 180),
+              detalle: truncateText(meal?.detalle, 90),
               tags: [],
               super: [],
               caloriasKcal: Number.isFinite(meal?.caloriasKcal) ? meal.caloriasKcal : 0,

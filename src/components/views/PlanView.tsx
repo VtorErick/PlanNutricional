@@ -77,6 +77,21 @@ function buildMealMacroLine(meal: MealItem) {
   return parts.join(' - ');
 }
 
+function detectMomentsFromInstruction(instruction: string): string[] {
+  const text = (instruction || '').toLowerCase();
+  const aliases: Array<{ key: string; patterns: RegExp[] }> = [
+    { key: 'desayuno', patterns: [/desayuno/, /desayunos/, /breakfast/, /cafe/, /té/, /te verde/] },
+    { key: 'colacion_am', patterns: [/colaci[oó]n am/, /colacion am/, /media ma[nñ]ana/, /snack ma[nñ]ana/] },
+    { key: 'comida', patterns: [/comida/, /almuerzo/, /lunch/] },
+    { key: 'colacion_pm', patterns: [/colaci[oó]n pm/, /colacion pm/, /snack tarde/, /media tarde/, /merienda/] },
+    { key: 'cena', patterns: [/cena/, /cenas/, /dinner/] },
+  ];
+
+  return aliases
+    .filter(({ patterns }) => patterns.some((pattern) => pattern.test(text)))
+    .map(({ key }) => key);
+}
+
 export default function PlanView() {
   const {
     perfilActivo,
@@ -397,12 +412,17 @@ export default function PlanView() {
     targetProfile: PlanRevisionRequest['targetProfile'];
     instruction: string;
   }) => {
+    const allowedMomentsForAdjust = requestMode === 'adjust'
+      ? detectMomentsFromInstruction(instruction)
+      : [];
+
     const buildSnapshot = (perfilId: 'el' | 'ella') => buildCompactRevisionSnapshot(
       buildSerializableProfileSnapshot(
         perfilesData[perfilId],
         equivalenciasData[perfilId],
         supplementsData[perfilId]
-      )
+      ),
+      { allowedMoments: allowedMomentsForAdjust }
     );
 
     const buildDefaultSnapshot = (perfilId: 'el' | 'ella') => buildCompactRevisionSnapshot(
@@ -410,7 +430,8 @@ export default function PlanView() {
         defaultPerfilesData[perfilId],
         defaultEquivalenciasData[perfilId],
         defaultSupplementsData[perfilId]
-      )
+      ),
+      { allowedMoments: allowedMomentsForAdjust }
     );
 
     const revisionPayload: PlanRevisionRequest = {
