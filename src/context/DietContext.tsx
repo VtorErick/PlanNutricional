@@ -28,6 +28,7 @@ import {
   createClientAiError,
   extractAiDebugLog,
   resolveAiErrorMessage,
+  type AiDebugAttempt,
   type AiDebugLog,
 } from '../utils/aiDiagnostics';
 import {
@@ -759,14 +760,15 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         'geminiModel'
       );
       const validModels = [
-        'gemini-flash-lite-latest',
-        'gemini-2.5-flash-lite',
-        'gemini-2.0-flash-lite',
-        'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
         'gemini-2.5-pro',
         'gemini-2.5-flash',
+        'gemini-3-flash-preview',
+        'gemini-2.5-flash-lite',
+        'gemini-3.1-flash-lite-preview',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-flash-latest',
+        'gemini-flash-lite-latest',
       ];
       if (!saved || !validModels.includes(saved)) return DEFAULT_GEMINI_MODEL;
       return saved;
@@ -1221,6 +1223,36 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const totalMomentosProgress = isAmbos ? perfilBase.momentos.length * 2 : perfilBase.momentos.length;
 
   // ─── AI Generation Handler ─────────────────────────────────────────
+  const buildAttemptHistoryFromModelUsed = useCallback((
+    modelUsed: unknown,
+    stage: AiDebugLog['stage'],
+    rawMessage: string,
+    statusCode = 200
+  ): AiDebugAttempt[] | undefined => {
+    if (typeof modelUsed !== 'string' || !modelUsed.trim()) {
+      return undefined;
+    }
+
+    const orderedModels = modelUsed
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .filter((entry, index, source) => source.indexOf(entry) === index);
+
+    if (!orderedModels.length) {
+      return undefined;
+    }
+
+    return orderedModels.map((model, index) => ({
+      order: index + 1,
+      model,
+      stage,
+      statusCode,
+      rawMessage,
+      willRetry: false,
+    }));
+  }, []);
+
   const requestAiResponse = useCallback(async (payload: any) => {
     const customApiKey = geminiApiKey.trim();
     const payloadWithKey = {
@@ -1230,6 +1262,12 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     };
     let json: any;
     let usedDirectApi = false;
+
+    if (customApiKey) {
+      usedDirectApi = true;
+      json = await callGeminiDirectly(payloadWithKey, customApiKey, geminiModel);
+      return { json, usedDirectApi, payloadWithKey, customApiKey };
+    }
 
     try {
       const res = await fetch('/api/generate-plan', {
@@ -1260,29 +1298,25 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         serverErr.message?.includes('Failed to fetch') ||
         serverErr.message?.includes('NetworkError');
 
-      if (isServerUnavailable) {
-        if (!customApiKey) {
-          throw createClientAiError(
-            createClientAiDebugLog({
-              flow: payload?.requestMode ? 'plan-revision' : 'questionnaire-submit',
-              transport: 'serverless',
-              stage: 'generate-content',
-              targetProfile: payload?.targetProfile,
-              requestMode: payload?.requestMode || 'generate',
-              requestedModel: geminiModel,
-              apiKeySource: 'server-env',
-              requestPayload: payloadWithKey,
-              rawMessage:
-                'No fue posible contactar la API del servidor. La respuesta estuvo vacia, fue HTML o fallo la red antes de obtener JSON.',
-            }),
-            503
-          );
-        }
-        usedDirectApi = true;
-        json = await callGeminiDirectly(payloadWithKey, customApiKey, geminiModel);
-      } else {
+      if (!isServerUnavailable) {
         throw serverErr;
       }
+
+      throw createClientAiError(
+        createClientAiDebugLog({
+          flow: payload?.requestMode ? 'plan-revision' : 'questionnaire-submit',
+          transport: 'serverless',
+          stage: 'generate-content',
+          targetProfile: payload?.targetProfile,
+          requestMode: payload?.requestMode || 'generate',
+          requestedModel: geminiModel,
+          apiKeySource: 'server-env',
+          requestPayload: payloadWithKey,
+          rawMessage:
+            'No fue posible contactar la API del servidor. La respuesta estuvo vacia, fue HTML o fallo la red antes de obtener JSON.',
+        }),
+        503
+      );
     }
 
     return { json, usedDirectApi, payloadWithKey, customApiKey };
@@ -1318,6 +1352,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
               status: 200,
               body: json,
             },
+            attempts: buildAttemptHistoryFromModelUsed(
+              json?.modelUsed,
+              'response-parse',
+              'La respuesta 200 no incluyo elData ni ellaData.'
+            ),
             rawMessage: 'La respuesta 200 no incluyo elData ni ellaData.',
           }),
           502
@@ -1348,6 +1387,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
               status: 200,
               body: json,
             },
+            attempts: buildAttemptHistoryFromModelUsed(
+              json?.modelUsed,
+              'response-parse',
+              `Error al parsear la estructura generada por la IA: ${parseErr?.message || String(parseErr)}`
+            ),
             rawMessage: `Error al parsear la estructura generada por la IA: ${parseErr?.message || String(parseErr)}`,
           }),
           502
@@ -1381,7 +1425,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setGenerationLoading(false);
     }
-  }, [geminiModel, notify, requestAiResponse, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContext]);
+  }, [buildAttemptHistoryFromModelUsed, geminiModel, notify, requestAiResponse, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContext]);
 
   const handleRevisePlanWithAi = useCallback(async (payload: PlanRevisionRequest) => {
     setPlanRevisionError('');
@@ -1414,6 +1458,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
               status: 200,
               body: json,
             },
+            attempts: buildAttemptHistoryFromModelUsed(
+              json?.modelUsed,
+              'response-parse',
+              'La respuesta 200 no incluyo cambios aplicables para el plan.'
+            ),
             rawMessage: 'La respuesta 200 no incluyo cambios aplicables para el plan.',
           }),
           502
@@ -1546,6 +1595,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       setPlanRevisionLoading(false);
     }
   }, [
+    buildAttemptHistoryFromModelUsed,
     buildCurrentRawBucket,
     getAllPlanSlots,
     notify,

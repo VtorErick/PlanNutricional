@@ -52,58 +52,50 @@ export default function AdminLayout() {
       badgeColor: 'bg-blue-100 text-blue-700',
     },
     {
-      val: 'gemini-2.5-flash',
-      label: 'Más rápido',
-      techLabel: 'Gemini 2.5 Flash',
-      desc: 'Genera respuestas rápido y con buen rendimiento.',
-      badge: 'Rápido',
+      val: 'gemini-3-flash-preview',
+      label: 'Siguiente mejor',
+      techLabel: 'Gemini 3 Flash Preview',
+      desc: 'Fallback de alta calidad cuando 2.5 Flash ya no tiene cuota o esta saturado.',
+      badge: 'Frontier',
       badgeColor: 'bg-emerald-100 text-emerald-700',
-    },
-    {
-      val: 'gemini-flash-lite-latest',
-      label: 'Lite (respaldo)',
-      techLabel: 'Gemini Flash Lite',
-      desc: 'Consume menos, pero puede devolver estructuras incompletas en cuestionarios largos.',
-      badge: 'Respaldo',
-      badgeColor: 'bg-lime-100 text-lime-700',
     },
     {
       val: 'gemini-2.5-flash-lite',
       label: 'Flash Lite 2.5',
       techLabel: 'Gemini 2.5 Flash Lite',
-      desc: 'Alternativa ligera para reintentos o ajustes mas cortos.',
+      desc: 'Alternativa ligera para reintentos cuando el modelo principal agota cuota.',
       badge: 'Ligero',
       badgeColor: 'bg-cyan-100 text-cyan-700',
     },
     {
-      val: 'gemini-2.0-flash-lite',
-      label: 'Flash Lite 2.0',
-      techLabel: 'Gemini 2.0 Flash Lite',
-      desc: 'Ultimo respaldo de bajo costo cuando la cuota es limitada.',
-      badge: 'Ajustado',
+      val: 'gemini-3.1-flash-lite-preview',
+      label: 'Lite 3.1',
+      techLabel: 'Gemini 3.1 Flash Lite Preview',
+      desc: 'Respaldo actual de mejor disponibilidad cuando Flash y Flash Lite 2.5 fallan.',
+      badge: 'Respaldo',
+      badgeColor: 'bg-lime-100 text-lime-700',
+    },
+    {
+      val: 'gemini-2.0-flash',
+      label: 'Compatibilidad',
+      techLabel: 'Gemini 2.0 Flash',
+      desc: 'Se usa solo despues de los modelos Flash mas consistentes.',
+      badge: 'Legacy',
       badgeColor: 'bg-sky-100 text-sky-700',
     },
     {
-      val: 'gemini-1.5-flash',
-      label: 'Básico',
-      techLabel: 'Gemini 1.5 Flash',
-      desc: 'Opción ligera para uso sencillo.',
-      badge: 'Simple',
+      val: 'gemini-2.0-flash-lite',
+      label: 'Ultimo respaldo',
+      techLabel: 'Gemini 2.0 Flash Lite',
+      desc: 'Ultimo escalon para no caer en modelos retirados ni estructuras mas fragiles.',
+      badge: 'Final',
       badgeColor: 'bg-slate-100 text-slate-700',
     },
     {
-      val: 'gemini-1.5-pro',
-      label: 'Más detallado',
-      techLabel: 'Gemini 1.5 Pro',
-      desc: 'Puede dedicar más análisis, aunque tarda un poco más.',
-      badge: 'Detallado',
-      badgeColor: 'bg-violet-100 text-violet-700',
-    },
-    {
       val: 'gemini-2.5-pro',
-      label: 'Máxima calidad',
+      label: 'Maxima calidad',
       techLabel: 'Gemini 2.5 Pro',
-      desc: 'La opción más potente para resultados más elaborados.',
+      desc: 'Opcion manual para la mayor calidad, con mas riesgo de cuota y latencia.',
       badge: 'Premium',
       badgeColor: 'bg-amber-100 text-amber-700',
     },
@@ -113,7 +105,14 @@ export default function AdminLayout() {
     ? modelOptions.filter((option) => geminiAvailableModels.includes(option.val))
     : modelOptions;
   const recommendedModel = geminiRecommendedModel || visibleModelOptions[0]?.val || '';
-  const recommendedModelLabel = modelOptions.find((option) => option.val === recommendedModel)?.techLabel || recommendedModel;
+  const recommendedModelLabel =
+    modelOptions.find((option) => option.val === recommendedModel)?.techLabel || recommendedModel;
+  const currentModelOption = modelOptions.find((option) => option.val === geminiModel);
+  const currentModelLabel =
+    currentModelOption?.techLabel ||
+    modelOptions.find((option) => option.val === recommendedModel)?.techLabel ||
+    geminiModel ||
+    'Sin validar';
   const defaultElJson = useMemo(() => getRawDataText('el'), []);
   const defaultEllaJson = useMemo(() => getRawDataText('ella'), []);
 
@@ -334,65 +333,76 @@ export default function AdminLayout() {
                 </button>
 
                 <div className="flex items-center justify-center px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-200 font-medium">
-                  Modelo actual: {modelOptions.find((m) => m.val === geminiModel)?.label || recommendedModelLabel || 'Sin validar'}
+                  Modelo actual: {currentModelLabel}
                 </div>
               </div>
             </section>
 
-            {/* Select mode */}
+            {/* Automatic fallback */}
             <section className="bg-white dark:bg-slate-950 rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200 dark:border-slate-800">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
                   <Zap className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Velocidad o calidad</h3>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Fallback automatico</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Puedes elegir cómo prefieres que responda la generación automática.
+                    La app usa esta secuencia automaticamente. Si el primer modelo falla por cuota o disponibilidad, intenta el siguiente sin pedir accion manual.
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-2">
-                {visibleModelOptions.map((m) => (
-                  <button
-                    key={m.val}
-                    type="button"
-                    onClick={() => setGeminiModel(m.val)}
-                    className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all ${
-                      geminiModel === m.val
-                        ? 'border-indigo-400 bg-indigo-50 shadow-sm'
-                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800'
-                    }`}
-                  >
+                {visibleModelOptions.map((m, index) => {
+                  const isPrimary = index === 0;
+                  const isCurrent = geminiModel === m.val;
+
+                  return (
                     <div
-                      className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-                        geminiModel === m.val ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-950'
+                      key={m.val}
+                      className={`flex items-start gap-3 rounded-2xl border p-3 ${
+                        isCurrent
+                          ? 'border-indigo-300 bg-indigo-50/70 dark:border-indigo-700 dark:bg-indigo-950/30'
+                          : 'border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'
                       }`}
                     >
-                      {geminiModel === m.val && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{m.label}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>
-                          {m.badge}
-                        </span>
-                        {recommendedModel === m.val && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                            Default
-                          </span>
-                        )}
+                      <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
+                        isPrimary
+                          ? 'bg-indigo-600 text-white'
+                          : 'border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
+                      }`}>
+                        {index + 1}
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{m.desc}</p>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{m.techLabel}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>
+                            {m.badge}
+                          </span>
+                          {isPrimary && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                              Primero
+                            </span>
+                          )}
+                          {isCurrent && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">
+                              Actual
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{m.desc}</p>
+                      </div>
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="mt-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 text-xs text-slate-600 dark:text-slate-300">
                 <p>
+                  La seleccion es automatica. Si un modelo falla, la app registra todos los intentos en el log y prueba el siguiente disponible.
+                </p>
+                <p className="mt-2">
                   {geminiAvailabilityLoading
                     ? 'Validando modelos disponibles para la API key actual...'
                     : geminiAvailabilityMessage || `Modelo sugerido por defecto: ${recommendedModelLabel || 'sin datos'}`}
@@ -465,6 +475,7 @@ export default function AdminLayout() {
                             const status = await refreshGeminiAvailability({
                               customApiKey: trimmedKey,
                               preferredModel: '',
+                              checkGeneration: true,
                               syncModel: true,
                             });
 
@@ -501,7 +512,7 @@ export default function AdminLayout() {
                     <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3">
                       <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                         Opción actual: <span className="font-semibold text-slate-800 dark:text-slate-100">
-                          {modelOptions.find((m) => m.val === geminiModel)?.techLabel || geminiModel}
+                          {currentModelLabel}
                         </span>
                       </p>
                       {geminiAvailableModels.length > 0 && (

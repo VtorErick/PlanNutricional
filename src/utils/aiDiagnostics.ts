@@ -3,6 +3,20 @@ import { downloadJsonFile } from '../dataManager';
 export const AI_GENERIC_ERROR_MESSAGE =
   'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
 
+export interface AiDebugAttempt {
+  order: number;
+  model?: string;
+  stage: AiDebugLog['stage'];
+  statusCode?: number;
+  rawMessage?: string;
+  willRetry?: boolean;
+  geminiRequest?: unknown;
+  geminiResponse?: {
+    status?: number;
+    body?: unknown;
+  };
+}
+
 export interface AiDebugLog {
   id: string;
   occurredAt: string;
@@ -21,6 +35,7 @@ export interface AiDebugLog {
     status?: number;
     body?: unknown;
   };
+  attempts?: AiDebugAttempt[];
   error: {
     message: string;
     rawMessage?: string;
@@ -70,6 +85,7 @@ export function createClientAiDebugLog(input: {
   requestPayload?: unknown;
   geminiRequest?: unknown;
   geminiResponse?: AiDebugLog['geminiResponse'];
+  attempts?: AiDebugLog['attempts'];
   rawMessage: string;
 }) {
   return {
@@ -87,6 +103,7 @@ export function createClientAiDebugLog(input: {
     requestPayload: input.requestPayload,
     geminiRequest: input.geminiRequest,
     geminiResponse: input.geminiResponse,
+    attempts: input.attempts,
     error: {
       message: AI_GENERIC_ERROR_MESSAGE,
       rawMessage: input.rawMessage,

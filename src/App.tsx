@@ -50,9 +50,6 @@ export default function App() {
     generationLoading,
     generationError,
     generationErrorLog,
-    geminiModel,
-    setGeminiModel,
-    geminiAvailableModels,
     geminiApiKey,
     setGeminiApiKey,
     lastGeneratedData,
@@ -126,9 +123,6 @@ export default function App() {
                 loading={generationLoading}
                 errorMessage={generationError}
                 aiErrorLog={generationErrorLog}
-                geminiModel={geminiModel}
-                setGeminiModel={setGeminiModel}
-                availableGeminiModels={geminiAvailableModels}
                 geminiApiKey={geminiApiKey}
                 setGeminiApiKey={setGeminiApiKey}
                 lastGeneratedData={lastGeneratedData}

@@ -35,7 +35,7 @@ import {
   Trash,
 } from 'lucide-react';
 import { buildExportData, downloadJsonFile } from '../dataManager';
-import { DEFAULT_GEMINI_MODEL, persistGeminiApiKey } from '../utils/geminiKey';
+import { persistGeminiApiKey } from '../utils/geminiKey';
 import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
 import { getQuestionnaireTheme } from '../utils/theme';
@@ -87,9 +87,6 @@ interface Props {
   loading: boolean;
   errorMessage?: string;
   aiErrorLog?: AiDebugLog | null;
-  geminiModel?: string;
-  setGeminiModel?: (m: string) => void;
-  availableGeminiModels?: string[];
   geminiApiKey?: string;
   setGeminiApiKey?: (k: string) => void;
   lastGeneratedData?: any;
@@ -136,17 +133,6 @@ const TIMELINE_OPTIONS = [
   { val: '16 sem', label: '16 semanas', emoji: '🗓️' },
   { val: '20 sem', label: '20 semanas', emoji: '📌' },
   { val: '24 sem', label: '24 semanas', emoji: '🔥' },
-];
-
-const GEMINI_MODELS = [
-  { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: '⚡ Recomendado' },
-  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', badge: '🚀 Rapido' },
-  { value: 'gemini-flash-lite-latest', label: 'Gemini Flash Lite', badge: '🆓 Respaldo' },
-  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', badge: '🪶 Ligero' },
-  { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite', badge: '🧪 Respaldo' },
-  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito' },
-  { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', badge: '🧠 Pro' },
-  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', badge: '🚀 Maximo' },
 ];
 
 const DEFAULT_MOMENTS = [
@@ -638,9 +624,6 @@ export default function NutritionQuestionnaire({
   loading,
   errorMessage,
   aiErrorLog,
-  geminiModel,
-  setGeminiModel,
-  availableGeminiModels,
   geminiApiKey,
   setGeminiApiKey,
   lastGeneratedData,
@@ -660,7 +643,6 @@ export default function NutritionQuestionnaire({
   setAdditionalNotes,
 }: Props) {
   const [direction, setDirection] = useState(1);
-  const [localModel, setLocalModel] = useState(geminiModel || DEFAULT_GEMINI_MODEL);
   const [localApiKey, setLocalApiKey] = useState(geminiApiKey || '');
   const [timePickerState, setTimePickerState] = useState<{
     open: boolean;
@@ -680,17 +662,8 @@ export default function NutritionQuestionnaire({
   const selectProfileTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (geminiModel) setLocalModel(geminiModel);
-  }, [geminiModel]);
-
-  useEffect(() => {
     setLocalApiKey(geminiApiKey || '');
   }, [geminiApiKey]);
-
-  const visibleGeminiModels = useMemo(() => {
-    if (!availableGeminiModels?.length) return GEMINI_MODELS;
-    return GEMINI_MODELS.filter((model) => availableGeminiModels.includes(model.value));
-  }, [availableGeminiModels]);
 
   const releaseScreenWakeLock = useCallback(async () => {
     if (!wakeLockRef.current) return;
@@ -1011,7 +984,6 @@ export default function NutritionQuestionnaire({
       targetProfile,
       profileToUpdate: targetProfile,
       portionMode,
-      preferredModel: localModel,
       planConfig: {
         mealsPerDay: DEFAULT_MOMENTS.length.toString(),
         selectedMoments: DEFAULT_MOMENTS,
@@ -1989,35 +1961,6 @@ export default function NutritionQuestionnaire({
                 >
                   Guardar clave de esta sesión
                 </button>
-              </div>
-            </CardSection>
-          )}
-
-          {errorMessage && (
-            <CardSection title="Cambiar modelo de Gemini (opcional)">
-              <div className="grid grid-cols-2 gap-2">
-                {visibleGeminiModels.map((m) => {
-                  const active = localModel === m.value;
-                  return (
-                    <button
-                      key={m.value}
-                      onClick={() => {
-                        setLocalModel(m.value);
-                        setGeminiModel?.(m.value);
-                      }}
-                      className={`flex flex-col gap-1 p-3 rounded-xl border-2 text-left transition-all active:scale-[.97] ${
-                        active ? 'border-indigo-400 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-950/50' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      <span className={`text-[11px] font-bold leading-tight ${active ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-100'}`}>
-                        {m.label}
-                      </span>
-                      <span className={`text-[9px] font-semibold ${active ? 'text-indigo-500 dark:text-indigo-300' : 'text-slate-400 dark:text-slate-500'}`}>
-                        {m.badge}
-                      </span>
-                    </button>
-                  );
-                })}
               </div>
             </CardSection>
           )}

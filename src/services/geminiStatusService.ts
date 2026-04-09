@@ -19,8 +19,36 @@ interface FetchGeminiStatusOptions {
 }
 
 function normalizeModelName(modelName: string) {
+  if (!modelName) return '';
   return modelName.replace(/^models\//, '').trim();
 }
+
+const TEXT_GENERATION_MODEL_PATTERNS = [
+  /^gemini-2\.5-flash$/i,
+  /^gemini-3-flash-preview$/i,
+  /^gemini-2\.5-flash-lite$/i,
+  /^gemini-3\.1-flash-lite-preview$/i,
+  /^gemini-2\.5-pro$/i,
+  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
+  /^gemini-2\.0-flash(?:-001)?$/i,
+  /^gemini-2\.0-flash-lite(?:-001)?$/i,
+  /^gemini-flash-latest$/i,
+  /^gemini-flash-lite-latest$/i,
+  /^gemini-pro-latest$/i,
+];
+const MODEL_PRIORITY_MATCHERS = [
+  /^gemini-2\.5-flash$/i,
+  /^gemini-3-flash-preview$/i,
+  /^gemini-2\.5-flash-lite$/i,
+  /^gemini-3\.1-flash-lite-preview$/i,
+  /^gemini-2\.0-flash(?:-001)?$/i,
+  /^gemini-2\.0-flash-lite(?:-001)?$/i,
+  /^gemini-2\.5-pro$/i,
+  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
+  /^gemini-flash-latest$/i,
+  /^gemini-flash-lite-latest$/i,
+  /^gemini-pro-latest$/i,
+];
 
 function modelSupportsGenerateContent(model: any) {
   return (model?.supportedGenerationMethods || []).includes('generateContent');
@@ -28,54 +56,66 @@ function modelSupportsGenerateContent(model: any) {
 
 function isTextGenerationModel(modelName: string) {
   const normalized = normalizeModelName(modelName).toLowerCase();
-  const allowedPatterns = [
-    /^gemini-2\.5-flash$/,
-    /^gemini-2\.5-flash-lite$/,
-    /^gemini-2\.5-pro$/,
-    /^gemini-2\.0-flash(?:-001)?$/,
-    /^gemini-2\.0-flash-lite(?:-001)?$/,
-    /^gemini-1\.5-flash$/,
-    /^gemini-1\.5-pro$/,
-    /^gemini-flash-latest$/,
-    /^gemini-flash-lite-latest$/,
-    /^gemini-pro-latest$/,
-  ];
-
-  return allowedPatterns.some((pattern) => pattern.test(normalized));
+  return TEXT_GENERATION_MODEL_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
-function getModelPriority(name: string) {
-  const normalized = normalizeModelName(name);
-  const priorityMatchers = [
-    /^gemini-2\.5-flash/i,
-    /^gemini-2\.0-flash/i,
-    /^gemini-flash-latest/i,
-    /^gemini-2\.5-flash-lite/i,
-    /^gemini-2\.0-flash-lite/i,
-    /^gemini-flash-lite-latest/i,
-    /^gemini-1\.5-flash/i,
-    /^gemini-1\.5-pro/i,
-    /^gemini-2\.5-pro/i,
-    /^gemini-pro-latest/i,
-    /^gemini-2\.0-pro/i,
-  ];
+function getModelFamilyKey(name: string) {
+  return normalizeModelName(name)
+    .toLowerCase()
+    .replace(/-001$/i, '')
+    .replace(/-customtools$/i, '');
+}
 
-  const idx = priorityMatchers.findIndex((matcher) => matcher.test(normalized));
-  return idx === -1 ? priorityMatchers.length + 1 : idx;
+function getUniqueModelNames(modelNames: string[], preferredModelRaw?: string) {
+  const preferredModel = normalizeModelName(preferredModelRaw || '');
+  const rawUniqueNames = [...new Set(modelNames.map((name) => normalizeModelName(name)).filter(Boolean))];
+  const sourceNames = preferredModel ? [preferredModel, ...rawUniqueNames] : rawUniqueNames;
+  const seenFamilies = new Set<string>();
+  const uniqueNames: string[] = [];
+
+  sourceNames.forEach((name) => {
+    if (!rawUniqueNames.includes(name)) {
+      return;
+    }
+
+    const familyKey = getModelFamilyKey(name);
+    if (seenFamilies.has(familyKey)) {
+      return;
+    }
+
+    seenFamilies.add(familyKey);
+    uniqueNames.push(name);
+  });
+
+  return uniqueNames;
 }
 
 function getOrderedModels(models: any[], preferredModelRaw?: string) {
   const preferredModel = normalizeModelName(preferredModelRaw || '');
-  const names = models.map((model) => normalizeModelName(model.name));
+  const remaining = getUniqueModelNames(
+    models.map((model) => normalizeModelName(model.name)),
+    preferredModelRaw
+  );
+  const ordered: string[] = [];
 
-  return [...names].sort((a, b) => {
-    if (preferredModel) {
-      if (a === preferredModel) return -1;
-      if (b === preferredModel) return 1;
+  if (preferredModel && remaining.includes(preferredModel)) {
+    ordered.push(preferredModel);
+  }
+
+  MODEL_PRIORITY_MATCHERS.forEach((matcher) => {
+    const match = remaining.find((name) => matcher.test(name) && !ordered.includes(name));
+    if (match) {
+      ordered.push(match);
     }
-
-    return getModelPriority(a) - getModelPriority(b);
   });
+
+  remaining.forEach((name) => {
+    if (!ordered.includes(name)) {
+      ordered.push(name);
+    }
+  });
+
+  return ordered;
 }
 
 async function listAvailableModelsDirect(apiKey: string) {

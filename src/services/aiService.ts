@@ -2,6 +2,7 @@ import type { MealItem, SupplementRecommendation } from '../types';
 import { parseObjectToData } from '../dataManager';
 import {
   AI_GENERIC_ERROR_MESSAGE,
+  type AiDebugAttempt,
   type AiDebugLog,
   type AiErrorWithLog,
 } from '../utils/aiDiagnostics';
@@ -45,6 +46,7 @@ export interface PlanRevisionProfilePatch {
 }
 
 const DEFAULT_DIRECT_MODEL = 'gemini-2.5-flash';
+const MAX_MODEL_CANDIDATES = 6;
 
 export interface PlanRevisionResponse {
   responseMode: PlanRevisionMode;
@@ -117,24 +119,41 @@ const PROFILE_REQUIRED_KEYS = [
   'distribucionDiaria',
   'resumenPersonal',
 ];
+const TEXT_GENERATION_MODEL_PATTERNS = [
+  /^gemini-2\.5-flash$/i,
+  /^gemini-3-flash-preview$/i,
+  /^gemini-2\.5-flash-lite$/i,
+  /^gemini-3\.1-flash-lite-preview$/i,
+  /^gemini-2\.5-pro$/i,
+  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
+  /^gemini-2\.0-flash(?:-001)?$/i,
+  /^gemini-2\.0-flash-lite(?:-001)?$/i,
+  /^gemini-flash-latest$/i,
+  /^gemini-flash-lite-latest$/i,
+  /^gemini-pro-latest$/i,
+];
 const PRIMARY_MODEL_PRIORITY_MATCHERS = [
   /^gemini-2\.5-flash$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-flash-latest$/i,
+  /^gemini-3-flash-preview$/i,
   /^gemini-2\.5-flash-lite$/i,
+  /^gemini-3\.1-flash-lite-preview$/i,
+  /^gemini-2\.0-flash(?:-001)?$/i,
   /^gemini-2\.0-flash-lite(?:-001)?$/i,
+  /^gemini-flash-latest$/i,
   /^gemini-flash-lite-latest$/i,
-  /^gemini-1\.5-flash$/i,
-  /^gemini-1\.5-pro$/i,
   /^gemini-2\.5-pro$/i,
+  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
   /^gemini-pro-latest$/i,
 ];
 const AUTO_FALLBACK_PRIORITY_MATCHERS = [
   /^gemini-2\.5-flash$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
+  /^gemini-3-flash-preview$/i,
   /^gemini-2\.5-flash-lite$/i,
+  /^gemini-3\.1-flash-lite-preview$/i,
+  /^gemini-2\.0-flash(?:-001)?$/i,
   /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-1\.5-flash$/i,
+  /^gemini-flash-latest$/i,
+  /^gemini-flash-lite-latest$/i,
 ];
 
 type GeminiDebugContext = {
@@ -152,6 +171,84 @@ type GeminiDebugContext = {
 
 function createDebugLogId(flow: AiDebugLog['flow']) {
   return `${flow}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function sanitizeAttemptLogs(attempts?: AiDebugAttempt[]) {
+  if (!attempts?.length) return undefined;
+
+  return attempts.map((attempt) => ({
+    ...attempt,
+    model: attempt.model ? normalizeModelName(attempt.model) : attempt.model,
+    geminiRequest: sanitizeDebugValue(attempt.geminiRequest),
+    geminiResponse: attempt.geminiResponse
+      ? {
+          status: attempt.geminiResponse.status,
+          body: sanitizeDebugValue(attempt.geminiResponse.body),
+        }
+      : undefined,
+  }));
+}
+
+function buildAttemptLog(
+  error: unknown,
+  input: {
+    order: number;
+    modelName?: string;
+    stage?: AiDebugLog['stage'];
+    statusCode?: number;
+    rawMessage?: string;
+    willRetry?: boolean;
+    geminiRequest?: unknown;
+    geminiResponse?: { status?: number; body?: unknown };
+  }
+): AiDebugAttempt {
+  const candidate = error as AiErrorWithLog | undefined;
+  const debugLog = candidate?.aiDebugLog;
+  const response = input.geminiResponse || debugLog?.geminiResponse;
+
+  return {
+    order: input.order,
+    model: normalizeModelName(debugLog?.selectedModel || input.modelName || ''),
+    stage: debugLog?.stage || input.stage || 'generate-content',
+    statusCode: input.statusCode ?? candidate?.statusCode ?? response?.status,
+    rawMessage:
+      input.rawMessage ||
+      debugLog?.error?.rawMessage ||
+      candidate?.message ||
+      AI_GENERIC_ERROR_MESSAGE,
+    willRetry: input.willRetry,
+    geminiRequest: input.geminiRequest || debugLog?.geminiRequest,
+    geminiResponse: response
+      ? {
+          status: response.status,
+          body: response.body,
+        }
+      : undefined,
+  };
+}
+
+function attachAttemptsToError(
+  error: unknown,
+  attempts: AiDebugAttempt[],
+  debugContext: GeminiDebugContext
+) {
+  if (error && typeof error === 'object' && 'aiDebugLog' in error) {
+    const candidate = error as AiErrorWithLog;
+    if (candidate.aiDebugLog) {
+      candidate.aiDebugLog = {
+        ...candidate.aiDebugLog,
+        attempts: sanitizeAttemptLogs(attempts),
+      };
+      return candidate;
+    }
+  }
+
+  const fallbackError = createLoggedAiError(debugContext, {
+    rawMessage:
+      error instanceof Error ? error.message : 'No se pudo completar la solicitud con IA.',
+    attempts,
+  });
+  return fallbackError;
 }
 
 function maskApiKey(value: string) {
@@ -218,6 +315,7 @@ function safeParseJson(text: string) {
 }
 
 function normalizeModelName(modelName: string) {
+  if (!modelName) return '';
   return modelName.replace(/^models\//, '').trim();
 }
 
@@ -241,6 +339,7 @@ function createLoggedAiError(
     geminiRequest?: unknown;
     geminiResponse?: { status?: number; body?: unknown };
     stage?: AiDebugLog['stage'];
+    attempts?: AiDebugAttempt[];
   }
 ) {
   const error = new Error(AI_GENERIC_ERROR_MESSAGE) as AiErrorWithLog;
@@ -266,6 +365,7 @@ function createLoggedAiError(
           body: sanitizeDebugValue(options.geminiResponse.body),
         }
       : undefined,
+    attempts: sanitizeAttemptLogs(options.attempts),
     error: {
       message: AI_GENERIC_ERROR_MESSAGE,
       rawMessage: options.rawMessage,
@@ -289,13 +389,53 @@ function getThinkingConfig(modelName: string) {
   return undefined;
 }
 
+function modelSupportsGenerateContent(model: any) {
+  return (model?.supportedGenerationMethods || []).includes('generateContent');
+}
+
+function isTextGenerationModel(modelName: string) {
+  const normalized = normalizeModelName(modelName).toLowerCase();
+  return TEXT_GENERATION_MODEL_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
+function getModelFamilyKey(modelName: string) {
+  return normalizeModelName(modelName)
+    .toLowerCase()
+    .replace(/-001$/i, '')
+    .replace(/-customtools$/i, '');
+}
+
+function getUniqueModelNames(modelNames: string[], preferredModelRaw?: string) {
+  const preferredModel = normalizeModelName(preferredModelRaw || '');
+  const rawUniqueNames = [...new Set(modelNames.map((name) => normalizeModelName(name)).filter(Boolean))];
+  const sourceNames = preferredModel ? [preferredModel, ...rawUniqueNames] : rawUniqueNames;
+  const seenFamilies = new Set<string>();
+  const uniqueNames: string[] = [];
+
+  sourceNames.forEach((name) => {
+    if (!rawUniqueNames.includes(name)) {
+      return;
+    }
+
+    const familyKey = getModelFamilyKey(name);
+    if (seenFamilies.has(familyKey)) {
+      return;
+    }
+
+    seenFamilies.add(familyKey);
+    uniqueNames.push(name);
+  });
+
+  return uniqueNames;
+}
+
 function orderModelNamesByPriority(
   modelNames: string[],
   priorityMatchers: RegExp[],
   preferredModelRaw?: string
 ) {
   const preferredModel = normalizeModelName(preferredModelRaw || '');
-  const remaining = [...new Set(modelNames.map((name) => normalizeModelName(name)).filter(Boolean))];
+  const remaining = getUniqueModelNames(modelNames, preferredModelRaw);
   const ordered: string[] = [];
 
   if (preferredModel && remaining.includes(preferredModel)) {
@@ -318,18 +458,109 @@ function orderModelNamesByPriority(
   return ordered;
 }
 
-function getDirectFallbackModels(primaryModel: string) {
+function pickBestModel(models: Array<{ name?: string }>, preferredModelRaw?: string) {
+  if (!models.length) {
+    throw new Error('No hay modelos compatibles con generateContent en tu cuenta/API key.');
+  }
+
+  const modelNames = models.map((model) => normalizeModelName(model.name || ''));
   return orderModelNamesByPriority(
-    [
-      normalizeModelName(primaryModel),
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-2.5-flash-lite',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-flash',
-    ],
-    AUTO_FALLBACK_PRIORITY_MATCHERS
+    modelNames,
+    PRIMARY_MODEL_PRIORITY_MATCHERS,
+    preferredModelRaw
+  )[0];
+}
+
+function getFallbackModels(models: Array<{ name?: string }>, primaryModel: string) {
+  const modelNames = models.map((model) => normalizeModelName(model.name || ''));
+  return orderModelNamesByPriority(modelNames, AUTO_FALLBACK_PRIORITY_MATCHERS, primaryModel)
+    .filter((name) => name && name !== primaryModel)
+    .slice(0, Math.max(MAX_MODEL_CANDIDATES - 1, 0));
+}
+
+async function listAvailableModelsDirect(apiKey: string, debugContext: GeminiDebugContext) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
   );
+  const responseText = await response.text();
+  const parsedBody = safeParseJson(responseText);
+
+  if (!response.ok) {
+    const rawMessage =
+      (parsedBody as any)?.error?.message ||
+      'No fue posible listar modelos disponibles de Gemini.';
+    const geminiRequest = {
+      method: 'GET',
+      url: 'https://generativelanguage.googleapis.com/v1beta/models',
+    };
+    const geminiResponse = {
+      status: response.status,
+      body: parsedBody,
+    };
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'models-list',
+      },
+      {
+        rawMessage,
+        statusCode: response.status,
+        geminiRequest,
+        geminiResponse,
+        attempts: [
+          buildAttemptLog(null, {
+            order: 1,
+            modelName: debugContext.requestedModel,
+            stage: 'models-list',
+            statusCode: response.status,
+            rawMessage,
+            willRetry: false,
+            geminiRequest,
+            geminiResponse,
+          }),
+        ],
+      }
+    );
+  }
+
+  if (!parsedBody || typeof parsedBody !== 'object') {
+    const rawMessage = 'La respuesta de modelos de Gemini no fue JSON valido.';
+    const geminiRequest = {
+      method: 'GET',
+      url: 'https://generativelanguage.googleapis.com/v1beta/models',
+    };
+    const geminiResponse = {
+      status: response.status,
+      body: responseText,
+    };
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'models-list',
+      },
+      {
+        rawMessage,
+        statusCode: response.status,
+        geminiRequest,
+        geminiResponse,
+        attempts: [
+          buildAttemptLog(null, {
+            order: 1,
+            modelName: debugContext.requestedModel,
+            stage: 'models-list',
+            statusCode: response.status,
+            rawMessage,
+            willRetry: false,
+            geminiRequest,
+            geminiResponse,
+          }),
+        ],
+      }
+    );
+  }
+
+  return (((parsedBody as any)?.models || []) as Array<{ name?: string }>)
+    .filter((model) => modelSupportsGenerateContent(model) && isTextGenerationModel(model?.name || ''));
 }
 
 function shouldRetryStatusCode(statusCode: unknown) {
@@ -343,9 +574,17 @@ function shouldRetryWithDifferentModel(error: unknown) {
   const statusCode = candidate.statusCode || candidate.aiDebugLog?.geminiResponse?.status;
   const rawMessage = candidate.aiDebugLog?.error?.rawMessage || candidate.message || '';
   const normalizedMessage = String(rawMessage).toLowerCase();
+  const modelUnavailable =
+    Number(statusCode) === 404 &&
+    (normalizedMessage.includes('model') || normalizedMessage.includes('modelo')) &&
+    (normalizedMessage.includes('not found') ||
+      normalizedMessage.includes('no encontrado') ||
+      normalizedMessage.includes('not supported') ||
+      normalizedMessage.includes('no disponible'));
 
   return (
     shouldRetryStatusCode(statusCode) ||
+    modelUnavailable ||
     normalizedMessage.includes('high demand') ||
     normalizedMessage.includes('resource exhausted') ||
     normalizedMessage.includes('rate limit') ||
@@ -825,10 +1064,46 @@ function validateProfileStructure(
     );
   }
 
+  const seenDistributionGroups = new Set<string>();
   perfil.distribucionDiaria.forEach((item: any, index: number) => {
     validateRequiredStringField(item, 'grupo', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredIntegerField(item, 'total', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredStringField(item, 'detalle', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+
+    const groupKey = item.grupo.trim();
+    if (!FOOD_GROUP_KEYS.includes(groupKey)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: perfil${profilePrefix}.distribucionDiaria[${index}].grupo no es valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (seenDistributionGroups.has(groupKey)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: perfil${profilePrefix}.distribucionDiaria repitio el grupo ${groupKey}.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    seenDistributionGroups.add(groupKey);
+  });
+
+  FOOD_GROUP_KEYS.forEach((groupKey) => {
+    if (!seenDistributionGroups.has(groupKey)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: perfil${profilePrefix}.distribucionDiaria no incluyo el grupo ${groupKey}.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
   });
 
   if (
@@ -1300,6 +1575,24 @@ function buildMomentDistributionSchema() {
   };
 }
 
+function buildDailyDistributionSchema() {
+  return {
+    type: 'array',
+    minItems: FOOD_GROUP_KEYS.length,
+    maxItems: FOOD_GROUP_KEYS.length,
+    items: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['grupo', 'total', 'detalle'],
+      properties: {
+        grupo: { type: 'string', enum: FOOD_GROUP_KEYS },
+        total: { type: 'integer' },
+        detalle: { type: 'string' },
+      },
+    },
+  };
+}
+
 function buildMomentTimeSchema() {
   return {
     type: 'object',
@@ -1337,10 +1630,7 @@ function buildProfileSchema(partial = false) {
         type: 'array',
         items: buildMomentDistributionSchema(),
       },
-      distribucionDiaria: {
-        type: 'array',
-        items: { type: 'object' },
-      },
+      distribucionDiaria: buildDailyDistributionSchema(),
       resumenPersonal: {
         type: 'array',
         items: { type: 'string' },
@@ -1478,6 +1768,11 @@ function buildGenerationOutputContract(prefix: string) {
       type: 'array',
       itemKeys: ['momento', ...FOOD_GROUP_KEYS],
     },
+    distribucionDiariaFormat: {
+      type: 'array',
+      itemKeys: ['grupo', 'total', 'detalle'],
+      requiredGroups: FOOD_GROUP_KEYS,
+    },
     mealsRequiredKeys: MEAL_ITEM_REQUIRED_KEYS,
     supplementRequiredKeys: SUPPLEMENT_REQUIRED_KEYS,
   };
@@ -1548,6 +1843,9 @@ Reglas criticas:
 - "perfil" debe ser SIEMPRE una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>".
 - No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
 - perfil${prefix}.objetivosPorMomento debe ser un arreglo de 5 objetos, uno por cada momento, y cada objeto debe incluir: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
+- perfil${prefix}.distribucionDiaria debe ser un arreglo de 7 objetos, uno por cada grupo: ${FOOD_GROUP_KEYS.join(', ')}.
+- Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo, total, detalle.
+- No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
 - Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener exactamente estas claves: dia, momento, opciones.
@@ -1920,6 +2218,7 @@ async function generateContentWithFallback(
   debugContext: GeminiDebugContext
 ) {
   let lastError: unknown;
+  const attempts: AiDebugAttempt[] = [];
 
   for (let index = 0; index < modelCandidates.length; index += 1) {
     const modelName = modelCandidates[index];
@@ -1943,14 +2242,26 @@ async function generateContentWithFallback(
       };
     } catch (error) {
       lastError = error;
+      const willRetry =
+        index < modelCandidates.length - 1 && shouldRetryWithDifferentModel(error);
+      attempts.push(
+        buildAttemptLog(error, {
+          order: index + 1,
+          modelName,
+          willRetry,
+        })
+      );
 
-      if (index === modelCandidates.length - 1 || !shouldRetryWithDifferentModel(error)) {
-        throw error;
+      if (!willRetry) {
+        throw attachAttemptsToError(error, attempts, {
+          ...debugContext,
+          selectedModel: modelName,
+        });
       }
     }
   }
 
-  throw lastError;
+  throw attachAttemptsToError(lastError, attempts, debugContext);
 }
 
 export async function callGeminiDirectly(
@@ -1969,7 +2280,19 @@ export async function callGeminiDirectly(
     ? payload.requestMode
     : 'generate';
   const requestedModel = modelName || DEFAULT_DIRECT_MODEL;
-  const modelCandidates = getDirectFallbackModels(requestedModel);
+  const debugBase: GeminiDebugContext = {
+    flow,
+    transport: 'direct-browser',
+    stage: 'models-list',
+    payload,
+    targetProfile: target,
+    requestMode,
+    requestedModel,
+    apiKeySource: 'custom-browser',
+  };
+  const models = await listAvailableModelsDirect(apiKey, debugBase);
+  const selectedModel = pickBestModel(models, requestedModel);
+  const modelCandidates = [selectedModel, ...getFallbackModels(models, selectedModel)];
   let elData = null;
   let ellaData = null;
   let elModelUsed: string | null = null;
@@ -1987,15 +2310,10 @@ export async function callGeminiDirectly(
           ? buildFullResponseSchema('EL')
           : buildAdjustResponseSchema(),
         {
-          flow,
-          transport: 'direct-browser',
+          ...debugBase,
           stage: 'generate-content',
-          payload,
-          targetProfile: target,
           profilePrefix: 'EL',
-          requestMode,
-          requestedModel,
-          apiKeySource: 'custom-browser',
+          selectedModel,
         }
       );
       elData = result.data;
@@ -2013,15 +2331,10 @@ export async function callGeminiDirectly(
           ? buildFullResponseSchema('ELLA')
           : buildAdjustResponseSchema(),
         {
-          flow,
-          transport: 'direct-browser',
+          ...debugBase,
           stage: 'generate-content',
-          payload,
-          targetProfile: target,
           profilePrefix: 'ELLA',
-          requestMode,
-          requestedModel,
-          apiKeySource: 'custom-browser',
+          selectedModel,
         }
       );
       ellaData = result.data;
@@ -2045,15 +2358,10 @@ export async function callGeminiDirectly(
       buildSystemPrompt('EL'),
       buildFullResponseSchema('EL'),
       {
-        flow,
-        transport: 'direct-browser',
+        ...debugBase,
         stage: 'generate-content',
-        payload,
-        targetProfile: target,
         profilePrefix: 'EL',
-        requestMode,
-        requestedModel,
-        apiKeySource: 'custom-browser',
+        selectedModel,
       }
     );
     elData = result.data;
@@ -2075,15 +2383,10 @@ export async function callGeminiDirectly(
       buildSystemPrompt('ELLA'),
       buildFullResponseSchema('ELLA'),
       {
-        flow,
-        transport: 'direct-browser',
+        ...debugBase,
         stage: 'generate-content',
-        payload,
-        targetProfile: target,
         profilePrefix: 'ELLA',
-        requestMode,
-        requestedModel,
-        apiKeySource: 'custom-browser',
+        selectedModel,
       }
     );
     ellaData = result.data;
