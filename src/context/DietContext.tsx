@@ -613,6 +613,8 @@ interface DietContextType {
   lastGeneratedData: any;
   planRevisionLoading: boolean;
   planRevisionError: string;
+  hasAiDebugReport: boolean;
+  downloadAiDebugReport: () => void;
   lastQuestionnaireContext: any;
   handleGenerateWithAi: (payload: QuestionnairePayload) => Promise<void>;
   handleRevisePlanWithAi: (payload: PlanRevisionRequest) => Promise<void>;
@@ -762,6 +764,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [generationError, setGenerationError] = useState('');
   const [planRevisionLoading, setPlanRevisionLoading] = useState(false);
   const [planRevisionError, setPlanRevisionError] = useState('');
+  const [aiDebugReport, setAiDebugReport] = useState<any>(null);
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
   const [lastQuestionnaireContext, setLastQuestionnaireContext] = useLocalStorage<any>(
     'lastQuestionnaireContext',
@@ -769,6 +772,41 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     sanitizeNullableObject
   );
   const geminiModelRef = useRef(geminiModel);
+
+  const sanitizeAiDebugValue = useCallback((value: any): any => {
+    if (Array.isArray(value)) {
+      return value.map(sanitizeAiDebugValue);
+    }
+
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+
+    const nextValue: Record<string, unknown> = {};
+    for (const [key, nestedValue] of Object.entries(value)) {
+      if (key === 'customApiKey' || key === 'dataBase64') {
+        nextValue[key] = '[REDACTED]';
+        continue;
+      }
+      nextValue[key] = sanitizeAiDebugValue(nestedValue);
+    }
+    return nextValue;
+  }, []);
+
+  const downloadAiDebugReport = useCallback(() => {
+    if (!aiDebugReport || typeof window === 'undefined') return;
+    const serialized = JSON.stringify(aiDebugReport, null, 2);
+    const blob = new Blob([serialized], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `plan-ai-debug-${ts}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [aiDebugReport]);
 
   const getDefaultCustomBucket = useCallback(
     (perfilId: 'el' | 'ella') => JSON.parse(getRawDataText(perfilId)),
@@ -1210,6 +1248,14 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     };
     let json: any;
     let usedDirectApi = false;
+    const debugReport: Record<string, any> = {
+      timestamp: new Date().toISOString(),
+      endpoint: '/api/generate-plan',
+      preferredModel: geminiModel,
+      hasCustomApiKey: Boolean(customApiKey),
+      requestPayload: sanitizeAiDebugValue(payloadWithKey),
+      steps: [],
+    };
 
     try {
       const res = await fetch('/api/generate-plan', {
@@ -1218,6 +1264,12 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify(payloadWithKey),
       });
       const responseText = await res.text();
+      debugReport.steps.push({
+        stage: 'server_response',
+        status: res.status,
+        ok: res.ok,
+        responsePreview: responseText.slice(0, 12000),
+      });
       if (!responseText || responseText.trim() === '') throw new Error('SERVER_UNAVAILABLE');
       if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
         throw new Error('SERVER_UNAVAILABLE');
@@ -1229,6 +1281,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       }
       if (!res.ok) throw new Error(json?.error || `Error ${res.status}`);
     } catch (serverErr: any) {
+      debugReport.steps.push({
+        stage: 'server_error',
+        name: serverErr?.name || 'Error',
+        message: serverErr?.message || String(serverErr),
+      });
       const isServerUnavailable =
         serverErr?.message === 'SERVER_UNAVAILABLE' ||
         (
@@ -1238,19 +1295,28 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
       if (isServerUnavailable) {
         if (!customApiKey) {
+          debugReport.finalError = 'SERVER_UNAVAILABLE_NO_CUSTOM_KEY';
+          setAiDebugReport(debugReport);
           throw new Error(
             'No fue posible contactar la API del servidor. Para seguir desde el navegador, pega una clave personalizada en el panel de Administración.'
           );
         }
         usedDirectApi = true;
+        debugReport.steps.push({ stage: 'direct_api_fallback_start', model: geminiModel });
         json = await callGeminiDirectly(payloadWithKey, customApiKey, geminiModel);
+        debugReport.steps.push({ stage: 'direct_api_fallback_success' });
       } else {
+        debugReport.finalError = serverErr?.message || 'SERVER_ERROR';
+        setAiDebugReport(debugReport);
         throw serverErr;
       }
     }
 
+    debugReport.finalResponse = sanitizeAiDebugValue(json);
+    debugReport.usedDirectApi = usedDirectApi;
+    setAiDebugReport(debugReport);
     return { json, usedDirectApi };
-  }, [geminiApiKey, geminiModel]);
+  }, [geminiApiKey, geminiModel, sanitizeAiDebugValue]);
 
   const handleGenerateWithAi = useCallback(async (payload: QuestionnairePayload) => {
     setGenerationError('');
@@ -1695,7 +1761,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     geminiAvailabilityMessage,
     refreshGeminiAvailability,
     generationLoading, generationError, lastGeneratedData,
-    planRevisionLoading, planRevisionError, lastQuestionnaireContext,
+    planRevisionLoading, planRevisionError,
+    hasAiDebugReport: Boolean(aiDebugReport),
+    downloadAiDebugReport,
+    lastQuestionnaireContext,
     handleGenerateWithAi, handleRevisePlanWithAi,
     questionnaireTargetProfile, setQuestionnaireTargetProfile,
     questionnaireStepIdx, setQuestionnaireStepIdx,

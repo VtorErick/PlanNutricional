@@ -11,6 +11,7 @@ import {
   Sparkles,
   UserRound,
   Wand2,
+  Download,
   X,
 } from 'lucide-react';
 import type { AccentColors } from '../utils/theme';
@@ -106,6 +107,8 @@ interface PlanAiRefreshSheetProps {
   accentClasses: AccentColors;
   loading?: boolean;
   errorMessage?: string;
+  hasDebugReport?: boolean;
+  onDownloadDebugReport?: () => void;
   hasQuestionnaireContext: boolean;
   defaultTarget: TargetProfile;
   targetOptions: TargetOption[];
@@ -126,6 +129,8 @@ export default function PlanAiRefreshSheet({
   accentClasses,
   loading = false,
   errorMessage = '',
+  hasDebugReport = false,
+  onDownloadDebugReport,
   hasQuestionnaireContext,
   defaultTarget,
   targetOptions,
@@ -447,12 +452,30 @@ export default function PlanAiRefreshSheet({
                 </div>
 
                 {errorMessage ? (
-                  <div className={`rounded-[24px] border px-4 py-3 text-sm ${
-                    isDarkMode
-                      ? 'border-rose-900/70 bg-rose-950/30 text-rose-100'
-                      : 'border-rose-200 bg-rose-50 text-rose-700'
-                  }`}>
-                    {errorMessage}
+                  <div className="space-y-2">
+                    {hasDebugReport && onDownloadDebugReport ? (
+                      <button
+                        type="button"
+                        onClick={onDownloadDebugReport}
+                        className={`w-full rounded-2xl border px-4 py-2.5 text-left text-xs font-bold transition ${
+                          isDarkMode
+                            ? 'border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900'
+                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Download className="h-3.5 w-3.5" />
+                          Descargar logs de depuración (request/response)
+                        </span>
+                      </button>
+                    ) : null}
+                    <div className={`rounded-[24px] border px-4 py-3 text-sm ${
+                      isDarkMode
+                        ? 'border-rose-900/70 bg-rose-950/30 text-rose-100'
+                        : 'border-rose-200 bg-rose-50 text-rose-700'
+                    }`}>
+                      {errorMessage}
+                    </div>
                   </div>
                 ) : null}
               </div>
