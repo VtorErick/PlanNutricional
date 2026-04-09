@@ -615,31 +615,41 @@ function buildRevisionScopedPayload(payload, profileId) {
 }
 
 async function generateWithGemini(parts, apiKey, modelName, systemInstruction, responseSchema) {
-  const body = {
-    system_instruction: {
-      parts: [{ text: systemInstruction }],
-    },
-    contents: [
-      {
-        role: 'user',
-        parts,
-      },
-    ],
-    generationConfig: {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const requestGemini = async (includeSchema) => {
+    const generationConfig = {
       temperature: 0.2,
       responseMimeType: 'application/json',
-      responseSchema: pruneUnsupportedSchemaKeywords(responseSchema),
-    },
+    };
+
+    if (includeSchema) {
+      generationConfig.responseSchema = pruneUnsupportedSchemaKeywords(responseSchema);
+    }
+
+    const body = {
+      system_instruction: {
+        parts: [{ text: systemInstruction }],
+      },
+      contents: [
+        {
+          role: 'user',
+          parts,
+        },
+      ],
+      generationConfig,
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const responseText = await response.text();
+    return { response, responseText };
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  const responseText = await response.text();
+  let { response, responseText } = await requestGemini(true);
 
   if (!response.ok) {
     let errorMessage = `Error ${response.status} llamando a Gemini`;
@@ -651,15 +661,41 @@ async function generateWithGemini(parts, apiKey, modelName, systemInstruction, r
       // Ignore parse errors for API failures.
     }
 
-    if (response.status === 429 || errorMessage.toLowerCase().includes('quota exceeded')) {
-      errorMessage = 'Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.';
-    }
+    const statesConstraintError =
+      errorMessage.toLowerCase().includes('too many states for serving');
 
-    if (response.status === 404) {
-      errorMessage = `Modelo '${modelName}' no encontrado o no disponible. ${errorMessage}`;
-    }
+    if (statesConstraintError) {
+      ({ response, responseText } = await requestGemini(false));
+      if (!response.ok) {
+        let fallbackErrorMessage = `Error ${response.status} llamando a Gemini`;
+        try {
+          const fallbackErrorJson = JSON.parse(responseText);
+          fallbackErrorMessage = fallbackErrorJson?.error?.message || fallbackErrorMessage;
+        } catch {
+          // Ignore parse errors for API failures.
+        }
 
-    throw new Error(errorMessage);
+        if (response.status === 429 || fallbackErrorMessage.toLowerCase().includes('quota exceeded')) {
+          fallbackErrorMessage = 'Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.';
+        }
+
+        if (response.status === 404) {
+          fallbackErrorMessage = `Modelo '${modelName}' no encontrado o no disponible. ${fallbackErrorMessage}`;
+        }
+
+        throw new Error(fallbackErrorMessage);
+      }
+    } else {
+      if (response.status === 429 || errorMessage.toLowerCase().includes('quota exceeded')) {
+        errorMessage = 'Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.';
+      }
+
+      if (response.status === 404) {
+        errorMessage = `Modelo '${modelName}' no encontrado o no disponible. ${errorMessage}`;
+      }
+
+      throw new Error(errorMessage);
+    }
   }
 
   const responseJson = JSON.parse(responseText);

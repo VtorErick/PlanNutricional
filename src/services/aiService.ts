@@ -583,31 +583,41 @@ async function generateContent(
   systemInstruction: string,
   responseSchema: Record<string, unknown>
 ) {
-  const body = {
-    system_instruction: {
-      parts: [{ text: systemInstruction }],
-    },
-    contents: [
-      {
-        role: 'user',
-        parts,
-      },
-    ],
-    generationConfig: {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
+  const requestGemini = async (includeSchema: boolean) => {
+    const generationConfig: Record<string, unknown> = {
       temperature: 0.2,
       responseMimeType: 'application/json',
-      responseSchema: pruneUnsupportedSchemaKeywords(responseSchema),
-    },
+    };
+
+    if (includeSchema) {
+      generationConfig.responseSchema = pruneUnsupportedSchemaKeywords(responseSchema);
+    }
+
+    const body = {
+      system_instruction: {
+        parts: [{ text: systemInstruction }],
+      },
+      contents: [
+        {
+          role: 'user',
+          parts,
+        },
+      ],
+      generationConfig,
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const responseText = await response.text();
+    return { response, responseText };
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  const responseText = await response.text();
+  let { response, responseText } = await requestGemini(true);
 
   if (!response.ok) {
     let errorMessage = `Error ${response.status}`;
@@ -619,7 +629,24 @@ async function generateContent(
       // Ignore JSON parse errors for API failures.
     }
 
-    throw new Error(`Gemini API Error: ${errorMessage}`);
+    const statesConstraintError =
+      errorMessage.toLowerCase().includes('too many states for serving');
+
+    if (statesConstraintError) {
+      ({ response, responseText } = await requestGemini(false));
+      if (!response.ok) {
+        let fallbackErrorMessage = `Error ${response.status}`;
+        try {
+          const fallbackErrorJson = JSON.parse(responseText);
+          fallbackErrorMessage = fallbackErrorJson?.error?.message || fallbackErrorMessage;
+        } catch {
+          // Ignore JSON parse errors for API failures.
+        }
+        throw new Error(`Gemini API Error: ${fallbackErrorMessage}`);
+      }
+    } else {
+      throw new Error(`Gemini API Error: ${errorMessage}`);
+    }
   }
 
   const responseJson = JSON.parse(responseText);
