@@ -398,6 +398,217 @@ function buildGenerationOutputContract(prefix) {
   };
 }
 
+function cloneSerializableData(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function getExpectedProfileId(prefix) {
+  return prefix === 'EL' ? 'el' : 'ella';
+}
+
+function getExpectedProfileName(prefix) {
+  return prefix === 'EL' ? 'El' : 'Ella';
+}
+
+function sanitizeMomentArray(value) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => ({
+      key: typeof entry.key === 'string' ? entry.key : '',
+      label: typeof entry.label === 'string' ? entry.label : '',
+      hora: typeof entry.hora === 'string' ? entry.hora : '',
+    }))
+    .filter((entry) => entry.key && entry.label);
+}
+
+function resolveMomentSource(payload, prefix) {
+  const profileId = getExpectedProfileId(prefix);
+  const sources = [
+    payload?.planConfig?.selectedMoments,
+    payload?.currentContext?.[profileId]?.perfil?.momentos,
+    payload?.originalContext?.[profileId]?.perfil?.momentos,
+  ];
+
+  for (const source of sources) {
+    const normalized = sanitizeMomentArray(source);
+    if (normalized.length) return normalized;
+  }
+
+  return [];
+}
+
+function createInvalidStructureError(debugContext, rawMessage, geminiRequest, geminiResponseBody, modelName) {
+  return createLoggedAiError(
+    {
+      ...debugContext,
+      stage: 'response-parse',
+      selectedModel: modelName,
+    },
+    {
+      rawMessage,
+      statusCode: 200,
+      geminiRequest,
+      geminiResponse: {
+        status: 200,
+        body: geminiResponseBody,
+      },
+    }
+  );
+}
+
+function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiResponseBody, modelName) {
+  const profilePrefix = debugContext.profilePrefix;
+  const requestMode = debugContext.requestMode;
+
+  if (!profilePrefix) return data;
+
+  if (requestMode === 'adjust') {
+    if (!Array.isArray(data?.summary) || data.summary.length === 0) {
+      throw createInvalidStructureError(
+        debugContext,
+        'Respuesta de IA incompleta: el ajuste no incluyo summary.',
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (data.planPatch && typeof data.planPatch === 'object') {
+      for (const [dayKey, dayValue] of Object.entries(data.planPatch)) {
+        if (!dayValue || typeof dayValue !== 'object' || Array.isArray(dayValue)) {
+          throw createInvalidStructureError(
+            debugContext,
+            `Respuesta de IA incompleta: planPatch.${dayKey} no tiene un formato valido.`,
+            geminiRequest,
+            geminiResponseBody,
+            modelName
+          );
+        }
+
+        for (const [momentKey, meals] of Object.entries(dayValue)) {
+          if (!Array.isArray(meals) || meals.length === 0) {
+            throw createInvalidStructureError(
+              debugContext,
+              `Respuesta de IA incompleta: planPatch.${dayKey}.${momentKey} esta vacio.`,
+              geminiRequest,
+              geminiResponseBody,
+              modelName
+            );
+          }
+        }
+      }
+    }
+
+    return data;
+  }
+
+  const normalized = cloneSerializableData(data || {});
+  const perfilKey = `perfil${profilePrefix}`;
+  const equivKey = `equivalencias${profilePrefix}`;
+  const supplementsKey = `suplementos${profilePrefix}`;
+  const planKey = `plan${profilePrefix}`;
+  const perfil = normalized[perfilKey];
+
+  if (!perfil || typeof perfil !== 'object' || Array.isArray(perfil)) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: falta ${perfilKey}.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  if (!perfil.id) {
+    perfil.id = getExpectedProfileId(profilePrefix);
+  }
+
+  if (!perfil.nombre) {
+    perfil.nombre = getExpectedProfileName(profilePrefix);
+  }
+
+  if (!Array.isArray(perfil.momentos) || perfil.momentos.length === 0) {
+    const sourceMoments = resolveMomentSource(debugContext.payload, profilePrefix);
+    if (sourceMoments.length) {
+      perfil.momentos = sourceMoments;
+    }
+  }
+
+  if (!Array.isArray(perfil.momentos) || perfil.momentos.length === 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      'Respuesta de IA incompleta: el perfil no incluyo momentos.',
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  if (!Array.isArray(normalized[equivKey]) || normalized[equivKey].length === 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${equivKey} esta vacio.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  if (!Array.isArray(normalized[supplementsKey])) {
+    normalized[supplementsKey] = [];
+  }
+
+  const plan = normalized[planKey];
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan)) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: falta ${planKey}.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  const momentKeys = perfil.momentos.map((moment) => moment?.key).filter(Boolean);
+  if (!momentKeys.length) {
+    throw createInvalidStructureError(
+      debugContext,
+      'Respuesta de IA incompleta: el perfil no incluyo keys de momentos validas.',
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  const missingSlots = [];
+  for (const dayKey of WEEK_DAYS) {
+    if (!plan[dayKey] || typeof plan[dayKey] !== 'object' || Array.isArray(plan[dayKey])) {
+      missingSlots.push(dayKey);
+      continue;
+    }
+
+    for (const momentKey of momentKeys) {
+      if (!Array.isArray(plan[dayKey][momentKey]) || plan[dayKey][momentKey].length === 0) {
+        missingSlots.push(`${dayKey}.${momentKey}`);
+      }
+    }
+  }
+
+  if (missingSlots.length > 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: faltan secciones en ${missingSlots.join(', ')}.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  return normalized;
+}
+
 function isPlanRevisionRequest(payload) {
   return payload?.requestMode === 'adjust' || payload?.requestMode === 'regenerate';
 }
@@ -728,14 +939,16 @@ function pickBestModel(models, preferredModelRaw) {
   }
 
   const priorityMatchers = [
-    /^gemini-2\.5-pro/i,
-    /^gemini-2\.5-flash/i,
     /^gemini-2\.0-flash/i,
+    /^gemini-2\.5-flash/i,
+    /^gemini-flash-latest/i,
+    /^gemini-flash-lite-latest/i,
     /^gemini-2\.5-flash-lite/i,
     /^gemini-2\.0-flash-lite/i,
-    /^gemini-1\.5-pro/i,
     /^gemini-1\.5-flash/i,
-    /^gemini-flash-latest/i,
+    /^gemini-1\.5-pro/i,
+    /^gemini-2\.5-pro/i,
+    /^gemini-pro-latest/i,
     /^gemini-2\.0-pro/i,
   ];
 
@@ -752,13 +965,13 @@ function getFallbackModels(models, primaryModel) {
   const seen = new Set([primaryModel]);
   const fallbacks = [];
   const priorityMatchers = [
-    /^gemini-2\.5-flash-lite/i,
-    /^gemini-flash-latest/i,
     /^gemini-2\.0-flash/i,
+    /^gemini-2\.5-flash/i,
+    /^gemini-flash-latest/i,
+    /^gemini-flash-lite-latest/i,
+    /^gemini-2\.5-flash-lite/i,
     /^gemini-2\.0-flash-lite/i,
     /^gemini-1\.5-flash/i,
-    /^gemini-2\.5-pro/i,
-    /^gemini-1\.5-pro/i,
   ];
 
   for (const matcher of priorityMatchers) {
@@ -766,13 +979,6 @@ function getFallbackModels(models, primaryModel) {
     if (match) {
       seen.add(match);
       fallbacks.push(match);
-    }
-  }
-
-  for (const modelName of modelNames) {
-    if (!seen.has(modelName)) {
-      seen.add(modelName);
-      fallbacks.push(modelName);
     }
   }
 
@@ -785,11 +991,13 @@ function shouldRetryWithDifferentModel(error) {
   const normalizedMessage = String(rawMessage).toLowerCase();
 
   return (
-    statusCode === 429 ||
     statusCode === 503 ||
     normalizedMessage.includes('high demand') ||
     normalizedMessage.includes('unavailable') ||
-    normalizedMessage.includes('max_tokens')
+    normalizedMessage.includes('max_tokens') ||
+    normalizedMessage.includes('respuesta de ia incompleta') ||
+    normalizedMessage.includes('faltan secciones') ||
+    normalizedMessage.includes('no incluyo')
   );
 }
 
@@ -1027,8 +1235,13 @@ async function generateWithGemini(
   }
 
   try {
-    return JSON.parse(sanitizeAiJson(generatedText));
+    const parsedData = JSON.parse(sanitizeAiJson(generatedText));
+    return validateAndNormalizeAiData(parsedData, debugContext, body, responseJson, modelName);
   } catch (error) {
+    if (error?.aiDebugLog) {
+      throw error;
+    }
+
     throw createLoggedAiError(
       {
         ...debugContext,
@@ -1106,7 +1319,7 @@ export default async function handler(req, res) {
       typeof payload.customApiKey === 'string' ? payload.customApiKey.trim() : '';
     const apiKey = customApiKey || process.env.GEMINI_API_KEY;
     const preferredModel =
-      payload.preferredModel || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+      payload.preferredModel || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
     const requestMode = isPlanRevisionRequest(payload) ? payload.requestMode : 'generate';
     const flow = isPlanRevisionRequest(payload) ? 'plan-revision' : 'questionnaire-submit';
 
@@ -1136,7 +1349,7 @@ export default async function handler(req, res) {
     };
 
     const models = await listAvailableModels(apiKey, debugBase);
-    const selectedModel = pickBestModel(models, preferredModel);
+    const selectedModel = normalizeModelName(preferredModel) || pickBestModel(models, preferredModel);
     const modelCandidates = [selectedModel, ...getFallbackModels(models, selectedModel)];
 
     let elData = null;

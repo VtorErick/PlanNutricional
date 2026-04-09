@@ -19,11 +19,13 @@ import {
   type MealEditorDraft,
 } from '../utils/mealEditing';
 import { normalizeProfileSummary } from '../utils/profileSummary';
-import { getStoredGeminiApiKey, persistGeminiApiKey } from '../utils/geminiKey';
+import { DEFAULT_GEMINI_MODEL, getStoredGeminiApiKey, persistGeminiApiKey } from '../utils/geminiKey';
 import { fetchGeminiStatus, type GeminiStatusResponse } from '../services/geminiStatusService';
 import { APP_STORAGE_ERROR_EVENT, type AppStorageErrorDetail } from '../utils/storageEvents';
 import { readStorageValue, removeStorageValue, writeStorageValue } from '../utils/safeStorage';
 import {
+  createClientAiDebugLog,
+  createClientAiError,
   extractAiDebugLog,
   resolveAiErrorMessage,
   type AiDebugLog,
@@ -756,10 +758,19 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         typeof window !== 'undefined' ? window.localStorage : undefined,
         'geminiModel'
       );
-      const validModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.5-pro', 'gemini-2.5-flash'];
-      if (!saved || !validModels.includes(saved)) return '';
+      const validModels = [
+        'gemini-flash-lite-latest',
+        'gemini-2.5-flash-lite',
+        'gemini-2.0-flash-lite',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-2.5-pro',
+        'gemini-2.5-flash',
+      ];
+      if (!saved || !validModels.includes(saved)) return DEFAULT_GEMINI_MODEL;
       return saved;
-    } catch { return ''; }
+    } catch { return DEFAULT_GEMINI_MODEL; }
   });
   const [geminiAvailableModels, setGeminiAvailableModels] = useState<string[]>([]);
   const [geminiRecommendedModel, setGeminiRecommendedModel] = useState('');
@@ -1251,8 +1262,20 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
       if (isServerUnavailable) {
         if (!customApiKey) {
-          throw new Error(
-            'No fue posible contactar la API del servidor. Para seguir desde el navegador, pega una clave personalizada en el panel de Administracion.'
+          throw createClientAiError(
+            createClientAiDebugLog({
+              flow: payload?.requestMode ? 'plan-revision' : 'questionnaire-submit',
+              transport: 'serverless',
+              stage: 'generate-content',
+              targetProfile: payload?.targetProfile,
+              requestMode: payload?.requestMode || 'generate',
+              requestedModel: geminiModel,
+              apiKeySource: 'server-env',
+              requestPayload: payloadWithKey,
+              rawMessage:
+                'No fue posible contactar la API del servidor. La respuesta estuvo vacia, fue HTML o fallo la red antes de obtener JSON.',
+            }),
+            503
           );
         }
         usedDirectApi = true;
@@ -1262,7 +1285,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    return { json, usedDirectApi };
+    return { json, usedDirectApi, payloadWithKey, customApiKey };
   }, [geminiApiKey, geminiModel]);
 
   const handleGenerateWithAi = useCallback(async (payload: QuestionnairePayload) => {
@@ -1270,53 +1293,35 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     setGenerationErrorLog(null);
     setGenerationLoading(true);
     try {
-      const customApiKey = geminiApiKey.trim();
-      const payloadWithKey = {
-        ...payload,
-        customApiKey: customApiKey || undefined,
-        preferredModel: geminiModel,
-      };
-      let json: any;
-      let usedDirectApi = false;
-
-      try {
-        const res = await fetch('/api/generate-plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloadWithKey),
-        });
-        const responseText = await res.text();
-        if (!responseText || responseText.trim() === '') throw new Error('SERVER_UNAVAILABLE');
-        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) throw new Error('SERVER_UNAVAILABLE');
-        try { json = JSON.parse(responseText); } catch { throw new Error('SERVER_UNAVAILABLE'); }
-        if (!res.ok) {
-          const serverError = new Error(json?.error || `Error ${res.status}`) as Error & {
-            aiDebugLog?: AiDebugLog | null;
-          };
-          serverError.aiDebugLog = json?.aiDebugLog || null;
-          throw serverError;
-        }
-      } catch (serverErr: any) {
-        const isServerUnavailable = serverErr.message === 'SERVER_UNAVAILABLE' ||
-          serverErr.message?.includes('fetch') ||
-          serverErr.message?.includes('Failed to fetch') ||
-          serverErr.message?.includes('NetworkError');
-
-        if (isServerUnavailable) {
-          if (!customApiKey) {
-            throw new Error(
-              'No fue posible contactar la API del servidor. Para seguir desde el navegador, pega una clave personalizada en el panel de Administración.'
-            );
-          }
-          usedDirectApi = true;
-          json = await callGeminiDirectly(payloadWithKey, customApiKey, geminiModel);
-        } else {
-          throw serverErr;
-        }
-      }
+      const {
+        json,
+        usedDirectApi,
+        payloadWithKey,
+        customApiKey,
+      } = await requestAiResponse(payload);
 
       if (!json.elData && !json.ellaData) {
-        throw new Error('La respuesta no contiene datos del plan. Intenta de nuevo.');
+        throw createClientAiError(
+          createClientAiDebugLog({
+            flow: 'questionnaire-submit',
+            transport: usedDirectApi ? 'direct-browser' : 'serverless',
+            stage: 'response-parse',
+            targetProfile: payload.targetProfile,
+            requestMode: 'generate',
+            requestedModel: geminiModel,
+            selectedModel: json?.modelUsed || geminiModel,
+            apiKeySource: usedDirectApi
+              ? 'custom-browser'
+              : (customApiKey ? 'custom-server' : 'server-env'),
+            requestPayload: payloadWithKey,
+            geminiResponse: {
+              status: 200,
+              body: json,
+            },
+            rawMessage: 'La respuesta 200 no incluyo elData ni ellaData.',
+          }),
+          502
+        );
       }
 
       let parsedElData: any;
@@ -1325,7 +1330,28 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         if (json.elData) parsedElData = parseObjectToData(json.elData, 'EL');
         if (json.ellaData) parsedEllaData = parseObjectToData(json.ellaData, 'ELLA');
       } catch (parseErr: any) {
-        throw new Error(`Error en los datos generados: ${parseErr.message}. La IA no generó la estructura esperada.`);
+        throw createClientAiError(
+          createClientAiDebugLog({
+            flow: 'questionnaire-submit',
+            transport: usedDirectApi ? 'direct-browser' : 'serverless',
+            stage: 'response-parse',
+            targetProfile: payload.targetProfile,
+            profilePrefix: json?.elData && !json?.ellaData ? 'EL' : json?.ellaData ? 'ELLA' : undefined,
+            requestMode: 'generate',
+            requestedModel: geminiModel,
+            selectedModel: json?.modelUsed || geminiModel,
+            apiKeySource: usedDirectApi
+              ? 'custom-browser'
+              : (customApiKey ? 'custom-server' : 'server-env'),
+            requestPayload: payloadWithKey,
+            geminiResponse: {
+              status: 200,
+              body: json,
+            },
+            rawMessage: `Error al parsear la estructura generada por la IA: ${parseErr?.message || String(parseErr)}`,
+          }),
+          502
+        );
       }
 
       setLastGeneratedData(json);
@@ -1345,7 +1371,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
       setGenerationErrorLog(null);
       setShowQuestionnaire(false);
-      await notify('Plan generado', usedDirectApi ? '¡Plan generado con IA (modo directo)!' : '¡Plan generado con IA y cargado automáticamente!');
+      await notify('Plan generado', usedDirectApi ? 'Plan generado con IA (modo directo).' : 'Plan generado con IA y cargado automaticamente.');
     } catch (err: any) {
       console.error('Error en handleGenerateWithAi:', err);
       setGenerationErrorLog(extractAiDebugLog(err));
@@ -1355,7 +1381,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setGenerationLoading(false);
     }
-  }, [geminiApiKey, geminiModel, notify, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContext]);
+  }, [geminiModel, notify, requestAiResponse, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContext]);
 
   const handleRevisePlanWithAi = useCallback(async (payload: PlanRevisionRequest) => {
     setPlanRevisionError('');
@@ -1363,10 +1389,35 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     setPlanRevisionLoading(true);
 
     try {
-      const { json, usedDirectApi } = await requestAiResponse(payload);
+      const {
+        json,
+        usedDirectApi,
+        payloadWithKey,
+        customApiKey,
+      } = await requestAiResponse(payload);
 
       if (!json?.elData && !json?.ellaData) {
-        throw new Error('La IA no devolvio cambios aplicables para el plan.');
+        throw createClientAiError(
+          createClientAiDebugLog({
+            flow: 'plan-revision',
+            transport: usedDirectApi ? 'direct-browser' : 'serverless',
+            stage: 'response-parse',
+            targetProfile: payload.targetProfile,
+            requestMode: payload.requestMode,
+            requestedModel: geminiModel,
+            selectedModel: json?.modelUsed || geminiModel,
+            apiKeySource: usedDirectApi
+              ? 'custom-browser'
+              : (customApiKey ? 'custom-server' : 'server-env'),
+            requestPayload: payloadWithKey,
+            geminiResponse: {
+              status: 200,
+              body: json,
+            },
+            rawMessage: 'La respuesta 200 no incluyo cambios aplicables para el plan.',
+          }),
+          502
+        );
       }
 
       const updatedBuckets: Partial<Record<'el' | 'ella', any>> = {};

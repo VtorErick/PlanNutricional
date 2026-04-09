@@ -35,7 +35,7 @@ import {
   Trash,
 } from 'lucide-react';
 import { buildExportData, downloadJsonFile } from '../dataManager';
-import { persistGeminiApiKey } from '../utils/geminiKey';
+import { DEFAULT_GEMINI_MODEL, persistGeminiApiKey } from '../utils/geminiKey';
 import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
 import { getQuestionnaireTheme } from '../utils/theme';
@@ -140,9 +140,13 @@ const TIMELINE_OPTIONS = [
 
 const GEMINI_MODELS = [
   { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', badge: '⚡ Recomendado' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', badge: '🚀 Rapido' },
+  { value: 'gemini-flash-lite-latest', label: 'Gemini Flash Lite', badge: '🆓 Respaldo' },
+  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', badge: '🪶 Ligero' },
+  { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite', badge: '🧪 Respaldo' },
   { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash', badge: '🆓 Gratuito' },
   { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', badge: '🧠 Pro' },
-  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', badge: '🚀 Máximo' },
+  { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', badge: '🚀 Maximo' },
 ];
 
 const DEFAULT_MOMENTS = [
@@ -656,7 +660,7 @@ export default function NutritionQuestionnaire({
   setAdditionalNotes,
 }: Props) {
   const [direction, setDirection] = useState(1);
-  const [localModel, setLocalModel] = useState(geminiModel || 'gemini-2.0-flash');
+  const [localModel, setLocalModel] = useState(geminiModel || DEFAULT_GEMINI_MODEL);
   const [localApiKey, setLocalApiKey] = useState(geminiApiKey || '');
   const [timePickerState, setTimePickerState] = useState<{
     open: boolean;

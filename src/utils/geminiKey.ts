@@ -1,7 +1,7 @@
 import { readStorageValue, removeStorageValue, writeStorageValue } from './safeStorage';
 
 const GEMINI_API_KEY_STORAGE_KEY = 'geminiApiKey';
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
 
 export function getStoredGeminiApiKey() {
   if (typeof window === 'undefined') return '';

@@ -1,4 +1,5 @@
 import type { MealItem, SupplementRecommendation } from '../types';
+import { parseObjectToData } from '../dataManager';
 import {
   AI_GENERIC_ERROR_MESSAGE,
   type AiDebugLog,
@@ -37,6 +38,8 @@ export interface PlanRevisionProfilePatch {
   suplementos?: SupplementRecommendation[];
   planPatch?: Record<string, Record<string, MealItem[]>>;
 }
+
+const DEFAULT_DIRECT_MODEL = 'gemini-2.0-flash';
 
 export interface PlanRevisionResponse {
   responseMode: PlanRevisionMode;
@@ -193,6 +196,14 @@ function normalizeModelName(modelName: string) {
   return modelName.replace(/^models\//, '').trim();
 }
 
+function cloneSerializableData<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function getExpectedPrefixTarget(prefix: 'EL' | 'ELLA') {
+  return prefix === 'EL' ? 'el' : 'ella';
+}
+
 function createLoggedAiError(
   debugContext: GeminiDebugContext,
   options: {
@@ -244,15 +255,13 @@ function getMaxOutputTokens(modelName: string, requestMode: GeminiDebugContext['
 function getDirectFallbackModels(primaryModel: string) {
   const orderedCandidates = [
     normalizeModelName(primaryModel),
-    'gemini-2.5-flash-lite',
-    'gemini-flash-lite-latest',
-    'gemini-flash-latest',
     'gemini-2.0-flash',
+    'gemini-2.5-flash',
+    'gemini-flash-latest',
+    'gemini-flash-lite-latest',
+    'gemini-2.5-flash-lite',
     'gemini-2.0-flash-lite',
     'gemini-1.5-flash',
-    'gemini-2.5-pro',
-    'gemini-pro-latest',
-    'gemini-1.5-pro',
   ].filter(Boolean);
 
   return Array.from(new Set(orderedCandidates));
@@ -267,12 +276,83 @@ function shouldRetryWithDifferentModel(error: unknown) {
   const normalizedMessage = String(rawMessage).toLowerCase();
 
   return (
-    statusCode === 429 ||
     statusCode === 503 ||
     normalizedMessage.includes('high demand') ||
     normalizedMessage.includes('unavailable') ||
-    normalizedMessage.includes('max_tokens')
+    normalizedMessage.includes('max_tokens') ||
+    normalizedMessage.includes('respuesta de ia incompleta') ||
+    normalizedMessage.includes('faltan secciones') ||
+    normalizedMessage.includes('no incluyo')
   );
+}
+
+function validateAndNormalizeDirectAiData(
+  data: unknown,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  const profilePrefix = debugContext.profilePrefix;
+  if (!profilePrefix) return data;
+
+  if (debugContext.requestMode === 'adjust') {
+    const patch = data as PlanRevisionProfilePatch;
+    if (!Array.isArray(patch?.summary) || patch.summary.length === 0) {
+      throw createLoggedAiError(
+        {
+          ...debugContext,
+          stage: 'response-parse',
+          selectedModel: modelName,
+        },
+        {
+          rawMessage: 'Respuesta de IA incompleta: el ajuste no incluyo summary.',
+          statusCode: 200,
+          geminiRequest,
+          geminiResponse: { status: 200, body: geminiResponseBody },
+        }
+      );
+    }
+
+    return data;
+  }
+
+  const normalized = cloneSerializableData((data || {}) as Record<string, unknown>);
+  const perfilKey = `perfil${profilePrefix}`;
+  const perfil = normalized[perfilKey] as Record<string, unknown> | undefined;
+
+  if (perfil && typeof perfil === 'object' && !Array.isArray(perfil)) {
+    if (!perfil.id) perfil.id = getExpectedPrefixTarget(profilePrefix);
+    if (!perfil.nombre) perfil.nombre = profilePrefix === 'EL' ? 'El' : 'Ella';
+
+    const sourceMoments =
+      (debugContext.payload as any)?.planConfig?.selectedMoments ||
+      (debugContext.payload as any)?.currentContext?.[getExpectedPrefixTarget(profilePrefix)]?.perfil?.momentos ||
+      (debugContext.payload as any)?.originalContext?.[getExpectedPrefixTarget(profilePrefix)]?.perfil?.momentos ||
+      [];
+
+    if ((!Array.isArray(perfil.momentos) || perfil.momentos.length === 0) && Array.isArray(sourceMoments) && sourceMoments.length) {
+      perfil.momentos = sourceMoments;
+    }
+  }
+
+  try {
+    return parseObjectToData(normalized, profilePrefix);
+  } catch (error) {
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: `Respuesta de IA incompleta: ${error instanceof Error ? error.message : String(error)}`,
+        statusCode: 200,
+        geminiRequest,
+        geminiResponse: { status: 200, body: geminiResponseBody },
+      }
+    );
+  }
 }
 
 function buildMealItemSchema() {
@@ -757,11 +837,11 @@ async function generateContent(
       temperature: 0.2,
       responseMimeType: 'application/json',
       responseJsonSchema: responseSchema,
-      maxOutputTokens: getMaxOutputTokens(modelName || 'gemini-2.5-flash', debugContext.requestMode),
+      maxOutputTokens: getMaxOutputTokens(modelName || DEFAULT_DIRECT_MODEL, debugContext.requestMode),
     },
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || 'gemini-2.5-flash'}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName || DEFAULT_DIRECT_MODEL}:generateContent?key=${apiKey}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -784,7 +864,7 @@ async function generateContent(
       {
         ...debugContext,
         stage: 'generate-content',
-        selectedModel: modelName || 'gemini-2.5-flash',
+        selectedModel: modelName || DEFAULT_DIRECT_MODEL,
       },
       {
         rawMessage: `Gemini API Error: ${errorMessage}`,
@@ -806,7 +886,7 @@ async function generateContent(
       {
         ...debugContext,
         stage: 'response-parse',
-        selectedModel: modelName || 'gemini-2.5-flash',
+        selectedModel: modelName || DEFAULT_DIRECT_MODEL,
       },
       {
         rawMessage: `La respuesta 200 de Gemini no fue JSON valido: ${error instanceof Error ? error.message : String(error)}`,
@@ -826,7 +906,7 @@ async function generateContent(
       {
         ...debugContext,
         stage: 'response-parse',
-        selectedModel: modelName || 'gemini-2.5-flash',
+        selectedModel: modelName || DEFAULT_DIRECT_MODEL,
       },
       {
         rawMessage: 'La IA no genero candidatos validos para esta solicitud.',
@@ -846,7 +926,7 @@ async function generateContent(
       {
         ...debugContext,
         stage: 'response-parse',
-        selectedModel: modelName || 'gemini-2.5-flash',
+        selectedModel: modelName || DEFAULT_DIRECT_MODEL,
       },
       {
         rawMessage: `La IA no pudo completar la respuesta (${finishReason}).`,
@@ -871,7 +951,7 @@ async function generateContent(
       {
         ...debugContext,
         stage: 'response-parse',
-        selectedModel: modelName || 'gemini-2.5-flash',
+        selectedModel: modelName || DEFAULT_DIRECT_MODEL,
       },
       {
         rawMessage: 'La IA devolvio una respuesta vacia.',
@@ -886,13 +966,24 @@ async function generateContent(
   }
 
   try {
-    return JSON.parse(sanitizeAiJson(generatedText));
+    const parsedData = JSON.parse(sanitizeAiJson(generatedText));
+    return validateAndNormalizeDirectAiData(
+      parsedData,
+      debugContext,
+      body,
+      responseJson,
+      modelName || DEFAULT_DIRECT_MODEL
+    );
   } catch (error) {
+    if (error && typeof error === 'object' && 'aiDebugLog' in error) {
+      throw error;
+    }
+
     throw createLoggedAiError(
       {
         ...debugContext,
         stage: 'response-parse',
-        selectedModel: modelName || 'gemini-2.5-flash',
+        selectedModel: modelName || DEFAULT_DIRECT_MODEL,
       },
       {
         rawMessage: `La IA devolvio JSON no parseable: ${error instanceof Error ? error.message : String(error)}`,
@@ -964,7 +1055,7 @@ export async function callGeminiDirectly(
   const requestMode: 'generate' | PlanRevisionMode = isPlanRevisionRequest(payload)
     ? payload.requestMode
     : 'generate';
-  const requestedModel = modelName || 'gemini-2.5-flash';
+  const requestedModel = modelName || DEFAULT_DIRECT_MODEL;
   const modelCandidates = getDirectFallbackModels(requestedModel);
   let elData = null;
   let ellaData = null;

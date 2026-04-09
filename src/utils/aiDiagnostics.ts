@@ -43,6 +43,10 @@ function buildAiLogFileName(log: AiDebugLog) {
   return `ia-log-${flow}-${timestamp || Date.now()}.json`;
 }
 
+function createAiLogId(flow: AiDebugLog['flow']) {
+  return `${flow}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function downloadAiDebugLog(log: AiDebugLog) {
   downloadJsonFile(buildAiLogFileName(log), JSON.stringify(log, null, 2));
 }
@@ -51,6 +55,51 @@ export function extractAiDebugLog(error: unknown): AiDebugLog | null {
   if (!error || typeof error !== 'object') return null;
   const candidate = (error as AiErrorWithLog).aiDebugLog;
   return candidate && typeof candidate === 'object' ? candidate : null;
+}
+
+export function createClientAiDebugLog(input: {
+  flow: AiDebugLog['flow'];
+  transport: AiDebugLog['transport'];
+  stage: AiDebugLog['stage'];
+  targetProfile?: AiDebugLog['targetProfile'];
+  profilePrefix?: AiDebugLog['profilePrefix'];
+  requestMode?: AiDebugLog['requestMode'];
+  requestedModel?: string;
+  selectedModel?: string;
+  apiKeySource?: AiDebugLog['apiKeySource'];
+  requestPayload?: unknown;
+  geminiRequest?: unknown;
+  geminiResponse?: AiDebugLog['geminiResponse'];
+  rawMessage: string;
+}) {
+  return {
+    id: createAiLogId(input.flow),
+    occurredAt: new Date().toISOString(),
+    flow: input.flow,
+    transport: input.transport,
+    stage: input.stage,
+    targetProfile: input.targetProfile,
+    profilePrefix: input.profilePrefix,
+    requestMode: input.requestMode,
+    requestedModel: input.requestedModel,
+    selectedModel: input.selectedModel,
+    apiKeySource: input.apiKeySource,
+    requestPayload: input.requestPayload,
+    geminiRequest: input.geminiRequest,
+    geminiResponse: input.geminiResponse,
+    error: {
+      message: AI_GENERIC_ERROR_MESSAGE,
+      rawMessage: input.rawMessage,
+    },
+  } satisfies AiDebugLog;
+}
+
+export function createClientAiError(log: AiDebugLog, statusCode = 502) {
+  const error = new Error(AI_GENERIC_ERROR_MESSAGE) as AiErrorWithLog;
+  error.aiDebugLog = log;
+  error.statusCode = statusCode;
+  error.userMessage = AI_GENERIC_ERROR_MESSAGE;
+  return error;
 }
 
 export function resolveAiErrorMessage(error: unknown, fallback: string) {

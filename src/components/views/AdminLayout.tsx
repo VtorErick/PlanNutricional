@@ -45,9 +45,9 @@ export default function AdminLayout() {
   const modelOptions = [
     {
       val: 'gemini-2.0-flash',
-      label: 'Equilibrado',
+      label: 'Recomendado',
       techLabel: 'Gemini 2.0 Flash',
-      desc: 'Equilibrio entre velocidad y buenos resultados.',
+      desc: 'La opcion mas estable para cuestionario completo y salidas estructuradas.',
       badge: 'Balance',
       badgeColor: 'bg-blue-100 text-blue-700',
     },
@@ -58,6 +58,30 @@ export default function AdminLayout() {
       desc: 'Genera respuestas rápido y con buen rendimiento.',
       badge: 'Rápido',
       badgeColor: 'bg-emerald-100 text-emerald-700',
+    },
+    {
+      val: 'gemini-flash-lite-latest',
+      label: 'Lite (respaldo)',
+      techLabel: 'Gemini Flash Lite',
+      desc: 'Consume menos, pero puede devolver estructuras incompletas en cuestionarios largos.',
+      badge: 'Respaldo',
+      badgeColor: 'bg-lime-100 text-lime-700',
+    },
+    {
+      val: 'gemini-2.5-flash-lite',
+      label: 'Flash Lite 2.5',
+      techLabel: 'Gemini 2.5 Flash Lite',
+      desc: 'Alternativa ligera para reintentos o ajustes mas cortos.',
+      badge: 'Ligero',
+      badgeColor: 'bg-cyan-100 text-cyan-700',
+    },
+    {
+      val: 'gemini-2.0-flash-lite',
+      label: 'Flash Lite 2.0',
+      techLabel: 'Gemini 2.0 Flash Lite',
+      desc: 'Ultimo respaldo de bajo costo cuando la cuota es limitada.',
+      badge: 'Ajustado',
+      badgeColor: 'bg-sky-100 text-sky-700',
     },
     {
       val: 'gemini-1.5-flash',
