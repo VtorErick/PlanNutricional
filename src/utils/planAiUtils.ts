@@ -94,6 +94,7 @@ export function buildCompactRevisionSnapshot(
   snapshot: SerializableProfileSnapshot,
   options?: {
     allowedMoments?: string[];
+    includeReferenceData?: boolean;
   }
 ): SerializableProfileSnapshot {
   const perfil = snapshot?.perfil || {};
@@ -102,6 +103,7 @@ export function buildCompactRevisionSnapshot(
     Array.isArray(options?.allowedMoments) ? options.allowedMoments : []
   );
   const filterByMoment = allowedMoments.size > 0;
+  const includeReferenceData = options?.includeReferenceData !== false;
 
   const compactPlan = Object.fromEntries(
     Object.entries(plan).map(([dayKey, dayValue]) => {
@@ -148,7 +150,7 @@ export function buildCompactRevisionSnapshot(
         }))
         : [],
     },
-    equivalencias: Array.isArray(snapshot?.equivalencias)
+    equivalencias: includeReferenceData && Array.isArray(snapshot?.equivalencias)
       ? snapshot.equivalencias.map((entry) => ({
         titulo: truncateText(entry?.titulo, 80),
         icon: entry?.icon || 'Heart',
@@ -157,7 +159,7 @@ export function buildCompactRevisionSnapshot(
           : [],
       }))
       : [],
-    suplementos: Array.isArray(snapshot?.suplementos)
+    suplementos: includeReferenceData && Array.isArray(snapshot?.suplementos)
       ? snapshot.suplementos.map((supp) => ({
         name: truncateText(supp?.name, 80),
         goalSupport: truncateText(supp?.goalSupport, 100),

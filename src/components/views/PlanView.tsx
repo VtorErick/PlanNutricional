@@ -415,6 +415,7 @@ export default function PlanView() {
     const allowedMomentsForAdjust = requestMode === 'adjust'
       ? detectMomentsFromInstruction(instruction)
       : [];
+    const includeReferenceData = requestMode !== 'adjust';
 
     const buildSnapshot = (perfilId: 'el' | 'ella') => buildCompactRevisionSnapshot(
       buildSerializableProfileSnapshot(
@@ -422,7 +423,10 @@ export default function PlanView() {
         equivalenciasData[perfilId],
         supplementsData[perfilId]
       ),
-      { allowedMoments: allowedMomentsForAdjust }
+      {
+        allowedMoments: allowedMomentsForAdjust,
+        includeReferenceData,
+      }
     );
 
     const buildDefaultSnapshot = (perfilId: 'el' | 'ella') => buildCompactRevisionSnapshot(
@@ -431,7 +435,10 @@ export default function PlanView() {
         defaultEquivalenciasData[perfilId],
         defaultSupplementsData[perfilId]
       ),
-      { allowedMoments: allowedMomentsForAdjust }
+      {
+        allowedMoments: allowedMomentsForAdjust,
+        includeReferenceData,
+      }
     );
 
     const revisionPayload: PlanRevisionRequest = {
@@ -443,10 +450,12 @@ export default function PlanView() {
         ...(targetProfile === 'el' || targetProfile === 'ambos' ? { el: buildSnapshot('el') } : {}),
         ...(targetProfile === 'ella' || targetProfile === 'ambos' ? { ella: buildSnapshot('ella') } : {}),
       },
-      originalContext: {
-        ...(targetProfile === 'el' || targetProfile === 'ambos' ? { el: buildDefaultSnapshot('el') } : {}),
-        ...(targetProfile === 'ella' || targetProfile === 'ambos' ? { ella: buildDefaultSnapshot('ella') } : {}),
-      },
+      originalContext: requestMode === 'adjust'
+        ? {}
+        : {
+          ...(targetProfile === 'el' || targetProfile === 'ambos' ? { el: buildDefaultSnapshot('el') } : {}),
+          ...(targetProfile === 'ella' || targetProfile === 'ambos' ? { ella: buildDefaultSnapshot('ella') } : {}),
+        },
     };
 
     await handleRevisePlanWithAi(revisionPayload);
