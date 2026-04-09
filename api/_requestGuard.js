@@ -33,12 +33,45 @@ function getAllowedHosts(req) {
   );
 }
 
+function normalizeWwwHost(host) {
+  if (!host) return '';
+  return host.startsWith('www.') ? host.slice(4) : host;
+}
+
+function hostSharesSuffix(candidateHost, allowedHost) {
+  if (!candidateHost || !allowedHost) return false;
+  if (candidateHost === allowedHost) return true;
+  if (candidateHost.endsWith(`.${allowedHost}`)) return true;
+  if (allowedHost.endsWith(`.${candidateHost}`)) return true;
+  return false;
+}
+
+function isHostAllowed(candidateHost, allowedHosts) {
+  if (!candidateHost) return false;
+  const normalizedCandidate = candidateHost.toLowerCase();
+  const normalizedCandidateNoWww = normalizeWwwHost(normalizedCandidate);
+
+  for (const allowedHost of allowedHosts) {
+    const normalizedAllowed = allowedHost.toLowerCase();
+    const normalizedAllowedNoWww = normalizeWwwHost(normalizedAllowed);
+
+    if (
+      hostSharesSuffix(normalizedCandidate, normalizedAllowed) ||
+      hostSharesSuffix(normalizedCandidateNoWww, normalizedAllowedNoWww)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function resolveTrustedUrl(rawValue, allowedHosts) {
   if (!rawValue || typeof rawValue !== 'string') return null;
 
   try {
     const url = new URL(rawValue.trim());
-    return allowedHosts.has(url.host.toLowerCase()) ? url : null;
+    return isHostAllowed(url.host.toLowerCase(), allowedHosts) ? url : null;
   } catch {
     return null;
   }
