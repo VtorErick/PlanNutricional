@@ -26,7 +26,7 @@ import {
   perfilesData as defaultPerfilesData,
   supplementsData as defaultSupplementsData,
 } from '../../data';
-import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
+import { buildCompactRevisionSnapshot, buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
 import {
   createMealEditorDraft,
   getMealOccurrences,
@@ -397,16 +397,20 @@ export default function PlanView() {
     targetProfile: PlanRevisionRequest['targetProfile'];
     instruction: string;
   }) => {
-    const buildSnapshot = (perfilId: 'el' | 'ella') => buildSerializableProfileSnapshot(
-      perfilesData[perfilId],
-      equivalenciasData[perfilId],
-      supplementsData[perfilId]
+    const buildSnapshot = (perfilId: 'el' | 'ella') => buildCompactRevisionSnapshot(
+      buildSerializableProfileSnapshot(
+        perfilesData[perfilId],
+        equivalenciasData[perfilId],
+        supplementsData[perfilId]
+      )
     );
 
-    const buildDefaultSnapshot = (perfilId: 'el' | 'ella') => buildSerializableProfileSnapshot(
-      defaultPerfilesData[perfilId],
-      defaultEquivalenciasData[perfilId],
-      defaultSupplementsData[perfilId]
+    const buildDefaultSnapshot = (perfilId: 'el' | 'ella') => buildCompactRevisionSnapshot(
+      buildSerializableProfileSnapshot(
+        defaultPerfilesData[perfilId],
+        defaultEquivalenciasData[perfilId],
+        defaultSupplementsData[perfilId]
+      )
     );
 
     const revisionPayload: PlanRevisionRequest = {

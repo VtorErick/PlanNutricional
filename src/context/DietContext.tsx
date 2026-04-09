@@ -1246,6 +1246,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       customApiKey: customApiKey || undefined,
       preferredModel: geminiModel,
     };
+    const serializedPayload = JSON.stringify(payloadWithKey);
     let json: any;
     let usedDirectApi = false;
     const debugReport: Record<string, any> = {
@@ -1254,6 +1255,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       preferredModel: geminiModel,
       hasCustomApiKey: Boolean(customApiKey),
       requestPayload: sanitizeAiDebugValue(payloadWithKey),
+      requestBytes: serializedPayload.length,
       steps: [],
     };
 
@@ -1261,13 +1263,14 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       const res = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payloadWithKey),
+        body: serializedPayload,
       });
       const responseText = await res.text();
       debugReport.steps.push({
         stage: 'server_response',
         status: res.status,
         ok: res.ok,
+        responseBytes: responseText.length,
         responsePreview: responseText.slice(0, 12000),
       });
       if (!responseText || responseText.trim() === '') throw new Error('SERVER_UNAVAILABLE');

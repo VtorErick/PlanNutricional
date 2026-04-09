@@ -83,6 +83,87 @@ export function buildSerializableProfileSnapshot(
   };
 }
 
+function truncateText(value: unknown, max = 180): string {
+  if (typeof value !== 'string') return '';
+  const normalized = value.trim();
+  if (normalized.length <= max) return normalized;
+  return `${normalized.slice(0, max - 1)}…`;
+}
+
+export function buildCompactRevisionSnapshot(
+  snapshot: SerializableProfileSnapshot
+): SerializableProfileSnapshot {
+  const perfil = snapshot?.perfil || {};
+  const plan = snapshot?.plan || {};
+
+  const compactPlan = Object.fromEntries(
+    Object.entries(plan).map(([dayKey, dayValue]) => {
+      if (!isPlainObject(dayValue)) return [dayKey, {}];
+
+      const compactDay = Object.fromEntries(
+        Object.entries(dayValue).map(([momentKey, meals]) => {
+          if (!Array.isArray(meals)) return [momentKey, []];
+          return [
+            momentKey,
+            meals.slice(0, 3).map((meal: any) => ({
+              nombre: truncateText(meal?.nombre, 100),
+              porciones: truncateText(meal?.porciones, 120),
+              detalle: truncateText(meal?.detalle, 180),
+              tags: [],
+              super: [],
+              caloriasKcal: Number.isFinite(meal?.caloriasKcal) ? meal.caloriasKcal : 0,
+              proteinaG: Number.isFinite(meal?.proteinaG) ? meal.proteinaG : 0,
+              grasasG: Number.isFinite(meal?.grasasG) ? meal.grasasG : 0,
+            })),
+          ];
+        })
+      );
+
+      return [dayKey, compactDay];
+    })
+  );
+
+  return {
+    perfil: {
+      id: perfil.id,
+      nombre: perfil.nombre,
+      perfil: truncateText(perfil.perfil, 120),
+      meta: truncateText(perfil.meta, 200),
+      metaCaloricaKcalDia: perfil.metaCaloricaKcalDia,
+      horariosTexto: truncateText(perfil.horariosTexto, 160),
+      objetivosPorMomento: perfil.objetivosPorMomento || {},
+      momentos: Array.isArray(perfil.momentos)
+        ? perfil.momentos.map((moment: any) => ({
+          key: moment?.key,
+          label: moment?.label,
+          hora: moment?.hora,
+        }))
+        : [],
+    },
+    equivalencias: Array.isArray(snapshot?.equivalencias)
+      ? snapshot.equivalencias.map((entry) => ({
+        titulo: truncateText(entry?.titulo, 80),
+        icon: entry?.icon || 'Heart',
+        items: Array.isArray(entry?.items)
+          ? entry.items.slice(0, 5).map((item) => truncateText(item, 80))
+          : [],
+      }))
+      : [],
+    suplementos: Array.isArray(snapshot?.suplementos)
+      ? snapshot.suplementos.map((supp) => ({
+        name: truncateText(supp?.name, 80),
+        goalSupport: truncateText(supp?.goalSupport, 100),
+        whyItMayHelp: truncateText(supp?.whyItMayHelp, 120),
+        howToUse: truncateText(supp?.howToUse, 120),
+        timing: truncateText(supp?.timing, 80),
+        notes: truncateText(supp?.notes, 120),
+        caution: truncateText(supp?.caution, 120),
+      }))
+      : [],
+    plan: compactPlan,
+  };
+}
+
 export function buildRawBucketFromSnapshot(
   profileId: EditableProfileId,
   snapshot: SerializableProfileSnapshot
