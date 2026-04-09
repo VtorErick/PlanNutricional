@@ -37,9 +37,14 @@ export interface PlanRevisionProfilePatch {
   equivalencias?: SerializableEquivalencia[];
   suplementos?: SupplementRecommendation[];
   planPatch?: Record<string, Record<string, MealItem[]>>;
+  planPatchSlots?: Array<{
+    dia: string;
+    momento: string;
+    opciones: MealItem[];
+  }>;
 }
 
-const DEFAULT_DIRECT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_DIRECT_MODEL = 'gemini-2.5-flash';
 
 export interface PlanRevisionResponse {
   responseMode: PlanRevisionMode;
@@ -86,6 +91,7 @@ const MEAL_ITEM_REQUIRED_KEYS = [
   'proteinaG',
   'grasasG',
 ];
+const PLAN_SLOT_REQUIRED_KEYS = ['dia', 'momento', 'opciones'];
 const SUPPLEMENT_REQUIRED_KEYS = [
   'name',
   'goalSupport',
@@ -110,6 +116,25 @@ const PROFILE_REQUIRED_KEYS = [
   'objetivosPorMomento',
   'distribucionDiaria',
   'resumenPersonal',
+];
+const PRIMARY_MODEL_PRIORITY_MATCHERS = [
+  /^gemini-2\.5-flash$/i,
+  /^gemini-2\.0-flash(?:-001)?$/i,
+  /^gemini-flash-latest$/i,
+  /^gemini-2\.5-flash-lite$/i,
+  /^gemini-2\.0-flash-lite(?:-001)?$/i,
+  /^gemini-flash-lite-latest$/i,
+  /^gemini-1\.5-flash$/i,
+  /^gemini-1\.5-pro$/i,
+  /^gemini-2\.5-pro$/i,
+  /^gemini-pro-latest$/i,
+];
+const AUTO_FALLBACK_PRIORITY_MATCHERS = [
+  /^gemini-2\.5-flash$/i,
+  /^gemini-2\.0-flash(?:-001)?$/i,
+  /^gemini-2\.5-flash-lite$/i,
+  /^gemini-2\.0-flash-lite(?:-001)?$/i,
+  /^gemini-1\.5-flash$/i,
 ];
 
 type GeminiDebugContext = {
@@ -200,8 +225,12 @@ function cloneSerializableData<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function getExpectedPrefixTarget(prefix: 'EL' | 'ELLA') {
+function getExpectedProfileId(prefix: 'EL' | 'ELLA') {
   return prefix === 'EL' ? 'el' : 'ella';
+}
+
+function getExpectedProfileName(prefix: 'EL' | 'ELLA') {
+  return prefix === 'EL' ? 'El' : 'Ella';
 }
 
 function createLoggedAiError(
@@ -252,19 +281,59 @@ function getMaxOutputTokens(modelName: string, requestMode: GeminiDebugContext['
   return Math.min(desired, hardLimit);
 }
 
-function getDirectFallbackModels(primaryModel: string) {
-  const orderedCandidates = [
-    normalizeModelName(primaryModel),
-    'gemini-2.0-flash',
-    'gemini-2.5-flash',
-    'gemini-flash-latest',
-    'gemini-flash-lite-latest',
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-flash',
-  ].filter(Boolean);
+function getThinkingConfig(modelName: string) {
+  const normalized = normalizeModelName(modelName).toLowerCase();
+  if (normalized.startsWith('gemini-2.5-')) {
+    return { thinkingBudget: 0 };
+  }
+  return undefined;
+}
 
-  return Array.from(new Set(orderedCandidates));
+function orderModelNamesByPriority(
+  modelNames: string[],
+  priorityMatchers: RegExp[],
+  preferredModelRaw?: string
+) {
+  const preferredModel = normalizeModelName(preferredModelRaw || '');
+  const remaining = [...new Set(modelNames.map((name) => normalizeModelName(name)).filter(Boolean))];
+  const ordered: string[] = [];
+
+  if (preferredModel && remaining.includes(preferredModel)) {
+    ordered.push(preferredModel);
+  }
+
+  priorityMatchers.forEach((matcher) => {
+    const match = remaining.find((name) => matcher.test(name) && !ordered.includes(name));
+    if (match) {
+      ordered.push(match);
+    }
+  });
+
+  remaining.forEach((name) => {
+    if (!ordered.includes(name)) {
+      ordered.push(name);
+    }
+  });
+
+  return ordered;
+}
+
+function getDirectFallbackModels(primaryModel: string) {
+  return orderModelNamesByPriority(
+    [
+      normalizeModelName(primaryModel),
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-2.5-flash-lite',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-flash',
+    ],
+    AUTO_FALLBACK_PRIORITY_MATCHERS
+  );
+}
+
+function shouldRetryStatusCode(statusCode: unknown) {
+  return [408, 429, 500, 502, 503, 504].includes(Number(statusCode));
 }
 
 function shouldRetryWithDifferentModel(error: unknown) {
@@ -276,14 +345,705 @@ function shouldRetryWithDifferentModel(error: unknown) {
   const normalizedMessage = String(rawMessage).toLowerCase();
 
   return (
-    statusCode === 503 ||
+    shouldRetryStatusCode(statusCode) ||
     normalizedMessage.includes('high demand') ||
+    normalizedMessage.includes('resource exhausted') ||
+    normalizedMessage.includes('rate limit') ||
+    normalizedMessage.includes('quota exceeded') ||
+    normalizedMessage.includes('deadline exceeded') ||
+    normalizedMessage.includes('timed out') ||
+    normalizedMessage.includes('internal error') ||
+    normalizedMessage.includes('backend error') ||
     normalizedMessage.includes('unavailable') ||
     normalizedMessage.includes('max_tokens') ||
+    normalizedMessage.includes('max tokens') ||
     normalizedMessage.includes('respuesta de ia incompleta') ||
     normalizedMessage.includes('faltan secciones') ||
-    normalizedMessage.includes('no incluyo')
+    normalizedMessage.includes('no incluyo') ||
+    normalizedMessage.includes('respuesta vacia')
   );
+}
+
+function sanitizeMomentArray(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry: any) => ({
+      key: typeof entry.key === 'string' ? entry.key : '',
+      label: typeof entry.label === 'string' ? entry.label : '',
+      hora: typeof entry.hora === 'string' ? entry.hora : '',
+    }))
+    .filter((entry) => entry.key && entry.label);
+}
+
+function resolveMomentSource(payload: any, prefix: 'EL' | 'ELLA') {
+  const profileId = getExpectedProfileId(prefix);
+  const sources = [
+    payload?.planConfig?.selectedMoments,
+    payload?.currentContext?.[profileId]?.perfil?.momentos,
+    payload?.originalContext?.[profileId]?.perfil?.momentos,
+  ];
+
+  for (const source of sources) {
+    const normalized = sanitizeMomentArray(source);
+    if (normalized.length) return normalized;
+  }
+
+  return [];
+}
+
+function createInvalidStructureError(
+  debugContext: GeminiDebugContext,
+  rawMessage: string,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  return createLoggedAiError(
+    {
+      ...debugContext,
+      stage: 'response-parse',
+      selectedModel: modelName,
+    },
+    {
+      rawMessage,
+      statusCode: 200,
+      geminiRequest,
+      geminiResponse: {
+        status: 200,
+        body: geminiResponseBody,
+      },
+    }
+  );
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isIntegerValue(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value);
+}
+
+function validateRequiredStringField(
+  container: any,
+  fieldName: string,
+  location: string,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!isNonEmptyString(container?.[fieldName])) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location}.${fieldName} esta vacio.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+}
+
+function validateRequiredIntegerField(
+  container: any,
+  fieldName: string,
+  location: string,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!isIntegerValue(container?.[fieldName])) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location}.${fieldName} no es un entero valido.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+}
+
+function validateMealItemStructure(
+  item: any,
+  location: string,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location} no es un objeto de comida valido.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  validateRequiredStringField(item, 'nombre', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(item, 'porciones', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(item, 'detalle', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(item, 'caloriasKcal', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(item, 'proteinaG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(item, 'grasasG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+
+  if (!Array.isArray(item.tags)) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location}.tags debe ser un arreglo.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  if (!Array.isArray(item.super)) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location}.super debe ser un arreglo.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+}
+
+function validateMealOptionsArray(
+  options: any,
+  location: string,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!Array.isArray(options) || options.length !== 3) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location} debe incluir exactamente 3 opciones.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  options.forEach((mealItem: any, index: number) => {
+    validateMealItemStructure(
+      mealItem,
+      `${location}[${index}]`,
+      debugContext,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  });
+}
+
+function validateEquivalenciasStructure(
+  equivalencias: any,
+  location: string,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!Array.isArray(equivalencias) || equivalencias.length === 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location} esta vacio.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  equivalencias.forEach((item: any, index: number) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}] no es un objeto valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    validateRequiredStringField(item, 'titulo', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredStringField(item, 'icon', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+
+    if (!ALLOWED_ICONS.includes(item.icon)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}].icon no es valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (
+      !Array.isArray(item.items) ||
+      item.items.length === 0 ||
+      item.items.some((entry: unknown) => !isNonEmptyString(entry))
+    ) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}].items esta vacio o invalido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+  });
+}
+
+function validateSupplementsStructure(
+  supplements: any,
+  location: string,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!Array.isArray(supplements)) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location} debe ser un arreglo.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  supplements.forEach((item: any, index: number) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}] no es un objeto valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    SUPPLEMENT_REQUIRED_KEYS.forEach((fieldName) => {
+      validateRequiredStringField(
+        item,
+        fieldName,
+        `${location}[${index}]`,
+        debugContext,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    });
+  });
+}
+
+function validateProfileStructure(
+  perfil: any,
+  profilePrefix: 'EL' | 'ELLA',
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!perfil || typeof perfil !== 'object' || Array.isArray(perfil)) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: falta perfil${profilePrefix}.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  validateRequiredStringField(perfil, 'id', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(perfil, 'nombre', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(perfil, 'perfil', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(perfil, 'detallesPerfil', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(perfil, 'meta', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(perfil, 'metaCaloricaKcalDia', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(perfil, 'descripcion', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(perfil, 'edad', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(perfil, 'horariosTexto', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredStringField(perfil, 'notaSalud', `perfil${profilePrefix}`, debugContext, geminiRequest, geminiResponseBody, modelName);
+
+  if (!Array.isArray(perfil.momentos) || perfil.momentos.length === 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      'Respuesta de IA incompleta: el perfil no incluyo momentos.',
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  perfil.momentos.forEach((momento: any, index: number) => {
+    if (!momento || typeof momento !== 'object' || Array.isArray(momento)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: perfil${profilePrefix}.momentos[${index}] no es valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    validateRequiredStringField(momento, 'key', `perfil${profilePrefix}.momentos[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredStringField(momento, 'label', `perfil${profilePrefix}.momentos[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredStringField(momento, 'hora', `perfil${profilePrefix}.momentos[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  });
+
+  const momentKeys = perfil.momentos.map((moment: any) => moment?.key).filter(Boolean);
+  if (!momentKeys.length) {
+    throw createInvalidStructureError(
+      debugContext,
+      'Respuesta de IA incompleta: el perfil no incluyo keys de momentos validas.',
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  if (Array.isArray(perfil.objetivosPorMomento)) {
+    const normalizedGoals: Record<string, Record<string, number>> = {};
+    const seenGoalMoments = new Set<string>();
+
+    perfil.objetivosPorMomento.forEach((distribution: any, index: number) => {
+      if (!distribution || typeof distribution !== 'object' || Array.isArray(distribution)) {
+        throw createInvalidStructureError(
+          debugContext,
+          `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento[${index}] es invalido.`,
+          geminiRequest,
+          geminiResponseBody,
+          modelName
+        );
+      }
+
+      validateRequiredStringField(
+        distribution,
+        'momento',
+        `perfil${profilePrefix}.objetivosPorMomento[${index}]`,
+        debugContext,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+
+      const momentKey = distribution.momento.trim();
+      if (!momentKeys.includes(momentKey)) {
+        throw createInvalidStructureError(
+          debugContext,
+          `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento[${index}].momento no corresponde a un momento valido.`,
+          geminiRequest,
+          geminiResponseBody,
+          modelName
+        );
+      }
+
+      if (seenGoalMoments.has(momentKey)) {
+        throw createInvalidStructureError(
+          debugContext,
+          `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento repitio el momento ${momentKey}.`,
+          geminiRequest,
+          geminiResponseBody,
+          modelName
+        );
+      }
+
+      FOOD_GROUP_KEYS.forEach((groupKey) => {
+        if (!isIntegerValue(distribution[groupKey])) {
+          throw createInvalidStructureError(
+            debugContext,
+            `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento[${index}].${groupKey} no es entero.`,
+            geminiRequest,
+            geminiResponseBody,
+            modelName
+          );
+        }
+      });
+
+      normalizedGoals[momentKey] = Object.fromEntries(
+        FOOD_GROUP_KEYS.map((groupKey) => [groupKey, distribution[groupKey]])
+      ) as Record<string, number>;
+      seenGoalMoments.add(momentKey);
+    });
+
+    perfil.objetivosPorMomento = normalizedGoals;
+  }
+
+  if (
+    !perfil.objetivosPorMomento ||
+    typeof perfil.objetivosPorMomento !== 'object' ||
+    Array.isArray(perfil.objetivosPorMomento)
+  ) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento es invalido.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  momentKeys.forEach((momentKey: string) => {
+    const distribution = perfil.objetivosPorMomento?.[momentKey];
+    if (!distribution || typeof distribution !== 'object' || Array.isArray(distribution)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento.${momentKey} es invalido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    FOOD_GROUP_KEYS.forEach((groupKey) => {
+      if (!isIntegerValue(distribution[groupKey])) {
+        throw createInvalidStructureError(
+          debugContext,
+          `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento.${momentKey}.${groupKey} no es entero.`,
+          geminiRequest,
+          geminiResponseBody,
+          modelName
+        );
+      }
+    });
+  });
+
+  if (!Array.isArray(perfil.distribucionDiaria) || perfil.distribucionDiaria.length === 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: perfil${profilePrefix}.distribucionDiaria esta vacio.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  perfil.distribucionDiaria.forEach((item: any, index: number) => {
+    validateRequiredStringField(item, 'grupo', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(item, 'total', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredStringField(item, 'detalle', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+  });
+
+  if (
+    !Array.isArray(perfil.resumenPersonal) ||
+    perfil.resumenPersonal.length === 0 ||
+    perfil.resumenPersonal.some((entry: unknown) => !isNonEmptyString(entry))
+  ) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: perfil${profilePrefix}.resumenPersonal esta vacio o invalido.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  return momentKeys as string[];
+}
+
+function normalizeDayName(day: unknown) {
+  if (typeof day !== 'string') return '';
+  return day
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\w/, (match) => match.toUpperCase());
+}
+
+function buildPlanObjectFromSlots(
+  slots: any,
+  expectedMomentKeys: string[],
+  location: string,
+  requireAllSlots: boolean,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!Array.isArray(slots) || slots.length === 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location} esta vacio.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  const plan: Record<string, Record<string, MealItem[]>> = {};
+  const seenSlots = new Set<string>();
+
+  slots.forEach((slot: any, index: number) => {
+    if (!slot || typeof slot !== 'object' || Array.isArray(slot)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}] no es un slot valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    const dia = normalizeDayName(slot.dia);
+    const momento = typeof slot.momento === 'string' ? slot.momento.trim() : '';
+    if (!WEEK_DAYS.includes(dia)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}].dia no es valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (!expectedMomentKeys.includes(momento)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}].momento no es valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    const slotKey = `${dia}.${momento}`;
+    if (seenSlots.has(slotKey)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location} repitio el slot ${slotKey}.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    validateMealOptionsArray(
+      slot.opciones,
+      `${location}[${index}].opciones`,
+      debugContext,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+
+    if (!plan[dia]) {
+      plan[dia] = {};
+    }
+
+    plan[dia][momento] = slot.opciones;
+    seenSlots.add(slotKey);
+  });
+
+  if (!requireAllSlots) {
+    return plan;
+  }
+
+  const missingSlots: string[] = [];
+  WEEK_DAYS.forEach((dayKey) => {
+    expectedMomentKeys.forEach((momentKey) => {
+      if (!Array.isArray(plan?.[dayKey]?.[momentKey]) || plan[dayKey][momentKey].length !== 3) {
+        missingSlots.push(`${dayKey}.${momentKey}`);
+      }
+    });
+  });
+
+  if (missingSlots.length > 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: faltan secciones en ${missingSlots.join(', ')}.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  return plan;
+}
+
+function validateLegacyPlanStructure(
+  plan: any,
+  expectedMomentKeys: string[],
+  location: string,
+  requireAllSlots: boolean,
+  debugContext: GeminiDebugContext,
+  geminiRequest: unknown,
+  geminiResponseBody: unknown,
+  modelName: string
+) {
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan)) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${location} no tiene un formato valido.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  const normalizedPlan = Object.fromEntries(
+    Object.entries(plan).map(([dayKey, dayValue]) => [normalizeDayName(dayKey), dayValue])
+  );
+
+  const missingSlots: string[] = [];
+
+  Object.entries(normalizedPlan).forEach(([dayKey, dayValue]) => {
+    if (!dayValue || typeof dayValue !== 'object' || Array.isArray(dayValue)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}.${dayKey} no es valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    expectedMomentKeys.forEach((momentKey) => {
+      const options = (dayValue as Record<string, unknown>)[momentKey];
+      if (!Array.isArray(options)) {
+        if (requireAllSlots) {
+          missingSlots.push(`${dayKey}.${momentKey}`);
+        }
+        return;
+      }
+
+      validateMealOptionsArray(
+        options,
+        `${location}.${dayKey}.${momentKey}`,
+        debugContext,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    });
+  });
+
+  if (requireAllSlots) {
+    WEEK_DAYS.forEach((dayKey) => {
+      if (!normalizedPlan[dayKey]) {
+        missingSlots.push(dayKey);
+      }
+    });
+  }
+
+  if (missingSlots.length > 0) {
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: faltan secciones en ${missingSlots.join(', ')}.`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+  }
+
+  return normalizedPlan;
 }
 
 function validateAndNormalizeDirectAiData(
@@ -294,63 +1054,212 @@ function validateAndNormalizeDirectAiData(
   modelName: string
 ) {
   const profilePrefix = debugContext.profilePrefix;
+  const requestMode = debugContext.requestMode;
   if (!profilePrefix) return data;
 
-  if (debugContext.requestMode === 'adjust') {
-    const patch = data as PlanRevisionProfilePatch;
+  if (requestMode === 'adjust') {
+    const patch = cloneSerializableData((data || {}) as PlanRevisionProfilePatch);
     if (!Array.isArray(patch?.summary) || patch.summary.length === 0) {
-      throw createLoggedAiError(
-        {
-          ...debugContext,
-          stage: 'response-parse',
-          selectedModel: modelName,
-        },
-        {
-          rawMessage: 'Respuesta de IA incompleta: el ajuste no incluyo summary.',
-          statusCode: 200,
-          geminiRequest,
-          geminiResponse: { status: 200, body: geminiResponseBody },
-        }
+      throw createInvalidStructureError(
+        debugContext,
+        'Respuesta de IA incompleta: el ajuste no incluyo summary.',
+        geminiRequest,
+        geminiResponseBody,
+        modelName
       );
     }
 
-    return data;
+    if (
+      patch.profilePatch !== undefined &&
+      (typeof patch.profilePatch !== 'object' ||
+        patch.profilePatch === null ||
+        Array.isArray(patch.profilePatch))
+    ) {
+      throw createInvalidStructureError(
+        debugContext,
+        'Respuesta de IA incompleta: profilePatch no tiene un formato valido.',
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (patch.equivalencias !== undefined) {
+      validateEquivalenciasStructure(
+        patch.equivalencias,
+        'equivalencias',
+        debugContext,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (patch.suplementos !== undefined) {
+      validateSupplementsStructure(
+        patch.suplementos,
+        'suplementos',
+        debugContext,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (Array.isArray(patch.planPatchSlots) && patch.planPatchSlots.length > 0) {
+      patch.planPatch = buildPlanObjectFromSlots(
+        patch.planPatchSlots,
+        MEAL_MOMENT_KEYS,
+        'planPatchSlots',
+        false,
+        debugContext,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+      delete patch.planPatchSlots;
+    } else if (patch.planPatch !== undefined) {
+      patch.planPatch = validateLegacyPlanStructure(
+        patch.planPatch,
+        MEAL_MOMENT_KEYS,
+        'planPatch',
+        false,
+        debugContext,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      ) as Record<string, Record<string, MealItem[]>>;
+    }
+
+    if (
+      !patch.planPatch &&
+      !patch.noChangesReason &&
+      !patch.profilePatch &&
+      !patch.equivalencias &&
+      !patch.suplementos
+    ) {
+      throw createInvalidStructureError(
+        debugContext,
+        'Respuesta de IA incompleta: el ajuste no incluyo cambios ni noChangesReason.',
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (patch.noChangesReason !== undefined && !isNonEmptyString(patch.noChangesReason)) {
+      throw createInvalidStructureError(
+        debugContext,
+        'Respuesta de IA incompleta: noChangesReason esta vacio.',
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (patch.summary.some((entry) => !isNonEmptyString(entry))) {
+      throw createInvalidStructureError(
+        debugContext,
+        'Respuesta de IA incompleta: summary contiene lineas vacias.',
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    return patch;
   }
 
   const normalized = cloneSerializableData((data || {}) as Record<string, unknown>);
   const perfilKey = `perfil${profilePrefix}`;
+  const equivKey = `equivalencias${profilePrefix}`;
+  const supplementsKey = `suplementos${profilePrefix}`;
+  const planKey = `plan${profilePrefix}`;
+  const planTransportKey = `planSemanal${profilePrefix}`;
   const perfil = normalized[perfilKey] as Record<string, unknown> | undefined;
 
   if (perfil && typeof perfil === 'object' && !Array.isArray(perfil)) {
-    if (!perfil.id) perfil.id = getExpectedPrefixTarget(profilePrefix);
-    if (!perfil.nombre) perfil.nombre = profilePrefix === 'EL' ? 'El' : 'Ella';
-
-    const sourceMoments =
-      (debugContext.payload as any)?.planConfig?.selectedMoments ||
-      (debugContext.payload as any)?.currentContext?.[getExpectedPrefixTarget(profilePrefix)]?.perfil?.momentos ||
-      (debugContext.payload as any)?.originalContext?.[getExpectedPrefixTarget(profilePrefix)]?.perfil?.momentos ||
-      [];
-
-    if ((!Array.isArray(perfil.momentos) || perfil.momentos.length === 0) && Array.isArray(sourceMoments) && sourceMoments.length) {
-      perfil.momentos = sourceMoments;
+    if (!perfil.id) {
+      perfil.id = getExpectedProfileId(profilePrefix);
     }
+
+    if (!perfil.nombre) {
+      perfil.nombre = getExpectedProfileName(profilePrefix);
+    }
+
+    if (!Array.isArray(perfil.momentos) || perfil.momentos.length === 0) {
+      const sourceMoments = resolveMomentSource(debugContext.payload, profilePrefix);
+      if (sourceMoments.length) {
+        perfil.momentos = sourceMoments;
+      }
+    }
+  }
+
+  const momentKeys = validateProfileStructure(
+    perfil,
+    profilePrefix,
+    debugContext,
+    geminiRequest,
+    geminiResponseBody,
+    modelName
+  );
+
+  validateEquivalenciasStructure(
+    normalized[equivKey],
+    equivKey,
+    debugContext,
+    geminiRequest,
+    geminiResponseBody,
+    modelName
+  );
+
+  if (!Array.isArray(normalized[supplementsKey])) {
+    normalized[supplementsKey] = [];
+  }
+
+  validateSupplementsStructure(
+    normalized[supplementsKey],
+    supplementsKey,
+    debugContext,
+    geminiRequest,
+    geminiResponseBody,
+    modelName
+  );
+
+  if (Array.isArray(normalized[planTransportKey])) {
+    normalized[planKey] = buildPlanObjectFromSlots(
+      normalized[planTransportKey],
+      momentKeys,
+      planTransportKey,
+      true,
+      debugContext,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+    delete normalized[planTransportKey];
+  } else {
+    normalized[planKey] = validateLegacyPlanStructure(
+      normalized[planKey],
+      momentKeys,
+      planKey,
+      true,
+      debugContext,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
   }
 
   try {
     return parseObjectToData(normalized, profilePrefix);
   } catch (error) {
-    throw createLoggedAiError(
-      {
-        ...debugContext,
-        stage: 'response-parse',
-        selectedModel: modelName,
-      },
-      {
-        rawMessage: `Respuesta de IA incompleta: ${error instanceof Error ? error.message : String(error)}`,
-        statusCode: 200,
-        geminiRequest,
-        geminiResponse: { status: 200, body: geminiResponseBody },
-      }
+    throw createInvalidStructureError(
+      debugContext,
+      `Respuesta de IA incompleta: ${error instanceof Error ? error.message : String(error)}`,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
     );
   }
 }
@@ -383,10 +1292,11 @@ function buildMomentDistributionSchema() {
   return {
     type: 'object',
     additionalProperties: false,
-    required: FOOD_GROUP_KEYS,
-    properties: Object.fromEntries(
-      FOOD_GROUP_KEYS.map((groupKey) => [groupKey, { type: 'integer' }])
-    ),
+    required: ['momento', ...FOOD_GROUP_KEYS],
+    properties: {
+      momento: { type: 'string' },
+      ...Object.fromEntries(FOOD_GROUP_KEYS.map((groupKey) => [groupKey, { type: 'integer' }])),
+    },
   };
 }
 
@@ -421,34 +1331,18 @@ function buildProfileSchema(partial = false) {
       notaSalud: { type: 'string' },
       momentos: {
         type: 'array',
-        minItems: 1,
         items: buildMomentTimeSchema(),
       },
       objetivosPorMomento: {
-        type: 'object',
-        additionalProperties: false,
-        required: partial ? [] : MEAL_MOMENT_KEYS,
-        properties: Object.fromEntries(
-          MEAL_MOMENT_KEYS.map((momentKey) => [momentKey, buildMomentDistributionSchema()])
-        ),
+        type: 'array',
+        items: buildMomentDistributionSchema(),
       },
       distribucionDiaria: {
         type: 'array',
-        minItems: 1,
-        items: {
-          type: 'object',
-          additionalProperties: false,
-          required: ['grupo', 'total', 'detalle'],
-          properties: {
-            grupo: { type: 'string' },
-            total: { type: 'integer' },
-            detalle: { type: 'string' },
-          },
-        },
+        items: { type: 'object' },
       },
       resumenPersonal: {
         type: 'array',
-        minItems: 1,
         items: { type: 'string' },
       },
     },
@@ -471,7 +1365,6 @@ function buildEquivalenciasSchema() {
         },
         items: {
           type: 'array',
-          minItems: 1,
           items: { type: 'string' },
         },
       },
@@ -499,62 +1392,46 @@ function buildSuplementosSchema() {
   };
 }
 
-function buildPlanDaySchema(requireAllMoments: boolean) {
+function buildPlanSlotSchema() {
   return {
     type: 'object',
     additionalProperties: false,
-    required: requireAllMoments ? MEAL_MOMENT_KEYS : [],
-    properties: Object.fromEntries(
-      MEAL_MOMENT_KEYS.map((momentKey) => [
-        momentKey,
-        {
-          type: 'array',
-          minItems: 3,
-          maxItems: 3,
-          items: buildMealItemSchema(),
-        },
-      ])
-    ),
+    required: PLAN_SLOT_REQUIRED_KEYS,
+    properties: {
+      dia: { type: 'string' },
+      momento: { type: 'string' },
+      opciones: { type: 'array', items: buildMealItemSchema() },
+    },
   };
 }
 
-function buildPlanSchema(requireAllDays: boolean, requireAllMoments: boolean) {
+function buildPlanSlotsSchema(requireAllSlots: boolean) {
   return {
-    type: 'object',
-    additionalProperties: false,
-    required: requireAllDays ? WEEK_DAYS : [],
-    properties: Object.fromEntries(
-      WEEK_DAYS.map((dayKey) => [dayKey, buildPlanDaySchema(requireAllMoments)])
-    ),
+    type: 'array',
+    items: buildPlanSlotSchema(),
   };
 }
 
 function buildFullResponseSchema(prefix: string) {
+  const profileKey = `perfil${prefix}`;
+  const equivalenciasKey = `equivalencias${prefix}`;
+  const suplementosKey = `suplementos${prefix}`;
+  const planTransportKey = `planSemanal${prefix}`;
   return {
     type: 'object',
-    required: [
-      `perfil${prefix}`,
-      `equivalencias${prefix}`,
-      `suplementos${prefix}`,
-      `plan${prefix}`,
-    ],
+    additionalProperties: false,
+    required: [profileKey, equivalenciasKey, suplementosKey, planTransportKey],
     propertyOrdering: [
-      `perfil${prefix}`,
-      `equivalencias${prefix}`,
-      `suplementos${prefix}`,
-      `plan${prefix}`,
+      profileKey,
+      equivalenciasKey,
+      suplementosKey,
+      planTransportKey,
     ],
     properties: {
-      [`perfil${prefix}`]: { type: 'object' },
-      [`equivalencias${prefix}`]: {
-        type: 'array',
-        items: { type: 'object' },
-      },
-      [`suplementos${prefix}`]: {
-        type: 'array',
-        items: { type: 'object' },
-      },
-      [`plan${prefix}`]: { type: 'object' },
+      [profileKey]: buildProfileSchema(false),
+      [equivalenciasKey]: buildEquivalenciasSchema(),
+      [suplementosKey]: buildSuplementosSchema(),
+      [planTransportKey]: buildPlanSlotsSchema(true),
     },
   };
 }
@@ -562,24 +1439,20 @@ function buildFullResponseSchema(prefix: string) {
 function buildAdjustResponseSchema() {
   return {
     type: 'object',
+    additionalProperties: false,
     required: ['summary'],
-    propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'equivalencias', 'suplementos', 'planPatch'],
+    propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'equivalencias', 'suplementos', 'planPatchSlots'],
     properties: {
       summary: {
         type: 'array',
+        minItems: 1,
         items: { type: 'string' },
       },
       noChangesReason: { type: 'string' },
-      profilePatch: { type: 'object' },
-      equivalencias: {
-        type: 'array',
-        items: { type: 'object' },
-      },
-      suplementos: {
-        type: 'array',
-        items: { type: 'object' },
-      },
-      planPatch: { type: 'object' },
+      profilePatch: buildProfileSchema(true),
+      equivalencias: buildEquivalenciasSchema(),
+      suplementos: buildSuplementosSchema(),
+      planPatchSlots: buildPlanSlotsSchema(false),
     },
   };
 }
@@ -590,12 +1463,21 @@ function buildGenerationOutputContract(prefix: string) {
       `perfil${prefix}`,
       `equivalencias${prefix}`,
       `suplementos${prefix}`,
-      `plan${prefix}`,
+      `planSemanal${prefix}`,
     ],
     fixedDays: WEEK_DAYS,
     fixedMoments: MEAL_MOMENT_KEYS,
+    slotOrdering: {
+      days: WEEK_DAYS,
+      moments: MEAL_MOMENT_KEYS,
+      rule: 'Ordena los slots por dia y dentro de cada dia por momento.',
+    },
     fixedFoodGroups: FOOD_GROUP_KEYS,
     profileRequiredKeys: PROFILE_REQUIRED_KEYS,
+    objetivosPorMomentoFormat: {
+      type: 'array',
+      itemKeys: ['momento', ...FOOD_GROUP_KEYS],
+    },
     mealsRequiredKeys: MEAL_ITEM_REQUIRED_KEYS,
     supplementRequiredKeys: SUPPLEMENT_REQUIRED_KEYS,
   };
@@ -643,6 +1525,7 @@ function getOptionalPdfPart(payload: any): GeminiPart[] {
 function buildSystemPrompt(prefix: string) {
   const lowerPrefix = prefix.toLowerCase();
   const profileLabel = prefix === 'EL' ? 'El' : 'Ella';
+  const planTransportKey = `planSemanal${prefix}`;
 
   return `Eres un nutricionista clinico experto. Genera un plan semanal completo, realista y consistente con el cuestionario.
 
@@ -656,20 +1539,27 @@ Claves raiz obligatorias:
 - perfil${prefix}
 - equivalencias${prefix}
 - suplementos${prefix}
-- plan${prefix}
+- ${planTransportKey}
 
 Reglas criticas:
 - No cambies id ni nombre.
 - Usa exactamente estos dias dentro del JSON: ${WEEK_DAYS.join(', ')}.
-- Usa exactamente estos momentos: ${MEAL_MOMENT_KEYS.join(', ')}.
+- Usa exactamente estos momentos dentro del JSON: ${MEAL_MOMENT_KEYS.join(', ')}.
 - "perfil" debe ser SIEMPRE una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>".
 - No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
+- perfil${prefix}.objetivosPorMomento debe ser un arreglo de 5 objetos, uno por cada momento, y cada objeto debe incluir: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
 - Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
-- Cada momento del plan debe devolver exactamente 3 opciones de comida.
+- ${planTransportKey} debe ser un arreglo plano de 35 slots.
+- Cada slot debe tener exactamente estas claves: dia, momento, opciones.
+- Debe haber exactamente un slot por cada combinacion de dia + momento.
+- Ordena los slots primero por dia (${WEEK_DAYS.join(', ')}) y dentro de cada dia por momento (${MEAL_MOMENT_KEYS.join(', ')}).
+- Cada slot debe devolver exactamente 3 opciones de comida.
+- No anides momentos dentro de dias ni dias dentro de objetos complejos; usa solo el arreglo plano de slots.
 - Las calorias y macros deben ser enteros realistas.
 - Las equivalencias deben alinearse con los ingredientes del plan y usar solo iconos permitidos: ${ALLOWED_ICONS.join(', ')}.
 - Los suplementos son opcionales y nunca deben ser necesarios para cumplir calorias, macros u objetivo.
 - No pongas suplementos dentro del plan.
+- No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
 - Si el usuario adjunto PDF o medidas corporales, usalos como contexto complementario.
 - Si hay conflicto entre PDF y cuestionario, prioriza el cuestionario.
 - Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
@@ -682,10 +1572,20 @@ function buildUserPrompt(payload: any, prefix: string) {
     questionnaire: sanitizePromptPayload(payload),
     outputContract: {
       ...buildGenerationOutputContract(prefix),
+      planTransportKey: `planSemanal${prefix}`,
+      planTransportFormat: {
+        type: 'flat_slots',
+        slotKeys: ['dia', 'momento', 'opciones'],
+        requiredSlotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
+      },
       momentsSource: 'questionnaire.planConfig.selectedMoments',
       profileFormat: {
         perfil: '<peso> kg | <altura> m | <edad> anos | IMC <valor>',
         detallesPerfil: 'Resumen narrativo del caso y contexto clinico.',
+      },
+      objetivosPorMomentoFormat: {
+        type: 'array',
+        itemKeys: ['momento', ...FOOD_GROUP_KEYS],
       },
       mealOptionsPerMoment: 3,
     },
@@ -694,6 +1594,7 @@ function buildUserPrompt(payload: any, prefix: string) {
 
 function buildRevisionSystemPrompt(prefix: string, mode: PlanRevisionMode) {
   const lowerPrefix = prefix.toLowerCase();
+  const planTransportKey = `planSemanal${prefix}`;
   if (mode === 'regenerate') {
     return `Eres un nutricionista clinico experto. Reconstruye el plan semanal completo desde cero usando el contexto disponible y las nuevas instrucciones del usuario.
 
@@ -705,16 +1606,21 @@ Debes devolver el plan COMPLETO con el mismo contrato de una generacion normal:
 - perfil${prefix}
 - equivalencias${prefix}
 - suplementos${prefix}
-- plan${prefix}
+- ${planTransportKey}
 
 Reglas criticas:
 - Usa exactamente los dias ${WEEK_DAYS.join(', ')}.
 - Usa exactamente los momentos ${MEAL_MOMENT_KEYS.join(', ')}.
-- Cada momento debe regresar exactamente 3 opciones completas.
+- perfil${prefix}.objetivosPorMomento debe venir como arreglo de objetos con las claves: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
+- ${planTransportKey} debe ser un arreglo plano de 35 slots.
+- Cada slot debe tener dia, momento y opciones.
+- Debe haber exactamente un slot por cada combinacion de dia + momento.
+- Ordena los slots por dia y luego por momento.
+- Cada slot debe regresar exactamente 3 opciones completas.
 - Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
 - Mantente consistente con el cuestionario, la instruccion nueva y las restricciones activas.
 - Si reutilizas ideas del plan actual, hazlo solo cuando siga siendo conveniente, no por copiarlo ciegamente.
-- No devuelvas summary, profilePatch ni planPatch en modo regenerate. Devuelve el objeto completo listo para parsearse.`;
+- No devuelvas summary, profilePatch ni planPatchSlots en modo regenerate. Devuelve el objeto completo listo para parsearse.`;
   }
 
   return `Eres un nutricionista clinico experto. Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, sin reescribir secciones que no cambian.
@@ -729,16 +1635,18 @@ Contrato exacto de salida:
 - profilePatch: objeto opcional con solo campos cambiados del perfil
 - equivalencias: arreglo opcional si cambian equivalencias
 - suplementos: arreglo opcional si cambian suplementos
-- planPatch: objeto opcional con solo dias y momentos modificados
+- planPatchSlots: arreglo opcional con solo slots modificados
 
 Reglas criticas:
 - summary siempre debe explicar lo que cambiaste o por que no cambiaste nada.
 - Si realmente no hace falta modificar nada, responde con summary y noChangesReason. No inventes cambios.
-- Si usas planPatch, incluye SOLO los dias y momentos modificados.
-- Cada momento incluido en planPatch debe regresar el arreglo completo de 3 opciones para ese momento.
+- Si devuelves profilePatch.objetivosPorMomento, usa el mismo formato de arreglo por momento.
+- Si usas planPatchSlots, incluye SOLO las combinaciones de dia + momento modificadas.
+- Si devuelves varios slots, ordenalos por dia y luego por momento.
+- Cada slot incluido en planPatchSlots debe regresar el arreglo completo de 3 opciones para ese slot.
 - Nunca devuelvas el plan completo en modo adjust.
 - Cada MealItem debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
-- profilePatch, equivalencias y suplementos son opcionales; omitelo si no cambian.
+- profilePatch, equivalencias y suplementos son opcionales; omitelos si no cambian.
 - Mantente consistente con el cuestionario, el plan actual, las ediciones manuales y las restricciones del usuario.`;
 }
 
@@ -757,6 +1665,8 @@ function buildRevisionUserPrompt(prefix: string, payload: PlanRevisionRequest, p
       fixedDays: WEEK_DAYS,
       fixedMoments: MEAL_MOMENT_KEYS,
       fixedFoodGroups: FOOD_GROUP_KEYS,
+      planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
+      planTransportFormat: 'flat_slots',
       returnOnlyChangedSections: payload.requestMode === 'adjust',
       preserveUntouchedMoments: payload.requestMode === 'adjust',
       mealOptionsPerMoment: 3,
@@ -834,10 +1744,13 @@ async function generateContent(
       },
     ],
     generationConfig: {
-      temperature: 0.2,
+      temperature: 0.1,
       responseMimeType: 'application/json',
       responseJsonSchema: responseSchema,
       maxOutputTokens: getMaxOutputTokens(modelName || DEFAULT_DIRECT_MODEL, debugContext.requestMode),
+      ...(getThinkingConfig(modelName || DEFAULT_DIRECT_MODEL)
+        ? { thinkingConfig: getThinkingConfig(modelName || DEFAULT_DIRECT_MODEL) }
+        : {}),
     },
   };
 

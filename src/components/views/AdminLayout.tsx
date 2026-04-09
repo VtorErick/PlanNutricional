@@ -44,10 +44,10 @@ export default function AdminLayout() {
 
   const modelOptions = [
     {
-      val: 'gemini-2.0-flash',
+      val: 'gemini-2.5-flash',
       label: 'Recomendado',
-      techLabel: 'Gemini 2.0 Flash',
-      desc: 'La opcion mas estable para cuestionario completo y salidas estructuradas.',
+      techLabel: 'Gemini 2.5 Flash',
+      desc: 'Mejor balance actual entre calidad, consistencia estructurada y cuota en free tier.',
       badge: 'Balance',
       badgeColor: 'bg-blue-100 text-blue-700',
     },

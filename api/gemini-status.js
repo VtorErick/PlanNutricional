@@ -44,12 +44,12 @@ async function listAvailableModels(apiKey) {
 function getModelPriority(name) {
   const normalized = normalizeModelName(name);
   const priorityMatchers = [
-    /^gemini-2\.0-flash/i,
     /^gemini-2\.5-flash/i,
+    /^gemini-2\.0-flash/i,
     /^gemini-flash-latest/i,
-    /^gemini-flash-lite-latest/i,
     /^gemini-2\.5-flash-lite/i,
     /^gemini-2\.0-flash-lite/i,
+    /^gemini-flash-lite-latest/i,
     /^gemini-1\.5-flash/i,
     /^gemini-1\.5-pro/i,
     /^gemini-2\.5-pro/i,
