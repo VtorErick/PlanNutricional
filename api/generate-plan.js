@@ -338,6 +338,26 @@ function validatePayloadAssessmentPdfs(payload) {
   return { ok: true };
 }
 
+
+function pruneUnsupportedSchemaKeywords(value) {
+  if (Array.isArray(value)) {
+    return value.map(pruneUnsupportedSchemaKeywords);
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const nextValue = {};
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (key === 'additionalProperties') continue;
+    nextValue[key] = pruneUnsupportedSchemaKeywords(nestedValue);
+  }
+
+  return nextValue;
+}
+
 function sanitizePromptPayload(payload) {
   if (!payload || typeof payload !== 'object') return payload;
 
@@ -608,7 +628,7 @@ async function generateWithGemini(parts, apiKey, modelName, systemInstruction, r
     generationConfig: {
       temperature: 0.2,
       responseMimeType: 'application/json',
-      responseSchema,
+      responseSchema: pruneUnsupportedSchemaKeywords(responseSchema),
     },
   };
 

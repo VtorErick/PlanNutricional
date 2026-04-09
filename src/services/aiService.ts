@@ -346,6 +346,26 @@ function isPlanRevisionRequest(payload: any): payload is PlanRevisionRequest {
   return payload?.requestMode === 'adjust' || payload?.requestMode === 'regenerate';
 }
 
+
+function pruneUnsupportedSchemaKeywords(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(pruneUnsupportedSchemaKeywords);
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const nextValue: Record<string, unknown> = {};
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (key === 'additionalProperties') continue;
+    nextValue[key] = pruneUnsupportedSchemaKeywords(nestedValue);
+  }
+
+  return nextValue;
+}
+
 function sanitizePromptPayload(payload: any) {
   if (!payload || typeof payload !== 'object') return payload;
 
@@ -576,7 +596,7 @@ async function generateContent(
     generationConfig: {
       temperature: 0.2,
       responseMimeType: 'application/json',
-      responseSchema,
+      responseSchema: pruneUnsupportedSchemaKeywords(responseSchema),
     },
   };
 
