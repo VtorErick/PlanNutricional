@@ -1229,15 +1229,17 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       }
       if (!res.ok) throw new Error(json?.error || `Error ${res.status}`);
     } catch (serverErr: any) {
-      const isServerUnavailable = serverErr.message === 'SERVER_UNAVAILABLE' ||
-        serverErr.message?.includes('fetch') ||
-        serverErr.message?.includes('Failed to fetch') ||
-        serverErr.message?.includes('NetworkError');
+      const isServerUnavailable =
+        serverErr?.message === 'SERVER_UNAVAILABLE' ||
+        (
+          serverErr?.name === 'TypeError' &&
+          /fetch|network/i.test(String(serverErr?.message || ''))
+        );
 
       if (isServerUnavailable) {
         if (!customApiKey) {
           throw new Error(
-            'No fue posible contactar la API del servidor. Para seguir desde el navegador, pega una clave personalizada en el panel de Administracion.'
+            'No fue posible contactar la API del servidor. Para seguir desde el navegador, pega una clave personalizada en el panel de Administración.'
           );
         }
         usedDirectApi = true;
@@ -1254,44 +1256,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     setGenerationError('');
     setGenerationLoading(true);
     try {
-      const customApiKey = geminiApiKey.trim();
-      const payloadWithKey = {
-        ...payload,
-        customApiKey: customApiKey || undefined,
-        preferredModel: geminiModel,
-      };
-      let json: any;
-      let usedDirectApi = false;
-
-      try {
-        const res = await fetch('/api/generate-plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payloadWithKey),
-        });
-        const responseText = await res.text();
-        if (!responseText || responseText.trim() === '') throw new Error('SERVER_UNAVAILABLE');
-        if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) throw new Error('SERVER_UNAVAILABLE');
-        try { json = JSON.parse(responseText); } catch { throw new Error('SERVER_UNAVAILABLE'); }
-        if (!res.ok) throw new Error(json?.error || `Error ${res.status}`);
-      } catch (serverErr: any) {
-        const isServerUnavailable = serverErr.message === 'SERVER_UNAVAILABLE' ||
-          serverErr.message?.includes('fetch') ||
-          serverErr.message?.includes('Failed to fetch') ||
-          serverErr.message?.includes('NetworkError');
-
-        if (isServerUnavailable) {
-          if (!customApiKey) {
-            throw new Error(
-              'No fue posible contactar la API del servidor. Para seguir desde el navegador, pega una clave personalizada en el panel de Administración.'
-            );
-          }
-          usedDirectApi = true;
-          json = await callGeminiDirectly(payloadWithKey, customApiKey, geminiModel);
-        } else {
-          throw serverErr;
-        }
-      }
+      const { json, usedDirectApi } = await requestAiResponse(payload);
 
       if (!json.elData && !json.ellaData) {
         throw new Error('La respuesta no contiene datos del plan. Intenta de nuevo.');
@@ -1329,7 +1294,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setGenerationLoading(false);
     }
-  }, [geminiApiKey, geminiModel, notify, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContext]);
+  }, [notify, requestAiResponse, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContext]);
 
   const handleRevisePlanWithAi = useCallback(async (payload: PlanRevisionRequest) => {
     setPlanRevisionError('');
