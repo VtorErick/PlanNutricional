@@ -79,7 +79,15 @@ export default function SummaryView() {
       <div className={isAmbos ? 'grid lg:grid-cols-2 gap-6' : 'space-y-8'}>
         {(isAmbos ? [perfilesData.el, perfilesData.ella] : [perfil]).map((p, pIdx) => {
           if (!p) return null;
-          const summaryPoints = Array.isArray(p.resumenPersonal) ? p.resumenPersonal : [];
+          
+          // Data-Driven: Construimos el resumen a partir de las descripciones estáticas del perfil y sus metas
+          const summaryPoints = [
+            p.descripcion,
+            p.metaCaloricaKcalDia ? `Meta calculada a precisión de ${p.metaCaloricaKcalDia} kcal diarias globales.` : null,
+            `Diseño optimizado para paciente de ${p.edad} años.`,
+            p.horariosTexto ? `Horarios estratégicos: ${p.horariosTexto}.` : null
+          ].filter(Boolean) as string[];
+
           const activeCategoryCount = categories.filter((cat) =>
             mealKeys.some((mealKey) => (p.objetivosPorMomento?.[mealKey]?.[cat.key] || 0) > 0)
           ).length;

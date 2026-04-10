@@ -30,7 +30,11 @@ export default function EquivalenciasCard({
     >
       {/* Watermark */}
       <div className="absolute -bottom-7 -right-7 opacity-[0.035] pointer-events-none -rotate-12 z-[-1]">
-        <Icon className={`w-36 h-36 sm:w-44 sm:h-44 ${isDarkMode ? 'text-white' : 'text-slate-900'}`} />
+        {typeof Icon === 'string' ? (
+          <span className={`text-[120px] sm:text-[160px] leading-none block ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{Icon}</span>
+        ) : (
+          <Icon className={`w-36 h-36 sm:w-44 sm:h-44 ${isDarkMode ? 'text-white' : 'text-slate-900'}`} />
+        )}
       </div>
 
       {/* Header */}
@@ -38,7 +42,11 @@ export default function EquivalenciasCard({
         <div
           className={`relative inline-flex p-3 rounded-2xl bg-gradient-to-br ${accentClasses.bgGradient} shadow-sm flex-shrink-0`}
         >
-          <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          {typeof Icon === 'string' ? (
+            <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-xl">{Icon}</span>
+          ) : (
+            <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          )}
         </div>
 
         <div className="min-w-0 flex-1 pt-0.5">

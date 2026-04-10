@@ -37,9 +37,6 @@ const MEAL_ITEM_REQUIRED_KEYS = [
   'detalle',
   'tags',
   'super',
-  'caloriasKcal',
-  'proteinaG',
-  'grasasG',
 ];
 const PLAN_SLOT_REQUIRED_KEYS = ['dia', 'momento', 'opciones'];
 const SUPPLEMENT_REQUIRED_KEYS = [
@@ -287,9 +284,6 @@ function buildMealItemSchema() {
       detalle: { type: 'string', maxLength: 240 },
       tags: { type: 'array', maxItems: 4, items: { type: 'string', maxLength: 32 } },
       super: { type: 'array', maxItems: 6, items: { type: 'string', maxLength: 48 } },
-      caloriasKcal: { type: 'integer' },
-      proteinaG: { type: 'integer' },
-      grasasG: { type: 'integer' },
     },
   };
 }
@@ -362,11 +356,6 @@ function buildProfileSchema(partial = false) {
         items: buildMomentDistributionSchema(),
       },
       distribucionDiaria: buildDailyDistributionSchema(),
-      resumenPersonal: {
-        type: 'array',
-        maxItems: 5,
-        items: { type: 'string', maxLength: 120 },
-      },
     },
   };
 }
@@ -391,21 +380,8 @@ function buildEquivalenciasSchema() {
 function buildSuplementosSchema() {
   return {
     type: 'array',
-    maxItems: 3,
-    items: {
-      type: 'object',
-      additionalProperties: false,
-      required: SUPPLEMENT_REQUIRED_KEYS,
-      properties: {
-        name: { type: 'string', maxLength: 80 },
-        goalSupport: { type: 'string', maxLength: 120 },
-        whyItMayHelp: { type: 'string', maxLength: 160 },
-        howToUse: { type: 'string', maxLength: 120 },
-        timing: { type: 'string', maxLength: 80 },
-        notes: { type: 'string', maxLength: 140 },
-        caution: { type: 'string', maxLength: 140 },
-      },
-    },
+    maxItems: 5,
+    items: { type: 'string', maxLength: 40 },
   };
 }
 
@@ -413,11 +389,25 @@ function buildPlanSlotSchema() {
   return {
     type: 'object',
     additionalProperties: false,
-    required: PLAN_SLOT_REQUIRED_KEYS,
+    required: ['dia', 'momento', 'opciones'],
     properties: {
       dia: { type: 'string' },
       momento: { type: 'string' },
-      opciones: { type: 'array', minItems: 3, maxItems: 3, items: buildMealItemSchema() },
+      opciones: {
+        type: 'array',
+        minItems: 3,
+        maxItems: 3,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['idRef', 'porciones', 'detalle'],
+          properties: {
+            idRef: { type: 'string', maxLength: 100 },
+            porciones: { type: 'string', maxLength: 200 },
+            detalle: { type: 'string', maxLength: 400 },
+          }
+        }
+      }
     },
   };
 }
@@ -431,17 +421,15 @@ function buildPlanSlotsSchema(requireAllSlots) {
 
 function buildFullResponseSchema(prefix) {
   const profileKey = `perfil${prefix}`;
-  const equivalenciasKey = `equivalencias${prefix}`;
   const suplementosKey = `suplementos${prefix}`;
   const planTransportKey = `planSemanal${prefix}`;
   return {
     type: 'object',
     additionalProperties: false,
-    required: [profileKey, equivalenciasKey, suplementosKey, planTransportKey],
-    propertyOrdering: [profileKey, equivalenciasKey, suplementosKey, planTransportKey],
+    required: [profileKey, suplementosKey, planTransportKey],
+    propertyOrdering: [profileKey, suplementosKey, planTransportKey],
     properties: {
       [profileKey]: buildProfileSchema(false),
-      [equivalenciasKey]: buildEquivalenciasSchema(),
       [suplementosKey]: buildSuplementosSchema(),
       [planTransportKey]: buildPlanSlotsSchema(true),
     },
@@ -453,7 +441,7 @@ function buildAdjustResponseSchema() {
     type: 'object',
     additionalProperties: false,
     required: ['summary'],
-    propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'equivalencias', 'suplementos', 'planPatchSlots'],
+    propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'suplementos', 'planPatchSlots'],
     properties: {
       summary: {
         type: 'array',
@@ -463,7 +451,6 @@ function buildAdjustResponseSchema() {
       },
       noChangesReason: { type: 'string' },
       profilePatch: buildProfileSchema(true),
-      equivalencias: buildEquivalenciasSchema(),
       suplementos: buildSuplementosSchema(),
       planPatchSlots: buildPlanSlotsSchema(false),
     },
@@ -474,7 +461,6 @@ function buildGenerationOutputContract(prefix) {
   return {
     rootKeys: [
       `perfil${prefix}`,
-      `equivalencias${prefix}`,
       `suplementos${prefix}`,
       `planSemanal${prefix}`,
     ],
@@ -617,9 +603,6 @@ function validateMealItemStructure(item, location, debugContext, geminiRequest, 
   validateRequiredStringField(item, 'nombre', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredStringField(item, 'porciones', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredStringField(item, 'detalle', location, debugContext, geminiRequest, geminiResponseBody, modelName);
-  validateRequiredIntegerField(item, 'caloriasKcal', location, debugContext, geminiRequest, geminiResponseBody, modelName);
-  validateRequiredIntegerField(item, 'proteinaG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
-  validateRequiredIntegerField(item, 'grasasG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
 
   if (!Array.isArray(item.tags)) {
     throw createInvalidStructureError(
@@ -653,15 +636,16 @@ function validateMealOptionsArray(options, location, debugContext, geminiRequest
     );
   }
 
-  options.forEach((mealItem, index) => {
-    validateMealItemStructure(
-      mealItem,
-      `${location}[${index}]`,
-      debugContext,
-      geminiRequest,
-      geminiResponseBody,
-      modelName
-    );
+  options.forEach((meal, index) => {
+    if (!meal || typeof meal !== 'object' || !isNonEmptyString(meal.idRef)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}] no tiene idRef valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
   });
 }
 
@@ -724,27 +708,15 @@ function validateSupplementsStructure(supplements, location, debugContext, gemin
   }
 
   supplements.forEach((item, index) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    if (!item || typeof item !== 'string') {
       throw createInvalidStructureError(
         debugContext,
-        `Respuesta de IA incompleta: ${location}[${index}] no es un objeto valido.`,
+        `Respuesta de IA incompleta: ${location}[${index}] no es un string válido (debe ser un ID).`,
         geminiRequest,
         geminiResponseBody,
         modelName
       );
     }
-
-    SUPPLEMENT_REQUIRED_KEYS.forEach((fieldName) => {
-      validateRequiredStringField(
-        item,
-        fieldName,
-        `${location}[${index}]`,
-        debugContext,
-        geminiRequest,
-        geminiResponseBody,
-        modelName
-      );
-    });
   });
 }
 
@@ -961,16 +933,6 @@ function validateProfileStructure(perfil, profilePrefix, debugContext, geminiReq
     }
   });
 
-  if (!Array.isArray(perfil.resumenPersonal) || perfil.resumenPersonal.length === 0 || perfil.resumenPersonal.some((entry) => !isNonEmptyString(entry))) {
-    throw createInvalidStructureError(
-      debugContext,
-      `Respuesta de IA incompleta: perfil${profilePrefix}.resumenPersonal esta vacio o invalido.`,
-      geminiRequest,
-      geminiResponseBody,
-      modelName
-    );
-  }
-
   return momentKeys;
 }
 
@@ -1171,17 +1133,6 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
       );
     }
 
-    if (data.equivalencias !== undefined) {
-      validateEquivalenciasStructure(
-        data.equivalencias,
-        'equivalencias',
-        debugContext,
-        geminiRequest,
-        geminiResponseBody,
-        modelName
-      );
-    }
-
     if (data.suplementos !== undefined) {
       validateSupplementsStructure(
         data.suplementos,
@@ -1218,7 +1169,7 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
       );
     }
 
-    if (!data.planPatch && !data.noChangesReason && !data.profilePatch && !data.equivalencias && !data.suplementos) {
+    if (!data.planPatch && !data.noChangesReason && !data.profilePatch && !data.suplementos) {
       throw createInvalidStructureError(
         debugContext,
         'Respuesta de IA incompleta: el ajuste no incluyo cambios ni noChangesReason.',
@@ -1253,7 +1204,6 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
 
   const normalized = cloneSerializableData(data || {});
   const perfilKey = `perfil${profilePrefix}`;
-  const equivKey = `equivalencias${profilePrefix}`;
   const supplementsKey = `suplementos${profilePrefix}`;
   const planKey = `plan${profilePrefix}`;
   const planTransportKey = `planSemanal${profilePrefix}`;
@@ -1279,15 +1229,6 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
   const momentKeys = validateProfileStructure(
     perfil,
     profilePrefix,
-    debugContext,
-    geminiRequest,
-    geminiResponseBody,
-    modelName
-  );
-
-  validateEquivalenciasStructure(
-    normalized[equivKey],
-    equivKey,
     debugContext,
     geminiRequest,
     geminiResponseBody,
@@ -1567,9 +1508,6 @@ function compactProfileForPrompt(profile) {
     meta: truncatePromptText(profile.meta, 160),
     notaSalud: truncatePromptText(profile.notaSalud, 160),
     horariosTexto: truncatePromptText(profile.horariosTexto, 120),
-    resumenPersonal: Array.isArray(profile.resumenPersonal)
-      ? profile.resumenPersonal.slice(0, 4).map((item) => truncatePromptText(item, 100))
-      : [],
   };
 }
 
@@ -1619,7 +1557,6 @@ Perfil objetivo:
 
 Claves raiz obligatorias:
 - perfil${prefix}
-- equivalencias${prefix}
 - suplementos${prefix}
 - ${planTransportKey}
 
@@ -1631,29 +1568,22 @@ Reglas criticas:
 - No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
 - Mantén todo el texto muy conciso para evitar respuestas largas.
 - detallesPerfil, descripcion y notaSalud deben ser breves.
-- resumenPersonal debe tener entre 3 y 5 lineas breves.
 - perfil${prefix}.objetivosPorMomento debe ser un arreglo de 5 objetos, uno por cada momento, y cada objeto debe incluir: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
 - perfil${prefix}.distribucionDiaria debe ser un arreglo de 7 objetos, uno por cada grupo: ${FOOD_GROUP_KEYS.join(', ')}.
 - Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo, total, detalle.
 - No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
-- Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
-- detalle debe ser una sola frase breve y operativa.
-- tags debe tener entre 2 y 4 elementos.
-- super debe listar entre 3 y 6 ingredientes clave.
+- En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog", ademas de las calorias y macros matematicamente resueltos y perfectos para el paciente.
+- CRITICO: Debes respetar ESTRICTAMENTE todo lo pedido en el cuestionario: preferencias alimenticias (ej. vegano, mexicano, asiático), restricciones medicas, ingredientes excluidos, tiempos de cocina, etc. Selecciona unicamente IDs del catalogo que casen con estas preferencias e ignora los demas.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener exactamente estas claves: dia, momento, opciones.
 - Debe haber exactamente un slot por cada combinacion de dia + momento.
 - Ordena los slots primero por dia (${WEEK_DAYS.join(', ')}) y dentro de cada dia por momento (${MEAL_MOMENT_KEYS.join(', ')}).
-- Cada slot debe devolver exactamente 3 opciones de comida.
+- Cada slot debe devolver exactamente 3 objetos en 'opciones'.
 - No anides momentos dentro de dias ni dias dentro de objetos complejos; usa solo el arreglo plano de slots.
-- Las calorias y macros deben ser enteros realistas.
-- Las equivalencias deben alinearse con los ingredientes del plan y usar solo iconos permitidos: ${ALLOWED_ICONS.join(', ')}.
-- Cada bloque de equivalencias debe ser corto y util, sin listas largas.
-- Los suplementos son opcionales y nunca deben ser necesarios para cumplir calorias, macros u objetivo. Si no aportan valor claro, devuelve [].
-- No pongas suplementos dentro del plan.
+- Las calorias y macros deben ser enteros realistas y hacer MATCH PERFECTO matematicamente para cumplir la meta final.
+- Los suplementos son opcionales. Debe ser UN ARREGLO DE STRINGS (IDs) validados de supplementsCatalog. Si no aportan valor, devuelve []. NUNCA inventes IDs.
+- No pongas suplementos dentro del plan ni como objetos.
 - No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
-- Si el usuario adjunto PDF o medidas corporales, usalos como contexto complementario.
-- Si hay conflicto entre PDF y cuestionario, prioriza el cuestionario.
 - Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
 - No devuelvas null, undefined, placeholders, alias de claves ni dias con acentos distintos a los pedidos.`;
 }
@@ -1662,11 +1592,13 @@ function buildUserPrompt(payload, prefix) {
   return JSON.stringify({
     profilePrefix: prefix,
     questionnaire: sanitizePromptPayload(payload),
+    mealsCatalog: payload.mealsCatalog || [],
     outputHints: {
       rootKeys: buildGenerationOutputContract(prefix).rootKeys,
       selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
       slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
+      noteToAI: "En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para que el usuario alcance su metaCaloricaKcalDia. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef.",
     },
   });
 }
@@ -1675,38 +1607,30 @@ function buildRevisionSystemPrompt(prefix, mode) {
   const lowerPrefix = prefix.toLowerCase();
   const planTransportKey = `planSemanal${prefix}`;
   if (mode === 'regenerate') {
-    return `Eres un nutricionista clinico experto. Reconstruye el plan semanal completo desde cero usando el contexto disponible y las nuevas instrucciones del usuario.
+    return `Eres un nutricionista clinico experto. Reconstruye el plan semanal seleccionando IDs del "mealsCatalog" basandote en el contexto y las nuevas instrucciones.
 
-Debes responder con un unico objeto JSON valido. No uses markdown, comentarios ni texto fuera del JSON.
+Debes responder con un unico objeto JSON valido. No uses markdown.
 
 El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
 
 Debes devolver el plan COMPLETO con el mismo contrato de una generacion normal:
 - perfil${prefix}
-- equivalencias${prefix}
 - suplementos${prefix}
 - ${planTransportKey}
 
 Reglas criticas:
 - Usa exactamente los dias ${WEEK_DAYS.join(', ')}.
 - Usa exactamente los momentos ${MEAL_MOMENT_KEYS.join(', ')}.
-- perfil${prefix}.objetivosPorMomento debe venir como arreglo de objetos con las claves: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
-- Cada slot debe tener dia, momento y opciones.
-- Debe haber exactamente un slot por cada combinacion de dia + momento.
-- Ordena los slots por dia y luego por momento.
-- Cada slot debe regresar exactamente 3 opciones completas.
-- Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
-- Mantén textos breves: detalle en una sola frase, tags 2-4, super 3-6 y resumenPersonal 3-5 lineas.
-- Si no hacen falta suplementos, devuelve [].
-- Mantente consistente con el cuestionario, la instruccion nueva y las restricciones activas.
-- Si reutilizas ideas del plan actual, hazlo solo cuando siga siendo conveniente, no por copiarlo ciegamente.
-- No devuelvas summary, profilePatch ni planPatchSlots en modo regenerate. Devuelve el objeto completo listo para parsearse.`;
+- Cada slot debe tener dia, momento y la clave 'opciones' que es un arreglo de 3 objetos hibridos.
+- Cada objeto dentro de 'opciones' debe tener su 'idRef' (valido del mealsCatalog) y recalcular porciones y detalle para match perfecto.
+- CRITICO: Respeta ESTRICTAMENTE: preferencias, estilo de comida, exclusions y restricciones. NUNCA metas algo que el usuario dijo excluir.
+- En caso de duda, prioriza la coherencia. No devuelvas summary ni profilePatch.`;
   }
 
-  return `Eres un nutricionista clinico experto. Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, sin reescribir secciones que no cambian.
+  return `Eres un nutricionista clinico experto. Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, eligiendo nuevos IDs de comida del "mealsCatalog" provisto, sin reescribir secciones que no cambian.
 
-Debes responder con un unico objeto JSON valido. No uses markdown, comentarios, texto fuera del JSON ni claves adicionales.
+Debes responder con un unico objeto JSON valido. No uses markdown.
 
 El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
 
@@ -1714,26 +1638,19 @@ Contrato exacto de salida:
 - summary: arreglo obligatorio de 1 a 2 lineas cortas
 - noChangesReason: string opcional si no hace falta cambiar nada
 - profilePatch: objeto opcional con solo campos cambiados del perfil
-- equivalencias: arreglo opcional si cambian equivalencias
 - suplementos: arreglo opcional si cambian suplementos
 - planPatchSlots: arreglo opcional con solo slots modificados
 
 Reglas criticas:
-- summary siempre debe explicar lo que cambiaste o por que no cambiaste nada, en frases muy breves.
-- Si realmente no hace falta modificar nada, responde con summary y noChangesReason. No inventes cambios.
-- Devuelve el parche mas pequeno posible.
+- summary siempre debe explicar lo que cambiaste o por que no cambiaste nada.
 - Si devuelves profilePatch.objetivosPorMomento, usa el mismo formato de arreglo por momento.
 - Si usas planPatchSlots, incluye SOLO las combinaciones de dia + momento modificadas.
-- Si devuelves varios slots, ordénalos por dia y luego por momento.
-- Cada slot incluido en planPatchSlots debe regresar el arreglo completo de 3 opciones para ese slot.
+- En 'planPatchSlots', cada slot modificado debe tener 'opciones' con 3 objetos hibridos.
+- Cada objeto debe tener un 'idRef' (valido del mealsCatalog).
+- OBLIGATORIO: Asegura match perfecto con alergias, estilo de dieta, preferencias y restricciones del usuario (cuestionarioContext / currentContext).
 - Nunca devuelvas el plan completo en modo adjust.
-- Cada MealItem debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
-- detalle debe ser una sola frase breve y operativa.
-- tags debe tener entre 2 y 4 elementos.
-- super debe listar entre 3 y 6 ingredientes clave.
-- profilePatch, equivalencias y suplementos son opcionales; omitelos si no cambian.
-- Si solo cambian comidas, omite profilePatch, equivalencias y suplementos.
-- Mantente consistente con el cuestionario, el plan actual, las ediciones manuales y las restricciones del usuario.`;
+- profilePatch y suplementos son opcionales; omitelos si no cambian.
+- Si solo cambian comidas, omite las demas secciones.`;
 }
 
 function buildRevisionUserPrompt(prefix, payload, profilePayload) {
@@ -1742,6 +1659,7 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
     profilePrefix: prefix,
     mode: payload.requestMode,
     userInstruction: payload.instruction,
+    mealsCatalog: payload.mealsCatalog || [],
     questionnaireContext: sanitizePromptPayload(payload.questionnaireContext),
     currentContext: compactSnapshotForPrompt(profilePayload.currentContext),
     originalContext:
@@ -1754,6 +1672,7 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
       planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
       returnOnlyChangedSections: payload.requestMode === 'adjust',
       mealOptionsPerMoment: 3,
+      noteToAI: "En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para el usuario. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef.",
     },
   });
 }

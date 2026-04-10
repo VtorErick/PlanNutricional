@@ -1,20 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Repeat } from 'lucide-react';
 import EquivalenciasCard from '../EquivalenciasCard';
 import { useDiet } from '../../context/DietContext';
-import { getAccentColors } from '../../utils/theme';
+import { equivalencesDB } from '../../data/equivalencesDB';
 
 export default function EquivalenciasView() {
-  const { perfilActivo, perfilesData, equivalenciasData, ac, isAmbos, isDarkMode } = useDiet();
-  const [ambosSubTab, setAmbosSubTab] = useState<'el' | 'ella'>('el');
-  const elAccent = getAccentColors('el', isDarkMode);
-  const ellaAccent = getAccentColors('ella', isDarkMode);
-
-  const equivalencias =
-    perfilActivo && perfilActivo !== 'ambos'
-      ? equivalenciasData[perfilActivo as 'el' | 'ella']
-      : [];
+  const { ac, isDarkMode } = useDiet();
 
   return (
     <motion.div
@@ -23,146 +15,46 @@ export default function EquivalenciasView() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      className="space-y-5"
+      className="space-y-4 sm:space-y-6"
     >
-      {isAmbos ? (
-        <>
-          <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${ac.bgGradientLight}`}>
-            <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-              <div
-                className="absolute inset-0 opacity-30"
-                style={{
-                  backgroundImage: "url('/images/hero.png')",
-                  backgroundPosition: 'left 14% top 18%',
-                  backgroundSize: '155%',
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/72 to-white/88 dark:from-slate-950/84 dark:via-slate-950/72 dark:to-slate-950/86" />
-            </div>
-            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
-                  <Repeat className={`h-5 w-5 ${ac.text}`} />
-                </div>
-                <div className="min-w-0">
-                  <h2 className={`truncate text-base font-extrabold sm:text-lg ${ac.textDark}`}>
-                    Equivalencias
-                  </h2>
-                  <p className={`mt-0.5 text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Sustituciones rapidas para ambos perfiles.
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${elAccent.tagBg} ${elAccent.tagText}`}>
-                      {perfilesData.el.nombre}: {equivalenciasData.el.length}
-                    </span>
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ellaAccent.tagBg} ${ellaAccent.tagText}`}>
-                      {perfilesData.ella.nombre}: {equivalenciasData.ella.length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={`flex w-full rounded-2xl p-1 sm:w-auto sm:min-w-[200px] ${isDarkMode ? 'bg-slate-900' : 'bg-white/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]'}`}>
-                <button
-                  onClick={() => setAmbosSubTab('el')}
-                  className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
-                    ambosSubTab === 'el'
-                      ? `${elAccent.btnActive} shadow-sm`
-                      : isDarkMode
-                        ? 'text-slate-400'
-                        : 'text-slate-500'
-                  }`}
-                >
-                  {perfilesData.el.nombre}
-                </button>
-                <button
-                  onClick={() => setAmbosSubTab('ella')}
-                  className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
-                    ambosSubTab === 'ella'
-                      ? `${ellaAccent.btnActive} shadow-sm`
-                      : isDarkMode
-                        ? 'text-slate-400'
-                        : 'text-slate-500'
-                  }`}
-                >
-                  {perfilesData.ella.nombre}
-                </button>
-              </div>
-            </div>
+      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br p-4 sm:p-5 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${ac.bgGradientLight}`}>
+        <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage: "url('/images/hero.png')",
+              backgroundPosition: 'left 14% top 18%',
+              backgroundSize: '155%',
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/72 to-white/88 dark:from-slate-950/84 dark:via-slate-950/72 dark:to-slate-950/86" />
+        </div>
+        <div className="relative flex items-center gap-3">
+          <div className={`flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
+            <Repeat className={`h-5 w-5 sm:h-6 sm:w-6 ${ac.text}`} />
           </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className={`${ambosSubTab === 'el' ? 'block' : 'hidden lg:block'}`}>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-1 xl:grid-cols-2">
-                {equivalenciasData.el.map((eq, idx) => (
-                  <EquivalenciasCard
-                    key={`el-${idx}`}
-                    equivalencia={eq}
-                    delay={idx * 0.05}
-                    accentClasses={{ ...elAccent }}
-                    isDarkMode={isDarkMode}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className={`${ambosSubTab === 'ella' ? 'block' : 'hidden lg:block'}`}>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-1 xl:grid-cols-2">
-                {equivalenciasData.ella.map((eq, idx) => (
-                  <EquivalenciasCard
-                    key={`ella-${idx}`}
-                    equivalencia={eq}
-                    delay={idx * 0.05}
-                    accentClasses={{ ...ellaAccent }}
-                    isDarkMode={isDarkMode}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="space-y-4">
-          <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${ac.bgGradientLight}`}>
-            <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-              <div
-                className="absolute inset-0 opacity-30"
-                style={{
-                  backgroundImage: "url('/images/hero.png')",
-                  backgroundPosition: 'left 14% top 18%',
-                  backgroundSize: '155%',
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/72 to-white/88 dark:from-slate-950/84 dark:via-slate-950/72 dark:to-slate-950/86" />
-            </div>
-            <div className="relative flex items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
-                <Repeat className={`h-5 w-5 ${ac.text}`} />
-              </div>
-              <div className="min-w-0">
-                <h3 className={`truncate text-base font-extrabold sm:text-lg ${ac.textDark}`}>
-                  Equivalencias
-                </h3>
-                <p className={`mt-0.5 text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {equivalencias.length} grupos con opciones listas para intercambiar.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            {equivalencias.map((eq, idx) => (
-              <EquivalenciasCard
-                key={idx}
-                equivalencia={eq}
-                delay={idx * 0.05}
-                accentClasses={ac}
-                isDarkMode={isDarkMode}
-              />
-            ))}
+          <div className="min-w-0 flex-1">
+            <h2 className={`truncate text-lg sm:text-xl font-extrabold ${ac.textDark}`}>
+              Diccionario de Intercambios
+            </h2>
+            <p className={`mt-0.5 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              Todas las opciones contienen las mismas calorías y macronutrientes por porción.
+            </p>
           </div>
         </div>
-      )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {equivalencesDB.map((eq, idx) => (
+          <EquivalenciasCard
+            key={idx}
+            equivalencia={eq}
+            delay={idx * 0.05}
+            accentClasses={ac}
+            isDarkMode={isDarkMode}
+          />
+        ))}
+      </div>
     </motion.div>
   );
 }

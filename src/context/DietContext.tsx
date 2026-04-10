@@ -781,12 +781,16 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   );
 
   // 6. Questionnaire state
-  const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useState<TargetProfile>(
+  const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useLocalStorage<TargetProfile>("questionnaireTargetProfile", 
     initialRoute.view === 'questionnaire' ? initialRoute.target : 'ambos'
   );
-  const [questionnaireStepIdx, setQuestionnaireStepIdx] = useState(0);
-  const [questionnaireEl, setQuestionnaireEl] = useState<any>(defaultQuestionnaireData('70', '165'));
-  const [questionnaireElla, setQuestionnaireElla] = useState<any>(defaultQuestionnaireData('60', '160'));
+  const [questionnaireStepIdx, setQuestionnaireStepIdx] = useLocalStorage<number>(
+    'questionnaireStepIdx',
+    0,
+    (v) => (typeof v === 'number' && v >= 0 ? v : 0)
+  );
+  const [questionnaireEl, setQuestionnaireEl] = useLocalStorage<any>("questionnaireEl", defaultQuestionnaireData("70", "165"), sanitizeNullableObject);
+  const [questionnaireElla, setQuestionnaireElla] = useLocalStorage<any>("questionnaireElla", defaultQuestionnaireData("60", "160"), sanitizeNullableObject);
   const [questionnairePortionMode, setQuestionnairePortionMode] = useState<'auto' | 'manual'>('auto');
   const [questionnaireManualPortions, setQuestionnaireManualPortions] = useState<Record<string, Record<string, number>>>({});
   const [questionnaireAdditionalNotes, setQuestionnaireAdditionalNotes] = useState('');
@@ -795,6 +799,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [pendingAutoScrollMomento, setPendingAutoScrollMomento] = useState<string | null>(null);
   const hasInitializedRouteRef = useRef(false);
+  const isFirstTargetProfileRenderRef = useRef(true);
   const lastStorageErrorRef = useRef<Record<string, number>>({});
 
   // ─── Utilities ─────────────────────────────────────────────────────
@@ -1250,9 +1255,14 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   }, [geminiModel]);
 
   const requestAiResponse = useCallback(async (payload: any) => {
+    const { getCompactMealsCatalog, filterCatalogForQuestionnaire, mealsDatabase } = await import('../data/mealsDB');
+    
+    const dbToUse = filterCatalogForQuestionnaire(mealsDatabase, payload.questionnaireContext || payload);
+
     const payloadWithKey = {
       ...payload,
       preferredModel: geminiModel,
+      mealsCatalog: getCompactMealsCatalog(dbToUse),
     };
     let json: any;
     try {
@@ -1724,15 +1734,24 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   // Reset questionnaire when leaving both admin and questionnaire views
   useEffect(() => {
     if (!showAdmin && !showQuestionnaire) {
-      setQuestionnaireTargetProfile('ambos');
-      setQuestionnaireStepIdx(0);
-      setQuestionnaireEl(defaultQuestionnaireData('70', '165'));
-      setQuestionnaireElla(defaultQuestionnaireData('60', '160'));
-      setQuestionnairePortionMode('auto');
-      setQuestionnaireManualPortions({});
-      setQuestionnaireAdditionalNotes('');
+      // setQuestionnaireTargetProfile('ambos');
+      // setQuestionnaireStepIdx(0);
+      // setQuestionnaireEl(defaultQuestionnaireData('70', '165'));
+      // setQuestionnaireElla(defaultQuestionnaireData('60', '160'));
+      // setQuestionnairePortionMode('auto');
+      // setQuestionnaireManualPortions({});
+      // setQuestionnaireAdditionalNotes('');
     }
   }, [showAdmin, showQuestionnaire]);
+
+  // Reset questionnaire step ONLY when switching target profiles
+  useEffect(() => {
+    if (isFirstTargetProfileRenderRef.current) {
+      isFirstTargetProfileRenderRef.current = false;
+      return;
+    }
+    setQuestionnaireStepIdx(0);
+  }, [setQuestionnaireStepIdx, questionnaireTargetProfile]);
 
   // Clean generation state when opening questionnaire at step 0
   useEffect(() => {

@@ -1,5 +1,7 @@
 import { Profile, Equivalencia, MealItem } from './types';
 import { normalizeProfileSummary } from './utils/profileSummary';
+import { rehydratePlanRecord } from './data/mealsDB';
+import { supplementsDatabase } from './data/supplementsDB';
 
 type RawProfilePrefix = 'EL' | 'ELLA';
 
@@ -104,7 +106,18 @@ export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix)
 
   if (!Array.isArray(parsed[supplementsKey])) {
     parsed[supplementsKey] = [];
+  } else {
+    // Rehydrate supplement IDs into full objects
+    parsed[supplementsKey] = parsed[supplementsKey].map((supOp: string | any) => {
+      if (typeof supOp === 'string') {
+        const found = supplementsDatabase.find(s => s.id === supOp);
+        return found ? { ...found } : { name: supOp, caution: 'Suplemento fuera de base', goalSupport: '', whyItMayHelp: '', howToUse: '', timing: '' };
+      }
+      return supOp;
+    });
   }
+
+  parsed[planKey] = rehydratePlanRecord(parsed[planKey], expectedPrefix);
 
   return parsed;
 }
