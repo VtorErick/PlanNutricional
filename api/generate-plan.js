@@ -225,13 +225,55 @@ function createLoggedAiError(debugContext, options) {
 function getMaxOutputTokens(modelName, requestMode) {
   const normalized = normalizeModelName(modelName).toLowerCase();
   const hardLimit = normalized.includes('gemini-2.0') || normalized.includes('gemma') ? 8192 : 65536;
-  const desired = requestMode === 'adjust' ? 8192 : 32768;
+  const desired = requestMode === 'adjust' ? 4096 : 16384;
   return Math.min(desired, hardLimit);
 }
 
-function getThinkingConfig(modelName) {
-  void modelName;
+function getThinkingConfig(modelName, debugContext) {
+  const normalized = normalizeModelName(modelName).toLowerCase();
+  const requestMode = debugContext?.requestMode || 'generate';
+
+  if (normalized.includes('gemini-3')) {
+    if (normalized.includes('pro')) {
+      return {
+        thinkingLevel: requestMode === 'adjust' ? 'low' : 'medium',
+      };
+    }
+
+    return {
+      thinkingLevel: requestMode === 'adjust' ? 'minimal' : 'low',
+    };
+  }
+
+  if (normalized.includes('gemini-2.5-pro')) {
+    return {
+      thinkingBudget: requestMode === 'adjust' ? 256 : 1024,
+    };
+  }
+
+  if (normalized.includes('gemini-2.5-flash')) {
+    return {
+      thinkingBudget: 0,
+    };
+  }
+
   return undefined;
+}
+
+function getGeminiRequestTimeoutMs(debugContext) {
+  if (debugContext.requestMode === 'adjust') {
+    return 60_000;
+  }
+
+  if (debugContext.targetProfile === 'ambos') {
+    return 120_000;
+  }
+
+  if (debugContext.requestMode === 'regenerate') {
+    return 120_000;
+  }
+
+  return 150_000;
 }
 
 function buildMealItemSchema() {
@@ -240,11 +282,11 @@ function buildMealItemSchema() {
     additionalProperties: false,
     required: MEAL_ITEM_REQUIRED_KEYS,
     properties: {
-      nombre: { type: 'string' },
-      porciones: { type: 'string' },
-      detalle: { type: 'string' },
-      tags: { type: 'array', items: { type: 'string' } },
-      super: { type: 'array', items: { type: 'string' } },
+      nombre: { type: 'string', maxLength: 90 },
+      porciones: { type: 'string', maxLength: 160 },
+      detalle: { type: 'string', maxLength: 240 },
+      tags: { type: 'array', maxItems: 4, items: { type: 'string', maxLength: 32 } },
+      super: { type: 'array', maxItems: 6, items: { type: 'string', maxLength: 48 } },
       caloriasKcal: { type: 'integer' },
       proteinaG: { type: 'integer' },
       grasasG: { type: 'integer' },
@@ -303,14 +345,14 @@ function buildProfileSchema(partial = false) {
     properties: {
       id: { type: 'string' },
       nombre: { type: 'string' },
-      perfil: { type: 'string' },
-      detallesPerfil: { type: 'string' },
-      meta: { type: 'string' },
+      perfil: { type: 'string', maxLength: 48 },
+      detallesPerfil: { type: 'string', maxLength: 360 },
+      meta: { type: 'string', maxLength: 180 },
       metaCaloricaKcalDia: { type: 'integer' },
-      descripcion: { type: 'string' },
+      descripcion: { type: 'string', maxLength: 240 },
       edad: { type: 'integer' },
-      horariosTexto: { type: 'string' },
-      notaSalud: { type: 'string' },
+      horariosTexto: { type: 'string', maxLength: 140 },
+      notaSalud: { type: 'string', maxLength: 220 },
       momentos: {
         type: 'array',
         items: buildMomentTimeSchema(),
@@ -322,7 +364,8 @@ function buildProfileSchema(partial = false) {
       distribucionDiaria: buildDailyDistributionSchema(),
       resumenPersonal: {
         type: 'array',
-        items: { type: 'string' },
+        maxItems: 5,
+        items: { type: 'string', maxLength: 120 },
       },
     },
   };
@@ -339,7 +382,7 @@ function buildEquivalenciasSchema() {
       properties: {
         titulo: { type: 'string' },
         icon: { type: 'string', enum: ALLOWED_ICONS },
-        items: { type: 'array', items: { type: 'string' } },
+        items: { type: 'array', maxItems: 6, items: { type: 'string', maxLength: 120 } },
       },
     },
   };
@@ -348,18 +391,19 @@ function buildEquivalenciasSchema() {
 function buildSuplementosSchema() {
   return {
     type: 'array',
+    maxItems: 3,
     items: {
       type: 'object',
       additionalProperties: false,
       required: SUPPLEMENT_REQUIRED_KEYS,
       properties: {
-        name: { type: 'string' },
-        goalSupport: { type: 'string' },
-        whyItMayHelp: { type: 'string' },
-        howToUse: { type: 'string' },
-        timing: { type: 'string' },
-        notes: { type: 'string' },
-        caution: { type: 'string' },
+        name: { type: 'string', maxLength: 80 },
+        goalSupport: { type: 'string', maxLength: 120 },
+        whyItMayHelp: { type: 'string', maxLength: 160 },
+        howToUse: { type: 'string', maxLength: 120 },
+        timing: { type: 'string', maxLength: 80 },
+        notes: { type: 'string', maxLength: 140 },
+        caution: { type: 'string', maxLength: 140 },
       },
     },
   };
@@ -373,7 +417,7 @@ function buildPlanSlotSchema() {
     properties: {
       dia: { type: 'string' },
       momento: { type: 'string' },
-      opciones: { type: 'array', items: buildMealItemSchema() },
+      opciones: { type: 'array', minItems: 3, maxItems: 3, items: buildMealItemSchema() },
     },
   };
 }
@@ -414,7 +458,8 @@ function buildAdjustResponseSchema() {
       summary: {
         type: 'array',
         minItems: 1,
-        items: { type: 'string' },
+        maxItems: 2,
+        items: { type: 'string', maxLength: 140 },
       },
       noChangesReason: { type: 'string' },
       profilePatch: buildProfileSchema(true),
@@ -1338,18 +1383,205 @@ function validatePayloadAssessmentPdfs(payload) {
   return { ok: true };
 }
 
+function truncatePromptText(value, maxLength = 240) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return '';
+  }
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1).trim()}…`;
+}
+
+function compactPromptMoments(moments) {
+  if (!Array.isArray(moments)) {
+    return moments;
+  }
+
+  return moments
+    .filter((moment) => moment && typeof moment === 'object')
+    .map((moment) => ({
+      key: moment.key,
+      hora: moment.hora,
+    }));
+}
+
+function compactPromptBodyMeasurements(bodyMeasurements) {
+  if (!bodyMeasurements || typeof bodyMeasurements !== 'object' || Array.isArray(bodyMeasurements)) {
+    return bodyMeasurements;
+  }
+
+  return Object.fromEntries(
+    Object.entries(bodyMeasurements).filter(([, value]) => value !== '' && value != null)
+  );
+}
+
+function compactPromptPlanConfig(planConfig) {
+  if (!planConfig || typeof planConfig !== 'object' || Array.isArray(planConfig)) {
+    return planConfig;
+  }
+
+  return {
+    mealsPerDay: planConfig.mealsPerDay,
+    selectedMoments: compactPromptMoments(planConfig.selectedMoments),
+    manualPortions: planConfig.manualPortions,
+    additionalNotes: truncatePromptText(planConfig.additionalNotes, 220),
+  };
+}
+
+function compactPromptContextSection(section, maxLength = 220) {
+  if (!section || typeof section !== 'object' || Array.isArray(section)) {
+    return section;
+  }
+
+  return Object.fromEntries(
+    Object.entries(section)
+      .filter(([, value]) => value !== '' && value != null)
+      .map(([key, value]) => [
+        key,
+        typeof value === 'string' ? truncatePromptText(value, maxLength) : value,
+      ])
+  );
+}
+
 function sanitizePromptPayload(payload) {
   if (!payload || typeof payload !== 'object') return payload;
 
-  const nextPayload = { ...payload };
-  if (nextPayload.assessmentReportPdf) {
+  const nextPayload = {
+    targetProfile: payload.targetProfile,
+    profileToUpdate: payload.profileToUpdate,
+    portionMode: payload.portionMode,
+    requestMode: payload.requestMode,
+    instruction: truncatePromptText(payload.instruction, 320),
+    planConfig: compactPromptPlanConfig(payload.planConfig),
+    age: payload.age,
+    currentWeightKg: payload.currentWeightKg,
+    heightCm: payload.heightCm,
+    targetWeightKg: payload.targetWeightKg,
+    objectives: payload.objectives,
+    objectiveTimeline: payload.objectiveTimeline,
+    objectiveTimelineWeeks: payload.objectiveTimelineWeeks,
+    diagnostics: truncatePromptText(payload.diagnostics, 220),
+    allergies: truncatePromptText(payload.allergies, 160),
+    medications: truncatePromptText(payload.medications, 180),
+    intolerances: truncatePromptText(payload.intolerances, 160),
+    digestiveSymptoms: truncatePromptText(payload.digestiveSymptoms, 180),
+    favoriteFoods: truncatePromptText(payload.favoriteFoods, 220),
+    dislikedFoods: truncatePromptText(payload.dislikedFoods, 180),
+    favoriteCuisineStyles: truncatePromptText(payload.favoriteCuisineStyles, 160),
+    cookingTime: payload.cookingTime,
+    activityLevel: payload.activityLevel,
+    wakeTime: payload.wakeTime,
+    sleepTime: payload.sleepTime,
+    trainingFrequency: payload.trainingFrequency,
+    bodyMeasurements: compactPromptBodyMeasurements(payload.bodyMeasurements),
+    profileContext: compactPromptContextSection(payload.profileContext, 180),
+    healthContext: compactPromptContextSection(payload.healthContext, 180),
+    preferences: compactPromptContextSection(payload.preferences, 180),
+    routine: compactPromptContextSection(payload.routine, 120),
+  };
+
+  if (payload.assessmentReportPdf) {
     nextPayload.assessmentReportPdf = {
-      name: nextPayload.assessmentReportPdf.name,
-      mimeType: nextPayload.assessmentReportPdf.mimeType,
+      name: payload.assessmentReportPdf.name,
+      mimeType: payload.assessmentReportPdf.mimeType,
     };
   }
 
-  return nextPayload;
+  if (payload.companionPlan) {
+    nextPayload.companionPlan = compactPlanForPrompt(payload.companionPlan);
+  }
+
+  return Object.fromEntries(
+    Object.entries(nextPayload).filter(([, value]) => {
+      if (value == null) return false;
+      if (typeof value === 'string') return value.trim() !== '';
+      if (Array.isArray(value)) return value.length > 0;
+      if (typeof value === 'object') return Object.keys(value).length > 0;
+      return true;
+    })
+  );
+}
+
+function compactMealOptionForPrompt(meal) {
+  if (!meal || typeof meal !== 'object') return meal;
+
+  return {
+    nombre: truncatePromptText(meal.nombre, 80),
+    porciones: truncatePromptText(meal.porciones, 120),
+    detalle: truncatePromptText(meal.detalle, 180),
+    super: Array.isArray(meal.super)
+      ? meal.super.slice(0, 5).map((item) => truncatePromptText(item, 40))
+      : [],
+  };
+}
+
+function compactPlanForPrompt(plan) {
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan)) {
+    return plan;
+  }
+
+  const compactPlan = {};
+
+  WEEK_DAYS.forEach((dayKey) => {
+    const dayPlan = plan[dayKey];
+    if (!dayPlan || typeof dayPlan !== 'object' || Array.isArray(dayPlan)) {
+      return;
+    }
+
+    const compactDay = {};
+    MEAL_MOMENT_KEYS.forEach((momentKey) => {
+      const options = dayPlan[momentKey];
+      if (!Array.isArray(options) || options.length === 0) {
+        return;
+      }
+
+      compactDay[momentKey] = options.slice(0, 3).map(compactMealOptionForPrompt);
+    });
+
+    if (Object.keys(compactDay).length > 0) {
+      compactPlan[dayKey] = compactDay;
+    }
+  });
+
+  return compactPlan;
+}
+
+function compactProfileForPrompt(profile) {
+  if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+    return profile;
+  }
+
+  return {
+    id: profile.id,
+    nombre: profile.nombre,
+    perfil: truncatePromptText(profile.perfil, 60),
+    detallesPerfil: truncatePromptText(profile.detallesPerfil, 220),
+    meta: truncatePromptText(profile.meta, 160),
+    notaSalud: truncatePromptText(profile.notaSalud, 160),
+    horariosTexto: truncatePromptText(profile.horariosTexto, 120),
+    resumenPersonal: Array.isArray(profile.resumenPersonal)
+      ? profile.resumenPersonal.slice(0, 4).map((item) => truncatePromptText(item, 100))
+      : [],
+  };
+}
+
+function compactSnapshotForPrompt(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    return snapshot;
+  }
+
+  return {
+    perfil: compactProfileForPrompt(snapshot.perfil),
+    plan: compactPlanForPrompt(snapshot.plan),
+  };
 }
 
 function getOptionalPdfParts(payload) {
@@ -1397,11 +1629,17 @@ Reglas criticas:
 - Usa exactamente estos momentos dentro del JSON: ${MEAL_MOMENT_KEYS.join(', ')}.
 - "perfil" debe ser SIEMPRE una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>".
 - No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
+- Mantén todo el texto muy conciso para evitar respuestas largas.
+- detallesPerfil, descripcion y notaSalud deben ser breves.
+- resumenPersonal debe tener entre 3 y 5 lineas breves.
 - perfil${prefix}.objetivosPorMomento debe ser un arreglo de 5 objetos, uno por cada momento, y cada objeto debe incluir: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
 - perfil${prefix}.distribucionDiaria debe ser un arreglo de 7 objetos, uno por cada grupo: ${FOOD_GROUP_KEYS.join(', ')}.
 - Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo, total, detalle.
 - No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
 - Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
+- detalle debe ser una sola frase breve y operativa.
+- tags debe tener entre 2 y 4 elementos.
+- super debe listar entre 3 y 6 ingredientes clave.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener exactamente estas claves: dia, momento, opciones.
 - Debe haber exactamente un slot por cada combinacion de dia + momento.
@@ -1410,7 +1648,8 @@ Reglas criticas:
 - No anides momentos dentro de dias ni dias dentro de objetos complejos; usa solo el arreglo plano de slots.
 - Las calorias y macros deben ser enteros realistas.
 - Las equivalencias deben alinearse con los ingredientes del plan y usar solo iconos permitidos: ${ALLOWED_ICONS.join(', ')}.
-- Los suplementos son opcionales y nunca deben ser necesarios para cumplir calorias, macros u objetivo.
+- Cada bloque de equivalencias debe ser corto y util, sin listas largas.
+- Los suplementos son opcionales y nunca deben ser necesarios para cumplir calorias, macros u objetivo. Si no aportan valor claro, devuelve [].
 - No pongas suplementos dentro del plan.
 - No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
 - Si el usuario adjunto PDF o medidas corporales, usalos como contexto complementario.
@@ -1423,23 +1662,10 @@ function buildUserPrompt(payload, prefix) {
   return JSON.stringify({
     profilePrefix: prefix,
     questionnaire: sanitizePromptPayload(payload),
-    outputContract: {
-      ...buildGenerationOutputContract(prefix),
-      planTransportKey: `planSemanal${prefix}`,
-      planTransportFormat: {
-        type: 'flat_slots',
-        slotKeys: ['dia', 'momento', 'opciones'],
-        requiredSlotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
-      },
-      momentsSource: 'questionnaire.planConfig.selectedMoments',
-      profileFormat: {
-        perfil: '<peso> kg | <altura> m | <edad> anos | IMC <valor>',
-        detallesPerfil: 'Resumen narrativo del caso y contexto clinico.',
-      },
-      objetivosPorMomentoFormat: {
-        type: 'array',
-        itemKeys: ['momento', ...FOOD_GROUP_KEYS],
-      },
+    outputHints: {
+      rootKeys: buildGenerationOutputContract(prefix).rootKeys,
+      selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
+      slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
     },
   });
@@ -1471,6 +1697,8 @@ Reglas criticas:
 - Ordena los slots por dia y luego por momento.
 - Cada slot debe regresar exactamente 3 opciones completas.
 - Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
+- Mantén textos breves: detalle en una sola frase, tags 2-4, super 3-6 y resumenPersonal 3-5 lineas.
+- Si no hacen falta suplementos, devuelve [].
 - Mantente consistente con el cuestionario, la instruccion nueva y las restricciones activas.
 - Si reutilizas ideas del plan actual, hazlo solo cuando siga siendo conveniente, no por copiarlo ciegamente.
 - No devuelvas summary, profilePatch ni planPatchSlots en modo regenerate. Devuelve el objeto completo listo para parsearse.`;
@@ -1483,7 +1711,7 @@ Debes responder con un unico objeto JSON valido. No uses markdown, comentarios, 
 El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
 
 Contrato exacto de salida:
-- summary: arreglo obligatorio de 1 a 4 lineas cortas
+- summary: arreglo obligatorio de 1 a 2 lineas cortas
 - noChangesReason: string opcional si no hace falta cambiar nada
 - profilePatch: objeto opcional con solo campos cambiados del perfil
 - equivalencias: arreglo opcional si cambian equivalencias
@@ -1491,15 +1719,20 @@ Contrato exacto de salida:
 - planPatchSlots: arreglo opcional con solo slots modificados
 
 Reglas criticas:
-- summary siempre debe explicar lo que cambiaste o por que no cambiaste nada.
+- summary siempre debe explicar lo que cambiaste o por que no cambiaste nada, en frases muy breves.
 - Si realmente no hace falta modificar nada, responde con summary y noChangesReason. No inventes cambios.
+- Devuelve el parche mas pequeno posible.
 - Si devuelves profilePatch.objetivosPorMomento, usa el mismo formato de arreglo por momento.
 - Si usas planPatchSlots, incluye SOLO las combinaciones de dia + momento modificadas.
 - Si devuelves varios slots, ordénalos por dia y luego por momento.
 - Cada slot incluido en planPatchSlots debe regresar el arreglo completo de 3 opciones para ese slot.
 - Nunca devuelvas el plan completo en modo adjust.
 - Cada MealItem debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
+- detalle debe ser una sola frase breve y operativa.
+- tags debe tener entre 2 y 4 elementos.
+- super debe listar entre 3 y 6 ingredientes clave.
 - profilePatch, equivalencias y suplementos son opcionales; omitelos si no cambian.
+- Si solo cambian comidas, omite profilePatch, equivalencias y suplementos.
 - Mantente consistente con el cuestionario, el plan actual, las ediciones manuales y las restricciones del usuario.`;
 }
 
@@ -1510,21 +1743,17 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
     mode: payload.requestMode,
     userInstruction: payload.instruction,
     questionnaireContext: sanitizePromptPayload(payload.questionnaireContext),
-    currentContext: profilePayload.currentContext,
-    originalContext: profilePayload.originalContext,
-    companionContext: profilePayload.companionContext,
+    currentContext: compactSnapshotForPrompt(profilePayload.currentContext),
+    originalContext:
+      payload.requestMode === 'regenerate'
+        ? compactSnapshotForPrompt(profilePayload.originalContext)
+        : undefined,
+    companionContext: compactSnapshotForPrompt(profilePayload.companionContext),
     outputMode,
     outputNotes: {
-      fixedDays: WEEK_DAYS,
-      fixedMoments: MEAL_MOMENT_KEYS,
-      fixedFoodGroups: FOOD_GROUP_KEYS,
       planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
-      planTransportFormat: 'flat_slots',
       returnOnlyChangedSections: payload.requestMode === 'adjust',
-      preserveUntouchedMoments: payload.requestMode === 'adjust',
       mealOptionsPerMoment: 3,
-      mealItemRequiredKeys: MEAL_ITEM_REQUIRED_KEYS,
-      fullOutputRootKeys: buildGenerationOutputContract(prefix).rootKeys,
     },
   });
 }
@@ -1661,7 +1890,7 @@ function shouldRetryStatusCode(statusCode) {
   return [408, 429, 500, 502, 503, 504].includes(Number(statusCode));
 }
 
-function shouldRetryWithDifferentModel(error) {
+function getRetryErrorMeta(error) {
   const statusCode = error?.statusCode || error?.aiDebugLog?.geminiResponse?.status;
   const rawMessage = error?.aiDebugLog?.error?.rawMessage || error?.message || '';
   const normalizedMessage = String(rawMessage).toLowerCase();
@@ -1672,6 +1901,38 @@ function shouldRetryWithDifferentModel(error) {
       normalizedMessage.includes('no encontrado') ||
       normalizedMessage.includes('not supported') ||
       normalizedMessage.includes('no disponible'));
+
+  return {
+    statusCode,
+    rawMessage,
+    normalizedMessage,
+    modelUnavailable,
+  };
+}
+
+function shouldRetrySameModel(error) {
+  const { statusCode, normalizedMessage, modelUnavailable } = getRetryErrorMeta(error);
+
+  if (modelUnavailable) {
+    return false;
+  }
+
+  return (
+    [429, 500, 502, 503, 504].includes(Number(statusCode)) ||
+    normalizedMessage.includes('high demand') ||
+    normalizedMessage.includes('resource exhausted') ||
+    normalizedMessage.includes('rate limit') ||
+    normalizedMessage.includes('quota exceeded') ||
+    normalizedMessage.includes('deadline exceeded') ||
+    normalizedMessage.includes('timed out') ||
+    normalizedMessage.includes('internal error') ||
+    normalizedMessage.includes('backend error') ||
+    normalizedMessage.includes('unavailable')
+  );
+}
+
+function shouldRetryWithDifferentModel(error) {
+  const { statusCode, normalizedMessage, modelUnavailable } = getRetryErrorMeta(error);
 
   return (
     shouldRetryStatusCode(statusCode) ||
@@ -1694,6 +1955,10 @@ function shouldRetryWithDifferentModel(error) {
   );
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function generateWithGeminiWithFallback(
   parts,
   apiKey,
@@ -1704,49 +1969,65 @@ async function generateWithGeminiWithFallback(
 ) {
   let lastError;
   const attempts = [];
+  const maxAttemptsPerModel = debugContext?.targetProfile === 'ambos' ? 2 : 1;
 
   for (let index = 0; index < modelCandidates.length; index += 1) {
     const modelName = modelCandidates[index];
 
-    try {
-      const data = await generateWithGemini(
-        parts,
-        apiKey,
-        modelName,
-        systemInstruction,
-        responseSchema,
-        {
-          ...debugContext,
-          selectedModel: modelName,
-        }
-      );
-
-      return {
-        data,
-        modelUsed: modelName,
-      };
-    } catch (error) {
-      lastError = error;
-      const willRetry =
-        index < modelCandidates.length - 1 && shouldRetryWithDifferentModel(error);
-      attempts.push(
-        buildAttemptLog(error, {
-          order: index + 1,
+    for (let modelAttempt = 0; modelAttempt < maxAttemptsPerModel; modelAttempt += 1) {
+      try {
+        const data = await generateWithGemini(
+          parts,
+          apiKey,
           modelName,
-          willRetry,
-        })
-      );
+          systemInstruction,
+          responseSchema,
+          {
+            ...debugContext,
+            selectedModel: modelName,
+          }
+        );
 
-      if (!willRetry) {
-        throw attachAttemptsToError(error, attempts, {
-          ...debugContext,
-          selectedModel: modelName,
-        });
+        return {
+          data,
+          modelUsed: modelName,
+        };
+      } catch (error) {
+        lastError = error;
+        const retrySameModel =
+          modelAttempt < maxAttemptsPerModel - 1 && shouldRetrySameModel(error);
+        const retryDifferentModel =
+          index < modelCandidates.length - 1 && shouldRetryWithDifferentModel(error);
+        const willRetry = retrySameModel || retryDifferentModel;
+        attempts.push(
+          buildAttemptLog(error, {
+            order: attempts.length + 1,
+            modelName,
+            willRetry,
+          })
+        );
+
+        if (retrySameModel) {
+          await delay(750 * (modelAttempt + 1));
+          continue;
+        }
+
+        if (!retryDifferentModel) {
+          throw attachAttemptsToError(error, attempts, {
+            ...debugContext,
+            selectedModel: modelName,
+          });
+        }
+
+        break;
       }
     }
   }
 
-  throw attachAttemptsToError(lastError, attempts, debugContext);
+  throw attachAttemptsToError(lastError, attempts, {
+    ...debugContext,
+    selectedModel: modelCandidates[modelCandidates.length - 1],
+  });
 }
 
 function buildScopedPayload(payload, profileData) {
@@ -1774,6 +2055,7 @@ async function generateWithGemini(
   responseSchema,
   debugContext
 ) {
+  const timeoutMs = getGeminiRequestTimeoutMs(debugContext);
   const body = {
     system_instruction: {
       parts: [{ text: systemInstruction }],
@@ -1789,21 +2071,60 @@ async function generateWithGemini(
       responseMimeType: 'application/json',
       responseJsonSchema: responseSchema,
       maxOutputTokens: getMaxOutputTokens(modelName, debugContext.requestMode),
-      ...(getThinkingConfig(modelName)
-        ? { thinkingConfig: getThinkingConfig(modelName) }
+      ...(getThinkingConfig(modelName, debugContext)
+        ? { thinkingConfig: getThinkingConfig(modelName, debugContext) }
         : {}),
     },
   };
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error?.name === 'AbortError') {
+      throw createLoggedAiError(
+        {
+          ...debugContext,
+          stage: 'generate-content',
+          selectedModel: modelName,
+        },
+        {
+          rawMessage: `El modelo ${modelName} supero el tiempo limite de ${Math.round(timeoutMs / 1000)}s antes de responder.`,
+          statusCode: 504,
+          geminiRequest: body,
+        }
+      );
+    }
+
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'generate-content',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: error?.message || `Fallo de red contactando ${modelName}.`,
+        statusCode: 502,
+        geminiRequest: body,
+      }
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const responseText = await response.text();
 

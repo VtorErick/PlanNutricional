@@ -4,7 +4,7 @@ const LEGACY_GEMINI_API_KEY_STORAGE_KEY = 'geminiApiKey';
 const GEMINI_MODEL_STORAGE_KEY = 'geminiModel';
 
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-pro-preview';
-const MAX_MODEL_CANDIDATES = 6;
+const MAX_MODEL_CANDIDATES = 4;
 
 export interface GeminiModelOption {
   id: string;
@@ -33,20 +33,20 @@ export const GEMINI_MODEL_OPTIONS: GeminiModelOption[] = [
     badgeClassName: 'bg-emerald-100 text-emerald-700',
   },
   {
-    id: 'gemini-2.5-pro',
-    label: 'Alta calidad',
-    technicalLabel: 'Gemini 2.5 Pro',
-    description: 'Alternativa potente y estable cuando la serie 3 no responde.',
-    badge: 'Pro',
-    badgeClassName: 'bg-orange-100 text-orange-700',
-  },
-  {
     id: 'gemini-2.5-flash',
     label: 'Balance',
     technicalLabel: 'Gemini 2.5 Flash',
     description: 'Buen equilibrio entre estructura, velocidad y costo para reintentos.',
     badge: 'Balance',
     badgeClassName: 'bg-blue-100 text-blue-700',
+  },
+  {
+    id: 'gemini-2.5-pro',
+    label: 'Alta calidad',
+    technicalLabel: 'Gemini 2.5 Pro',
+    description: 'Alternativa potente y estable cuando la serie 3 no responde.',
+    badge: 'Pro',
+    badgeClassName: 'bg-orange-100 text-orange-700',
   },
   {
     id: 'gemini-2.5-flash-lite',

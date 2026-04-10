@@ -1262,12 +1262,33 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify(payloadWithKey),
       });
       const responseText = await res.text();
-      if (!responseText || responseText.trim() === '') throw new Error('SERVER_UNAVAILABLE');
-      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
-        throw new Error('SERVER_UNAVAILABLE');
+      const trimmedResponse = responseText?.trim() || '';
+      const isHtmlResponse =
+        trimmedResponse.startsWith('<!DOCTYPE') || trimmedResponse.startsWith('<html');
+
+      if (!res.ok && (!trimmedResponse || isHtmlResponse)) {
+        throw createClientAiError(
+          createClientAiDebugLog({
+            flow: payload?.requestMode ? 'plan-revision' : 'questionnaire-submit',
+            transport: 'serverless',
+            stage: 'generate-content',
+            targetProfile: payload?.targetProfile,
+            requestMode: payload?.requestMode || 'generate',
+            requestedModel: geminiModel,
+            apiKeySource: 'server-env',
+            requestPayload: payloadWithKey,
+            rawMessage:
+              res.status === 504
+                ? 'El servidor excedio el tiempo maximo de ejecucion antes de terminar la respuesta.'
+                : `El servidor devolvio una respuesta no JSON (HTTP ${res.status}).`,
+          }),
+          res.status || 503
+        );
       }
+      if (!trimmedResponse) throw new Error('SERVER_UNAVAILABLE');
+      if (isHtmlResponse) throw new Error('SERVER_UNAVAILABLE');
       try {
-        json = JSON.parse(responseText);
+        json = JSON.parse(trimmedResponse);
       } catch {
         throw new Error('SERVER_UNAVAILABLE');
       }

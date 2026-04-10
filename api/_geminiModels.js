@@ -1,11 +1,11 @@
 export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-pro-preview';
-export const MAX_MODEL_CANDIDATES = 6;
+export const MAX_MODEL_CANDIDATES = 4;
 
 export const GEMINI_MODEL_OPTIONS = [
   'gemini-3.1-pro-preview',
   'gemini-3-flash-preview',
-  'gemini-2.5-pro',
   'gemini-2.5-flash',
+  'gemini-2.5-pro',
   'gemini-2.5-flash-lite',
   'gemini-3-pro-preview',
   'gemini-3.1-pro-preview-customtools',
