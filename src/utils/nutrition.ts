@@ -157,3 +157,102 @@ export function sumSelectedMealProtein(meals: MealItem[]): number {
 export function sumSelectedMealFat(meals: MealItem[]): number {
   return meals.reduce((acc, meal) => acc + (meal.grasasG || 0), 0);
 }
+
+// --- Clinical Engine (TDEE & SMAE) ---
+// Mifflin-St Jeor Equation
+export function calculateClinicalTDEE(weightKg: number, heightCm: number, age: number, isMale: boolean, activityStr: string, goals: string[]): { bmr: number; tdee: number; targetKcal: number } {
+  let bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age);
+  bmr = isMale ? bmr + 5 : bmr - 161;
+
+  let multiplier = 1.2; // Sedentario
+  const act = (activityStr || "").toLowerCase();
+  if (act.includes("ligero")) multiplier = 1.375;
+  else if (act.includes("moderado")) multiplier = 1.55;
+  else if (act.includes("activo")) multiplier = 1.725;
+  else if (act.includes("intenso") || act.includes("atleta")) multiplier = 1.9;
+
+  const tdee = bmr * multiplier;
+  let targetKcal = tdee;
+
+  const goalStr = goals.join(" ").toLowerCase();
+  if (goalStr.includes("perder") || goalStr.includes("bajar")) {
+    targetKcal -= 400;
+  } else if (goalStr.includes("ganar") || goalStr.includes("masa") || goalStr.includes("musculo")) {
+    targetKcal += 300;
+  }
+
+  // Safety floor
+  if (isMale && targetKcal < 1500) targetKcal = 1500;
+  if (!isMale && targetKcal < 1200) targetKcal = 1200;
+
+  return { bmr: Math.round(bmr), tdee: Math.round(tdee), targetKcal: Math.round(targetKcal) };
+}
+
+export function generateSmaePortionsFromKcal(targetKcal: number, weightKg: number, goals: string[]): Record<string, number> {
+  const goalStr = goals.join(" ").toLowerCase();
+  const isLoss = goalStr.includes("perder");
+  const isMuscle = goalStr.includes("musculo") || goalStr.includes("ganar");
+  
+  // Protein: 1.8g to 2.2g per kg
+  let proteinPerKg = 1.8;
+  if (isLoss) proteinPerKg = 2.0;
+  if (isMuscle) proteinPerKg = 2.2;
+  
+  let targetProteinGrops = Math.round((weightKg * proteinPerKg) / 7);
+
+  // Fixed healthy bases
+  let verduras = isLoss ? 4 : 3;
+  let frutas = isLoss ? 2 : 3;
+  let lacteos = 1;
+
+  // Let subtract what we have so far
+  let kcalUsed = (verduras * 25) + (frutas * 60) + (lacteos * 95) + (targetProteinGrops * 75);
+  let kcalLeftForEnergy = targetKcal - kcalUsed;
+
+  // Split remainder between fats and carbs (cereals). Cereals = 70kcal, Grasas = 45kcal
+  // Ratio: roughly 40% fat, 60% cereals of remainder
+  let fatKcal = kcalLeftForEnergy * 0.45;
+  let carbKcal = kcalLeftForEnergy * 0.55;
+
+  let grasas = Math.max(2, Math.round(fatKcal / 45));
+  let cereales = Math.max(2, Math.round(carbKcal / 70));
+
+  return {
+    verduras,
+    frutas,
+    lacteos,
+    proteina: targetProteinGrops,
+    grasas,
+    cereales,
+    leguminosas: 0 // Optional / Flexible swap by user
+  };
+}
+
+export function distributeSmaeToMeals(portions: Record<string, number>, mealsCount: number): Record<string, Record<string, number>> {
+  const mealKeys = mealsCount === 5 
+    ? ["desayuno", "colacion_am", "comida", "colacion_pm", "cena"]
+    : ["desayuno", "comida", "cena"];
+    
+  const grid: Record<string, Record<string, number>> = {};
+  mealKeys.forEach(m => grid[m] = { verduras:0, frutas:0, lacteos:0, proteina:0, grasas:0, cereales:0, leguminosas:0 });
+
+  // Greedy distribution
+  const distribute = (group: string, total: number) => {
+    let remaining = total;
+    while(remaining > 0) {
+      for (const m of mealKeys) {
+        if (remaining <= 0) break;
+        // Rules
+        if (group === "proteina" && m.includes("colacion") && grid[m].proteina >= 1) continue;
+        if (group === "cereales" && m.includes("colacion")) continue; // Avoid carbs in snacks
+        
+        grid[m][group] = (grid[m][group] || 0) + 1;
+        remaining--;
+      }
+    }
+  };
+
+  Object.entries(portions).forEach(([group, amount]) => distribute(group, amount));
+  return grid;
+}
+

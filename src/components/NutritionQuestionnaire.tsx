@@ -39,6 +39,7 @@ import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
 import { getGeminiModelLabel } from '../utils/geminiModels';
 import { getQuestionnaireTheme } from '../utils/theme';
+import { calculateClinicalTDEE, generateSmaePortionsFromKcal, distributeSmaeToMeals } from '../utils/nutrition';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type TargetProfile = 'el' | 'ella' | 'ambos';
@@ -174,6 +175,7 @@ const emptyPerson = () => ({
     thighCm: '',
   } as BodyMeasurements,
   assessmentReportPdf: null as UploadedAssessmentPdf | null,
+  clinicalPortionsGrid: undefined as Record<string, Record<string, number>> | undefined,
 });
 type Person = ReturnType<typeof emptyPerson>;
 
@@ -946,6 +948,7 @@ export default function NutritionQuestionnaire({
         targetWeightKg: p.targetWeightKg,
         objectives: p.objectives,
         objectiveTimelineWeeks: p.objectiveTimeline,
+        clinicalPortionsGrid: p.clinicalPortionsGrid,
       },
       healthContext: {
         diagnostics: p.diagnostics,
@@ -970,6 +973,34 @@ export default function NutritionQuestionnaire({
       assessmentReportPdf: p.assessmentReportPdf,
     });
 
+    const elCopy = { ...el };
+    const ellaCopy = { ...ella };
+
+    if (portionMode === 'auto') {
+      try {
+        const calculateForProfile = (p: any, type: TargetProfile) => {
+          const w = parseFloat(p.currentWeightKg) || 70;
+          const h = parseFloat(p.heightCm) || 170;
+          const a = parseInt(p.age) || 30;
+          const isM = (p.gender || (type === 'el' ? 'Masculino' : 'Femenino')) === 'Masculino';
+          const goals = Array.isArray(p.objectives) ? p.objectives : [];
+          
+          const clinical = calculateClinicalTDEE(w, h, a, isM, p.activityLevel, goals);
+          const smae = generateSmaePortionsFromKcal(clinical.targetKcal, w, goals);
+          return distributeSmaeToMeals(smae, DEFAULT_MOMENTS.length);
+        };
+
+        if (targetProfile === 'el' || targetProfile === 'ambos') {
+          elCopy.clinicalPortionsGrid = calculateForProfile(elCopy, 'el');
+        }
+        if (targetProfile === 'ella' || targetProfile === 'ambos') {
+          ellaCopy.clinicalPortionsGrid = calculateForProfile(ellaCopy, 'ella');
+        }
+      } catch (err) {
+        console.error("Clinical engine override failed:", err);
+      }
+    }
+
     const base = {
       targetProfile,
       profileToUpdate: targetProfile,
@@ -983,9 +1014,9 @@ export default function NutritionQuestionnaire({
     };
 
     if (targetProfile === 'ambos') {
-      await onGenerate({ ...base, el: buildPP(el), ella: buildPP(ella) });
+      await onGenerate({ ...base, el: buildPP(elCopy), ella: buildPP(ellaCopy) });
     } else {
-      const p = targetProfile === 'el' ? el : ella;
+      const p = targetProfile === 'el' ? elCopy : ellaCopy;
       await onGenerate({ ...base, ...buildPP(p) });
     }
   };

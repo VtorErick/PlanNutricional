@@ -33,11 +33,11 @@ export const perfilELLA = {
     { grupo: 'lacteos', total: 1, detalle: '1 en cena' },
   ],
   resumenPersonal: [
-    'Plan del nutriólogo con equivalentes claros por grupo. Verduras altas para saciedad, fruta controlada, y grasas siempre medidas.',
-    'Importante por tu riesgo de insulina alta: nunca te saltes comidas, siempre combina carbohidrato con proteína o grasa, y prefiere fruta entera (nunca en jugo).',
-    'Alimentos libres (pepino, jícama, gelatina light, verduras) los puedes comer sin límite cuando tengas hambre entre comidas.',
-    'Leguminosas (frijol, lenteja, garbanzo) solo 3 veces por semana en cantidad de media taza. Son excelentes para control de azúcar.',
-    'Con 65 kg, 1.60 m y actividad muy baja, un déficit moderado te lleva a ~58 kg. La clave es constancia, no restricción extrema.',
+    'Debido al riesgo documentado de resistencia a la insulina, se diseñó un esquema nutricional focalizado en control glucémico y reducción de picos de insulina.',
+    'La distribución de carbohidratos es estricta y se combina invariablemente con proteína o grasas vegetales para ralentizar la absorción intestinal.',
+    'Se incluyó una densidad alta de vegetales fibrosos y leguminosas limitadas para promover salud microbiota y control de grelina.',
+    'La ingesta calórica se encuentra en un déficit adecuado para el metabolismo basal ajustado por sedentarismo severo, propiciando movilización de tejido adiposo y mejora cardiometabólica.',
+    'La adherencia al tratamiento es esencial para normalizar marcadores bioquímicos a mediano plazo.'
   ],
 };
 

@@ -1,15 +1,7 @@
-import type { MealItem } from '../types';
+const fs = require("fs");
 
-export interface CatalogMealItem {
-  id: string;
-  momentos: string[];
-  nombre: string;
-  tags: string[];
-  super: string[];
-}
-
-export const mealsDatabase: CatalogMealItem[] = [
-// --- DESAYUNOS (40 opciones) ---
+const newDb = `
+  // --- DESAYUNOS (40 opciones) ---
   { id: 'des_01', momentos: ['desayuno'], nombre: 'Huevos a la mexicana con aguacate', tags: ['mexicano', 'saciante', '15-30 min', 'caliente', 'economico'], super: ['huevo', 'panela', 'jitomate', 'cebolla', 'aguacate', 'tortilla', 'lácteos light'] },
   { id: 'des_02', momentos: ['desayuno'], nombre: 'Omelette de champiñones y espinaca', tags: ['rápido', '<15 min', 'ligero', 'vegetariano-opcional'], super: ['huevo', 'jamón pavo', 'champiñón', 'espinaca', 'tostada'] },
   { id: 'des_03', momentos: ['desayuno'], nombre: 'Avena nocturna (Overnight oats)', tags: ['dulce', '<15 min', 'meal-prep', 'fresco', 'economico'], super: ['avena', 'proteína whey', 'leche', 'manzana', 'chía'] },
@@ -115,7 +107,7 @@ export const mealsDatabase: CatalogMealItem[] = [
   { id: 'com_24', momentos: ['comida'], nombre: 'Chile relleno de queso o atún sin capear', tags: ['mexicano', 'volumen', 'bajo-carb', '+30 min'], super: ['chile poblano', 'queso panela', 'atún lata', 'salsa roja'] },
   { id: 'com_25', momentos: ['comida'], nombre: 'Arroz frito (Yakimeshi) de pechuga casero', tags: ['oriental', 'frito', 'economico', '15-30 min'], super: ['arroz', 'pollo', 'huevo', 'salsa soya', 'cebolleta'] },
   { id: 'com_26', momentos: ['comida'], nombre: 'Quesadillas gigantes de chicharrón prensado vegetal o setas', tags: ['mexicano', 'antojo', '15-30 min', 'economico'], super: ['tortilla grande', 'setas', 'queso oaxaca', 'salsa verde'] },
-  { id: 'com_27', momentos: ['comida'], nombre: 'Pechuga extra crujiente horneada estilo sureño', tags: ['antojo', 'comfort-food', '+30 min'], super: ['pollo', 'avena molida', 'papa', 'ensalada col'] },
+  { id: 'com_27', momentos: ['comida'], nombre: 'Plato tipo KFC: Pechuga empanizada al horno', tags: ['antojo', 'comfort-food', '+30 min'], super: ['pollo', 'avena molida', 'papa', 'ensalada col'] },
   { id: 'com_28', momentos: ['comida'], nombre: 'Entomatadas rellenas de pollo con queso panela', tags: ['mexicano', 'caliente', '15-30 min', 'economico'], super: ['tortilla de maíz', 'pollo deshebrado', 'salsa tomate', 'queso panela'] },
   { id: 'com_29', momentos: ['comida'], nombre: 'Tortitas de papa con atún en sartén antiadherente', tags: ['casero', 'niños', 'economico', '15-30 min'], super: ['papa', 'atún lata', 'huevo', 'lechuga'] },
   { id: 'com_30', momentos: ['comida'], nombre: 'Hígado de res encebollado rico en hierro', tags: ['hierro', 'nutritivo', 'mexicano', 'economico', '15-30 min'], super: ['higado de res', 'cebolla', 'tortilla', 'frijol'] },
@@ -138,23 +130,23 @@ export const mealsDatabase: CatalogMealItem[] = [
   { id: 'cen_05', momentos: ['cena'], nombre: 'Huarachitos ligeros de nopal asado con queso', tags: ['mexicano', 'bajo-carb', 'vegetariano', '15-30 min', 'economico'], super: ['nopal asado', 'queso panela', 'frijol untado', 'salsa roja'] },
   { id: 'cen_06', momentos: ['cena'], nombre: 'Yogurt griego con manzana picada al natural', tags: ['dulce', 'postre', 'saciante', '<15 min'], super: ['yogurt griego', 'manzana', 'canela', 'almendras'] },
   { id: 'cen_07', momentos: ['cena'], nombre: 'Tortitas de arroz orgánico estilo California', tags: ['crujiente', 'muy-ligero', 'bajo-carb', '<15 min'], super: ['galleta arroz', 'queso crema light', 'pepino', 'ajonjolí'] },
-  { id: 'cen_08', momentos: ['cena'], nombre: 'Tacos de huevo cocido en tortilla de maíz', tags: ['proteína-pura', 'clasico', 'rápido', 'economico'], super: ['huevo cocido', 'tortilla de maíz', 'salsa picante'] },
+  { id: 'cen_08', momentos: ['cena'], nombre: 'Tacos de huevo cocido en tortilla de maíz', tags: ['proteína-pura', 'clasico', 'rápido', 'economico'], super: ['huevo cocido', 'tortilla de maíz", "salsa picante'] },
   { id: 'cen_09', momentos: ['cena'], nombre: 'Tostadas trituradas de requesón con pico de gallo', tags: ['mexicano', 'crujiente', 'ligero', 'economico'], super: ['tostada horneada', 'requesón', 'jitomate', 'cebolla'] },
   { id: 'cen_10', momentos: ['cena'], nombre: 'Sincronizada integral de jamón de pierna comun', tags: ['caliente', 'fácil', 'confort', '<15 min', 'economico'], super: ['tortilla harina integral', 'queso manchego light', 'jamón de pierna'] },
-  { id: 'cen_11', momentos: ['cena'], nombre: 'Caldo de fideos ramen casero con pollo y verduras', tags: ['sopa', 'hidratante', 'reconfortante', '15-30 min'], super: ['fideo integral', 'caldo pollo', 'huevo cocido', 'cebolla china'] },
-  { id: 'cen_12', momentos: ['cena'], nombre: 'Bowl de hojuelas de maíz integral con fruta', tags: ['ultra-rápido', 'dulce', 'ligero', '<15 min', 'comun', 'economico'], super: ['cereal sin azucar', 'lácteos light', 'fresa'] },
+  { id: 'cen_11', momentos: ['cena'], nombre: 'Sopa Maruchan / Ramen fit con fideos integrales', tags: ['sopa', 'hidratante', 'reconfortante', '15-30 min'], super: ['fideo integral', 'caldo pollo', 'huevo cocido', 'cebolla china'] },
+  { id: 'cen_12', momentos: ['cena'], nombre: 'Cereal casero Zucaritas (Corn Flakes) con fruta', tags: ['ultra-rápido', 'dulce', 'ligero', '<15 min', 'comun', 'economico'], super: ['cereal sin azucar', 'lácteos light', 'fresa'] },
   { id: 'cen_13', momentos: ['cena'], nombre: 'Crema de calabacita comun', tags: ['caliente', 'ligero', 'vegano-amigable', '15-30 min'], super: ['calabaza asada', 'leche descremada', 'cebolla'] },
   { id: 'cen_14', momentos: ['cena'], nombre: 'Quesadillas asadas de jamón', tags: ['mexicano', 'rápido', '<15 min', 'economico'], super: ['tortilla de maíz', 'queso oaxaca', 'jamón pavo'] },
   { id: 'cen_15', momentos: ['cena'], nombre: 'Ceviche de coliflor muy fresco', tags: ['vegano', 'fresco', 'muy-ligero', '15-30 min'], super: ['coliflor', 'limón', 'cebolla morada', 'cilantro', 'tostada horneada'] },
   { id: 'cen_16', momentos: ['cena'], nombre: 'Queso panela asado directo al comal', tags: ['rápido', 'mexicano', 'proteína-queso', '<15 min'], super: ['queso panela', 'salsa roja', 'tortilla'] },
-  { id: 'cen_17', momentos: ['cena'], nombre: 'Panqué casero de vainilla con vaso de leche fresca', tags: ['rapido', 'dulce', 'comun', 'economico', '<15 min'], super: ['pan dulce moderado', 'leche'] },
+  { id: 'cen_17', momentos: ['cena'], nombre: 'Panqué rebanado (tipo Bimbo) con leche fresca', tags: ['rapido', 'dulce', 'comun', 'economico', '<15 min'], super: ['pan dulce moderado', 'leche'] },
   { id: 'cen_18', momentos: ['cena'], nombre: 'Chayotes hervidos con crema y queso fresco', tags: ['volumen', 'mexicano', 'ligero', 'economico'], super: ['chayote', 'queso fresco', 'crema light'] },
   { id: 'cen_19', momentos: ['cena'], nombre: 'Molletes simples de frijolitos refritos', tags: ['confort', 'mexicano', '15-30 min', 'economico'], super: ['bolillo integral', 'frijol', 'queso oaxaca'] },
   { id: 'cen_20', momentos: ['cena'], nombre: 'Hot dog con salchicha de pavo y bollo integral', tags: ['americano', 'antojo', 'rápido', '<15 min'], super: ['salchicha pavo', 'pan hotdog integral', 'jitomate', 'cebolla'] },
-  { id: 'cen_21', momentos: ['cena'], nombre: 'Taza de arroz blanco caliente con un vaso de leche', tags: ['indigestion', 'medico', 'estomago', 'economico'], super: ['arroz blanco', 'leche'] },
-  { id: 'cen_22', momentos: ['cena'], nombre: 'Gringas de carne al pastor (o adobada) ligera', tags: ['mexicano', 'callejero', 'antojo', 'economico'], super: ['tortilla harina integral', 'cerdo adobado', 'queso oaxaca', 'piña'] },
+  { id: 'cen_21', momentos: ['cena'], nombre: 'Taza de arroz blanco caliente con un vaso de leche', tags: ['indigestion', 'medico", "estomago", "economico'], super: ['arroz blanco', 'leche'] },
+  { id: 'cen_22', momentos: ['cena'], nombre: 'Gringas de carne al pastor (o adobada) ligera', tags: ['mexicano", "callejero", "antojo", "economico'], super: ['tortilla harina integral', 'cerdo adobado', 'queso oaxaca', 'piña'] },
   { id: 'cen_23', momentos: ['cena'], nombre: 'Pechuga de pavo rebanada pura al natural', tags: ['keto', 'ultra-bajo', '<15 min'], super: ['pechuga de pavo', 'pepino'] },
-  { id: 'cen_24', momentos: ['cena'], nombre: 'Rollos de sushi clásicos listos para comer', tags: ['comercial', 'portatil', 'rápido', 'oriental'], super: ['sushi preparado', 'salsa soya'] },
+  { id: 'cen_24', momentos: ['cena'], nombre: 'Rollos de sushi de oxxo o supermercado (listos)', tags: ['comercial', 'portatil', 'rápido', 'oriental'], super: ['sushi preparado', 'salsa soya'] },
   { id: 'cen_25', momentos: ['cena'], nombre: 'Batido de manzana con canela calientito', tags: ['confort', 'liquido', '<15 min', 'economico'], super: ['leche', 'manzana', 'canela', 'avena'] },
   { id: 'cen_26', momentos: ['cena'], nombre: 'Sopa de fideo casero caldo rojo', tags: ['mexicano', 'confort', 'sopa', 'economico'], super: ['pasta fideo', 'jitomate', 'caldo pollo'] },
   { id: 'cen_27', momentos: ['cena'], nombre: 'Hamburguesita sencilla a la plancha', tags: ['calle', 'rápido', 'antojo'], super: ['medallon res', 'pan hamburguesa integral', 'queso amarillo light'] },
@@ -163,114 +155,13 @@ export const mealsDatabase: CatalogMealItem[] = [
   { id: 'cen_30', momentos: ['cena'], nombre: 'Huevo revuelto con jamón super básico', tags: ['rápido', 'economico', '<15 min'], super: ['huevo', 'jamón pavo', 'tortilla'] },
   { id: 'cen_31', momentos: ['cena'], nombre: 'Puré de manzanas baby sin azúcar añadida', tags: ['digestivo', 'suave', 'bebe', 'rápido'], super: ['puré manzana'] },
   { id: 'cen_32', momentos: ['cena'], nombre: 'Gordita de chicharrón prensado seca al comal', tags: ['mexicano', 'antojo', 'economico', '+30 min'], super: ['masa maiz', 'chicharrón prensado', 'lechuga'] },
-  { id: 'cen_33', momentos: ['cena'], nombre: 'Tostadas siberia caseras de pechuga', tags: ['norteño', 'aguacate', 'rápido'], super: ['tostada horneada', 'pollo', 'crema light', 'aguacate'] },
+  { id: 'cen_33', momentos: ['cena'], nombre: 'Tostadas siberia caseras de pechuga', tags: ['norteño', 'aguacate', 'rápido'], super: ['tostada horneada', 'pollo", "crema light", "aguacate'] },
   { id: 'cen_35', momentos: ['cena'], nombre: 'Sándwich de crema de cacahuate y mermelada (PB&J)', tags: ['gringo', 'dulce', 'rápido', '<15 min', 'economico'], super: ['pan integral', 'crema cacahuate', 'mermelada light'] }
 ];
+`; // CERRAR BACKTICK AQUI!
 
-export function getCompactMealsCatalog(db: CatalogMealItem[] = mealsDatabase): {id: string, tags: string[], momentos: string[]}[] {
-  return db.map(m => ({
-    id: m.id,
-    tags: m.tags,
-    momentos: m.momentos,
-  }));
-}
+let content = fs.readFileSync("src/data/mealsDB.ts", "utf8");
+content = content.replace(/export const mealsDatabase: CatalogMealItem\[\] = \[\s*([\s\S]*?)\];/, "export const mealsDatabase: CatalogMealItem[] = [\n" + newDb.trim() + "\n];");
+fs.writeFileSync("src/data/mealsDB.ts", content);
 
-export function filterCatalogForQuestionnaire(db: CatalogMealItem[], questionnaire: any): CatalogMealItem[] {
-  if (!questionnaire) return db;
-  
-  // Extract intolerances and allergies to lower case
-  const exclusions = [
-    ...(questionnaire.intolerancias || []),
-    ...(questionnaire.alergias || []),
-  ].map((str: string) => (typeof str === 'string' ? str.toLowerCase().trim() : ''));
-
-  if (exclusions.length === 0) return db;
-
-  // Simple heuristic mapping
-  const exclusionMap: Record<string, string[]> = {
-    'lactosa': ['leche', 'queso', 'yogurt', 'panela', 'lácteos'],
-    'mariscos': ['camarón', 'pescado', 'atún', 'salmón'],
-    'gluten': ['pan', 'tortilla de harina', 'avena', 'galleta', 'pasta'],
-    'huevo': ['huevo', 'claras'],
-    'nueces': ['nuez', 'almendras', 'cacahuate'],
-  };
-
-  const activeForbiddenWords = exclusions.reduce((acc, exc) => {
-    const list = exclusionMap[exc] || [exc];
-    return acc.concat(list);
-  }, [] as string[]);
-
-  return db.filter(item => {
-    // If ANY of the super items matches ANY forbidden word, exclude it.
-    const hasForbidden = item.super.some((ing: string) => 
-      activeForbiddenWords.some(fw => ing.toLowerCase().includes(fw))
-    );
-    return !hasForbidden;
-  });
-}
-
-function parseModifiedId(rawId: string): { baseId: string, modifier: string | null } {
-  if (rawId.includes('|MOD:')) {
-    const parts = rawId.split('|MOD:');
-    return { baseId: parts[0].trim(), modifier: parts[1] ? parts[1].trim() : null };
-  }
-  return { baseId: rawId, modifier: null };
-}
-
-export interface HybridMealSelection {
-  idRef: string;
-  porciones: string;
-  detalle: string;
-  caloriasKcal: number;
-  proteinaG: number;
-  grasasG: number;
-}
-
-export function rehydratePlanRecord(plan: Record<string, Record<string, any[]>>, profileId: 'EL' | 'ELLA' = 'EL'): any {
-  if (!plan) return plan;
-  const hydrated: any = {};
-  
-  for (const dia in plan) {
-    hydrated[dia] = {};
-    for (const momento in plan[dia]) {
-      const opciones = plan[dia][momento];
-      if (Array.isArray(opciones)) {
-        hydrated[dia][momento] = opciones.map(op => {
-          if (op && typeof op === 'object' && op.idRef) {
-            const { baseId, modifier } = parseModifiedId(op.idRef);
-            const found = mealsDatabase.find(m => m.id === baseId);
-            if (found) {
-              const baseMeal: MealItem = {
-                nombre: found.nombre,
-                tags: found.tags,
-                super: found.super,
-                porciones: op.porciones,
-                detalle: op.detalle,
-                caloriasKcal: Number(op.caloriasKcal) || 0,
-                proteinaG: Number(op.proteinaG) || 0,
-                grasasG: Number(op.grasasG) || 0
-              };
-
-              if (modifier) {
-                baseMeal.notaPersonalizada = `Adaptación de IA: ${modifier}`;
-              }
-
-              return baseMeal;
-            }
-          } else if (typeof op === 'string') {
-             // Fallback for legacy ID-only
-             const { baseId, modifier } = parseModifiedId(op);
-             const found = mealsDatabase.find(m => m.id === baseId);
-             if (found) {
-               return { ...found, porciones: 'N/A', detalle: 'N/A' };
-             }
-          }
-          return op;
-        });
-      } else {
-        hydrated[dia][momento] = opciones;
-      }
-    }
-  }
-  return hydrated;
-}
+console.log("DB Reemplazada!");

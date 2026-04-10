@@ -33,11 +33,11 @@ export const perfilEL = {
     { grupo: 'lacteos', total: 2, detalle: '1 en desayuno + 1 en cena' },
   ],
   resumenPersonal: [
-    'Tu riesgo principal no es comer poquito: es llegar con hambre y rebotar a pan, galletas, cereal o dulce. Por eso el plan lleva proteína alta en cada comida.',
-    'La comida fuerte va más tarde porque tus horarios reales son tarde-noche. Así llegas menos descompensado a la cena.',
-    'Las colaciones de mañana y tarde son tu escudo anti-antojo: fruta con grasa saludable te mantiene estable y los alimentos libres (pepino, jícama, gelatina) son ilimitados.',
-    'Con 90 kg, 1.70 m y actividad muy baja, tu meta es ~75 kg. Esto se logra creando un déficit moderado sin pasar hambre.',
-    'Tip clave: cuando te pegue el antojo de dulce, ve a yogurt griego con canela, fruta con nueces, gelatina light, o 1-2 cuadritos de chocolate amargo. No es trampa, es estrategia.',
+    'Debido al grado de sedentarismo, se estableció un déficit calórico moderado priorizando la ingesta proteica para evitar catabolismo muscular.',
+    'La distribución de macronutrientes está diseñada para optimizar la saciedad, reduciendo picos glucémicos a lo largo de la jornada.',
+    'Las colaciones funcionan como un amortiguador metabólico, integrando grasas saludables y fibra para estabilizar la energía.',
+    'El perfil antropométrico sugiere una pérdida de peso gradual y sostenida. La hidratación debe mantenerse constante todo el día.',
+    'El uso de equivalentes flexibles permite adaptación sin comprometer la adherencia clínica al plan.'
   ],
 };
 

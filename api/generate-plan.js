@@ -386,6 +386,10 @@ function buildProfileSchema(partial = false) {
         items: buildMomentDistributionSchema(),
       },
       distribucionDiaria: buildDailyDistributionSchema(),
+      resumenPersonal: {
+        type: 'string',
+        description: 'Breve resumen final de por qué se generó este plan.'
+      },
     },
   };
 }
@@ -1599,10 +1603,11 @@ Reglas criticas:
 - Mantén todo el texto muy conciso para evitar respuestas largas.
 - detallesPerfil, descripcion y notaSalud deben ser breves.
 - perfil${prefix}.objetivosPorMomento debe ser un arreglo de 5 objetos, uno por cada momento, y cada objeto debe incluir: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
+- Si el contexto del perfil del paciente provee 'clinicalPortionsGrid', estas porciones son LA LEY CLINICA. DEBES COPIARLAS de manera EXACTA en 'objetivosPorMomento' para cada momento del dia, sin desviarte ni intentar balancearlas. Usa estas porciones OBLIGATORIAMENTE para buscar en la base de datos las recetas ideales. Si ignoras las 'clinicalPortionsGrid', el paciente corre riesgo de salud.
 - perfil${prefix}.distribucionDiaria debe ser un arreglo de 7 objetos, uno por cada grupo: ${FOOD_GROUP_KEYS.join(', ')}.
 - Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo, total, detalle.
 - No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
-- En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog", ademas de las calorias y macros matematicamente resueltos y perfectos para el paciente.
+- En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog".
 - CRITICO: Debes respetar ESTRICTAMENTE todo lo pedido en el cuestionario: preferencias alimenticias (ej. vegano, mexicano, asiático), restricciones medicas, ingredientes excluidos, tiempos de cocina, etc. Selecciona unicamente IDs del catalogo que casen con estas preferencias e ignora los demas.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener exactamente estas claves: dia, momento, opciones.
