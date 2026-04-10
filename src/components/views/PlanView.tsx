@@ -104,8 +104,9 @@ export default function PlanView() {
     planRevisionErrorLog,
     lastQuestionnaireContext,
     handleRevisePlanWithAi,
-    geminiApiKey,
     geminiModel,
+    geminiFallbackModels,
+    geminiRecommendedModel,
     refreshGeminiAvailability,
     setShowQuestionnaire,
     setQuestionnaireTargetProfile,
@@ -338,7 +339,6 @@ export default function PlanView() {
     targetProfile: PlanRevisionRequest['targetProfile']
   ) => {
     const status = await refreshGeminiAvailability({
-      customApiKey: geminiApiKey,
       preferredModel: geminiModel,
       checkGeneration: true,
       syncModel: true,
@@ -372,7 +372,6 @@ export default function PlanView() {
     setIsPlanAiSheetOpen(false);
     setShowQuestionnaire(true);
   }, [
-    geminiApiKey,
     geminiModel,
     lastQuestionnaireContext,
     notify,
@@ -915,6 +914,9 @@ export default function PlanView() {
         hasQuestionnaireContext={Boolean(lastQuestionnaireContext)}
         defaultTarget={defaultPlanAiTarget}
         targetOptions={planAiTargetOptions}
+        geminiModel={geminiModel}
+        geminiRecommendedModel={geminiRecommendedModel}
+        geminiFallbackModels={geminiFallbackModels}
       />
 
       {mealEditor && mealEditorDraft ? (

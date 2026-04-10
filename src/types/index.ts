@@ -24,6 +24,7 @@ export interface MealItem {
   proteinaG?: number;
   grasasG?: number;
   editMeta?: MealEditMeta;
+  notaPersonalizada?: string;
 }
 
 export interface MealTime {

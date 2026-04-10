@@ -1,49 +1,19 @@
 import { applyCorsHeaders, enforceRateLimit } from './_requestGuard.js';
-
-function normalizeModelName(modelName) {
-  if (!modelName) return '';
-  return modelName.replace(/^models\//, '').trim();
-}
-
-const TEXT_GENERATION_MODEL_PATTERNS = [
-  /^gemini-2\.5-flash$/i,
-  /^gemini-3-flash-preview$/i,
-  /^gemini-2\.5-flash-lite$/i,
-  /^gemini-3\.1-flash-lite-preview$/i,
-  /^gemini-2\.5-pro$/i,
-  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-flash-latest$/i,
-  /^gemini-flash-lite-latest$/i,
-  /^gemini-pro-latest$/i,
-];
-const MODEL_PRIORITY_MATCHERS = [
-  /^gemini-2\.5-flash$/i,
-  /^gemini-3-flash-preview$/i,
-  /^gemini-2\.5-flash-lite$/i,
-  /^gemini-3\.1-flash-lite-preview$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-2\.5-pro$/i,
-  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
-  /^gemini-flash-latest$/i,
-  /^gemini-flash-lite-latest$/i,
-  /^gemini-pro-latest$/i,
-];
-
-function modelSupportsGenerateContent(model) {
-  const methods = model?.supportedGenerationMethods || [];
-  return methods.includes('generateContent');
-}
-
-function isTextGenerationModel(modelName) {
-  const normalized = normalizeModelName(modelName).toLowerCase();
-  return TEXT_GENERATION_MODEL_PATTERNS.some((pattern) => pattern.test(normalized));
-}
+import {
+  DEFAULT_GEMINI_MODEL,
+  getGeminiFallbackModels,
+  getOrderedGeminiModels,
+  isSupportedGeminiTextModel,
+  modelSupportsGenerateContent,
+  normalizeModelName,
+} from './_geminiModels.js';
 
 async function listAvailableModels(apiKey) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+    headers: {
+      'x-goog-api-key': apiKey,
+    },
+  });
   const json = await res.json();
 
   if (!res.ok) {
@@ -51,73 +21,17 @@ async function listAvailableModels(apiKey) {
   }
 
   return (json?.models || []).filter(
-    (model) => modelSupportsGenerateContent(model) && isTextGenerationModel(model?.name)
+    (model) => modelSupportsGenerateContent(model) && isSupportedGeminiTextModel(model?.name)
   );
-}
-
-function getModelFamilyKey(name) {
-  return normalizeModelName(name)
-    .toLowerCase()
-    .replace(/-001$/i, '')
-    .replace(/-customtools$/i, '');
-}
-
-function getUniqueModelNames(modelNames, preferredModelRaw) {
-  const preferredModel = normalizeModelName(preferredModelRaw);
-  const rawUniqueNames = [...new Set(modelNames.map((name) => normalizeModelName(name)).filter(Boolean))];
-  const sourceNames = preferredModel ? [preferredModel, ...rawUniqueNames] : rawUniqueNames;
-  const seenFamilies = new Set();
-  const uniqueNames = [];
-
-  sourceNames.forEach((name) => {
-    if (!rawUniqueNames.includes(name)) {
-      return;
-    }
-
-    const familyKey = getModelFamilyKey(name);
-    if (seenFamilies.has(familyKey)) {
-      return;
-    }
-
-    seenFamilies.add(familyKey);
-    uniqueNames.push(name);
-  });
-
-  return uniqueNames;
-}
-
-function getOrderedModels(models, preferredModelRaw) {
-  const preferredModel = normalizeModelName(preferredModelRaw);
-  const remaining = getUniqueModelNames(
-    models.map((model) => normalizeModelName(model.name)),
-    preferredModelRaw
-  );
-  const ordered = [];
-
-  if (preferredModel && remaining.includes(preferredModel)) {
-    ordered.push(preferredModel);
-  }
-
-  MODEL_PRIORITY_MATCHERS.forEach((matcher) => {
-    const match = remaining.find((name) => matcher.test(name) && !ordered.includes(name));
-    if (match) {
-      ordered.push(match);
-    }
-  });
-
-  remaining.forEach((name) => {
-    if (!ordered.includes(name)) {
-      ordered.push(name);
-    }
-  });
-
-  return ordered;
 }
 
 async function verifyGeneration(apiKey, modelName) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
     body: JSON.stringify({
       contents: [
         {
@@ -126,7 +40,7 @@ async function verifyGeneration(apiKey, modelName) {
         },
       ],
       generationConfig: {
-        maxOutputTokens: 4,
+        maxOutputTokens: 32,
         temperature: 0,
       },
     }),
@@ -143,6 +57,16 @@ async function verifyGeneration(apiKey, modelName) {
   }
 
   return true;
+}
+
+function buildEnvModelMessage({ selectedModel, envModel, generationChecked }) {
+  const modelText = selectedModel || envModel || 'sin modelo disponible';
+
+  if (generationChecked) {
+    return `Se valido GEMINI_API_KEY del entorno y el modelo ${modelText} respondio correctamente.`;
+  }
+
+  return `Se detecto GEMINI_API_KEY del entorno. Modelo recomendado disponible: ${modelText}.`;
 }
 
 function buildUserMessage({ keySource, selectedModel, envModel, generationChecked }) {
@@ -213,18 +137,18 @@ export default async function handler(req, res) {
 
     payload = payload && typeof payload === 'object' ? payload : {};
 
-    const customApiKey = typeof payload.customApiKey === 'string' ? payload.customApiKey.trim() : '';
-    const envApiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const apiKey = customApiKey || envApiKey;
-    const keySource = customApiKey ? 'custom' : 'env';
-    const envModel = (process.env.GEMINI_MODEL || '').trim();
-    const preferredModel = typeof payload.preferredModel === 'string' ? payload.preferredModel.trim() : '';
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+    const keySource = 'env';
+    const envModel = normalizeModelName(process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
+    const preferredModel =
+      normalizeModelName(typeof payload.preferredModel === 'string' ? payload.preferredModel.trim() : '') ||
+      envModel;
     const generationChecked = Boolean(payload.checkGeneration);
 
     if (!apiKey) {
       return res.status(400).json({
         ok: false,
-        error: 'No hay una API key configurada. Agrega tu GEMINI_API_KEY en Vercel o una clave personalizada.',
+        error: 'No hay una API key configurada. Define GEMINI_API_KEY en el entorno del servidor.',
         keySource,
         envModel,
         availableModels: [],
@@ -234,8 +158,9 @@ export default async function handler(req, res) {
 
     const models = await listAvailableModels(apiKey);
     const availableModels = models.map((model) => normalizeModelName(model.name));
-    const orderedModels = getOrderedModels(models, preferredModel || envModel);
+    const orderedModels = getOrderedGeminiModels(availableModels, preferredModel || envModel);
     let selectedModel = orderedModels[0] || '';
+    let fallbackModels = getGeminiFallbackModels(availableModels, selectedModel || preferredModel || envModel);
 
     if (!selectedModel) {
       return res.status(400).json({
@@ -267,6 +192,8 @@ export default async function handler(req, res) {
       }
     }
 
+    fallbackModels = getGeminiFallbackModels(availableModels, selectedModel);
+
     return res.status(200).json({
       ok: true,
       keySource,
@@ -274,8 +201,10 @@ export default async function handler(req, res) {
       preferredModel,
       selectedModel,
       availableModels,
+      orderedModels,
+      fallbackModels,
       generationChecked,
-      message: buildUserMessage({ keySource, selectedModel, envModel, generationChecked }),
+      message: buildEnvModelMessage({ selectedModel, envModel, generationChecked }),
     });
   } catch (error) {
     return res.status(500).json({
@@ -283,6 +212,7 @@ export default async function handler(req, res) {
       error: error?.message || 'No fue posible validar la API key de Gemini.',
       availableModels: [],
       selectedModel: '',
+      fallbackModels: [],
     });
   }
 }

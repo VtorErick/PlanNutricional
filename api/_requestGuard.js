@@ -27,6 +27,11 @@ function getAllowedHosts(req) {
       process.env.VERCEL_PROJECT_PRODUCTION_URL,
       process.env.APP_URL,
       process.env.SITE_URL,
+      'localhost:3000',
+      'localhost:5173',
+      'localhost:3001',
+      '127.0.0.1:3000',
+      '127.0.0.1:5173',
     ]
       .map(normalizeHostCandidate)
       .filter(Boolean)

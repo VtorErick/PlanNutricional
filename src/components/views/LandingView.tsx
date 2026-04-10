@@ -134,7 +134,7 @@ function PlanButton({
       className={`
         relative overflow-hidden group
         inline-flex items-center justify-center gap-1.5
-        px-3 py-1.5
+        w-full max-w-[220px] px-3 py-1.5
         rounded-full border backdrop-blur-md
         text-[11px] font-semibold text-white
         transition-all duration-200
@@ -186,7 +186,6 @@ export default function LandingView() {
     setShowAdmin: setIsAdminOpen,
     setShowQuestionnaire: setIsQuestionnaireOpen,
     setQuestionnaireTargetProfile,
-    geminiApiKey,
     geminiModel,
     setGeminiModel,
     refreshGeminiAvailability,
@@ -261,7 +260,6 @@ export default function LandingView() {
     setCheckingQuestionnaire(true);
     try {
       const status = await refreshGeminiAvailability({
-        customApiKey: geminiApiKey,
         preferredModel: geminiModel,
         checkGeneration: true,
       });
@@ -269,7 +267,7 @@ export default function LandingView() {
       if (!status?.ok) {
         await notify(
           'Gemini no disponible',
-          status?.error || 'No fue posible validar la API key actual de Gemini.'
+          status?.error || 'No fue posible validar Gemini desde el servidor.'
         );
         return;
       }
@@ -559,7 +557,7 @@ export default function LandingView() {
                     </div>
                   </div>
 
-                  <div className="pt-1">
+                  <div className="pt-1 flex justify-center">
                     <PlanButton
                       label={p.ready ? 'Actualizar mi plan' : 'Personalizar mi plan'}
                       toneClass={p.buttonTone}
@@ -624,7 +622,7 @@ export default function LandingView() {
                 </p>
               </div>
 
-              <div className="flex flex-col items-start lg:items-end gap-3">
+              <div className="flex flex-col items-center lg:items-end gap-3">
                 <PlanButton
                   label={elReady && ellaReady ? 'Actualizar mi plan' : 'Personalizar mi plan'}
                   toneClass={ambosLandingTheme.buttonTone}
@@ -635,7 +633,7 @@ export default function LandingView() {
                   }}
                 />
 
-                <div className="flex flex-wrap lg:flex-nowrap justify-start lg:justify-end gap-3">
+                <div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-end gap-3">
                   {[
                     { val: String(sharedPlanStats.shared), label: 'Compartidas', sub: 'comidas' },
                     { val: `${sharedPlanStats.pct}%`, label: 'Sinergia', sub: 'ingredientes' },

@@ -35,9 +35,9 @@ import {
   Trash,
 } from 'lucide-react';
 import { buildExportData, downloadJsonFile } from '../dataManager';
-import { persistGeminiApiKey } from '../utils/geminiKey';
 import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
+import { getGeminiModelLabel } from '../utils/geminiModels';
 import { getQuestionnaireTheme } from '../utils/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -87,8 +87,9 @@ interface Props {
   loading: boolean;
   errorMessage?: string;
   aiErrorLog?: AiDebugLog | null;
-  geminiApiKey?: string;
-  setGeminiApiKey?: (k: string) => void;
+  geminiModel: string;
+  geminiRecommendedModel: string;
+  geminiFallbackModels: string[];
   lastGeneratedData?: any;
   targetProfile: TargetProfile;
   setTargetProfile: (p: TargetProfile) => void;
@@ -624,8 +625,9 @@ export default function NutritionQuestionnaire({
   loading,
   errorMessage,
   aiErrorLog,
-  geminiApiKey,
-  setGeminiApiKey,
+  geminiModel,
+  geminiRecommendedModel,
+  geminiFallbackModels,
   lastGeneratedData,
   targetProfile,
   setTargetProfile,
@@ -643,7 +645,6 @@ export default function NutritionQuestionnaire({
   setAdditionalNotes,
 }: Props) {
   const [direction, setDirection] = useState(1);
-  const [localApiKey, setLocalApiKey] = useState(geminiApiKey || '');
   const [timePickerState, setTimePickerState] = useState<{
     open: boolean;
     profile: 'el' | 'ella' | null;
@@ -660,10 +661,6 @@ export default function NutritionQuestionnaire({
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const wakeLockReleaseTimeoutRef = useRef<number | null>(null);
   const selectProfileTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    setLocalApiKey(geminiApiKey || '');
-  }, [geminiApiKey]);
 
   const releaseScreenWakeLock = useCallback(async () => {
     if (!wakeLockRef.current) return;
@@ -731,17 +728,10 @@ export default function NutritionQuestionnaire({
   }, [releaseScreenWakeLock]);
 
   const steps = useMemo(() => buildSteps(targetProfile), [targetProfile]);
-  const showApiRecovery = useMemo(() => {
-    const msg = (errorMessage || '').toLowerCase();
-    return Boolean(aiErrorLog) || (!!msg && (
-      msg.includes('gemini') ||
-      msg.includes('api') ||
-      msg.includes('fetch') ||
-      msg.includes('network') ||
-      msg.includes('429') ||
-      msg.includes('quota')
-    ));
-  }, [aiErrorLog, errorMessage]);
+  const plannedModel = geminiRecommendedModel || geminiModel;
+  const plannedModelLabel = getGeminiModelLabel(plannedModel);
+  const fallbackPreview = geminiFallbackModels.slice(0, 2);
+  const fallbackPreviewLabel = fallbackPreview.map((model) => getGeminiModelLabel(model)).join(', ');
   const currentStep = steps[stepIdx] ?? steps[0];
   const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
   const stepsLeft = Math.max(steps.length - (stepIdx + 1), 0);
@@ -1838,6 +1828,18 @@ export default function NutritionQuestionnaire({
             </div>
           </div>
 
+          <div
+            data-testid="questionnaire-model-preview"
+            className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100"
+          >
+            <p className="font-bold">Modelo previsto para esta llamada: {plannedModelLabel}</p>
+            <p className="mt-1 opacity-90">
+              {fallbackPreviewLabel
+                ? `Fallback automatico: ${fallbackPreviewLabel}.`
+                : 'No hay otro fallback validado en este momento.'}
+            </p>
+          </div>
+
           {profiles.map((p) => {
             const data = person(p);
             const t = THEME[p];
@@ -1936,35 +1938,6 @@ export default function NutritionQuestionnaire({
               ) : null}
             </div>
           )}
-
-          {showApiRecovery && (
-            <CardSection title="Clave de respaldo (si falló Google/Gemini)">
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 space-y-2 dark:border-indigo-900/60 dark:bg-indigo-950/40">
-                <p className="text-[11px] text-indigo-700 dark:text-indigo-200">
-                  Si tienes otra API key, agrégala aquí para reintentar sin salir del cuestionario. Solo se guarda durante esta sesión.
-                </p>
-                <input
-                  type="password"
-                  value={localApiKey}
-                  onChange={(e) => setLocalApiKey(e.target.value)}
-                  placeholder="Pega tu API key de Gemini"
-                  className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-indigo-300 dark:border-indigo-900/60 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-indigo-900"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const trimmedKey = localApiKey.trim();
-                    setGeminiApiKey?.(trimmedKey);
-                    persistGeminiApiKey(trimmedKey);
-                  }}
-                  className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2.5 active:scale-[.98]"
-                >
-                  Guardar clave de esta sesión
-                </button>
-              </div>
-            </CardSection>
-          )}
-
           {lastGeneratedData && (
             <button
               onClick={() => {
@@ -2003,6 +1976,9 @@ export default function NutritionQuestionnaire({
               <div className="text-center space-y-1 px-4">
                 <p className="text-sm font-bold text-slate-700 dark:text-slate-100">La IA está creando tu plan</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Esto puede tomar 30 a 60 segundos.</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                  Modelo previsto: {plannedModelLabel}
+                </p>
               </div>
 
               <div className="flex gap-1">
@@ -2218,3 +2194,4 @@ export default function NutritionQuestionnaire({
     </>
   );
 }
+

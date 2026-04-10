@@ -1,4 +1,12 @@
 import { applyCorsHeaders, enforceRateLimit } from './_requestGuard.js';
+import {
+  DEFAULT_GEMINI_MODEL,
+  getGeminiFallbackModels,
+  getOrderedGeminiModels,
+  isSupportedGeminiTextModel,
+  modelSupportsGenerateContent,
+  normalizeModelName,
+} from './_geminiModels.js';
 
 const ALLOWED_ICONS = [
   'Apple',
@@ -29,9 +37,6 @@ const MEAL_ITEM_REQUIRED_KEYS = [
   'detalle',
   'tags',
   'super',
-  'caloriasKcal',
-  'proteinaG',
-  'grasasG',
 ];
 const PLAN_SLOT_REQUIRED_KEYS = ['dia', 'momento', 'opciones'];
 const SUPPLEMENT_REQUIRED_KEYS = [
@@ -63,44 +68,36 @@ const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
 const AI_GENERIC_ERROR_MESSAGE =
   'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const MAX_MODEL_CANDIDATES = 6;
-const TEXT_GENERATION_MODEL_PATTERNS = [
-  /^gemini-2\.5-flash$/i,
-  /^gemini-3-flash-preview$/i,
-  /^gemini-2\.5-flash-lite$/i,
-  /^gemini-3\.1-flash-lite-preview$/i,
-  /^gemini-2\.5-pro$/i,
-  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-flash-latest$/i,
-  /^gemini-flash-lite-latest$/i,
-  /^gemini-pro-latest$/i,
+
+const CLINICAL_PROTOCOLS = [
+  {
+    regex: /(diabetes|insulina|sop|poliquistico|azucar)/i,
+    rule: "PROTOCOLO CLÍNICO: Resistencia Insulina / SOP / Diabetes. 1) EXCLUYE carbohidratos simples. 2) Elige SOLO opciones con bajo índice glucémico. 3) NUNCA asignes una fruta sola en colación sin acompañarla de grasa (ej. nueces/almendras) o proteína."
+  },
+  {
+    regex: /(hipertension|presion)/i,
+    rule: "PROTOCOLO CLÍNICO: Hipertensión. Elige opciones del mealsCatalog con perfil e ingredientes bajos en sodio."
+  },
+  {
+    regex: /(hipotiroidismo|tiroides)/i,
+    rule: "PROTOCOLO CLÍNICO: Hipotiroidismo. Evita usar ingredientes bociógenos crudos (brócoli, col) y grandes cantidades de soya."
+  },
+  {
+    regex: /(gastritis|colitis|reflujo|acidez|ulcera)/i,
+    rule: "PROTOCOLO CLÍNICO: Gastritis / Colitis. EXCLUYE irritantes (chile, café, tomate crudo excesivo), cítricos en ayunas, vegetales flatulentos y demasiada grasa en las preparaciones."
+  }
 ];
-const PRIMARY_MODEL_PRIORITY_MATCHERS = [
-  /^gemini-2\.5-flash$/i,
-  /^gemini-3-flash-preview$/i,
-  /^gemini-2\.5-flash-lite$/i,
-  /^gemini-3\.1-flash-lite-preview$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-flash-latest$/i,
-  /^gemini-flash-lite-latest$/i,
-  /^gemini-2\.5-pro$/i,
-  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
-  /^gemini-pro-latest$/i,
-];
-const AUTO_FALLBACK_PRIORITY_MATCHERS = [
-  /^gemini-2\.5-flash$/i,
-  /^gemini-3-flash-preview$/i,
-  /^gemini-2\.5-flash-lite$/i,
-  /^gemini-3\.1-flash-lite-preview$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-flash-latest$/i,
-  /^gemini-flash-lite-latest$/i,
-];
+
+function resolveClinicalProtocols(diagnosticsText) {
+  if (typeof diagnosticsText !== 'string' || !diagnosticsText.trim()) return '';
+  const activeProtocols = [];
+  for (const { regex, rule } of CLINICAL_PROTOCOLS) {
+    if (regex.test(diagnosticsText)) {
+      activeProtocols.push(rule);
+    }
+  }
+  return activeProtocols.length ? `\n\nREGLAS CLÍNICAS ACTIVAS ALTA PRIORIDAD:\n${activeProtocols.join('\n')}` : '';
+}
 
 function createDebugLogId(flow) {
   return `${flow}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -255,16 +252,55 @@ function createLoggedAiError(debugContext, options) {
 function getMaxOutputTokens(modelName, requestMode) {
   const normalized = normalizeModelName(modelName).toLowerCase();
   const hardLimit = normalized.includes('gemini-2.0') || normalized.includes('gemma') ? 8192 : 65536;
-  const desired = requestMode === 'adjust' ? 8192 : 32768;
+  const desired = requestMode === 'adjust' ? 4096 : 16384;
   return Math.min(desired, hardLimit);
 }
 
-function getThinkingConfig(modelName) {
+function getThinkingConfig(modelName, debugContext) {
   const normalized = normalizeModelName(modelName).toLowerCase();
-  if (normalized.startsWith('gemini-2.5-')) {
-    return { thinkingBudget: 0 };
+  const requestMode = debugContext?.requestMode || 'generate';
+
+  if (normalized.includes('gemini-3')) {
+    if (normalized.includes('pro')) {
+      return {
+        thinkingLevel: requestMode === 'adjust' ? 'low' : 'medium',
+      };
+    }
+
+    return {
+      thinkingLevel: requestMode === 'adjust' ? 'minimal' : 'low',
+    };
   }
+
+  if (normalized.includes('gemini-2.5-pro')) {
+    return {
+      thinkingBudget: requestMode === 'adjust' ? 256 : 1024,
+    };
+  }
+
+  if (normalized.includes('gemini-2.5-flash')) {
+    return {
+      thinkingBudget: 0,
+    };
+  }
+
   return undefined;
+}
+
+function getGeminiRequestTimeoutMs(debugContext) {
+  if (debugContext.requestMode === 'adjust') {
+    return 60_000;
+  }
+
+  if (debugContext.targetProfile === 'ambos') {
+    return 120_000;
+  }
+
+  if (debugContext.requestMode === 'regenerate') {
+    return 120_000;
+  }
+
+  return 150_000;
 }
 
 function buildMealItemSchema() {
@@ -273,14 +309,11 @@ function buildMealItemSchema() {
     additionalProperties: false,
     required: MEAL_ITEM_REQUIRED_KEYS,
     properties: {
-      nombre: { type: 'string' },
-      porciones: { type: 'string' },
-      detalle: { type: 'string' },
-      tags: { type: 'array', items: { type: 'string' } },
-      super: { type: 'array', items: { type: 'string' } },
-      caloriasKcal: { type: 'integer' },
-      proteinaG: { type: 'integer' },
-      grasasG: { type: 'integer' },
+      nombre: { type: 'string', maxLength: 90 },
+      porciones: { type: 'string', maxLength: 160 },
+      detalle: { type: 'string', maxLength: 240 },
+      tags: { type: 'array', maxItems: 4, items: { type: 'string', maxLength: 32 } },
+      super: { type: 'array', maxItems: 6, items: { type: 'string', maxLength: 48 } },
     },
   };
 }
@@ -336,14 +369,14 @@ function buildProfileSchema(partial = false) {
     properties: {
       id: { type: 'string' },
       nombre: { type: 'string' },
-      perfil: { type: 'string' },
-      detallesPerfil: { type: 'string' },
-      meta: { type: 'string' },
+      perfil: { type: 'string', maxLength: 48 },
+      detallesPerfil: { type: 'string', maxLength: 360 },
+      meta: { type: 'string', maxLength: 180 },
       metaCaloricaKcalDia: { type: 'integer' },
-      descripcion: { type: 'string' },
+      descripcion: { type: 'string', maxLength: 240 },
       edad: { type: 'integer' },
-      horariosTexto: { type: 'string' },
-      notaSalud: { type: 'string' },
+      horariosTexto: { type: 'string', maxLength: 140 },
+      notaSalud: { type: 'string', maxLength: 220 },
       momentos: {
         type: 'array',
         items: buildMomentTimeSchema(),
@@ -353,10 +386,6 @@ function buildProfileSchema(partial = false) {
         items: buildMomentDistributionSchema(),
       },
       distribucionDiaria: buildDailyDistributionSchema(),
-      resumenPersonal: {
-        type: 'array',
-        items: { type: 'string' },
-      },
     },
   };
 }
@@ -372,7 +401,7 @@ function buildEquivalenciasSchema() {
       properties: {
         titulo: { type: 'string' },
         icon: { type: 'string', enum: ALLOWED_ICONS },
-        items: { type: 'array', items: { type: 'string' } },
+        items: { type: 'array', maxItems: 6, items: { type: 'string', maxLength: 120 } },
       },
     },
   };
@@ -381,20 +410,8 @@ function buildEquivalenciasSchema() {
 function buildSuplementosSchema() {
   return {
     type: 'array',
-    items: {
-      type: 'object',
-      additionalProperties: false,
-      required: SUPPLEMENT_REQUIRED_KEYS,
-      properties: {
-        name: { type: 'string' },
-        goalSupport: { type: 'string' },
-        whyItMayHelp: { type: 'string' },
-        howToUse: { type: 'string' },
-        timing: { type: 'string' },
-        notes: { type: 'string' },
-        caution: { type: 'string' },
-      },
-    },
+    maxItems: 5,
+    items: { type: 'string', maxLength: 40 },
   };
 }
 
@@ -402,11 +419,25 @@ function buildPlanSlotSchema() {
   return {
     type: 'object',
     additionalProperties: false,
-    required: PLAN_SLOT_REQUIRED_KEYS,
+    required: ['dia', 'momento', 'opciones'],
     properties: {
       dia: { type: 'string' },
       momento: { type: 'string' },
-      opciones: { type: 'array', items: buildMealItemSchema() },
+      opciones: {
+        type: 'array',
+        minItems: 3,
+        maxItems: 3,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['idRef', 'porciones', 'detalle'],
+          properties: {
+            idRef: { type: 'string', maxLength: 100 },
+            porciones: { type: 'string', maxLength: 200 },
+            detalle: { type: 'string', maxLength: 400 },
+          }
+        }
+      }
     },
   };
 }
@@ -420,17 +451,15 @@ function buildPlanSlotsSchema(requireAllSlots) {
 
 function buildFullResponseSchema(prefix) {
   const profileKey = `perfil${prefix}`;
-  const equivalenciasKey = `equivalencias${prefix}`;
   const suplementosKey = `suplementos${prefix}`;
   const planTransportKey = `planSemanal${prefix}`;
   return {
     type: 'object',
     additionalProperties: false,
-    required: [profileKey, equivalenciasKey, suplementosKey, planTransportKey],
-    propertyOrdering: [profileKey, equivalenciasKey, suplementosKey, planTransportKey],
+    required: [profileKey, suplementosKey, planTransportKey],
+    propertyOrdering: [profileKey, suplementosKey, planTransportKey],
     properties: {
       [profileKey]: buildProfileSchema(false),
-      [equivalenciasKey]: buildEquivalenciasSchema(),
       [suplementosKey]: buildSuplementosSchema(),
       [planTransportKey]: buildPlanSlotsSchema(true),
     },
@@ -442,16 +471,16 @@ function buildAdjustResponseSchema() {
     type: 'object',
     additionalProperties: false,
     required: ['summary'],
-    propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'equivalencias', 'suplementos', 'planPatchSlots'],
+    propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'suplementos', 'planPatchSlots'],
     properties: {
       summary: {
         type: 'array',
         minItems: 1,
-        items: { type: 'string' },
+        maxItems: 2,
+        items: { type: 'string', maxLength: 140 },
       },
       noChangesReason: { type: 'string' },
       profilePatch: buildProfileSchema(true),
-      equivalencias: buildEquivalenciasSchema(),
       suplementos: buildSuplementosSchema(),
       planPatchSlots: buildPlanSlotsSchema(false),
     },
@@ -462,7 +491,6 @@ function buildGenerationOutputContract(prefix) {
   return {
     rootKeys: [
       `perfil${prefix}`,
-      `equivalencias${prefix}`,
       `suplementos${prefix}`,
       `planSemanal${prefix}`,
     ],
@@ -605,9 +633,6 @@ function validateMealItemStructure(item, location, debugContext, geminiRequest, 
   validateRequiredStringField(item, 'nombre', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredStringField(item, 'porciones', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredStringField(item, 'detalle', location, debugContext, geminiRequest, geminiResponseBody, modelName);
-  validateRequiredIntegerField(item, 'caloriasKcal', location, debugContext, geminiRequest, geminiResponseBody, modelName);
-  validateRequiredIntegerField(item, 'proteinaG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
-  validateRequiredIntegerField(item, 'grasasG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
 
   if (!Array.isArray(item.tags)) {
     throw createInvalidStructureError(
@@ -641,15 +666,16 @@ function validateMealOptionsArray(options, location, debugContext, geminiRequest
     );
   }
 
-  options.forEach((mealItem, index) => {
-    validateMealItemStructure(
-      mealItem,
-      `${location}[${index}]`,
-      debugContext,
-      geminiRequest,
-      geminiResponseBody,
-      modelName
-    );
+  options.forEach((meal, index) => {
+    if (!meal || typeof meal !== 'object' || !isNonEmptyString(meal.idRef)) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}] no tiene idRef valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
   });
 }
 
@@ -712,27 +738,15 @@ function validateSupplementsStructure(supplements, location, debugContext, gemin
   }
 
   supplements.forEach((item, index) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    if (!item || typeof item !== 'string') {
       throw createInvalidStructureError(
         debugContext,
-        `Respuesta de IA incompleta: ${location}[${index}] no es un objeto valido.`,
+        `Respuesta de IA incompleta: ${location}[${index}] no es un string válido (debe ser un ID).`,
         geminiRequest,
         geminiResponseBody,
         modelName
       );
     }
-
-    SUPPLEMENT_REQUIRED_KEYS.forEach((fieldName) => {
-      validateRequiredStringField(
-        item,
-        fieldName,
-        `${location}[${index}]`,
-        debugContext,
-        geminiRequest,
-        geminiResponseBody,
-        modelName
-      );
-    });
   });
 }
 
@@ -949,16 +963,6 @@ function validateProfileStructure(perfil, profilePrefix, debugContext, geminiReq
     }
   });
 
-  if (!Array.isArray(perfil.resumenPersonal) || perfil.resumenPersonal.length === 0 || perfil.resumenPersonal.some((entry) => !isNonEmptyString(entry))) {
-    throw createInvalidStructureError(
-      debugContext,
-      `Respuesta de IA incompleta: perfil${profilePrefix}.resumenPersonal esta vacio o invalido.`,
-      geminiRequest,
-      geminiResponseBody,
-      modelName
-    );
-  }
-
   return momentKeys;
 }
 
@@ -1159,17 +1163,6 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
       );
     }
 
-    if (data.equivalencias !== undefined) {
-      validateEquivalenciasStructure(
-        data.equivalencias,
-        'equivalencias',
-        debugContext,
-        geminiRequest,
-        geminiResponseBody,
-        modelName
-      );
-    }
-
     if (data.suplementos !== undefined) {
       validateSupplementsStructure(
         data.suplementos,
@@ -1206,7 +1199,7 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
       );
     }
 
-    if (!data.planPatch && !data.noChangesReason && !data.profilePatch && !data.equivalencias && !data.suplementos) {
+    if (!data.planPatch && !data.noChangesReason && !data.profilePatch && !data.suplementos) {
       throw createInvalidStructureError(
         debugContext,
         'Respuesta de IA incompleta: el ajuste no incluyo cambios ni noChangesReason.',
@@ -1241,7 +1234,6 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
 
   const normalized = cloneSerializableData(data || {});
   const perfilKey = `perfil${profilePrefix}`;
-  const equivKey = `equivalencias${profilePrefix}`;
   const supplementsKey = `suplementos${profilePrefix}`;
   const planKey = `plan${profilePrefix}`;
   const planTransportKey = `planSemanal${profilePrefix}`;
@@ -1267,15 +1259,6 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
   const momentKeys = validateProfileStructure(
     perfil,
     profilePrefix,
-    debugContext,
-    geminiRequest,
-    geminiResponseBody,
-    modelName
-  );
-
-  validateEquivalenciasStructure(
-    normalized[equivKey],
-    equivKey,
     debugContext,
     geminiRequest,
     geminiResponseBody,
@@ -1371,18 +1354,202 @@ function validatePayloadAssessmentPdfs(payload) {
   return { ok: true };
 }
 
+function truncatePromptText(value, maxLength = 240) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (!normalized) {
+    return '';
+  }
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1).trim()}…`;
+}
+
+function compactPromptMoments(moments) {
+  if (!Array.isArray(moments)) {
+    return moments;
+  }
+
+  return moments
+    .filter((moment) => moment && typeof moment === 'object')
+    .map((moment) => ({
+      key: moment.key,
+      hora: moment.hora,
+    }));
+}
+
+function compactPromptBodyMeasurements(bodyMeasurements) {
+  if (!bodyMeasurements || typeof bodyMeasurements !== 'object' || Array.isArray(bodyMeasurements)) {
+    return bodyMeasurements;
+  }
+
+  return Object.fromEntries(
+    Object.entries(bodyMeasurements).filter(([, value]) => value !== '' && value != null)
+  );
+}
+
+function compactPromptPlanConfig(planConfig) {
+  if (!planConfig || typeof planConfig !== 'object' || Array.isArray(planConfig)) {
+    return planConfig;
+  }
+
+  return {
+    mealsPerDay: planConfig.mealsPerDay,
+    selectedMoments: compactPromptMoments(planConfig.selectedMoments),
+    manualPortions: planConfig.manualPortions,
+    additionalNotes: truncatePromptText(planConfig.additionalNotes, 220),
+  };
+}
+
+function compactPromptContextSection(section, maxLength = 220) {
+  if (!section || typeof section !== 'object' || Array.isArray(section)) {
+    return section;
+  }
+
+  return Object.fromEntries(
+    Object.entries(section)
+      .filter(([, value]) => value !== '' && value != null)
+      .map(([key, value]) => [
+        key,
+        typeof value === 'string' ? truncatePromptText(value, maxLength) : value,
+      ])
+  );
+}
+
 function sanitizePromptPayload(payload) {
   if (!payload || typeof payload !== 'object') return payload;
 
-  const nextPayload = { ...payload };
-  if (nextPayload.assessmentReportPdf) {
+  const nextPayload = {
+    targetProfile: payload.targetProfile,
+    profileToUpdate: payload.profileToUpdate,
+    portionMode: payload.portionMode,
+    requestMode: payload.requestMode,
+    instruction: truncatePromptText(payload.instruction, 320),
+    planConfig: compactPromptPlanConfig(payload.planConfig),
+    age: payload.age,
+    currentWeightKg: payload.currentWeightKg,
+    heightCm: payload.heightCm,
+    targetWeightKg: payload.targetWeightKg,
+    objectives: payload.objectives,
+    objectiveTimeline: payload.objectiveTimeline,
+    objectiveTimelineWeeks: payload.objectiveTimelineWeeks,
+    diagnostics: truncatePromptText(payload.diagnostics, 220),
+    allergies: truncatePromptText(payload.allergies, 160),
+    medications: truncatePromptText(payload.medications, 180),
+    intolerances: truncatePromptText(payload.intolerances, 160),
+    digestiveSymptoms: truncatePromptText(payload.digestiveSymptoms, 180),
+    favoriteFoods: truncatePromptText(payload.favoriteFoods, 220),
+    dislikedFoods: truncatePromptText(payload.dislikedFoods, 180),
+    favoriteCuisineStyles: truncatePromptText(payload.favoriteCuisineStyles, 160),
+    cookingTime: payload.cookingTime,
+    activityLevel: payload.activityLevel,
+    wakeTime: payload.wakeTime,
+    sleepTime: payload.sleepTime,
+    trainingFrequency: payload.trainingFrequency,
+    bodyMeasurements: compactPromptBodyMeasurements(payload.bodyMeasurements),
+    profileContext: compactPromptContextSection(payload.profileContext, 180),
+    healthContext: compactPromptContextSection(payload.healthContext, 180),
+    preferences: compactPromptContextSection(payload.preferences, 180),
+    routine: compactPromptContextSection(payload.routine, 120),
+  };
+
+  if (payload.assessmentReportPdf) {
     nextPayload.assessmentReportPdf = {
-      name: nextPayload.assessmentReportPdf.name,
-      mimeType: nextPayload.assessmentReportPdf.mimeType,
+      name: payload.assessmentReportPdf.name,
+      mimeType: payload.assessmentReportPdf.mimeType,
     };
   }
 
-  return nextPayload;
+  if (payload.companionPlan) {
+    nextPayload.companionPlan = compactPlanForPrompt(payload.companionPlan);
+  }
+
+  return Object.fromEntries(
+    Object.entries(nextPayload).filter(([, value]) => {
+      if (value == null) return false;
+      if (typeof value === 'string') return value.trim() !== '';
+      if (Array.isArray(value)) return value.length > 0;
+      if (typeof value === 'object') return Object.keys(value).length > 0;
+      return true;
+    })
+  );
+}
+
+function compactMealOptionForPrompt(meal) {
+  if (!meal || typeof meal !== 'object') return meal;
+
+  return {
+    nombre: truncatePromptText(meal.nombre, 80),
+    porciones: truncatePromptText(meal.porciones, 120),
+    detalle: truncatePromptText(meal.detalle, 180),
+    super: Array.isArray(meal.super)
+      ? meal.super.slice(0, 5).map((item) => truncatePromptText(item, 40))
+      : [],
+  };
+}
+
+function compactPlanForPrompt(plan) {
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan)) {
+    return plan;
+  }
+
+  const compactPlan = {};
+
+  WEEK_DAYS.forEach((dayKey) => {
+    const dayPlan = plan[dayKey];
+    if (!dayPlan || typeof dayPlan !== 'object' || Array.isArray(dayPlan)) {
+      return;
+    }
+
+    const compactDay = {};
+    MEAL_MOMENT_KEYS.forEach((momentKey) => {
+      const options = dayPlan[momentKey];
+      if (!Array.isArray(options) || options.length === 0) {
+        return;
+      }
+
+      compactDay[momentKey] = options.slice(0, 3).map(compactMealOptionForPrompt);
+    });
+
+    if (Object.keys(compactDay).length > 0) {
+      compactPlan[dayKey] = compactDay;
+    }
+  });
+
+  return compactPlan;
+}
+
+function compactProfileForPrompt(profile) {
+  if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+    return profile;
+  }
+
+  return {
+    id: profile.id,
+    nombre: profile.nombre,
+    perfil: truncatePromptText(profile.perfil, 60),
+    detallesPerfil: truncatePromptText(profile.detallesPerfil, 220),
+    meta: truncatePromptText(profile.meta, 160),
+    notaSalud: truncatePromptText(profile.notaSalud, 160),
+    horariosTexto: truncatePromptText(profile.horariosTexto, 120),
+  };
+}
+
+function compactSnapshotForPrompt(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) {
+    return snapshot;
+  }
+
+  return {
+    perfil: compactProfileForPrompt(snapshot.perfil),
+    plan: compactPlanForPrompt(snapshot.plan),
+  };
 }
 
 function getOptionalPdfParts(payload) {
@@ -1420,7 +1587,6 @@ Perfil objetivo:
 
 Claves raiz obligatorias:
 - perfil${prefix}
-- equivalencias${prefix}
 - suplementos${prefix}
 - ${planTransportKey}
 
@@ -1430,24 +1596,24 @@ Reglas criticas:
 - Usa exactamente estos momentos dentro del JSON: ${MEAL_MOMENT_KEYS.join(', ')}.
 - "perfil" debe ser SIEMPRE una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>".
 - No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
+- Mantén todo el texto muy conciso para evitar respuestas largas.
+- detallesPerfil, descripcion y notaSalud deben ser breves.
 - perfil${prefix}.objetivosPorMomento debe ser un arreglo de 5 objetos, uno por cada momento, y cada objeto debe incluir: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
 - perfil${prefix}.distribucionDiaria debe ser un arreglo de 7 objetos, uno por cada grupo: ${FOOD_GROUP_KEYS.join(', ')}.
 - Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo, total, detalle.
 - No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
-- Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
+- En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog", ademas de las calorias y macros matematicamente resueltos y perfectos para el paciente.
+- CRITICO: Debes respetar ESTRICTAMENTE todo lo pedido en el cuestionario: preferencias alimenticias (ej. vegano, mexicano, asiático), restricciones medicas, ingredientes excluidos, tiempos de cocina, etc. Selecciona unicamente IDs del catalogo que casen con estas preferencias e ignora los demas.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener exactamente estas claves: dia, momento, opciones.
 - Debe haber exactamente un slot por cada combinacion de dia + momento.
 - Ordena los slots primero por dia (${WEEK_DAYS.join(', ')}) y dentro de cada dia por momento (${MEAL_MOMENT_KEYS.join(', ')}).
-- Cada slot debe devolver exactamente 3 opciones de comida.
+- Cada slot debe devolver exactamente 3 objetos en 'opciones'.
 - No anides momentos dentro de dias ni dias dentro de objetos complejos; usa solo el arreglo plano de slots.
-- Las calorias y macros deben ser enteros realistas.
-- Las equivalencias deben alinearse con los ingredientes del plan y usar solo iconos permitidos: ${ALLOWED_ICONS.join(', ')}.
-- Los suplementos son opcionales y nunca deben ser necesarios para cumplir calorias, macros u objetivo.
-- No pongas suplementos dentro del plan.
+- Las calorias y macros deben ser enteros realistas y hacer MATCH PERFECTO matematicamente para cumplir la meta final.
+- Los suplementos son opcionales. Debe ser UN ARREGLO DE STRINGS (IDs) validados de supplementsCatalog. Si no aportan valor, devuelve []. NUNCA inventes IDs.
+- No pongas suplementos dentro del plan ni como objetos.
 - No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
-- Si el usuario adjunto PDF o medidas corporales, usalos como contexto complementario.
-- Si hay conflicto entre PDF y cuestionario, prioriza el cuestionario.
 - Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
 - No devuelvas null, undefined, placeholders, alias de claves ni dias con acentos distintos a los pedidos.`;
 }
@@ -1456,24 +1622,13 @@ function buildUserPrompt(payload, prefix) {
   return JSON.stringify({
     profilePrefix: prefix,
     questionnaire: sanitizePromptPayload(payload),
-    outputContract: {
-      ...buildGenerationOutputContract(prefix),
-      planTransportKey: `planSemanal${prefix}`,
-      planTransportFormat: {
-        type: 'flat_slots',
-        slotKeys: ['dia', 'momento', 'opciones'],
-        requiredSlotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
-      },
-      momentsSource: 'questionnaire.planConfig.selectedMoments',
-      profileFormat: {
-        perfil: '<peso> kg | <altura> m | <edad> anos | IMC <valor>',
-        detallesPerfil: 'Resumen narrativo del caso y contexto clinico.',
-      },
-      objetivosPorMomentoFormat: {
-        type: 'array',
-        itemKeys: ['momento', ...FOOD_GROUP_KEYS],
-      },
+    mealsCatalog: payload.mealsCatalog || [],
+    outputHints: {
+      rootKeys: buildGenerationOutputContract(prefix).rootKeys,
+      selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
+      slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para que el usuario alcance su metaCaloricaKcalDia. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef.${resolveClinicalProtocols(payload.diagnostics)}`,
     },
   });
 }
@@ -1482,58 +1637,50 @@ function buildRevisionSystemPrompt(prefix, mode) {
   const lowerPrefix = prefix.toLowerCase();
   const planTransportKey = `planSemanal${prefix}`;
   if (mode === 'regenerate') {
-    return `Eres un nutricionista clinico experto. Reconstruye el plan semanal completo desde cero usando el contexto disponible y las nuevas instrucciones del usuario.
+    return `Eres un nutricionista clinico experto. Reconstruye el plan semanal seleccionando IDs del "mealsCatalog" basandote en el contexto y las nuevas instrucciones.
 
-Debes responder con un unico objeto JSON valido. No uses markdown, comentarios ni texto fuera del JSON.
+Debes responder con un unico objeto JSON valido. No uses markdown.
 
 El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
 
 Debes devolver el plan COMPLETO con el mismo contrato de una generacion normal:
 - perfil${prefix}
-- equivalencias${prefix}
 - suplementos${prefix}
 - ${planTransportKey}
 
 Reglas criticas:
 - Usa exactamente los dias ${WEEK_DAYS.join(', ')}.
 - Usa exactamente los momentos ${MEAL_MOMENT_KEYS.join(', ')}.
-- perfil${prefix}.objetivosPorMomento debe venir como arreglo de objetos con las claves: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
-- Cada slot debe tener dia, momento y opciones.
-- Debe haber exactamente un slot por cada combinacion de dia + momento.
-- Ordena los slots por dia y luego por momento.
-- Cada slot debe regresar exactamente 3 opciones completas.
-- Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
-- Mantente consistente con el cuestionario, la instruccion nueva y las restricciones activas.
-- Si reutilizas ideas del plan actual, hazlo solo cuando siga siendo conveniente, no por copiarlo ciegamente.
-- No devuelvas summary, profilePatch ni planPatchSlots en modo regenerate. Devuelve el objeto completo listo para parsearse.`;
+- Cada slot debe tener dia, momento y la clave 'opciones' que es un arreglo de 3 objetos hibridos.
+- Cada objeto dentro de 'opciones' debe tener su 'idRef' (valido del mealsCatalog) y recalcular porciones y detalle para match perfecto.
+- CRITICO: Respeta ESTRICTAMENTE: preferencias, estilo de comida, exclusions y restricciones. NUNCA metas algo que el usuario dijo excluir.
+- En caso de duda, prioriza la coherencia. No devuelvas summary ni profilePatch.`;
   }
 
-  return `Eres un nutricionista clinico experto. Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, sin reescribir secciones que no cambian.
+  return `Eres un nutricionista clinico experto. Ajusta solo las partes necesarias del plan actual segun la solicitud del usuario, eligiendo nuevos IDs de comida del "mealsCatalog" provisto, sin reescribir secciones que no cambian.
 
-Debes responder con un unico objeto JSON valido. No uses markdown, comentarios, texto fuera del JSON ni claves adicionales.
+Debes responder con un unico objeto JSON valido. No uses markdown.
 
 El perfil objetivo es "${lowerPrefix}". Nunca cambies su id ni su nombre.
 
 Contrato exacto de salida:
-- summary: arreglo obligatorio de 1 a 4 lineas cortas
+- summary: arreglo obligatorio de 1 a 2 lineas cortas
 - noChangesReason: string opcional si no hace falta cambiar nada
 - profilePatch: objeto opcional con solo campos cambiados del perfil
-- equivalencias: arreglo opcional si cambian equivalencias
 - suplementos: arreglo opcional si cambian suplementos
 - planPatchSlots: arreglo opcional con solo slots modificados
 
 Reglas criticas:
 - summary siempre debe explicar lo que cambiaste o por que no cambiaste nada.
-- Si realmente no hace falta modificar nada, responde con summary y noChangesReason. No inventes cambios.
 - Si devuelves profilePatch.objetivosPorMomento, usa el mismo formato de arreglo por momento.
 - Si usas planPatchSlots, incluye SOLO las combinaciones de dia + momento modificadas.
-- Si devuelves varios slots, ordénalos por dia y luego por momento.
-- Cada slot incluido en planPatchSlots debe regresar el arreglo completo de 3 opciones para ese slot.
+- En 'planPatchSlots', cada slot modificado debe tener 'opciones' con 3 objetos hibridos.
+- Cada objeto debe tener un 'idRef' (valido del mealsCatalog).
+- OBLIGATORIO: Asegura match perfecto con alergias, estilo de dieta, preferencias y restricciones del usuario (cuestionarioContext / currentContext).
 - Nunca devuelvas el plan completo en modo adjust.
-- Cada MealItem debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
-- profilePatch, equivalencias y suplementos son opcionales; omitelos si no cambian.
-- Mantente consistente con el cuestionario, el plan actual, las ediciones manuales y las restricciones del usuario.`;
+- profilePatch y suplementos son opcionales; omitelos si no cambian.
+- Si solo cambian comidas, omite las demas secciones.`;
 }
 
 function buildRevisionUserPrompt(prefix, payload, profilePayload) {
@@ -1542,22 +1689,20 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
     profilePrefix: prefix,
     mode: payload.requestMode,
     userInstruction: payload.instruction,
+    mealsCatalog: payload.mealsCatalog || [],
     questionnaireContext: sanitizePromptPayload(payload.questionnaireContext),
-    currentContext: profilePayload.currentContext,
-    originalContext: profilePayload.originalContext,
-    companionContext: profilePayload.companionContext,
+    currentContext: compactSnapshotForPrompt(profilePayload.currentContext),
+    originalContext:
+      payload.requestMode === 'regenerate'
+        ? compactSnapshotForPrompt(profilePayload.originalContext)
+        : undefined,
+    companionContext: compactSnapshotForPrompt(profilePayload.companionContext),
     outputMode,
     outputNotes: {
-      fixedDays: WEEK_DAYS,
-      fixedMoments: MEAL_MOMENT_KEYS,
-      fixedFoodGroups: FOOD_GROUP_KEYS,
       planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
-      planTransportFormat: 'flat_slots',
       returnOnlyChangedSections: payload.requestMode === 'adjust',
-      preserveUntouchedMoments: payload.requestMode === 'adjust',
       mealOptionsPerMoment: 3,
-      mealItemRequiredKeys: MEAL_ITEM_REQUIRED_KEYS,
-      fullOutputRootKeys: buildGenerationOutputContract(prefix).rootKeys,
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para el usuario. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef.${resolveClinicalProtocols(payload.questionnaireContext?.diagnostics)}`,
     },
   });
 }
@@ -1589,79 +1734,12 @@ function sanitizeAiJson(text) {
   return cleaned.slice(firstBrace, lastBrace + 1);
 }
 
-function normalizeModelName(modelName) {
-  if (!modelName) return '';
-  return modelName.replace(/^models\//, '').trim();
-}
-
-function modelSupportsGenerateContent(model) {
-  return (model?.supportedGenerationMethods || []).includes('generateContent');
-}
-
-function isTextGenerationModel(modelName) {
-  const normalized = normalizeModelName(modelName).toLowerCase();
-  return TEXT_GENERATION_MODEL_PATTERNS.some((pattern) => pattern.test(normalized));
-}
-
-function getModelFamilyKey(modelName) {
-  return normalizeModelName(modelName)
-    .toLowerCase()
-    .replace(/-001$/i, '')
-    .replace(/-customtools$/i, '');
-}
-
-function getUniqueModelNames(modelNames, preferredModelRaw) {
-  const preferredModel = normalizeModelName(preferredModelRaw);
-  const rawUniqueNames = [...new Set(modelNames.map((name) => normalizeModelName(name)).filter(Boolean))];
-  const sourceNames = preferredModel ? [preferredModel, ...rawUniqueNames] : rawUniqueNames;
-  const seenFamilies = new Set();
-  const uniqueNames = [];
-
-  sourceNames.forEach((name) => {
-    if (!rawUniqueNames.includes(name)) {
-      return;
-    }
-
-    const familyKey = getModelFamilyKey(name);
-    if (seenFamilies.has(familyKey)) {
-      return;
-    }
-
-    seenFamilies.add(familyKey);
-    uniqueNames.push(name);
-  });
-
-  return uniqueNames;
-}
-
-function orderModelNamesByPriority(modelNames, priorityMatchers, preferredModelRaw) {
-  const preferredModel = normalizeModelName(preferredModelRaw);
-  const remaining = getUniqueModelNames(modelNames, preferredModelRaw);
-  const ordered = [];
-
-  if (preferredModel && remaining.includes(preferredModel)) {
-    ordered.push(preferredModel);
-  }
-
-  priorityMatchers.forEach((matcher) => {
-    const match = remaining.find((name) => matcher.test(name) && !ordered.includes(name));
-    if (match) {
-      ordered.push(match);
-    }
-  });
-
-  remaining.forEach((name) => {
-    if (!ordered.includes(name)) {
-      ordered.push(name);
-    }
-  });
-
-  return ordered;
-}
-
 async function listAvailableModels(apiKey, debugContext) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-  const response = await fetch(url);
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+    headers: {
+      'x-goog-api-key': apiKey,
+    },
+  });
   const responseText = await response.text();
   const parsedBody = safeParseJson(responseText);
 
@@ -1739,7 +1817,7 @@ async function listAvailableModels(apiKey, debugContext) {
   }
 
   return (parsedBody?.models || []).filter(
-    (model) => modelSupportsGenerateContent(model) && isTextGenerationModel(model?.name)
+    (model) => modelSupportsGenerateContent(model) && isSupportedGeminiTextModel(model?.name)
   );
 }
 
@@ -1749,25 +1827,19 @@ function pickBestModel(models, preferredModelRaw) {
   }
 
   const modelNames = models.map((model) => normalizeModelName(model.name));
-  return orderModelNamesByPriority(
-    modelNames,
-    PRIMARY_MODEL_PRIORITY_MATCHERS,
-    preferredModelRaw
-  )[0];
+  return getOrderedGeminiModels(modelNames, preferredModelRaw)[0];
 }
 
 function getFallbackModels(models, primaryModel) {
   const modelNames = models.map((model) => normalizeModelName(model.name));
-  return orderModelNamesByPriority(modelNames, AUTO_FALLBACK_PRIORITY_MATCHERS, primaryModel)
-    .filter((name) => name && name !== primaryModel)
-    .slice(0, Math.max(MAX_MODEL_CANDIDATES - 1, 0));
+  return getGeminiFallbackModels(modelNames, primaryModel);
 }
 
 function shouldRetryStatusCode(statusCode) {
   return [408, 429, 500, 502, 503, 504].includes(Number(statusCode));
 }
 
-function shouldRetryWithDifferentModel(error) {
+function getRetryErrorMeta(error) {
   const statusCode = error?.statusCode || error?.aiDebugLog?.geminiResponse?.status;
   const rawMessage = error?.aiDebugLog?.error?.rawMessage || error?.message || '';
   const normalizedMessage = String(rawMessage).toLowerCase();
@@ -1778,6 +1850,38 @@ function shouldRetryWithDifferentModel(error) {
       normalizedMessage.includes('no encontrado') ||
       normalizedMessage.includes('not supported') ||
       normalizedMessage.includes('no disponible'));
+
+  return {
+    statusCode,
+    rawMessage,
+    normalizedMessage,
+    modelUnavailable,
+  };
+}
+
+function shouldRetrySameModel(error) {
+  const { statusCode, normalizedMessage, modelUnavailable } = getRetryErrorMeta(error);
+
+  if (modelUnavailable) {
+    return false;
+  }
+
+  return (
+    [429, 500, 502, 503, 504].includes(Number(statusCode)) ||
+    normalizedMessage.includes('high demand') ||
+    normalizedMessage.includes('resource exhausted') ||
+    normalizedMessage.includes('rate limit') ||
+    normalizedMessage.includes('quota exceeded') ||
+    normalizedMessage.includes('deadline exceeded') ||
+    normalizedMessage.includes('timed out') ||
+    normalizedMessage.includes('internal error') ||
+    normalizedMessage.includes('backend error') ||
+    normalizedMessage.includes('unavailable')
+  );
+}
+
+function shouldRetryWithDifferentModel(error) {
+  const { statusCode, normalizedMessage, modelUnavailable } = getRetryErrorMeta(error);
 
   return (
     shouldRetryStatusCode(statusCode) ||
@@ -1800,6 +1904,10 @@ function shouldRetryWithDifferentModel(error) {
   );
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function generateWithGeminiWithFallback(
   parts,
   apiKey,
@@ -1810,49 +1918,65 @@ async function generateWithGeminiWithFallback(
 ) {
   let lastError;
   const attempts = [];
+  const maxAttemptsPerModel = debugContext?.targetProfile === 'ambos' ? 2 : 1;
 
   for (let index = 0; index < modelCandidates.length; index += 1) {
     const modelName = modelCandidates[index];
 
-    try {
-      const data = await generateWithGemini(
-        parts,
-        apiKey,
-        modelName,
-        systemInstruction,
-        responseSchema,
-        {
-          ...debugContext,
-          selectedModel: modelName,
-        }
-      );
-
-      return {
-        data,
-        modelUsed: modelName,
-      };
-    } catch (error) {
-      lastError = error;
-      const willRetry =
-        index < modelCandidates.length - 1 && shouldRetryWithDifferentModel(error);
-      attempts.push(
-        buildAttemptLog(error, {
-          order: index + 1,
+    for (let modelAttempt = 0; modelAttempt < maxAttemptsPerModel; modelAttempt += 1) {
+      try {
+        const data = await generateWithGemini(
+          parts,
+          apiKey,
           modelName,
-          willRetry,
-        })
-      );
+          systemInstruction,
+          responseSchema,
+          {
+            ...debugContext,
+            selectedModel: modelName,
+          }
+        );
 
-      if (!willRetry) {
-        throw attachAttemptsToError(error, attempts, {
-          ...debugContext,
-          selectedModel: modelName,
-        });
+        return {
+          data,
+          modelUsed: modelName,
+        };
+      } catch (error) {
+        lastError = error;
+        const retrySameModel =
+          modelAttempt < maxAttemptsPerModel - 1 && shouldRetrySameModel(error);
+        const retryDifferentModel =
+          index < modelCandidates.length - 1 && shouldRetryWithDifferentModel(error);
+        const willRetry = retrySameModel || retryDifferentModel;
+        attempts.push(
+          buildAttemptLog(error, {
+            order: attempts.length + 1,
+            modelName,
+            willRetry,
+          })
+        );
+
+        if (retrySameModel) {
+          await delay(750 * (modelAttempt + 1));
+          continue;
+        }
+
+        if (!retryDifferentModel) {
+          throw attachAttemptsToError(error, attempts, {
+            ...debugContext,
+            selectedModel: modelName,
+          });
+        }
+
+        break;
       }
     }
   }
 
-  throw attachAttemptsToError(lastError, attempts, debugContext);
+  throw attachAttemptsToError(lastError, attempts, {
+    ...debugContext,
+    selectedModel: modelCandidates[modelCandidates.length - 1],
+  });
 }
 
 function buildScopedPayload(payload, profileData) {
@@ -1880,6 +2004,7 @@ async function generateWithGemini(
   responseSchema,
   debugContext
 ) {
+  const timeoutMs = getGeminiRequestTimeoutMs(debugContext);
   const body = {
     system_instruction: {
       parts: [{ text: systemInstruction }],
@@ -1895,18 +2020,60 @@ async function generateWithGemini(
       responseMimeType: 'application/json',
       responseJsonSchema: responseSchema,
       maxOutputTokens: getMaxOutputTokens(modelName, debugContext.requestMode),
-      ...(getThinkingConfig(modelName)
-        ? { thinkingConfig: getThinkingConfig(modelName) }
+      ...(getThinkingConfig(modelName, debugContext)
+        ? { thinkingConfig: getThinkingConfig(modelName, debugContext) }
         : {}),
     },
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error?.name === 'AbortError') {
+      throw createLoggedAiError(
+        {
+          ...debugContext,
+          stage: 'generate-content',
+          selectedModel: modelName,
+        },
+        {
+          rawMessage: `El modelo ${modelName} supero el tiempo limite de ${Math.round(timeoutMs / 1000)}s antes de responder.`,
+          statusCode: 504,
+          geminiRequest: body,
+        }
+      );
+    }
+
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'generate-content',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: error?.message || `Fallo de red contactando ${modelName}.`,
+        statusCode: 502,
+        geminiRequest: body,
+      }
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const responseText = await response.text();
 
@@ -2130,18 +2297,16 @@ export default async function handler(req, res) {
       return res.status(pdfValidation.status).json({ error: pdfValidation.error });
     }
 
-    const customApiKey =
-      typeof payload.customApiKey === 'string' ? payload.customApiKey.trim() : '';
-    const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
     const preferredModel =
-      payload.preferredModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+      normalizeModelName(payload.preferredModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) ||
+      DEFAULT_GEMINI_MODEL;
     const requestMode = isPlanRevisionRequest(payload) ? payload.requestMode : 'generate';
     const flow = isPlanRevisionRequest(payload) ? 'plan-revision' : 'questionnaire-submit';
 
     if (!apiKey) {
       return res.status(500).json({
-        error:
-          'Falta configurar tu GEMINI API KEY. Ve al panel de Administracion y configúrala.',
+        error: 'Falta configurar GEMINI_API_KEY en el entorno del servidor.',
       });
     }
 
@@ -2160,7 +2325,7 @@ export default async function handler(req, res) {
       targetProfile: target,
       requestMode,
       requestedModel: preferredModel,
-      apiKeySource: customApiKey ? 'custom-server' : 'server-env',
+      apiKeySource: 'server-env',
     };
 
     const models = await listAvailableModels(apiKey, debugBase);
@@ -2280,3 +2445,4 @@ export default async function handler(req, res) {
     });
   }
 }
+

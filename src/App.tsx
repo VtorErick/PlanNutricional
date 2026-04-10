@@ -50,8 +50,9 @@ export default function App() {
     generationLoading,
     generationError,
     generationErrorLog,
-    geminiApiKey,
-    setGeminiApiKey,
+    geminiModel,
+    geminiRecommendedModel,
+    geminiFallbackModels,
     lastGeneratedData,
     questionnaireTargetProfile,
     setQuestionnaireTargetProfile,
@@ -123,8 +124,9 @@ export default function App() {
                 loading={generationLoading}
                 errorMessage={generationError}
                 aiErrorLog={generationErrorLog}
-                geminiApiKey={geminiApiKey}
-                setGeminiApiKey={setGeminiApiKey}
+                geminiModel={geminiModel}
+                geminiRecommendedModel={geminiRecommendedModel}
+                geminiFallbackModels={geminiFallbackModels}
                 lastGeneratedData={lastGeneratedData}
                 targetProfile={questionnaireTargetProfile}
                 setTargetProfile={setQuestionnaireTargetProfile}
