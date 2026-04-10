@@ -113,22 +113,32 @@ export function hasPlanRevisionPatchChanges(patch: PlanRevisionProfilePatch): bo
   const hasEquivalencias = Array.isArray(patch.equivalencias) && patch.equivalencias.length > 0;
   const hasSuplementos = Array.isArray(patch.suplementos) && patch.suplementos.length > 0;
   const hasPlanPatch = isPlainObject(patch.planPatch) && Object.keys(patch.planPatch).length > 0;
+  const hasPlanPatchSlots = Array.isArray(patch.planPatchSlots) && patch.planPatchSlots.length > 0;
 
-  return hasProfilePatch || hasEquivalencias || hasSuplementos || hasPlanPatch;
+  return hasProfilePatch || hasEquivalencias || hasSuplementos || hasPlanPatch || hasPlanPatchSlots;
 }
 
 export function getAffectedPlanSlotsFromPatch(
   patch: PlanRevisionProfilePatch
 ): AffectedPlanSlot[] {
-  if (!isPlainObject(patch.planPatch)) return [];
-
   const result: AffectedPlanSlot[] = [];
-  Object.entries(patch.planPatch).forEach(([dia, dayValue]) => {
-    if (!isPlainObject(dayValue)) return;
-    Object.keys(dayValue).forEach((momento) => {
-      result.push({ dia, momento });
+
+  if (isPlainObject(patch.planPatch)) {
+    Object.entries(patch.planPatch).forEach(([dia, dayValue]) => {
+      if (!isPlainObject(dayValue)) return;
+      Object.keys(dayValue).forEach((momento) => {
+        result.push({ dia, momento });
+      });
     });
-  });
+  }
+
+  if (Array.isArray(patch.planPatchSlots)) {
+    patch.planPatchSlots.forEach((slot: any) => {
+      if (typeof slot?.dia === 'string' && typeof slot?.momento === 'string') {
+        result.push({ dia: slot.dia, momento: slot.momento });
+      }
+    });
+  }
 
   return result;
 }
@@ -173,6 +183,23 @@ export function applyPlanRevisionPatchToBucket(
       Object.entries(dayValue).forEach(([momento, meals]) => {
         nextPlan[dia][momento] = cloneSerializable(meals);
       });
+    });
+
+    nextBucket[keys.planKey] = nextPlan;
+  }
+
+  if (Array.isArray(patch.planPatchSlots)) {
+    const currentPlan = isPlainObject(nextBucket[keys.planKey]) ? nextBucket[keys.planKey] : {};
+    const nextPlan = cloneSerializable(currentPlan);
+
+    patch.planPatchSlots.forEach((slot: any) => {
+      if (typeof slot?.dia !== 'string' || typeof slot?.momento !== 'string' || !Array.isArray(slot?.opciones)) return;
+      const dia = slot.dia;
+      const momento = slot.momento;
+      
+      const existingDay = isPlainObject(nextPlan[dia]) ? nextPlan[dia] : {};
+      nextPlan[dia] = { ...existingDay };
+      nextPlan[dia][momento] = cloneSerializable(slot.opciones);
     });
 
     nextBucket[keys.planKey] = nextPlan;

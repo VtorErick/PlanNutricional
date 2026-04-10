@@ -799,8 +799,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [pendingAutoScrollMomento, setPendingAutoScrollMomento] = useState<string | null>(null);
   const hasInitializedRouteRef = useRef(false);
-  const isFirstTargetProfileRenderRef = useRef(true);
   const lastStorageErrorRef = useRef<Record<string, number>>({});
+  const lastGeminiStatusCheckTime = useRef<number>(0);
 
   // ─── Utilities ─────────────────────────────────────────────────────
   const notify = useCallback(async (title: string, message: string) => { await showAppAlert({ title, message }); }, []);
@@ -1621,7 +1621,15 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     preferredModel?: string;
     checkGeneration?: boolean;
     syncModel?: boolean;
+    force?: boolean;
   }) => {
+    // Throttle duplicate background checks (1 minute threshold)
+    const now = Date.now();
+    const isForced = options?.force || options?.checkGeneration;
+    if (!isForced && now - lastGeminiStatusCheckTime.current < 60000) {
+      return null;
+    }
+
     setGeminiAvailabilityLoading(true);
 
     try {
@@ -1630,6 +1638,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         preferredModel: currentModel,
         checkGeneration: options?.checkGeneration,
       });
+
+      lastGeminiStatusCheckTime.current = Date.now();
 
       setGeminiAvailableModels(status.availableModels);
       setGeminiFallbackModels(status.fallbackModels);
@@ -1744,14 +1754,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [showAdmin, showQuestionnaire]);
 
-  // Reset questionnaire step ONLY when switching target profiles
-  useEffect(() => {
-    if (isFirstTargetProfileRenderRef.current) {
-      isFirstTargetProfileRenderRef.current = false;
-      return;
-    }
-    setQuestionnaireStepIdx(0);
-  }, [setQuestionnaireStepIdx, questionnaireTargetProfile]);
+  // Reset questionnaire step deleted to allow users to navigate natively.
 
   // Clean generation state when opening questionnaire at step 0
   useEffect(() => {
