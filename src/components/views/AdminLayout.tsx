@@ -1,10 +1,28 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Settings, X, KeyRound, Zap, Sparkles, ChevronDown, ShieldCheck, Moon, Sun } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import {
+  ChevronDown,
+  Moon,
+  RefreshCcw,
+  RotateCcw,
+  Server,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  X,
+  Zap,
+} from 'lucide-react';
 import AdminPanel from '../AdminPanel';
 import { useDiet } from '../../context/DietContext';
 import { getRawDataText, perfilesData as origPerfilesData } from '../../data';
-import { persistGeminiApiKey } from '../../utils/geminiKey';
 import { clearAppStorage } from '../../utils/appStorage';
+import {
+  DEFAULT_GEMINI_MODEL,
+  GEMINI_MODEL_OPTIONS,
+  getGeminiFallbackModels,
+  getGeminiModelLabel,
+  getOrderedGeminiModels,
+} from '../../utils/geminiModels';
 
 export default function AdminLayout() {
   const {
@@ -12,15 +30,18 @@ export default function AdminLayout() {
     setPerfilActivo,
     setDiaActivo,
     setTab,
-    geminiApiKey, setGeminiApiKey,
-    geminiModel, setGeminiModel,
+    geminiModel,
+    setGeminiModel,
     geminiAvailableModels,
+    geminiFallbackModels,
     geminiRecommendedModel,
     geminiAvailabilityLoading,
     geminiAvailabilityMessage,
     refreshGeminiAvailability,
-    customData, setCustomData,
-    dataVersions, setDataVersions,
+    customData,
+    setCustomData,
+    dataVersions,
+    setDataVersions,
     setSelecciones,
     setComprasCheck,
     setQuestionnaireTargetProfile,
@@ -38,120 +59,114 @@ export default function AdminLayout() {
 
   const [adminTab, setAdminTab] = useState<'manual' | 'settings'>('manual');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [apiKeyDraft, setApiKeyDraft] = useState(geminiApiKey);
 
-  const usingCustomKey = !!geminiApiKey.trim();
-
-  const modelOptions = [
-    {
-      val: 'gemini-2.5-flash',
-      label: 'Recomendado',
-      techLabel: 'Gemini 2.5 Flash',
-      desc: 'Mejor balance actual entre calidad, consistencia estructurada y cuota en free tier.',
-      badge: 'Balance',
-      badgeColor: 'bg-blue-100 text-blue-700',
-    },
-    {
-      val: 'gemini-3-flash-preview',
-      label: 'Siguiente mejor',
-      techLabel: 'Gemini 3 Flash Preview',
-      desc: 'Fallback de alta calidad cuando 2.5 Flash ya no tiene cuota o esta saturado.',
-      badge: 'Frontier',
-      badgeColor: 'bg-emerald-100 text-emerald-700',
-    },
-    {
-      val: 'gemini-2.5-flash-lite',
-      label: 'Flash Lite 2.5',
-      techLabel: 'Gemini 2.5 Flash Lite',
-      desc: 'Alternativa ligera para reintentos cuando el modelo principal agota cuota.',
-      badge: 'Ligero',
-      badgeColor: 'bg-cyan-100 text-cyan-700',
-    },
-    {
-      val: 'gemini-3.1-flash-lite-preview',
-      label: 'Lite 3.1',
-      techLabel: 'Gemini 3.1 Flash Lite Preview',
-      desc: 'Respaldo actual de mejor disponibilidad cuando Flash y Flash Lite 2.5 fallan.',
-      badge: 'Respaldo',
-      badgeColor: 'bg-lime-100 text-lime-700',
-    },
-    {
-      val: 'gemini-2.0-flash',
-      label: 'Compatibilidad',
-      techLabel: 'Gemini 2.0 Flash',
-      desc: 'Se usa solo despues de los modelos Flash mas consistentes.',
-      badge: 'Legacy',
-      badgeColor: 'bg-sky-100 text-sky-700',
-    },
-    {
-      val: 'gemini-2.0-flash-lite',
-      label: 'Ultimo respaldo',
-      techLabel: 'Gemini 2.0 Flash Lite',
-      desc: 'Ultimo escalon para no caer en modelos retirados ni estructuras mas fragiles.',
-      badge: 'Final',
-      badgeColor: 'bg-slate-100 text-slate-700',
-    },
-    {
-      val: 'gemini-2.5-pro',
-      label: 'Maxima calidad',
-      techLabel: 'Gemini 2.5 Pro',
-      desc: 'Opcion manual para la mayor calidad, con mas riesgo de cuota y latencia.',
-      badge: 'Premium',
-      badgeColor: 'bg-amber-100 text-amber-700',
-    },
-  ];
-
-  const visibleModelOptions = geminiAvailableModels.length
-    ? modelOptions.filter((option) => geminiAvailableModels.includes(option.val))
-    : modelOptions;
-  const recommendedModel = geminiRecommendedModel || visibleModelOptions[0]?.val || '';
-  const recommendedModelLabel =
-    modelOptions.find((option) => option.val === recommendedModel)?.techLabel || recommendedModel;
-  const currentModelOption = modelOptions.find((option) => option.val === geminiModel);
-  const currentModelLabel =
-    currentModelOption?.techLabel ||
-    modelOptions.find((option) => option.val === recommendedModel)?.techLabel ||
-    geminiModel ||
-    'Sin validar';
   const defaultElJson = useMemo(() => getRawDataText('el'), []);
   const defaultEllaJson = useMemo(() => getRawDataText('ella'), []);
 
-  useEffect(() => {
-    setApiKeyDraft(geminiApiKey);
-  }, [geminiApiKey]);
+  const currentModel = geminiModel || geminiRecommendedModel || DEFAULT_GEMINI_MODEL;
+  const currentModelLabel = getGeminiModelLabel(currentModel);
+  const recommendedModel = geminiRecommendedModel || DEFAULT_GEMINI_MODEL;
+  const recommendedModelLabel = getGeminiModelLabel(recommendedModel);
+  const orderedModels = geminiAvailableModels.length
+    ? getOrderedGeminiModels(geminiAvailableModels, currentModel)
+    : [currentModel, ...getGeminiFallbackModels(GEMINI_MODEL_OPTIONS.map((option) => option.id), currentModel)];
+  const fallbackPreview = (geminiFallbackModels.length
+    ? geminiFallbackModels
+    : orderedModels.slice(1)
+  ).slice(0, 3);
 
-  const resetApiKeyToDefault = async () => {
-    setApiKeyDraft('');
-    setGeminiApiKey('');
-    setGeminiModel('');
-    persistGeminiApiKey('');
+  const visibleModelOptions = GEMINI_MODEL_OPTIONS.map((option) => ({
+    ...option,
+    available: geminiAvailableModels.includes(option.id),
+  }));
+
+  const applyRecommendedConfig = async () => {
+    setGeminiModel(DEFAULT_GEMINI_MODEL);
 
     const status = await refreshGeminiAvailability({
-      customApiKey: '',
-      preferredModel: '',
+      preferredModel: DEFAULT_GEMINI_MODEL,
+      checkGeneration: true,
       syncModel: true,
     });
 
-    if (status?.ok && status.keySource === 'env') {
-      await notify('Configuración actualizada', `Se restauró la clave del servidor. Modelo sugerido: ${status.selectedModel}`);
+    if (!status?.ok) {
+      await notify(
+        'Gemini no disponible',
+        status?.error || 'No fue posible validar Gemini desde el servidor.'
+      );
       return;
     }
 
-    if (status?.ok) {
-      await notify('Configuración actualizada', `Se restauró la configuración del servidor. Modelo sugerido: ${status.selectedModel}`);
+    const usedModel = getGeminiModelLabel(status.selectedModel || DEFAULT_GEMINI_MODEL);
+    const fallbackLabel = (status.fallbackModels || [])
+      .slice(0, 2)
+      .map((model) => getGeminiModelLabel(model))
+      .join(', ');
+
+    await notify(
+      'Configuracion recomendada aplicada',
+      fallbackLabel
+        ? `Modelo por defecto: ${usedModel}.\nFallback: ${fallbackLabel}.`
+        : `Modelo por defecto: ${usedModel}.`
+    );
+  };
+
+  const validateCurrentModel = async () => {
+    const status = await refreshGeminiAvailability({
+      preferredModel: currentModel,
+      checkGeneration: true,
+      syncModel: true,
+    });
+
+    if (!status?.ok) {
+      await notify(
+        'Validacion fallida',
+        status?.error || 'No fue posible validar el modelo seleccionado.'
+      );
       return;
     }
 
     await notify(
-      'Configuración actualizada',
-      status?.error || 'Se eliminó la clave personalizada y no hay una configuración de servidor disponible.'
+      'Validacion completada',
+      `Modelo activo: ${getGeminiModelLabel(status.selectedModel || currentModel)}.`
+    );
+  };
+
+  const handleModelSelection = async (nextModel: string) => {
+    setGeminiModel(nextModel);
+
+    const status = await refreshGeminiAvailability({
+      preferredModel: nextModel,
+      checkGeneration: true,
+      syncModel: true,
+    });
+
+    if (!status?.ok) {
+      await notify(
+        'Modelo no validado',
+        status?.error || 'No fue posible validar el modelo seleccionado.'
+      );
+      return;
+    }
+
+    const selectedLabel = getGeminiModelLabel(status.selectedModel || nextModel);
+    const fallbackLabel = (status.fallbackModels || [])
+      .slice(0, 2)
+      .map((model) => getGeminiModelLabel(model))
+      .join(', ');
+
+    await notify(
+      'Modelo actualizado',
+      fallbackLabel
+        ? `La app usara ${selectedLabel} por defecto.\nFallback: ${fallbackLabel}.`
+        : `La app usara ${selectedLabel} por defecto.`
     );
   };
 
   const resetAppState = async () => {
     const accepted = await confirmAction(
       'Restablecer app',
-      'Esto borrará solo los datos y configuraciones locales de esta app en este dispositivo. ¿Deseas continuar?'
+      'Esto borrara solo los datos y configuraciones locales de esta app en este dispositivo. Deseas continuar?'
     );
     if (!accepted) return;
 
@@ -165,33 +180,63 @@ export default function AdminLayout() {
     setDataVersions({ el: 'original', ella: 'original' });
     setSelecciones({});
     setComprasCheck({});
-    setApiKeyDraft('');
-    setGeminiApiKey('');
-    setGeminiModel('');
+    setGeminiModel(DEFAULT_GEMINI_MODEL);
     setPerfilActivo(null);
     setDiaActivo('Lunes');
     setTab('plan');
     setQuestionnaireTargetProfile('ambos');
     setQuestionnaireStepIdx(0);
     setQuestionnaireEl({
-      age: '', currentWeightKg: '70', heightCm: '165', targetWeightKg: '',
-      objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
-      medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
-      dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
-      wakeTime: '', sleepTime: '', trainingFrequency: ''
+      age: '',
+      currentWeightKg: '70',
+      heightCm: '165',
+      targetWeightKg: '',
+      objectives: [],
+      objectiveTimeline: '12 sem',
+      diagnostics: '',
+      allergies: '',
+      medications: '',
+      intolerances: '',
+      digestiveSymptoms: '',
+      favoriteFoods: '',
+      dislikedFoods: '',
+      favoriteCuisineStyles: '',
+      cookingTime: '',
+      activityLevel: 'Moderado',
+      wakeTime: '',
+      sleepTime: '',
+      trainingFrequency: '',
     });
     setQuestionnaireElla({
-      age: '', currentWeightKg: '60', heightCm: '160', targetWeightKg: '',
-      objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
-      medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
-      dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
-      wakeTime: '', sleepTime: '', trainingFrequency: ''
+      age: '',
+      currentWeightKg: '60',
+      heightCm: '160',
+      targetWeightKg: '',
+      objectives: [],
+      objectiveTimeline: '12 sem',
+      diagnostics: '',
+      allergies: '',
+      medications: '',
+      intolerances: '',
+      digestiveSymptoms: '',
+      favoriteFoods: '',
+      dislikedFoods: '',
+      favoriteCuisineStyles: '',
+      cookingTime: '',
+      activityLevel: 'Moderado',
+      wakeTime: '',
+      sleepTime: '',
+      trainingFrequency: '',
     });
     setQuestionnairePortionMode('auto');
     setQuestionnaireManualPortions({});
     setQuestionnaireAdditionalNotes('');
 
-    await notify('Aplicación restablecida', 'Se limpiaron los datos locales de esta app y volvió al estado inicial.');
+    await notify(
+      'Aplicacion restablecida',
+      'Se limpiaron los datos locales de esta app y volvio al estado inicial.'
+    );
+
     try {
       window.location.reload();
     } catch (error) {
@@ -201,16 +246,15 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 dark:bg-slate-950/95 dark:border-slate-800 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
             <Settings className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">Configuración</h1>
+            <h1 className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">Configuracion</h1>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">
-              Respalda tus planes y ajusta la generación automática
+              Respaldo local y control avanzado del modelo Gemini
             </p>
           </div>
         </div>
@@ -240,105 +284,93 @@ export default function AdminLayout() {
         </div>
       </header>
 
-      {/* Tabs */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
         <div className="flex gap-2 p-1.5 bg-slate-100/80 dark:bg-slate-900/90 rounded-2xl">
           {([
-            { key: 'manual', label: 'Respaldo', shortLabel: 'Respaldo', emoji: '💾' },
-            { key: 'settings', label: 'Generación', shortLabel: 'Generación', emoji: '✨' },
-          ] as const).map((t) => (
+            { key: 'manual', label: 'Respaldo', shortLabel: 'Respaldo', emoji: 'JSON' },
+            { key: 'settings', label: 'Gemini', shortLabel: 'Gemini', emoji: 'AI' },
+          ] as const).map((tabItem) => (
             <button
-              key={t.key}
-              onClick={() => setAdminTab(t.key)}
-              data-testid={`admin-tab-${t.key}`}
+              key={tabItem.key}
+              onClick={() => setAdminTab(tabItem.key)}
+              data-testid={`admin-tab-${tabItem.key}`}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 ${
-                adminTab === t.key
+                adminTab === tabItem.key
                   ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-950 dark:text-slate-100 dark:border dark:border-slate-800'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-white/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'
               }`}
             >
-              <span className="block text-sm mb-0.5">{t.emoji}</span>
-              <span className="hidden sm:block">{t.label}</span>
-              <span className="sm:hidden">{t.shortLabel}</span>
+              <span className="block text-xs font-black">{tabItem.emoji}</span>
+              <span className="hidden sm:block">{tabItem.label}</span>
+              <span className="sm:hidden">{tabItem.shortLabel}</span>
             </button>
           ))}
         </div>
       </div>
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 pb-24">
-
-        {/* ── SETTINGS TAB ── */}
         {adminTab === 'settings' && (
-          <div className="space-y-5 max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
-
+          <div className="space-y-5 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="text-center pb-1">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Generación automática de planes</h2>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Gemini solo por servidor</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Aquí eliges cómo quieres que la app genere o actualice tus planes.
+                La app usa unicamente `GEMINI_API_KEY` del servidor. No se guarda ni se pide una API key en el navegador.
               </p>
             </div>
 
-            {/* Simple mode */}
             <section className="bg-white dark:bg-slate-950 rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200 dark:border-slate-800">
               <div className="flex items-start gap-3 mb-5">
                 <div className="w-11 h-11 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-5 h-5 text-emerald-600" />
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Modo recomendado</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    La opción más simple para la mayoría de las personas.
+                    Prioriza calidad. Primero intenta Gemini 3.1 Pro Preview y usa fallback automatico si hace falta.
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 mb-4">
-                <div className="flex items-start gap-3">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-800">
-                      Usa la configuración recomendada
-                    </p>
-                    <p className="text-xs text-emerald-700/90 mt-1 leading-relaxed">
-                      Esta opción ya deja lista la app para generar planes de forma normal,
-                      sin que tengas que entender claves, modelos o configuraciones técnicas.
-                    </p>
-                  </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Modelo actual</p>
+                  <p className="mt-2 text-sm font-bold text-emerald-900">{currentModelLabel}</p>
+                  <p className="mt-1 text-xs text-emerald-800/80">
+                    Recomendado del sistema: {recommendedModelLabel}.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                    Estado servidor
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    {geminiAvailabilityLoading
+                      ? 'Validando modelos disponibles...'
+                      : geminiAvailabilityMessage || 'Pendiente de validacion.'}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
                 <button
-                  onClick={async () => {
-                    setApiKeyDraft('');
-                    setGeminiApiKey('');
-                    setGeminiModel('');
-
-                    const status = await refreshGeminiAvailability({
-                      customApiKey: '',
-                      preferredModel: '',
-                      syncModel: true,
-                    });
-
-                    await notify(
-                      'Configuración lista',
-                      status?.ok
-                        ? `La app quedó usando la configuración del servidor. Modelo sugerido: ${status?.selectedModel || recommendedModel}`
-                        : status?.error || 'La app quedó con el modelo recomendado, pero el servidor no pudo validar Gemini.'
-                    );
-                  }}
+                  type="button"
+                  onClick={applyRecommendedConfig}
                   className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-2xl transition-all active:scale-[0.98] shadow-md"
                 >
-                  Usar configuración recomendada
+                  Usar configuracion recomendada
                 </button>
-
-                <div className="flex items-center justify-center px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-200 font-medium">
-                  Modelo actual: {currentModelLabel}
-                </div>
+                <button
+                  type="button"
+                  onClick={validateCurrentModel}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-100"
+                >
+                  <RefreshCcw className="w-4 h-4" />
+                  Validar ahora
+                </button>
               </div>
             </section>
 
-            {/* Automatic fallback */}
             <section className="bg-white dark:bg-slate-950 rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200 dark:border-slate-800">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
@@ -347,80 +379,63 @@ export default function AdminLayout() {
                 <div>
                   <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Fallback automatico</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    La app usa esta secuencia automaticamente. Si el primer modelo falla por cuota o disponibilidad, intenta el siguiente sin pedir accion manual.
+                    Si el modelo principal falla por disponibilidad o cuota, la app prueba el siguiente sin exponer la API key.
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-2">
-                {visibleModelOptions.map((m, index) => {
-                  const isPrimary = index === 0;
-                  const isCurrent = geminiModel === m.val;
-
-                  return (
-                    <div
-                      key={m.val}
-                      className={`flex items-start gap-3 rounded-2xl border p-3 ${
-                        isCurrent
-                          ? 'border-indigo-300 bg-indigo-50/70 dark:border-indigo-700 dark:bg-indigo-950/30'
-                          : 'border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'
-                      }`}
-                    >
-                      <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
-                        isPrimary
-                          ? 'bg-indigo-600 text-white'
-                          : 'border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
-                      }`}>
-                        {index + 1}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{m.techLabel}</span>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.badgeColor}`}>
-                            {m.badge}
-                          </span>
-                          {isPrimary && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                              Primero
-                            </span>
-                          )}
-                          {isCurrent && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">
-                              Actual
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{m.desc}</p>
-                      </div>
+                {orderedModels.slice(0, 5).map((model, index) => (
+                  <div
+                    key={model}
+                    className={`flex items-start gap-3 rounded-2xl border p-3 ${
+                      index === 0
+                        ? 'border-indigo-300 bg-indigo-50/70 dark:border-indigo-700 dark:bg-indigo-950/30'
+                        : 'border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
+                      index === 0
+                        ? 'bg-indigo-600 text-white'
+                        : 'border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
+                    }`}>
+                      {index + 1}
                     </div>
-                  );
-                })}
+
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                        {getGeminiModelLabel(model)}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {index === 0 ? 'Modelo principal para plan y edicion.' : 'Fallback automatico.'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div className="mt-3 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 text-xs text-slate-600 dark:text-slate-300">
-                <p>
-                  La seleccion es automatica. Si un modelo falla, la app registra todos los intentos en el log y prueba el siguiente disponible.
+              <div className="mt-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                  Fallback visible
                 </p>
-                <p className="mt-2">
-                  {geminiAvailabilityLoading
-                    ? 'Validando modelos disponibles para la API key actual...'
-                    : geminiAvailabilityMessage || `Modelo sugerido por defecto: ${recommendedModelLabel || 'sin datos'}`}
+                <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+                  {fallbackPreview.length
+                    ? fallbackPreview.map((model) => getGeminiModelLabel(model)).join(', ')
+                    : 'Sin fallback validado todavia.'}
                 </p>
               </div>
             </section>
 
-            {/* Advanced section */}
             <section className="bg-white dark:bg-slate-950 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
               <button
                 type="button"
-                onClick={() => setShowAdvanced((v) => !v)}
+                onClick={() => setShowAdvanced((prev) => !prev)}
                 className="w-full flex items-center justify-between p-5 md:p-6 text-left hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
               >
                 <div className="min-w-0 pr-4">
-                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Opciones avanzadas</h3>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Ajustes avanzados</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Solo si ya sabes lo que estás haciendo o quieres usar tu propia configuración.
+                    Aqui puedes cambiar el modelo por defecto sin tocar ninguna API key.
                   </p>
                 </div>
                 <ChevronDown
@@ -430,97 +445,97 @@ export default function AdminLayout() {
 
               {showAdvanced && (
                 <div className="px-5 md:px-6 pb-6 border-t border-slate-100 dark:border-slate-800 space-y-5">
-                  <div className="pt-5">
-                    <div className="flex items-start gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                        <KeyRound className="w-5 h-5 text-orange-600" />
-                      </div>
+                  <div className="pt-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-4">
+                    <div className="flex items-start gap-3">
+                      <Server className="w-5 h-5 text-slate-500 mt-0.5" />
                       <div>
-                        <h4 className="text-base font-bold text-slate-800 dark:text-slate-100">Clave personal de acceso</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          Esto es opcional. Solo úsalo si alguien te indicó que pegaras una clave aquí.
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                          Entorno esperado
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                          Local: `.env.local` con `GEMINI_API_KEY` y `GEMINI_MODEL`. Vercel: mismas variables en Environment Variables.
                         </p>
                       </div>
-                    </div>
-
-                    <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 mb-3">
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                        Para la mayoría de usuarios, no hace falta tocar esta parte.
-                        La app puede funcionar con la configuración recomendada.
-                      </p>
-                    </div>
-
-                    <div className="relative mb-3">
-                      <input
-                        type="password"
-                        id="admin-api-key"
-                        placeholder="Pega aquí tu clave si te la compartieron"
-                        value={apiKeyDraft}
-                        onChange={(e) => setApiKeyDraft(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 pr-10 text-slate-700 dark:text-slate-100 text-sm outline-none focus:ring-2 focus:ring-orange-400 transition"
-                      />
-                      {usingCustomKey && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 text-xs font-bold">
-                          OK
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button
-                        onClick={async () => {
-                          const trimmedKey = apiKeyDraft.trim();
-
-                          if (trimmedKey) {
-                            const status = await refreshGeminiAvailability({
-                              customApiKey: trimmedKey,
-                              preferredModel: '',
-                              checkGeneration: true,
-                              syncModel: true,
-                            });
-
-                            if (!status?.ok) {
-                              await notify('Clave inválida', status?.error || 'No fue posible validar la API key.');
-                              return;
-                            }
-
-                            setGeminiApiKey(trimmedKey);
-                            setGeminiModel(status.selectedModel || '');
-                            await notify('Guardado', `Tu clave personal quedó guardada. Modelo sugerido: ${status.selectedModel}`);
-                          } else {
-                            await resetApiKeyToDefault();
-                          }
-                        }}
-                        className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98] shadow-md"
-                      >
-                        {apiKeyDraft.trim() ? 'Guardar clave personal' : 'Restaurar configuración predeterminada'}
-                      </button>
-
-                      {usingCustomKey && (
-                        <button
-                          onClick={resetApiKeyToDefault}
-                          className="sm:w-auto bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-100 font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98]"
-                        >
-                          Quitar clave
-                        </button>
-                      )}
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Nombre técnico del motor</h4>
-                    <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3">
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                        Opción actual: <span className="font-semibold text-slate-800 dark:text-slate-100">
-                          {currentModelLabel}
-                        </span>
-                      </p>
-                      {geminiAvailableModels.length > 0 && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                          Disponibles con esta clave: {geminiAvailableModels.join(', ')}
-                        </p>
-                      )}
-                    </div>
+                    <label
+                      htmlFor="admin-default-model"
+                      className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2"
+                    >
+                      Modelo por defecto
+                    </label>
+                    <select
+                      id="admin-default-model"
+                      value={currentModel}
+                      onChange={(event) => void handleModelSelection(event.target.value)}
+                      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm text-slate-800 dark:text-slate-100 outline-none"
+                    >
+                      {visibleModelOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.technicalLabel}{option.available ? '' : ' (sin validar)'}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                      El selector define la prioridad inicial. Si falla, la API usa la cadena de fallback automaticamente.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {visibleModelOptions.slice(0, 6).map((option) => {
+                      const isCurrent = currentModel === option.id;
+                      return (
+                        <div
+                          key={option.id}
+                          className={`rounded-2xl border p-4 ${
+                            isCurrent
+                              ? 'border-indigo-300 bg-indigo-50/70 dark:border-indigo-700 dark:bg-indigo-950/30'
+                              : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                              {option.technicalLabel}
+                            </p>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${option.badgeClassName}`}>
+                              {option.badge}
+                            </span>
+                            {isCurrent ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">
+                                Actual
+                              </span>
+                            ) : null}
+                            {option.available ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                Validado
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{option.description}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      type="button"
+                      onClick={applyRecommendedConfig}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-100 font-bold py-3 px-4"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Volver al recomendado
+                    </button>
+                    <button
+                      type="button"
+                      onClick={validateCurrentModel}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold py-3 px-4 shadow-md"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Probar modelo seleccionado
+                    </button>
                   </div>
                 </div>
               )}
@@ -528,13 +543,12 @@ export default function AdminLayout() {
           </div>
         )}
 
-        {/* ── MANUAL BACKUP TAB ── */}
         {adminTab === 'manual' && (
           <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="text-center mb-6">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">💾 Respaldo y restauración</h2>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Respaldo y restauracion</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Guarda una copia de tus planes o recupera una versión anterior desde un archivo JSON.
+                Guarda una copia de tus planes o recupera una version anterior desde un archivo JSON.
               </p>
             </div>
 
@@ -571,13 +585,13 @@ export default function AdminLayout() {
               <p className="text-xs text-slate-500 dark:text-slate-300 mb-3">
                 Si encuentras un error o quieres empezar desde cero en este dispositivo, puedes limpiar el almacenamiento local de esta app.
                 <br />
-                ⚠️ Esto no se puede deshacer y perderás cualquier dato que no hayas respaldado. Asegúrate de guardar tu información antes de continuar.
+                Esto no se puede deshacer y perderas cualquier dato que no hayas respaldado.
               </p>
               <button
                 onClick={resetAppState}
                 className="w-full sm:w-auto bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-all active:scale-[0.98]"
               >
-                Restablecer app (borrar datos locales)
+                Restablecer app
               </button>
             </div>
           </section>

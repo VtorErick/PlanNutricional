@@ -17,6 +17,7 @@ import {
 import type { AccentColors } from '../utils/theme';
 import type { PlanRevisionMode } from '../services/aiService';
 import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
+import { getGeminiModelLabel } from '../utils/geminiModels';
 
 type TargetProfile = 'el' | 'ella' | 'ambos';
 type RegeneratePath = 'instruction' | 'questionnaire';
@@ -112,6 +113,9 @@ interface PlanAiRefreshSheetProps {
   hasQuestionnaireContext: boolean;
   defaultTarget: TargetProfile;
   targetOptions: TargetOption[];
+  geminiModel: string;
+  geminiRecommendedModel: string;
+  geminiFallbackModels: string[];
 }
 
 const EXAMPLE_PROMPTS = [
@@ -133,6 +137,9 @@ export default function PlanAiRefreshSheet({
   hasQuestionnaireContext,
   defaultTarget,
   targetOptions,
+  geminiModel,
+  geminiRecommendedModel,
+  geminiFallbackModels,
 }: PlanAiRefreshSheetProps) {
   const [mode, setMode] = React.useState<PlanRevisionMode>('adjust');
   const [regeneratePath, setRegeneratePath] = React.useState<RegeneratePath>('instruction');
@@ -182,6 +189,9 @@ export default function PlanAiRefreshSheet({
     : mode === 'regenerate'
       ? true
       : instruction.trim().length >= 8;
+  const plannedModel = geminiRecommendedModel || geminiModel;
+  const plannedModelLabel = getGeminiModelLabel(plannedModel);
+  const fallbackPreview = geminiFallbackModels.slice(0, 2).map((model) => getGeminiModelLabel(model)).join(', ');
 
   return (
     <AnimatePresence>
@@ -448,6 +458,22 @@ export default function PlanAiRefreshSheet({
                       </p>
                     </div>
                   </div>
+                </div>
+
+                <div
+                  data-testid="plan-ai-model-preview"
+                  className={`rounded-[24px] border px-4 py-3 ${
+                    isDarkMode
+                      ? 'border-indigo-900/70 bg-indigo-950/30 text-indigo-100'
+                      : 'border-indigo-200 bg-indigo-50 text-indigo-900'
+                  }`}
+                >
+                  <p className="text-sm font-black">Modelo previsto: {plannedModelLabel}</p>
+                  <p className="mt-1 text-xs leading-relaxed opacity-90">
+                    {fallbackPreview
+                      ? `Fallback automatico: ${fallbackPreview}.`
+                      : 'No hay otro fallback validado en este momento.'}
+                  </p>
                 </div>
 
                 {errorMessage ? (

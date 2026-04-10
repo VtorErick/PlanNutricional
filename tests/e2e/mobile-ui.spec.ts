@@ -47,7 +47,7 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
   await expect(page.getByTestId('admin-tab-settings')).toBeVisible();
   await page.getByTestId('admin-tab-settings').click();
   await expect(
-    page.getByRole('heading', { name: /Generaci.*autom.*planes/i })
+    page.getByRole('heading', { name: /Gemini solo por servidor/i })
   ).toBeVisible();
   await saveDocScreenshot(page, 'admin-settings-mobile.png');
   await page.getByTestId('admin-close-button').click();
@@ -64,10 +64,12 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
   await expect(page.getByTestId('questionnaire-step-cocina')).toBeVisible();
   await page.getByTestId('questionnaire-next').click();
   await expect(page.getByTestId('questionnaire-step-confirm')).toBeVisible();
+  await expect(page.getByTestId('questionnaire-model-preview')).toContainText(/Modelo previsto/i);
   await saveDocScreenshot(page, 'questionnaire-confirm-mobile.png');
 
   await page.getByTestId('questionnaire-generate').click();
   await expect(page.getByRole('heading', { name: /Plan generado/i })).toBeVisible();
+  await expect(page.getByText(/Modelo usado:/i)).toBeVisible();
   await page.getByRole('button', { name: /Aceptar/i }).click();
   await expect(page.getByTestId('landing-profile-ambos-card')).toBeVisible();
 });
@@ -208,12 +210,14 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await expect(page.getByText(originalBreakfast)).toBeVisible();
   await page.getByTestId('plan-ai-open').click();
   await expect(page.getByTestId('plan-ai-mode-adjust')).toBeVisible();
+  await expect(page.getByTestId('plan-ai-model-preview')).toContainText(/Modelo previsto/i);
   await page.getByTestId('plan-ai-mode-adjust').click();
   await page.getByTestId('plan-ai-target-el').click();
   await page.getByTestId('plan-ai-instruction').fill('Menos pescado en la noche y cambia el desayuno del lunes.');
   await page.getByTestId('plan-ai-submit').click();
 
   await expect(page.getByText(/Plan actualizado con IA/i)).toBeVisible();
+  await expect(page.getByText(/Modelo usado:/i)).toBeVisible();
   await page.getByRole('button', { name: /Aceptar/i }).click();
   await expect(page.getByText(updatedBreakfast)).toBeVisible();
   await expect(page.getByText(originalBreakfast)).toHaveCount(0);
@@ -234,6 +238,7 @@ test('AI regenerate tolerates patch-shaped responses and still refreshes the vis
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
+        modelUsed: 'gemini-3.1-pro-preview',
         responseMode: 'regenerate',
         elData: {
           summary: ['Se regenero el desayuno del lunes.'],
@@ -285,6 +290,7 @@ test('AI regenerate tolerates patch-shaped responses and still refreshes the vis
   await page.getByTestId('plan-ai-submit').click();
 
   await expect(page.getByText(/Plan recreado/i)).toBeVisible();
+  await expect(page.getByText(/Modelo usado:/i)).toBeVisible();
   await page.getByRole('button', { name: /Aceptar/i }).click();
   await expect(page.getByText(updatedBreakfast)).toBeVisible();
 });

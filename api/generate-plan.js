@@ -1,4 +1,12 @@
 import { applyCorsHeaders, enforceRateLimit } from './_requestGuard.js';
+import {
+  DEFAULT_GEMINI_MODEL,
+  getGeminiFallbackModels,
+  getOrderedGeminiModels,
+  isSupportedGeminiTextModel,
+  modelSupportsGenerateContent,
+  normalizeModelName,
+} from './_geminiModels.js';
 
 const ALLOWED_ICONS = [
   'Apple',
@@ -63,44 +71,6 @@ const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
 const AI_GENERIC_ERROR_MESSAGE =
   'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const MAX_MODEL_CANDIDATES = 6;
-const TEXT_GENERATION_MODEL_PATTERNS = [
-  /^gemini-2\.5-flash$/i,
-  /^gemini-3-flash-preview$/i,
-  /^gemini-2\.5-flash-lite$/i,
-  /^gemini-3\.1-flash-lite-preview$/i,
-  /^gemini-2\.5-pro$/i,
-  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-flash-latest$/i,
-  /^gemini-flash-lite-latest$/i,
-  /^gemini-pro-latest$/i,
-];
-const PRIMARY_MODEL_PRIORITY_MATCHERS = [
-  /^gemini-2\.5-flash$/i,
-  /^gemini-3-flash-preview$/i,
-  /^gemini-2\.5-flash-lite$/i,
-  /^gemini-3\.1-flash-lite-preview$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-flash-latest$/i,
-  /^gemini-flash-lite-latest$/i,
-  /^gemini-2\.5-pro$/i,
-  /^gemini-3\.1-pro-preview(?:-customtools)?$/i,
-  /^gemini-pro-latest$/i,
-];
-const AUTO_FALLBACK_PRIORITY_MATCHERS = [
-  /^gemini-2\.5-flash$/i,
-  /^gemini-3-flash-preview$/i,
-  /^gemini-2\.5-flash-lite$/i,
-  /^gemini-3\.1-flash-lite-preview$/i,
-  /^gemini-2\.0-flash(?:-001)?$/i,
-  /^gemini-2\.0-flash-lite(?:-001)?$/i,
-  /^gemini-flash-latest$/i,
-  /^gemini-flash-lite-latest$/i,
-];
 
 function createDebugLogId(flow) {
   return `${flow}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -260,10 +230,7 @@ function getMaxOutputTokens(modelName, requestMode) {
 }
 
 function getThinkingConfig(modelName) {
-  const normalized = normalizeModelName(modelName).toLowerCase();
-  if (normalized.startsWith('gemini-2.5-')) {
-    return { thinkingBudget: 0 };
-  }
+  void modelName;
   return undefined;
 }
 
@@ -1589,79 +1556,12 @@ function sanitizeAiJson(text) {
   return cleaned.slice(firstBrace, lastBrace + 1);
 }
 
-function normalizeModelName(modelName) {
-  if (!modelName) return '';
-  return modelName.replace(/^models\//, '').trim();
-}
-
-function modelSupportsGenerateContent(model) {
-  return (model?.supportedGenerationMethods || []).includes('generateContent');
-}
-
-function isTextGenerationModel(modelName) {
-  const normalized = normalizeModelName(modelName).toLowerCase();
-  return TEXT_GENERATION_MODEL_PATTERNS.some((pattern) => pattern.test(normalized));
-}
-
-function getModelFamilyKey(modelName) {
-  return normalizeModelName(modelName)
-    .toLowerCase()
-    .replace(/-001$/i, '')
-    .replace(/-customtools$/i, '');
-}
-
-function getUniqueModelNames(modelNames, preferredModelRaw) {
-  const preferredModel = normalizeModelName(preferredModelRaw);
-  const rawUniqueNames = [...new Set(modelNames.map((name) => normalizeModelName(name)).filter(Boolean))];
-  const sourceNames = preferredModel ? [preferredModel, ...rawUniqueNames] : rawUniqueNames;
-  const seenFamilies = new Set();
-  const uniqueNames = [];
-
-  sourceNames.forEach((name) => {
-    if (!rawUniqueNames.includes(name)) {
-      return;
-    }
-
-    const familyKey = getModelFamilyKey(name);
-    if (seenFamilies.has(familyKey)) {
-      return;
-    }
-
-    seenFamilies.add(familyKey);
-    uniqueNames.push(name);
-  });
-
-  return uniqueNames;
-}
-
-function orderModelNamesByPriority(modelNames, priorityMatchers, preferredModelRaw) {
-  const preferredModel = normalizeModelName(preferredModelRaw);
-  const remaining = getUniqueModelNames(modelNames, preferredModelRaw);
-  const ordered = [];
-
-  if (preferredModel && remaining.includes(preferredModel)) {
-    ordered.push(preferredModel);
-  }
-
-  priorityMatchers.forEach((matcher) => {
-    const match = remaining.find((name) => matcher.test(name) && !ordered.includes(name));
-    if (match) {
-      ordered.push(match);
-    }
-  });
-
-  remaining.forEach((name) => {
-    if (!ordered.includes(name)) {
-      ordered.push(name);
-    }
-  });
-
-  return ordered;
-}
-
 async function listAvailableModels(apiKey, debugContext) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-  const response = await fetch(url);
+  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+    headers: {
+      'x-goog-api-key': apiKey,
+    },
+  });
   const responseText = await response.text();
   const parsedBody = safeParseJson(responseText);
 
@@ -1739,7 +1639,7 @@ async function listAvailableModels(apiKey, debugContext) {
   }
 
   return (parsedBody?.models || []).filter(
-    (model) => modelSupportsGenerateContent(model) && isTextGenerationModel(model?.name)
+    (model) => modelSupportsGenerateContent(model) && isSupportedGeminiTextModel(model?.name)
   );
 }
 
@@ -1749,18 +1649,12 @@ function pickBestModel(models, preferredModelRaw) {
   }
 
   const modelNames = models.map((model) => normalizeModelName(model.name));
-  return orderModelNamesByPriority(
-    modelNames,
-    PRIMARY_MODEL_PRIORITY_MATCHERS,
-    preferredModelRaw
-  )[0];
+  return getOrderedGeminiModels(modelNames, preferredModelRaw)[0];
 }
 
 function getFallbackModels(models, primaryModel) {
   const modelNames = models.map((model) => normalizeModelName(model.name));
-  return orderModelNamesByPriority(modelNames, AUTO_FALLBACK_PRIORITY_MATCHERS, primaryModel)
-    .filter((name) => name && name !== primaryModel)
-    .slice(0, Math.max(MAX_MODEL_CANDIDATES - 1, 0));
+  return getGeminiFallbackModels(modelNames, primaryModel);
 }
 
 function shouldRetryStatusCode(statusCode) {
@@ -1901,10 +1795,13 @@ async function generateWithGemini(
     },
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
     body: JSON.stringify(body),
   });
 
@@ -2130,18 +2027,16 @@ export default async function handler(req, res) {
       return res.status(pdfValidation.status).json({ error: pdfValidation.error });
     }
 
-    const customApiKey =
-      typeof payload.customApiKey === 'string' ? payload.customApiKey.trim() : '';
-    const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
     const preferredModel =
-      payload.preferredModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+      normalizeModelName(payload.preferredModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) ||
+      DEFAULT_GEMINI_MODEL;
     const requestMode = isPlanRevisionRequest(payload) ? payload.requestMode : 'generate';
     const flow = isPlanRevisionRequest(payload) ? 'plan-revision' : 'questionnaire-submit';
 
     if (!apiKey) {
       return res.status(500).json({
-        error:
-          'Falta configurar tu GEMINI API KEY. Ve al panel de Administracion y configúrala.',
+        error: 'Falta configurar GEMINI_API_KEY en el entorno del servidor.',
       });
     }
 
@@ -2160,7 +2055,7 @@ export default async function handler(req, res) {
       targetProfile: target,
       requestMode,
       requestedModel: preferredModel,
-      apiKeySource: customApiKey ? 'custom-server' : 'server-env',
+      apiKeySource: 'server-env',
     };
 
     const models = await listAvailableModels(apiKey, debugBase);
@@ -2280,3 +2175,4 @@ export default async function handler(req, res) {
     });
   }
 }
+

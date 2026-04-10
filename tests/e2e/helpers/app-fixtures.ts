@@ -39,6 +39,7 @@ export function buildAdjustPlanResponse(
   const profileKey = profileId === 'el' ? 'elData' : 'ellaData';
 
   return {
+    modelUsed: 'gemini-3.1-pro-preview',
     responseMode: 'adjust',
     [profileKey]: {
       summary: ['Se ajusto el plan segun tu instruccion.'],
@@ -60,14 +61,14 @@ export async function resetAppStorage(page: Page) {
 
 export function getGeneratedPlanResponse(targetProfile: 'el' | 'ella' | 'ambos' = 'ambos') {
   if (targetProfile === 'el') {
-    return { elData: elFixture };
+    return { elData: elFixture, modelUsed: 'gemini-3.1-pro-preview' };
   }
 
   if (targetProfile === 'ella') {
-    return { ellaData: ellaFixture };
+    return { ellaData: ellaFixture, modelUsed: 'gemini-3.1-pro-preview' };
   }
 
-  return { elData: elFixture, ellaData: ellaFixture };
+  return { elData: elFixture, ellaData: ellaFixture, modelUsed: 'gemini-3.1-pro-preview' };
 }
 
 function buildSelectionSeed(days: string[]) {
@@ -154,8 +155,26 @@ export async function mockGeminiStatusApi(page: Page) {
       body: JSON.stringify({
         ok: true,
         message: 'Gemini disponible para pruebas.',
-        selectedModel: 'gemini-2.5-flash',
-        availableModels: ['gemini-2.5-flash', 'gemini-2.0-flash'],
+        keySource: 'env',
+        envModel: 'gemini-3.1-pro-preview',
+        selectedModel: 'gemini-3.1-pro-preview',
+        availableModels: [
+          'gemini-3.1-pro-preview',
+          'gemini-3-flash-preview',
+          'gemini-2.5-pro',
+          'gemini-2.5-flash',
+        ],
+        orderedModels: [
+          'gemini-3.1-pro-preview',
+          'gemini-3-flash-preview',
+          'gemini-2.5-pro',
+          'gemini-2.5-flash',
+        ],
+        fallbackModels: [
+          'gemini-3-flash-preview',
+          'gemini-2.5-pro',
+          'gemini-2.5-flash',
+        ],
         generationChecked: true,
       }),
     });
