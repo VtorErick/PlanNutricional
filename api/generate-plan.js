@@ -69,6 +69,36 @@ const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024
 const AI_GENERIC_ERROR_MESSAGE =
   'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
 
+const CLINICAL_PROTOCOLS = [
+  {
+    regex: /(diabetes|insulina|sop|poliquistico|azucar)/i,
+    rule: "PROTOCOLO CLÍNICO: Resistencia Insulina / SOP / Diabetes. 1) EXCLUYE carbohidratos simples. 2) Elige SOLO opciones con bajo índice glucémico. 3) NUNCA asignes una fruta sola en colación sin acompañarla de grasa (ej. nueces/almendras) o proteína."
+  },
+  {
+    regex: /(hipertension|presion)/i,
+    rule: "PROTOCOLO CLÍNICO: Hipertensión. Elige opciones del mealsCatalog con perfil e ingredientes bajos en sodio."
+  },
+  {
+    regex: /(hipotiroidismo|tiroides)/i,
+    rule: "PROTOCOLO CLÍNICO: Hipotiroidismo. Evita usar ingredientes bociógenos crudos (brócoli, col) y grandes cantidades de soya."
+  },
+  {
+    regex: /(gastritis|colitis|reflujo|acidez|ulcera)/i,
+    rule: "PROTOCOLO CLÍNICO: Gastritis / Colitis. EXCLUYE irritantes (chile, café, tomate crudo excesivo), cítricos en ayunas, vegetales flatulentos y demasiada grasa en las preparaciones."
+  }
+];
+
+function resolveClinicalProtocols(diagnosticsText) {
+  if (typeof diagnosticsText !== 'string' || !diagnosticsText.trim()) return '';
+  const activeProtocols = [];
+  for (const { regex, rule } of CLINICAL_PROTOCOLS) {
+    if (regex.test(diagnosticsText)) {
+      activeProtocols.push(rule);
+    }
+  }
+  return activeProtocols.length ? `\n\nREGLAS CLÍNICAS ACTIVAS ALTA PRIORIDAD:\n${activeProtocols.join('\n')}` : '';
+}
+
 function createDebugLogId(flow) {
   return `${flow}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -1598,7 +1628,7 @@ function buildUserPrompt(payload, prefix) {
       selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
       slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
-      noteToAI: "En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para que el usuario alcance su metaCaloricaKcalDia. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef.",
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para que el usuario alcance su metaCaloricaKcalDia. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef.${resolveClinicalProtocols(payload.diagnostics)}`,
     },
   });
 }
@@ -1672,7 +1702,7 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
       planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
       returnOnlyChangedSections: payload.requestMode === 'adjust',
       mealOptionsPerMoment: 3,
-      noteToAI: "En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para el usuario. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef.",
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para el usuario. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef.${resolveClinicalProtocols(payload.questionnaireContext?.diagnostics)}`,
     },
   });
 }

@@ -13,3 +13,5 @@ pace.log
 lerna-debug.log
 test-*.js
 test-*.json
+.vercel
+.env*.local
