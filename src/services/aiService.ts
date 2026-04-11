@@ -725,6 +725,14 @@ function validateMealItemStructure(
     );
   }
 
+  // Accept idRef-based format from server (compact: {idRef, porciones, detalle})
+  // which will be rehydrated later by parseObjectToData/rehydratePlanRecord.
+  if (isNonEmptyString(item.idRef)) {
+    validateRequiredStringField(item, 'porciones', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredStringField(item, 'detalle', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+    return;
+  }
+
   validateRequiredStringField(item, 'nombre', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredStringField(item, 'porciones', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredStringField(item, 'detalle', location, debugContext, geminiRequest, geminiResponseBody, modelName);
@@ -860,6 +868,12 @@ function validateSupplementsStructure(
   }
 
   supplements.forEach((item: any, index: number) => {
+    // Accept string IDs from server (compact format: supplement ID strings)
+    // which will be rehydrated later by parseObjectToData.
+    if (typeof item === 'string') {
+      return;
+    }
+
     if (!item || typeof item !== 'object' || Array.isArray(item)) {
       throw createInvalidStructureError(
         debugContext,
