@@ -1381,19 +1381,22 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       let parsedEllaData: any;
       try {
         if (json.elData) {
-          parsedElData = validateAndNormalizeDirectAiData(
-            json.elData,
-            {
-              flow: payload?.requestMode ? 'plan-revision' : 'questionnaire-submit',
-              transport: 'serverless',
-              stage: 'response-parse',
-              targetProfile: payload.targetProfile,
-              profilePrefix: 'EL',
-              requestMode: payload?.requestMode || 'generate',
-              payload: payloadWithKey,
-            },
-            payloadWithKey,
-            json.elData,
+            parsedElData = validateAndNormalizeDirectAiData(
+              json.elData,
+              {
+                flow: (payload as any)?.requestMode ? 'plan-revision' : 'questionnaire-submit',
+                transport: 'serverless',
+                stage: 'response-parse',
+                targetProfile: payload.targetProfile,
+                profilePrefix: 'EL',
+                requestMode: (payload as any)?.requestMode || 'generate',
+                payload: payloadWithKey,
+                requestedModel: geminiModel,
+                selectedModel: json.modelUsed || geminiModel,
+                apiKeySource: 'server-env',
+              },
+              payloadWithKey,
+              json.elData,
             json.modelUsed || geminiModel
           );
         }
@@ -1401,13 +1404,16 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
           parsedEllaData = validateAndNormalizeDirectAiData(
             json.ellaData,
             {
-              flow: payload?.requestMode ? 'plan-revision' : 'questionnaire-submit',
+              flow: (payload as any)?.requestMode ? 'plan-revision' : 'questionnaire-submit',
               transport: 'serverless',
               stage: 'response-parse',
               targetProfile: payload.targetProfile,
               profilePrefix: 'ELLA',
-              requestMode: payload?.requestMode || 'generate',
+              requestMode: (payload as any)?.requestMode || 'generate',
               payload: payloadWithKey,
+              requestedModel: geminiModel,
+              selectedModel: json.modelUsed || geminiModel,
+              apiKeySource: 'server-env',
             },
             payloadWithKey,
             json.ellaData,
@@ -1600,6 +1606,9 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
             profilePrefix: perfilId === 'el' ? 'EL' : 'ELLA',
             requestMode: payload.requestMode,
             payload: payloadWithKey,
+            requestedModel: geminiModel,
+            selectedModel: json.modelUsed || geminiModel,
+            apiKeySource: 'server-env',
           },
           payloadWithKey,
           responseData,
