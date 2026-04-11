@@ -6,6 +6,7 @@ import { AccentColors, getAccentColors } from '../utils/theme';
 import { Heart } from 'lucide-react';
 import { parseObjectToData } from '../dataManager';
 import {
+  validateAndNormalizeDirectAiData,
   type PlanRevisionProfilePatch,
   type PlanRevisionRequest,
 } from '../services/aiService';
@@ -1379,8 +1380,40 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       let parsedElData: any;
       let parsedEllaData: any;
       try {
-        if (json.elData) parsedElData = parseObjectToData(json.elData, 'EL');
-        if (json.ellaData) parsedEllaData = parseObjectToData(json.ellaData, 'ELLA');
+        if (json.elData) {
+          parsedElData = validateAndNormalizeDirectAiData(
+            json.elData,
+            {
+              flow: payload?.requestMode ? 'plan-revision' : 'questionnaire-submit',
+              transport: 'serverless',
+              stage: 'response-parse',
+              targetProfile: payload.targetProfile,
+              profilePrefix: 'EL',
+              requestMode: payload?.requestMode || 'generate',
+              payload: payloadWithKey,
+            },
+            payloadWithKey,
+            json.elData,
+            json.modelUsed || geminiModel
+          );
+        }
+        if (json.ellaData) {
+          parsedEllaData = validateAndNormalizeDirectAiData(
+            json.ellaData,
+            {
+              flow: payload?.requestMode ? 'plan-revision' : 'questionnaire-submit',
+              transport: 'serverless',
+              stage: 'response-parse',
+              targetProfile: payload.targetProfile,
+              profilePrefix: 'ELLA',
+              requestMode: payload?.requestMode || 'generate',
+              payload: payloadWithKey,
+            },
+            payloadWithKey,
+            json.ellaData,
+            json.modelUsed || geminiModel
+          );
+        }
       } catch (parseErr: any) {
         throw createClientAiError(
           createClientAiDebugLog({
@@ -1557,9 +1590,20 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        const parsedBucket = parseObjectToData(
+        const parsedBucket = validateAndNormalizeDirectAiData(
           responseData,
-          perfilId === 'el' ? 'EL' : 'ELLA'
+          {
+            flow: 'plan-revision',
+            transport: 'serverless',
+            stage: 'response-parse',
+            targetProfile: payload.targetProfile,
+            profilePrefix: perfilId === 'el' ? 'EL' : 'ELLA',
+            requestMode: payload.requestMode,
+            payload: payloadWithKey,
+          },
+          payloadWithKey,
+          responseData,
+          json.modelUsed || geminiModel
         );
         const previousPlan = perfilesData[perfilId].plan;
         const nextPlan = perfilId === 'el' ? parsedBucket.planEL : parsedBucket.planELLA;

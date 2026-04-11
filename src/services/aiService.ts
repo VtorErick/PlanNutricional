@@ -1,5 +1,7 @@
 import type { MealItem, SupplementRecommendation } from '../types';
 import { parseObjectToData } from '../dataManager';
+import { equivalenciasEL } from '../data/perfil-el';
+import { equivalenciasELLA } from '../data/perfil-ella';
 import {
   AI_GENERIC_ERROR_MESSAGE,
   type AiDebugAttempt,
@@ -1321,7 +1323,7 @@ function validateLegacyPlanStructure(
   return normalizedPlan;
 }
 
-function validateAndNormalizeDirectAiData(
+export function validateAndNormalizeDirectAiData(
   data: unknown,
   debugContext: GeminiDebugContext,
   geminiRequest: unknown,
@@ -1478,6 +1480,10 @@ function validateAndNormalizeDirectAiData(
     geminiResponseBody,
     modelName
   );
+
+  if (!normalized[equivKey] || (Array.isArray(normalized[equivKey]) && normalized[equivKey].length === 0)) {
+    normalized[equivKey] = profilePrefix === 'EL' ? equivalenciasEL : equivalenciasELLA;
+  }
 
   validateEquivalenciasStructure(
     normalized[equivKey],

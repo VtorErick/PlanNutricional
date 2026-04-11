@@ -2,6 +2,8 @@ import { Profile, Equivalencia, MealItem } from './types';
 import { normalizeProfileSummary } from './utils/profileSummary';
 import { rehydratePlanRecord } from './data/mealsDB';
 import { supplementsDatabase } from './data/supplementsDB';
+import { equivalenciasEL } from './data/perfil-el';
+import { equivalenciasELLA } from './data/perfil-ella';
 
 type RawProfilePrefix = 'EL' | 'ELLA';
 
@@ -31,14 +33,18 @@ export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix)
   const planKey = `plan${expectedPrefix}`;
   const supplementsKey = `suplementos${expectedPrefix}`;
 
-  if (!parsed[perfilKey] || !parsed[equivKey] || !parsed[planKey]) {
+  if (!parsed[equivKey] || (Array.isArray(parsed[equivKey]) && parsed[equivKey].length === 0)) {
+    parsed[equivKey] = expectedPrefix === 'EL' ? equivalenciasEL : equivalenciasELLA;
+  }
+
+  if (!parsed[perfilKey] || !parsed[planKey]) {
     const wrongPrefix = expectedPrefix === 'EL' ? 'ELLA' : 'EL';
     if (parsed[`perfil${wrongPrefix}`]) {
       const expectedLabel = expectedPrefix === 'EL' ? 'El' : 'Ella';
       const wrongLabel = wrongPrefix === 'EL' ? 'El' : 'Ella';
       throw new Error(`Intentaste subir un archivo de ${wrongLabel} en la seccion de ${expectedLabel}. Sube el archivo correcto.`);
     }
-    throw new Error(`El archivo JSON no contiene las estructuras requeridas (${perfilKey}, ${equivKey}, ${planKey}).`);
+    throw new Error(`El archivo JSON no contiene las estructuras requeridas (${perfilKey}, ${planKey}).`);
   }
 
   const perfil = parsed[perfilKey];
