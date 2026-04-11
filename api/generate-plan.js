@@ -387,8 +387,9 @@ function buildProfileSchema(partial = false) {
       },
       distribucionDiaria: buildDailyDistributionSchema(),
       resumenPersonal: {
-        type: 'string',
-        description: 'Breve resumen final de por qué se generó este plan.'
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Arreglo con breves frases de resumen y justificación del plan.'
       },
     },
   };
