@@ -72,13 +72,84 @@ export default function App() {
     setIsDarkMode,
   } = useDiet();
 
-  // 🔹 GARANTIZAR QUE 'PLAN' SEA LA VISTA POR DEFECTO
+  // 🔹 ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS (React rules of hooks)
   useEffect(() => {
     if (!activeTab && activeProfile) {
       setActiveTab('plan');
     }
   }, [activeTab, activeProfile, setActiveTab]);
 
+  const staticColors = useMemo(() => {
+    switch (activeProfile) {
+      case 'el':
+        return {
+          text: 'text-blue-600',
+          textDark: 'text-blue-800',
+          bgGradientLight: 'from-blue-50 to-cyan-50',
+          borderLight: 'border-blue-100',
+        };
+      case 'ella':
+        return {
+          text: 'text-rose-600',
+          textDark: 'text-rose-800',
+          bgGradientLight: 'from-rose-50 to-pink-50',
+          borderLight: 'border-rose-100',
+        };
+      case 'ambos':
+        return {
+          text: 'text-indigo-600',
+          textDark: 'text-indigo-800',
+          bgGradientLight: 'from-indigo-50 to-purple-50',
+          borderLight: 'border-indigo-100',
+        };
+      default:
+        return {
+          text: 'text-slate-600',
+          textDark: 'text-slate-800',
+          bgGradientLight: 'from-slate-50 to-slate-100',
+          borderLight: 'border-slate-100',
+        };
+    }
+  }, [activeProfile]);
+
+  const desktopTabBackdrop = useMemo(() => {
+    switch (activeTab) {
+      case 'plan':
+        return {
+          imageSrc: '/images/hero.png',
+          imagePosition: 'center 22%',
+          overlay: 'from-sky-200/45 via-white/40 to-transparent',
+        };
+      case 'equivalencias':
+        return {
+          imageSrc: '/images/hero.png',
+          imagePosition: 'center 18%',
+          overlay: 'from-emerald-200/40 via-white/35 to-transparent',
+        };
+      case 'suplementos':
+        return {
+          imageSrc: '/images/meal-prep.png',
+          imagePosition: 'center 24%',
+          overlay: 'from-fuchsia-200/35 via-white/35 to-transparent',
+        };
+      case 'compras':
+        return {
+          imageSrc: '/images/meal-prep.png',
+          imagePosition: 'center 26%',
+          overlay: 'from-emerald-200/40 via-white/35 to-transparent',
+        };
+      case 'resumen':
+        return {
+          imageSrc: '/images/hero.png',
+          imagePosition: 'center 18%',
+          overlay: 'from-violet-200/38 via-white/34 to-transparent',
+        };
+      default:
+        return null;
+    }
+  }, [activeTab]);
+
+  // ── EARLY RETURNS (after all hooks) ──────────────────────────────────
   if (isQuestionnaireOpen) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
@@ -171,39 +242,6 @@ export default function App() {
 
   const profile = baseProfile;
 
-  const staticColors = useMemo(() => {
-    switch (activeProfile) {
-      case 'el':
-        return {
-          text: 'text-blue-600',
-          textDark: 'text-blue-800',
-          bgGradientLight: 'from-blue-50 to-cyan-50',
-          borderLight: 'border-blue-100',
-        };
-      case 'ella':
-        return {
-          text: 'text-rose-600',
-          textDark: 'text-rose-800',
-          bgGradientLight: 'from-rose-50 to-pink-50',
-          borderLight: 'border-rose-100',
-        };
-      case 'ambos':
-        return {
-          text: 'text-indigo-600',
-          textDark: 'text-indigo-800',
-          bgGradientLight: 'from-indigo-50 to-purple-50',
-          borderLight: 'border-indigo-100',
-        };
-      default:
-        return {
-          text: 'text-slate-600',
-          textDark: 'text-slate-800',
-          bgGradientLight: 'from-slate-50 to-slate-100',
-          borderLight: 'border-slate-100',
-        };
-    }
-  }, [activeProfile]);
-
   // 🔹 ORDEN DE TABS: 'plan' es el primero (principal) por defecto
   const tabItems = [
     { key: 'plan' as const, label: 'Mi Plan', shortLabel: 'Plan', icon: Calendar },
@@ -222,43 +260,6 @@ export default function App() {
     compras: 'text-teal-500 dark:text-teal-300',
     resumen: 'text-violet-500 dark:text-violet-300',
   };
-
-  const desktopTabBackdrop = useMemo(() => {
-    switch (activeTab) {
-      case 'plan':
-        return {
-          imageSrc: '/images/hero.png',
-          imagePosition: 'center 22%',
-          overlay: 'from-sky-200/45 via-white/40 to-transparent',
-        };
-      case 'equivalencias':
-        return {
-          imageSrc: '/images/hero.png',
-          imagePosition: 'center 18%',
-          overlay: 'from-emerald-200/40 via-white/35 to-transparent',
-        };
-      case 'suplementos':
-        return {
-          imageSrc: '/images/meal-prep.png',
-          imagePosition: 'center 24%',
-          overlay: 'from-fuchsia-200/35 via-white/35 to-transparent',
-        };
-      case 'compras':
-        return {
-          imageSrc: '/images/meal-prep.png',
-          imagePosition: 'center 26%',
-          overlay: 'from-emerald-200/40 via-white/35 to-transparent',
-        };
-      case 'resumen':
-        return {
-          imageSrc: '/images/hero.png',
-          imagePosition: 'center 18%',
-          overlay: 'from-violet-200/38 via-white/34 to-transparent',
-        };
-      default:
-        return null;
-    }
-  }, [activeTab]);
 
   return (
     <div
