@@ -435,11 +435,14 @@ function buildPlanSlotSchema() {
         items: {
           type: 'object',
           additionalProperties: false,
-          required: ['idRef', 'porciones', 'detalle'],
+          required: ['idRef', 'porciones', 'detalle', 'caloriasKcal', 'proteinaG', 'grasasG'],
           properties: {
             idRef: { type: 'string', maxLength: 100 },
             porciones: { type: 'string', maxLength: 200 },
             detalle: { type: 'string', maxLength: 400 },
+            caloriasKcal: { type: 'integer' },
+            proteinaG: { type: 'integer' },
+            grasasG: { type: 'integer' },
           }
         }
       }
@@ -544,6 +547,74 @@ function isIntegerValue(value) {
   return typeof value === 'number' && Number.isInteger(value);
 }
 
+function normalizeNutritionToken(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function hasRecognizablePortions(value) {
+  if (!isNonEmptyString(value)) return false;
+  const knownTokens = new Set([
+    'fruta',
+    'frutas',
+    'frut',
+    'verdura',
+    'verduras',
+    'verd',
+    'cereal',
+    'cereales',
+    'cer',
+    'leguminosa',
+    'leguminosas',
+    'leg',
+    'lacteo',
+    'lacteos',
+    'lact',
+    'proteina',
+    'proteinas',
+    'prot',
+    'grasa',
+    'grasas',
+    'gras',
+  ]);
+
+  for (const match of normalizeNutritionToken(value).matchAll(/(?:(\d+(?:[.,]\d+)?)\s*([a-z_]+)|([a-z_]+)\s*(\d+(?:[.,]\d+)?))/g)) {
+    const token = (match[2] || match[3] || '').trim();
+    if (knownTokens.has(token)) return true;
+  }
+
+  return false;
+}
+
+function findCatalogMealByIdRef(idRef, payload) {
+  if (!isNonEmptyString(idRef)) return null;
+  const [baseId] = idRef.split('|MOD:');
+  const base = baseId.trim();
+  return (payload?.mealsCatalog || []).find((item) => item?.id === base) || null;
+}
+
+function shouldReplaceMealDetail(detail, mealName, ingredients) {
+  if (!isNonEmptyString(detail)) return true;
+  const stopwords = new Set(['a', 'al', 'con', 'de', 'del', 'el', 'en', 'la', 'las', 'los', 'para', 'por', 'sin', 'un', 'una', 'y']);
+  const allowed = new Set(
+    [mealName, ...(ingredients || [])]
+      .flatMap((entry) =>
+        normalizeNutritionToken(entry)
+          .split(/[^a-z0-9]+/g)
+          .filter((token) => token.length >= 3 && !stopwords.has(token))
+      )
+  );
+  const detailTokens = normalizeNutritionToken(detail)
+    .split(/[^a-z0-9]+/g)
+    .filter((token) => token.length >= 3 && !stopwords.has(token));
+  const overlap = detailTokens.reduce((acc, token) => acc + (allowed.has(token) ? 1 : 0), 0);
+  const minimumOverlap = Array.isArray(ingredients) && ingredients.length >= 4 ? 2 : 1;
+  return overlap < minimumOverlap;
+}
+
 function getExpectedProfileId(prefix) {
   return prefix === 'EL' ? 'el' : 'ella';
 }
@@ -638,6 +709,9 @@ function validateMealItemStructure(item, location, debugContext, geminiRequest, 
   validateRequiredStringField(item, 'nombre', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredStringField(item, 'porciones', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredStringField(item, 'detalle', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(item, 'caloriasKcal', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(item, 'proteinaG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(item, 'grasasG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
 
   if (!Array.isArray(item.tags)) {
     throw createInvalidStructureError(
@@ -676,6 +750,51 @@ function validateMealOptionsArray(options, location, debugContext, geminiRequest
       throw createInvalidStructureError(
         debugContext,
         `Respuesta de IA incompleta: ${location}[${index}] no tiene idRef valido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    validateRequiredStringField(meal, 'porciones', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredStringField(meal, 'detalle', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(meal, 'caloriasKcal', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(meal, 'proteinaG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(meal, 'grasasG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+
+    const catalogMeal = findCatalogMealByIdRef(meal.idRef, debugContext.payload);
+    if (!catalogMeal) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}].idRef no existe en el catalogo permitido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (
+      hasRecognizablePortions(meal.porciones) &&
+      Number(meal.caloriasKcal) <= 0 &&
+      Number(meal.proteinaG) <= 0 &&
+      Number(meal.grasasG) <= 0
+    ) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}] devolvio macros placeholder en cero.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (
+      !String(meal.idRef).includes('|MOD:') &&
+      shouldReplaceMealDetail(meal.detalle, catalogMeal.nombre, catalogMeal.super)
+    ) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}[${index}].detalle no coincide con la receta base indicada por idRef.`,
         geminiRequest,
         geminiResponseBody,
         modelName
@@ -1616,7 +1735,7 @@ Reglas criticas:
 - Ordena los slots primero por dia (${WEEK_DAYS.join(', ')}) y dentro de cada dia por momento (${MEAL_MOMENT_KEYS.join(', ')}).
 - Cada slot debe devolver exactamente 3 objetos en 'opciones'.
 - No anides momentos dentro de dias ni dias dentro de objetos complejos; usa solo el arreglo plano de slots.
-- Las calorias y macros deben ser enteros realistas y hacer MATCH PERFECTO matematicamente para cumplir la meta final.
+- Las calorias y macros deben ser enteros realistas y consistentes con las porciones; prioriza coherencia de receta y porciones sobre hacer calculos perfectos.
 - Los suplementos son opcionales. Debe ser UN ARREGLO DE STRINGS (IDs) validados de supplementsCatalog. Si no aportan valor, devuelve []. NUNCA inventes IDs.
 - No pongas suplementos dentro del plan ni como objetos.
 - No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
@@ -1634,7 +1753,7 @@ function buildUserPrompt(payload, prefix) {
       selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
       slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
-      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para que el usuario alcance su metaCaloricaKcalDia. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef.${resolveClinicalProtocols(payload.diagnostics)}`,
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: recalcula 'porciones' y 'detalle' con gramos realistas y coherentes con la receta base. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef.${resolveClinicalProtocols(payload.diagnostics)}`,
     },
   });
 }
@@ -1659,7 +1778,7 @@ Reglas criticas:
 - Usa exactamente los momentos ${MEAL_MOMENT_KEYS.join(', ')}.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener dia, momento y la clave 'opciones' que es un arreglo de 3 objetos hibridos.
-- Cada objeto dentro de 'opciones' debe tener su 'idRef' (valido del mealsCatalog) y recalcular porciones y detalle para match perfecto.
+- Cada objeto dentro de 'opciones' debe tener su 'idRef' (valido del mealsCatalog) y recalcular porciones y detalle de forma coherente con la receta base.
 - CRITICO: Respeta ESTRICTAMENTE: preferencias, estilo de comida, exclusions y restricciones. NUNCA metas algo que el usuario dijo excluir.
 - En caso de duda, prioriza la coherencia. No devuelvas summary ni profilePatch.`;
   }
@@ -1708,7 +1827,7 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
       planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
       returnOnlyChangedSections: payload.requestMode === 'adjust',
       mealOptionsPerMoment: 3,
-      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: debes de recalcular las claves 'porciones' y 'detalle' (gramos realistas) calculando la proporción IDEAL para el usuario. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef.${resolveClinicalProtocols(payload.questionnaireContext?.diagnostics)}`,
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. OBLIGATORIO: recalcula 'porciones' y 'detalle' con gramos realistas y coherentes con la receta base. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef.${resolveClinicalProtocols(payload.questionnaireContext?.diagnostics)}`,
     },
   });
 }

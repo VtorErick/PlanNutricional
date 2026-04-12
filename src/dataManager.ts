@@ -4,6 +4,9 @@ import { rehydratePlanRecord } from './data/mealsDB';
 import { supplementsDatabase } from './data/supplementsDB';
 import { equivalenciasEL } from './data/perfil-el';
 import { equivalenciasELLA } from './data/perfil-ella';
+import { defaultSupplements } from './data/defaultSupplements';
+import { hydrateSupplementFromReference } from './utils/nutritionValidation';
+import { repairTextArtifactsDeep } from './utils/text';
 
 type RawProfilePrefix = 'EL' | 'ELLA';
 
@@ -28,6 +31,7 @@ function normalizeDayName(day: string): string {
  * The validation is intentionally permissive for AI-generated payloads.
  */
 export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix): any {
+  parsed = repairTextArtifactsDeep(cloneSerializableData(parsed));
   const perfilKey = `perfil${expectedPrefix}`;
   const equivKey = `equivalencias${expectedPrefix}`;
   const planKey = `plan${expectedPrefix}`;
@@ -113,14 +117,17 @@ export function parseObjectToData(parsed: any, expectedPrefix: RawProfilePrefix)
   if (!Array.isArray(parsed[supplementsKey])) {
     parsed[supplementsKey] = [];
   } else {
-    // Rehydrate supplement IDs into full objects
-    parsed[supplementsKey] = parsed[supplementsKey].map((supOp: string | any) => {
-      if (typeof supOp === 'string') {
-        const found = supplementsDatabase.find(s => s.id === supOp);
-        return found ? { ...found } : { name: supOp, caution: 'Suplemento fuera de base', goalSupport: '', whyItMayHelp: '', howToUse: '', timing: '' };
-      }
-      return supOp;
-    });
+    const supplementCatalog = [
+      ...defaultSupplements.el.map((item, index) => ({ ...item, id: `default_el_${index}` })),
+      ...defaultSupplements.ella.map((item, index) => ({ ...item, id: `default_ella_${index}` })),
+      ...supplementsDatabase.map((item) => ({
+        ...item,
+        notes: 'Complemento opcional; validar tolerancia y contexto clinico antes de usarlo.',
+      })),
+    ];
+    parsed[supplementsKey] = parsed[supplementsKey]
+      .map((supOp: string | any) => hydrateSupplementFromReference(supOp, supplementCatalog))
+      .filter(Boolean);
   }
 
   parsed[planKey] = rehydratePlanRecord(parsed[planKey], expectedPrefix);

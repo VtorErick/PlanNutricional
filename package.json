@@ -8,6 +8,7 @@
     "dev:vercel": "npx vercel dev",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test:unit": "npx --yes tsx --test tests/unit/*.test.ts",
     "test:e2e": "npm run build && playwright test"
   },
   "dependencies": {

@@ -45,6 +45,7 @@ import {
   getPatchSummaryLines,
   hasPlanRevisionPatchChanges,
 } from '../utils/planAiUtils';
+import { repairBrokenText } from '../utils/text';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
 export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias' | 'suplementos';
@@ -128,7 +129,7 @@ function isEquivalencesLike(value: unknown): value is any[] {
 }
 
 function sanitizeStringValue(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback;
+  return repairBrokenText(typeof value === 'string' ? value : fallback);
 }
 
 function sanitizeNumberValue(value: unknown, fallback = 0): number {
@@ -137,7 +138,9 @@ function sanitizeNumberValue(value: unknown, fallback = 0): number {
 
 function sanitizeStringArray(value: unknown, fallback: string[] = []): string[] {
   if (!Array.isArray(value)) return [...fallback];
-  return value.filter((entry): entry is string => typeof entry === 'string');
+  return value
+    .filter((entry): entry is string => typeof entry === 'string')
+    .map((entry) => repairBrokenText(entry));
 }
 
 function normalizeSupplementsData(
@@ -1448,7 +1451,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         );
       }
 
-      setLastGeneratedData(json);
+      setLastGeneratedData({
+        elData: parsedElData || null,
+        ellaData: parsedEllaData || null,
+        modelUsed: json.modelUsed,
+      });
       setLastQuestionnaireContext(sanitizeQuestionnairePayloadForMemory(payload));
 
       setCustomData((prev: any) => {
@@ -1641,7 +1648,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         ...versionUpdates,
       }));
 
-      setLastGeneratedData(json);
+      setLastGeneratedData((prev: any) => ({
+        elData: updatedBuckets.el || prev?.elData || null,
+        ellaData: updatedBuckets.ella || prev?.ellaData || null,
+        modelUsed: json.modelUsed,
+      }));
       setPlanRevisionErrorLog(null);
 
       const modelUsedLabel = formatModelUsedLabel(json?.modelUsed);

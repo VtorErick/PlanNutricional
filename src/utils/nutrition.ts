@@ -1,4 +1,5 @@
 import type { MealItem, Profile } from '../types';
+import { hasRecognizablePortions, shouldTreatMacroAsMissing } from './nutritionValidation';
 
 const EXCHANGE_VALUES: Record<string, { kcal: number; protein: number; fat: number }> = {
   frutas: { kcal: 60, protein: 0.5, fat: 0 },
@@ -13,18 +14,25 @@ const EXCHANGE_VALUES: Record<string, { kcal: number; protein: number; fat: numb
 const PORTION_KEY_ALIASES: Record<string, string> = {
   fruta: 'frutas',
   frutas: 'frutas',
+  frut: 'frutas',
   verdura: 'verduras',
   verduras: 'verduras',
+  verd: 'verduras',
   cereal: 'cereales',
   cereales: 'cereales',
+  cer: 'cereales',
   leguminosa: 'leguminosas',
   leguminosas: 'leguminosas',
+  leg: 'leguminosas',
   lacteo: 'lacteos',
   lacteos: 'lacteos',
+  lact: 'lacteos',
   proteina: 'proteina',
   proteinas: 'proteina',
+  prot: 'proteina',
   grasas: 'grasas',
   grasa: 'grasas',
+  gras: 'grasas',
 };
 
 function normalizePortionKeyToken(value: string) {
@@ -42,21 +50,17 @@ export function estimateMealNutritionFromPortions(
     return { caloriasKcal: 35, proteinaG: 1, grasasG: 0 };
   }
 
-  const entries = portionsText
-    .split('|')
-    .map((chunk) => chunk.trim())
-    .filter(Boolean);
-
   let kcal = 0;
   let protein = 0;
   let fat = 0;
 
-  for (const entry of entries) {
-    const match = entry.match(/([\p{L}]+)\s*(\d+)/u);
-    if (!match) continue;
+  for (const match of portionsText.matchAll(/(?:(\d+(?:[.,]\d+)?)\s*([\p{L}_]+)|([\p{L}_]+)\s*(\d+(?:[.,]\d+)?))/gu)) {
+    const rawAmount = match[1] || match[4];
+    const rawKey = match[2] || match[3];
+    if (!rawAmount || !rawKey) continue;
 
-    const key = PORTION_KEY_ALIASES[normalizePortionKeyToken(match[1])];
-    const amount = Number(match[2]);
+    const key = PORTION_KEY_ALIASES[normalizePortionKeyToken(rawKey)];
+    const amount = Number(String(rawAmount).replace(',', '.'));
     if (!key || Number.isNaN(amount)) continue;
 
     const exchange = EXCHANGE_VALUES[key];
@@ -73,32 +77,32 @@ export function estimateMealNutritionFromPortions(
 }
 
 export function ensureMealNutrition(meal: MealItem): MealItem {
-  if (
+  const estimated = estimateMealNutritionFromPortions(meal.porciones);
+  const hasValidCalories =
     typeof meal.caloriasKcal === 'number' &&
     Number.isFinite(meal.caloriasKcal) &&
-    meal.caloriasKcal > 0
-  ) {
-    return {
-      ...meal,
-      proteinaG:
-        typeof meal.proteinaG === 'number' && Number.isFinite(meal.proteinaG)
-          ? Math.round(meal.proteinaG)
-          : meal.proteinaG,
-      grasasG:
-        typeof meal.grasasG === 'number' && Number.isFinite(meal.grasasG)
-          ? Math.round(meal.grasasG)
-          : meal.grasasG,
-      caloriasKcal: Math.round(meal.caloriasKcal),
-    };
-  }
+    meal.caloriasKcal > 0;
+  const canEstimateFromPortions = hasRecognizablePortions(meal.porciones);
 
-  const estimated = estimateMealNutritionFromPortions(meal.porciones);
+  const currentCalories = hasValidCalories ? Math.round(meal.caloriasKcal as number) : estimated.caloriasKcal;
+  const currentProtein =
+    canEstimateFromPortions && shouldTreatMacroAsMissing(meal.proteinaG, estimated.proteinaG)
+      ? estimated.proteinaG
+      : typeof meal.proteinaG === 'number' && Number.isFinite(meal.proteinaG)
+        ? Math.round(meal.proteinaG)
+        : estimated.proteinaG;
+  const currentFat =
+    canEstimateFromPortions && shouldTreatMacroAsMissing(meal.grasasG, estimated.grasasG)
+      ? estimated.grasasG
+      : typeof meal.grasasG === 'number' && Number.isFinite(meal.grasasG)
+        ? Math.round(meal.grasasG)
+        : estimated.grasasG;
+
   return {
     ...meal,
-    caloriasKcal: estimated.caloriasKcal,
-    proteinaG:
-      typeof meal.proteinaG === 'number' ? Math.round(meal.proteinaG) : estimated.proteinaG,
-    grasasG: typeof meal.grasasG === 'number' ? Math.round(meal.grasasG) : estimated.grasasG,
+    caloriasKcal: currentCalories,
+    proteinaG: currentProtein,
+    grasasG: currentFat,
   };
 }
 

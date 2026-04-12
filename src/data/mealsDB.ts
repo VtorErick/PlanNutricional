@@ -1,4 +1,7 @@
 import type { MealItem } from '../types';
+import { ensureMealNutrition, enrichPlanWithNutrition } from '../utils/nutrition';
+import { buildCanonicalMealDetail, shouldReplaceMealDetail } from '../utils/nutritionValidation';
+import { repairBrokenText } from '../utils/text';
 
 export interface CatalogMealItem {
   id: string;
@@ -240,12 +243,18 @@ export function rehydratePlanRecord(plan: Record<string, Record<string, any[]>>,
             const { baseId, modifier } = parseModifiedId(op.idRef);
             const found = mealsDatabase.find(m => m.id === baseId);
             if (found) {
+              const repairedName = repairBrokenText(found.nombre);
+              const repairedTags = found.tags.map((tag) => repairBrokenText(tag));
+              const repairedSuper = found.super.map((ingredient) => repairBrokenText(ingredient));
+              const repairedDetail = repairBrokenText(typeof op.detalle === 'string' ? op.detalle : '');
               const baseMeal: MealItem = {
-                nombre: found.nombre,
-                tags: found.tags,
-                super: found.super,
-                porciones: op.porciones,
-                detalle: op.detalle,
+                nombre: repairedName,
+                tags: repairedTags,
+                super: repairedSuper,
+                porciones: repairBrokenText(String(op.porciones || '')),
+                detalle: shouldReplaceMealDetail(repairedDetail, repairedName, repairedSuper)
+                  ? buildCanonicalMealDetail(repairedName, repairedSuper)
+                  : repairedDetail,
                 caloriasKcal: Number(op.caloriasKcal) || 0,
                 proteinaG: Number(op.proteinaG) || 0,
                 grasasG: Number(op.grasasG) || 0
@@ -255,22 +264,30 @@ export function rehydratePlanRecord(plan: Record<string, Record<string, any[]>>,
                 baseMeal.notaPersonalizada = `Adaptación de IA: ${modifier}`;
               }
 
-              return baseMeal;
+              return ensureMealNutrition(baseMeal);
             }
           } else if (typeof op === 'string') {
              // Fallback for legacy ID-only
              const { baseId, modifier } = parseModifiedId(op);
              const found = mealsDatabase.find(m => m.id === baseId);
              if (found) {
-               return { ...found, porciones: 'N/A', detalle: 'N/A' };
+               const repairedName = repairBrokenText(found.nombre);
+               const repairedSuper = found.super.map((ingredient) => repairBrokenText(ingredient));
+               return ensureMealNutrition({
+                 nombre: repairedName,
+                 tags: found.tags.map((tag) => repairBrokenText(tag)),
+                 super: repairedSuper,
+                 porciones: 'N/A',
+                 detalle: buildCanonicalMealDetail(repairedName, repairedSuper),
+               });
              }
           }
-          return op;
+          return ensureMealNutrition(op);
         });
       } else {
         hydrated[dia][momento] = opciones;
       }
     }
   }
-  return hydrated;
+  return enrichPlanWithNutrition(hydrated);
 }

@@ -3,6 +3,11 @@ import { parseObjectToData } from '../dataManager';
 import { equivalenciasEL } from '../data/perfil-el';
 import { equivalenciasELLA } from '../data/perfil-ella';
 import {
+  findCatalogMealByIdRef,
+  hasRecognizablePortions,
+  shouldReplaceMealDetail,
+} from '../utils/nutritionValidation';
+import {
   AI_GENERIC_ERROR_MESSAGE,
   type AiDebugAttempt,
   type AiDebugLog,
@@ -728,8 +733,49 @@ function validateMealItemStructure(
   // Accept idRef-based format from server (compact: {idRef, porciones, detalle})
   // which will be rehydrated later by parseObjectToData/rehydratePlanRecord.
   if (isNonEmptyString(item.idRef)) {
+    const catalogMeal = findCatalogMealByIdRef(item.idRef);
+    if (!catalogMeal) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}.idRef no existe en el catalogo permitido.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
     validateRequiredStringField(item, 'porciones', location, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredStringField(item, 'detalle', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(item, 'caloriasKcal', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(item, 'proteinaG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(item, 'grasasG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+
+    if (
+      hasRecognizablePortions(item.porciones) &&
+      Number(item.caloriasKcal) <= 0 &&
+      Number(item.proteinaG) <= 0 &&
+      Number(item.grasasG) <= 0
+    ) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location} devolvio macros placeholder en cero.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
+
+    if (
+      !String(item.idRef).includes('|MOD:') &&
+      shouldReplaceMealDetail(item.detalle, catalogMeal.nombre, catalogMeal.super)
+    ) {
+      throw createInvalidStructureError(
+        debugContext,
+        `Respuesta de IA incompleta: ${location}.detalle no coincide con la receta base indicada por idRef.`,
+        geminiRequest,
+        geminiResponseBody,
+        modelName
+      );
+    }
     return;
   }
 
@@ -1563,19 +1609,11 @@ function buildMealItemSchema() {
   return {
     type: 'object',
     additionalProperties: false,
-    required: MEAL_ITEM_REQUIRED_KEYS,
+    required: ['idRef', 'porciones', 'detalle', 'caloriasKcal', 'proteinaG', 'grasasG'],
     properties: {
-      nombre: { type: 'string' },
+      idRef: { type: 'string' },
       porciones: { type: 'string' },
       detalle: { type: 'string' },
-      tags: {
-        type: 'array',
-        items: { type: 'string' },
-      },
-      super: {
-        type: 'array',
-        items: { type: 'string' },
-      },
       caloriasKcal: { type: 'integer' },
       proteinaG: { type: 'integer' },
       grasasG: { type: 'integer' },
