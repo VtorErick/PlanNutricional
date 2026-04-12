@@ -44,6 +44,8 @@ export default function DailyProgress() {
     ac: accentColors,
     isDarkMode,
   } = useDiet();
+  const dayScrollerRef = React.useRef<HTMLDivElement | null>(null);
+  const dayButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
 
   const totals = React.useMemo(() => {
     const sumForProfile = (profileId: 'el' | 'ella') => {
@@ -84,6 +86,28 @@ export default function DailyProgress() {
     return activeProfile === 'ella' ? getProfileTarget('ella') : getProfileTarget('el');
   }, [activeProfile, isCombinedProfile, profilesData]);
 
+  React.useEffect(() => {
+    const container = dayScrollerRef.current;
+    const activeButton = dayButtonRefs.current[activeDay];
+
+    if (!container || !activeButton) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    const isFullyVisible =
+      buttonRect.left >= containerRect.left && buttonRect.right <= containerRect.right;
+
+    if (isFullyVisible) return;
+
+    const nextScrollLeft =
+      activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;
+
+    container.scrollTo({
+      left: Math.max(0, nextScrollLeft),
+      behavior: 'smooth',
+    });
+  }, [activeDay]);
+
   return (
     <motion.div
       key={`progress-${activeProfile}`}
@@ -106,7 +130,10 @@ export default function DailyProgress() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 pt-3 pb-2">
         <div className="flex items-center gap-2">
-          <div className="flex-1 overflow-x-auto snap-x scrollbar-none">
+          <div
+            ref={dayScrollerRef}
+            className="flex-1 overflow-x-auto snap-x scrollbar-none"
+          >
             <div className="inline-flex gap-2 items-center min-w-max">
               {availableDays.map((day) => {
                 const active = activeDay === day;
@@ -114,6 +141,9 @@ export default function DailyProgress() {
                 return (
                   <button
                     key={day}
+                    ref={(element) => {
+                      dayButtonRefs.current[day] = element;
+                    }}
                     onClick={(event) => {
                       event.stopPropagation();
                       setActiveDay(day);
