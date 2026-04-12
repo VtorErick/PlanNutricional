@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo } from 'react';
+import { Suspense, lazy, useMemo, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -71,6 +71,13 @@ export default function App() {
     isDarkMode,
     setIsDarkMode,
   } = useDiet();
+
+  // 🔹 GARANTIZAR QUE 'PLAN' SEA LA VISTA POR DEFECTO
+  useEffect(() => {
+    if (!activeTab && activeProfile) {
+      setActiveTab('plan');
+    }
+  }, [activeTab, activeProfile, setActiveTab]);
 
   if (isQuestionnaireOpen) {
     return (
@@ -197,6 +204,7 @@ export default function App() {
     }
   }, [activeProfile]);
 
+  // 🔹 ORDEN DE TABS: 'plan' es el primero (principal) por defecto
   const tabItems = [
     { key: 'plan' as const, label: 'Mi Plan', shortLabel: 'Plan', icon: Calendar },
     { key: 'equivalencias' as const, label: 'Equivalencias', shortLabel: 'Extras', icon: BookOpen },
@@ -291,11 +299,10 @@ export default function App() {
               <button
                 key={tabItem.key}
                 onClick={() => setActiveTab(tabItem.key)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-[14px] font-bold text-sm transition-all duration-300 active:scale-95 ${
-                  activeTab === tabItem.key
-                    ? `bg-white shadow-sm ${staticColors.text} dark:bg-slate-900`
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-700/60'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-[14px] font-bold text-sm transition-all duration-300 active:scale-95 ${activeTab === tabItem.key
+                  ? `bg-white shadow-sm ${staticColors.text} dark:bg-slate-900`
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-700/60'
+                  }`}
               >
                 <tabItem.icon className={`w-4 h-4 flex-shrink-0 ${tabIconColors[tabItem.key]}`} />
                 <span>{tabItem.label}</span>
@@ -305,10 +312,10 @@ export default function App() {
         </div>
 
         <div
-          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 px-2 bg-white/95 backdrop-blur-xl shadow-[0_-10px_30px_rgba(15,23,42,0.08)] dark:bg-slate-950/95"
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200 dark:bg-slate-950/95 dark:border-slate-800"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <div className="flex justify-around items-center max-w-md mx-auto pt-1.5 pb-1.5">
+          <div className="flex justify-around items-center max-w-md mx-auto pt-1.5 pb-1.5 px-2">
             {tabItems.map((tabItem) => {
               const active = activeTab === tabItem.key;
 
@@ -317,18 +324,16 @@ export default function App() {
                   key={tabItem.key}
                   onClick={() => setActiveTab(tabItem.key)}
                   data-testid={`mobile-tab-${tabItem.key}`}
-                  className={`relative flex flex-col items-center justify-center gap-1 w-[58px] py-1 transition-all duration-200 active:scale-95 ${
-                    active
-                      ? staticColors.text
-                      : 'text-slate-400 hover:text-slate-500 dark:text-slate-500 dark:hover:text-slate-300'
-                  }`}
+                  className={`relative flex flex-col items-center justify-center gap-1 w-[58px] py-1 transition-all duration-200 active:scale-95 ${active
+                    ? staticColors.text
+                    : 'text-slate-400 hover:text-slate-500 dark:text-slate-500 dark:hover:text-slate-300'
+                    }`}
                 >
                   <div
-                    className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300 ${
-                      active
-                        ? `bg-gradient-to-br ${staticColors.bgGradientLight} shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] dark:from-slate-800 dark:to-slate-700`
-                        : 'bg-transparent'
-                    }`}
+                    className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300 ${active
+                      ? `bg-gradient-to-br ${staticColors.bgGradientLight} shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] dark:from-slate-800 dark:to-slate-700`
+                      : 'bg-transparent'
+                      }`}
                   >
                     <tabItem.icon
                       className={`w-[18px] h-[18px] ${tabIconColors[tabItem.key]} ${active ? 'fill-current opacity-20 absolute' : ''}`}
@@ -339,11 +344,10 @@ export default function App() {
                     />
                   </div>
                   <span
-                    className={`text-[10px] tracking-wide ${
-                      active
-                        ? `font-extrabold ${staticColors.textDark} dark:text-slate-100`
-                        : 'font-medium dark:text-slate-400'
-                    }`}
+                    className={`text-[10px] tracking-wide ${active
+                      ? `font-extrabold ${staticColors.textDark} dark:text-slate-100`
+                      : 'font-medium dark:text-slate-400'
+                      }`}
                   >
                     {tabItem.shortLabel}
                   </span>
