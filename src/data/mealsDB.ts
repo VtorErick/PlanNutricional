@@ -170,32 +170,83 @@ export const mealsDatabase: CatalogMealItem[] = [
   { id: 'cen_35', momentos: ['cena'], nombre: 'Sándwich de crema de cacahuate y mermelada (PB&J)', tags: ['gringo', 'dulce', 'rápido', '<15 min', 'economico'], super: ['pan integral', 'crema cacahuate', 'mermelada light'] }
 ];
 
-export function getCompactMealsCatalog(db: CatalogMealItem[] = mealsDatabase): {id: string, tags: string[], momentos: string[]}[] {
+export function getCompactMealsCatalog(
+  db: CatalogMealItem[] = mealsDatabase
+): {id: string, nombre: string, tags: string[], super: string[], momentos: string[]}[] {
   return db.map(m => ({
     id: m.id,
+    nombre: m.nombre,
     tags: m.tags,
+    super: m.super.slice(0, 6),
     momentos: m.momentos,
   }));
 }
 
+function normalizeToken(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function splitQuestionnaireValues(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => splitQuestionnaireValues(entry));
+  }
+
+  if (typeof value !== 'string') return [];
+
+  return value
+    .split(/[,\n;]+/g)
+    .map((entry) => normalizeToken(entry))
+    .filter(Boolean);
+}
+
+function getQuestionnaireSignals(questionnaire: any) {
+  return {
+    diagnostics: splitQuestionnaireValues(questionnaire?.healthContext?.diagnostics ?? questionnaire?.diagnostics),
+    allergies: splitQuestionnaireValues(questionnaire?.healthContext?.allergies ?? questionnaire?.alergias),
+    intolerances: splitQuestionnaireValues(questionnaire?.healthContext?.intolerances ?? questionnaire?.intolerancias),
+    digestiveSymptoms: splitQuestionnaireValues(
+      questionnaire?.healthContext?.digestiveSymptoms ?? questionnaire?.digestiveSymptoms
+    ),
+    favoriteFoods: splitQuestionnaireValues(questionnaire?.preferences?.favoriteFoods ?? questionnaire?.favoriteFoods),
+    dislikedFoods: splitQuestionnaireValues(questionnaire?.preferences?.dislikedFoods ?? questionnaire?.dislikedFoods),
+    favoriteCuisineStyles: splitQuestionnaireValues(
+      questionnaire?.preferences?.favoriteCuisineStyles ?? questionnaire?.favoriteCuisineStyles
+    ),
+    cookingTime: normalizeToken(questionnaire?.preferences?.cookingTime ?? questionnaire?.cookingTime ?? ''),
+    objectives: splitQuestionnaireValues(questionnaire?.profileContext?.objectives ?? questionnaire?.objectives),
+  };
+}
+
 export function filterCatalogForQuestionnaire(db: CatalogMealItem[], questionnaire: any): CatalogMealItem[] {
   if (!questionnaire) return db;
-  
-  // Extract intolerances and allergies to lower case
+ 
+  const signals = getQuestionnaireSignals(questionnaire);
   const exclusions = [
-    ...(questionnaire.intolerancias || []),
-    ...(questionnaire.alergias || []),
-  ].map((str: string) => (typeof str === 'string' ? str.toLowerCase().trim() : ''));
+    ...signals.intolerances,
+    ...signals.allergies,
+    ...signals.dislikedFoods,
+  ];
 
   if (exclusions.length === 0) return db;
 
-  // Simple heuristic mapping
   const exclusionMap: Record<string, string[]> = {
     'lactosa': ['leche', 'queso', 'yogurt', 'panela', 'lácteos'],
+    'lacteos': ['leche', 'queso', 'yogurt', 'panela', 'lácteos'],
     'mariscos': ['camarón', 'pescado', 'atún', 'salmón'],
     'gluten': ['pan', 'tortilla de harina', 'avena', 'galleta', 'pasta'],
     'huevo': ['huevo', 'claras'],
     'nueces': ['nuez', 'almendras', 'cacahuate'],
+    'yogurt': ['yogurt', 'kefir'],
+    'queso': ['queso', 'panela', 'oaxaca', 'cottage', 'requesón', 'requeson', 'manchego'],
+    'queso manchego': ['manchego'],
+    'queso cottage': ['cottage'],
+    'brócoli': ['brocoli'],
+    'brocoli': ['brocoli'],
+    'coliflor': ['coliflor'],
   };
 
   const activeForbiddenWords = exclusions.reduce((acc, exc) => {
@@ -204,12 +255,99 @@ export function filterCatalogForQuestionnaire(db: CatalogMealItem[], questionnai
   }, [] as string[]);
 
   return db.filter(item => {
-    // If ANY of the super items matches ANY forbidden word, exclude it.
-    const hasForbidden = item.super.some((ing: string) => 
-      activeForbiddenWords.some(fw => ing.toLowerCase().includes(fw))
+    const haystack = [...item.super, item.nombre, ...item.tags].map((entry) => normalizeToken(entry));
+    const hasForbidden = haystack.some((entry) =>
+      activeForbiddenWords.some((fw) => entry.includes(normalizeToken(fw)))
     );
     return !hasForbidden;
   });
+}
+
+function scoreMealForQuestionnaire(item: CatalogMealItem, questionnaire: any) {
+  const signals = getQuestionnaireSignals(questionnaire);
+  const haystack = normalizeToken([item.nombre, ...item.tags, ...item.super].join(' '));
+  let score = 0;
+
+  const includesAny = (values: string[]) => values.some((value) => haystack.includes(value));
+
+  if (signals.favoriteCuisineStyles.length > 0 && includesAny(signals.favoriteCuisineStyles)) {
+    score += 5;
+  }
+
+  if (signals.favoriteFoods.length > 0) {
+    score += signals.favoriteFoods.reduce((acc, value) => acc + (haystack.includes(value) ? 2 : 0), 0);
+  }
+
+  if (signals.cookingTime) {
+    if (signals.cookingTime.includes('45') && item.tags.some((tag) => /\+30 min|15-30 min/i.test(tag))) score += 2;
+    if (signals.cookingTime.includes('15') && item.tags.some((tag) => /<15 min|15-30 min/i.test(tag))) score += 2;
+  }
+
+  if (signals.diagnostics.some((entry) => /(diabetes|insulina|sop|poliquist)/.test(entry))) {
+    if (includesAny(['alto-proteina', 'proteina', 'bajo-carb', 'fibra', 'omega3', 'anti-inflamatorio', 'aguacate'])) score += 4;
+    if (includesAny(['dulce', 'postre', 'alto-carb', 'carbohidrato-rapido', 'pan dulce', 'miel', 'mermelada'])) score -= 8;
+  }
+
+  if (signals.diagnostics.some((entry) => /(hipotiroid|tiroid)/.test(entry))) {
+    if (includesAny(['brocoli', 'coliflor', 'soya texturizada', 'germinado soya'])) score -= 4;
+    if (includesAny(['proteina', 'alto-proteina', 'cocido', 'parrilla'])) score += 1;
+  }
+
+  if (signals.digestiveSymptoms.some((entry) => /(estrenimiento|constip)/.test(entry))) {
+    if (includesAny(['fibra', 'verduras', 'avena', 'chia', 'psyllium', 'frijol', 'lenteja'])) score += 3;
+  }
+
+  if (signals.digestiveSymptoms.some((entry) => /(distension|reflujo|colitis|gastritis)/.test(entry))) {
+    if (includesAny(['chile', 'chipotle', 'salsa roja', 'salsa verde', 'grasa', 'frito', 'cremoso'])) score -= 5;
+    if (includesAny(['digestivo', 'suave', 'ligero', 'caldo', 'calabaza', 'pollo'])) score += 2;
+  }
+
+  if (signals.objectives.some((entry) => /(musculo|ganar)/.test(entry)) && includesAny(['proteina', 'alto-proteina'])) {
+    score += 3;
+  }
+
+  if (signals.objectives.some((entry) => /(perder|grasa|salud|control glucemico)/.test(entry)) && includesAny(['economico', '15-30 min', '<15 min', 'meal-prep'])) {
+    score += 1;
+  }
+
+  return score;
+}
+
+export function buildQuestionnaireMealsCatalog(
+  db: CatalogMealItem[],
+  questionnaire: any
+): {id: string, nombre: string, tags: string[], super: string[], momentos: string[]}[] {
+  const filtered = filterCatalogForQuestionnaire(db, questionnaire);
+  const source = filtered.length > 0 ? filtered : db;
+  const limitByMoment: Record<string, number> = {
+    desayuno: 12,
+    colacion_am: 10,
+    colacion_pm: 10,
+    comida: 12,
+    cena: 12,
+  };
+
+  const pickedIds = new Set<string>();
+  const result: CatalogMealItem[] = [];
+
+  Object.entries(limitByMoment).forEach(([momentKey, limit]) => {
+    const ranked = source
+      .filter((item) => item.momentos.includes(momentKey))
+      .map((item) => ({ item, score: scoreMealForQuestionnaire(item, questionnaire) }))
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.item.nombre.localeCompare(b.item.nombre, 'es');
+      });
+
+    ranked.forEach(({ item }) => {
+      if (pickedIds.has(item.id)) return;
+      if (result.filter((entry) => entry.momentos.includes(momentKey)).length >= limit) return;
+      pickedIds.add(item.id);
+      result.push(item);
+    });
+  });
+
+  return getCompactMealsCatalog(result.length > 0 ? result : source);
 }
 
 function parseModifiedId(rawId: string): { baseId: string, modifier: string | null } {

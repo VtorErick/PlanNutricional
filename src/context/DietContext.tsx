@@ -1259,14 +1259,15 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   }, [geminiModel]);
 
   const requestAiResponse = useCallback(async (payload: any) => {
-    const { getCompactMealsCatalog, filterCatalogForQuestionnaire, mealsDatabase } = await import('../data/mealsDB');
-    
-    const dbToUse = filterCatalogForQuestionnaire(mealsDatabase, payload.questionnaireContext || payload);
+    const { buildQuestionnaireMealsCatalog, mealsDatabase } = await import('../data/mealsDB');
+    const { buildQuestionnaireSupplementsCatalog } = await import('../data/supplementsDB');
+    const questionnaireContext = payload.questionnaireContext || payload;
 
     const payloadWithKey = {
       ...payload,
       preferredModel: geminiModel,
-      mealsCatalog: getCompactMealsCatalog(dbToUse),
+      mealsCatalog: buildQuestionnaireMealsCatalog(mealsDatabase, questionnaireContext),
+      supplementsCatalog: buildQuestionnaireSupplementsCatalog(questionnaireContext),
     };
     let json: any;
     try {

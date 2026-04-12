@@ -10,6 +10,15 @@ export interface SupplementCatalogItem {
 
 export const supplementsDatabase: SupplementCatalogItem[] = [
   {
+    id: 'sup_myo_inositol',
+    name: 'Myo-inositol + D-chiro inositol',
+    goalSupport: 'Apoyo metabólico y contexto de SOP / resistencia a la insulina',
+    whyItMayHelp: 'Puede ser útil como complemento dentro de una estrategia integral para SOP y control glucémico.',
+    howToUse: 'Seguir dosis y proporción del fabricante o indicación profesional.',
+    timing: 'Dividido en 1 a 2 tomas al día según el producto.',
+    caution: 'Revisar con profesional si ya existe tratamiento médico endocrino o antidiabético.',
+  },
+  {
     id: 'sup_whey',
     name: 'Proteína de Suero de Leche (Whey Protein)',
     goalSupport: 'Crecimiento muscular y alcance calórico',
@@ -107,6 +116,24 @@ export const supplementsDatabase: SupplementCatalogItem[] = [
     howToUse: '1000mg a 2000mg en forma líquida o cápsula.',
     timing: '30-45 minutos antes del ejercicio aeróbico.',
     caution: 'Efecto sinérgico limitable; requiere dieta estructurada y constancia.',
+  },
+  {
+    id: 'sup_psyllium',
+    name: 'Fibra soluble tipo psyllium',
+    goalSupport: 'Saciedad, tránsito intestinal y apoyo glucémico',
+    whyItMayHelp: 'Puede ayudar cuando hay estreñimiento, baja saciedad o dificultad para alcanzar la fibra diaria.',
+    howToUse: 'Iniciar con una porción pequeña mezclada en abundante agua y aumentar gradualmente.',
+    timing: 'Separado de medicamentos y siempre con hidratación suficiente.',
+    caution: 'No usar sin agua suficiente. Separar varias horas de medicamentos importantes.',
+  },
+  {
+    id: 'sup_vitamina_d',
+    name: 'Vitamina D3',
+    goalSupport: 'Cobertura micronutricional y salud metabólica general',
+    whyItMayHelp: 'Puede ser relevante si hay baja exposición solar o una indicación clínica específica.',
+    howToUse: 'Seguir dosis prescrita o recomendada por profesional según contexto.',
+    timing: 'Con una comida principal que incluya algo de grasa.',
+    caution: 'No suplementar dosis altas de forma crónica sin supervisión o estudios previos.',
   }
 ];
 
@@ -115,5 +142,118 @@ export function getCompactSupplementsCatalog(): {id: string, name: string, goalS
     id: sup.id,
     name: sup.name,
     goalSupport: sup.goalSupport
+  }));
+}
+
+function normalizeToken(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function splitQuestionnaireValues(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .flatMap((entry) => splitQuestionnaireValues(entry))
+      .filter(Boolean);
+  }
+
+  if (typeof value !== 'string') return [];
+
+  return value
+    .split(/[,\n;]+/g)
+    .map((entry) => normalizeToken(entry))
+    .filter(Boolean);
+}
+
+function getQuestionnaireContext(questionnaire: any) {
+  const diagnostics = splitQuestionnaireValues(
+    questionnaire?.healthContext?.diagnostics ?? questionnaire?.diagnostics
+  );
+  const digestiveSymptoms = splitQuestionnaireValues(
+    questionnaire?.healthContext?.digestiveSymptoms ?? questionnaire?.digestiveSymptoms
+  );
+  const objectives = splitQuestionnaireValues(
+    questionnaire?.profileContext?.objectives ?? questionnaire?.objectives
+  );
+  const intolerances = splitQuestionnaireValues(
+    questionnaire?.healthContext?.intolerances ?? questionnaire?.intolerances
+  );
+
+  return { diagnostics, digestiveSymptoms, objectives, intolerances };
+}
+
+function scoreSupplement(item: SupplementCatalogItem, questionnaire: any) {
+  const { diagnostics, digestiveSymptoms, objectives, intolerances } = getQuestionnaireContext(questionnaire);
+  const id = item.id;
+  let score = 0;
+
+  const hasAny = (source: string[], patterns: RegExp[]) =>
+    patterns.some((pattern) => source.some((entry) => pattern.test(entry)));
+
+  if (hasAny(diagnostics, [/(diabetes|insulina|sop|poliquist)/])) {
+    if (id === 'sup_myo_inositol') score += 9;
+    if (id === 'sup_psyllium') score += 7;
+    if (id === 'sup_omega3') score += 6;
+    if (id === 'sup_probioticos') score += 4;
+    if (id === 'sup_multivitamin' || id === 'sup_vitamina_d') score += 2;
+  }
+
+  if (hasAny(digestiveSymptoms, [/(estrenimiento|constip|distension|digest|colitis|reflujo)/])) {
+    if (id === 'sup_psyllium') score += 8;
+    if (id === 'sup_probioticos') score += 7;
+    if (id === 'sup_magnesio') score += 3;
+  }
+
+  if (hasAny(objectives, [/(musculo|ganar|masa|fuerza)/])) {
+    if (id === 'sup_creatina') score += 6;
+    if (id === 'sup_whey') score += 5;
+  }
+
+  if (hasAny(objectives, [/(perder|grasa|control glucemico|salud)/])) {
+    if (id === 'sup_omega3') score += 4;
+    if (id === 'sup_psyllium') score += 4;
+  }
+
+  if (intolerances.some((entry) => /(lactosa|lacteo)/.test(entry)) && id === 'sup_whey') {
+    score -= 3;
+  }
+
+  if (hasAny(diagnostics, [/(hipertension|presion|arritmia)/]) && id === 'sup_preworkout') {
+    score -= 8;
+  }
+
+  if (hasAny(diagnostics, [/(hipertiroid)/]) && id === 'sup_ashwagandha') {
+    score -= 8;
+  }
+
+  return score;
+}
+
+export function buildQuestionnaireSupplementsCatalog(
+  questionnaire: any,
+  limit = 6
+): { id: string; name: string; goalSupport: string; caution: string }[] {
+  const ranked = supplementsDatabase
+    .map((item) => ({
+      ...item,
+      _score: scoreSupplement(item, questionnaire),
+    }))
+    .sort((a, b) => {
+      if (b._score !== a._score) return b._score - a._score;
+      return a.name.localeCompare(b.name, 'es');
+    });
+
+  const shortlisted = ranked
+    .filter((item, index) => item._score > 0 || index < limit)
+    .slice(0, limit);
+
+  return shortlisted.map((item) => ({
+    id: item.id,
+    name: item.name,
+    goalSupport: item.goalSupport,
+    caution: item.caution,
   }));
 }

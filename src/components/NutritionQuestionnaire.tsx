@@ -189,7 +189,6 @@ type StepType =
   | 'assessment'
   | 'preferencias'
   | 'lifestyle'
-  | 'horarios'
   | 'portions'
   | 'cocina'
   | 'confirm';
@@ -208,7 +207,6 @@ function buildSteps(tp: TargetProfile): WizardStep[] {
     { type: 'assessment', profile: p },
     { type: 'preferencias', profile: p },
     { type: 'lifestyle', profile: p },
-    { type: 'horarios', profile: p },
   ];
 
   const steps: WizardStep[] = [{ type: 'who' }];
@@ -246,7 +244,6 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
   assessment: { label: 'Medidas', Icon: ScanLine },
   preferencias: { label: 'Preferencias', Icon: Heart },
   lifestyle: { label: 'Actividad', Icon: Activity },
-  horarios: { label: 'Horarios', Icon: Clock },
   portions: { label: 'Porciones', Icon: Settings2 },
   cocina: { label: 'Cocina', Icon: ChefHat },
   confirm: { label: 'Confirmar', Icon: Sparkles },
@@ -1199,10 +1196,10 @@ export default function NutritionQuestionnaire({
             💡 Esta sección es opcional. Puedes saltar si no aplica.
           </p>
 
-          <CardSection title="Condiciones médicas">
+          <CardSection title="Condiciones médicas" hint="Sugerencia: separa cada elemento por coma.">
             <textarea
               rows={2}
-              placeholder="Ej. Diabetes"
+              placeholder="Ej. Diabetes, hipotiroidismo, SOP"
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
               value={p.diagnostics}
               onChange={(e) => setPerson(profile, { diagnostics: e.target.value })}
@@ -1228,10 +1225,10 @@ export default function NutritionQuestionnaire({
             💡 Esta sección es opcional.
           </p>
 
-          <CardSection title="Medicamentos">
+          <CardSection title="Medicamentos" hint="Sugerencia: separa cada elemento por coma.">
             <textarea
               rows={2}
-              placeholder="Ej. Metformina"
+              placeholder="Ej. Metformina, semaglutida"
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
               value={p.medications}
               onChange={(e) => setPerson(profile, { medications: e.target.value })}
@@ -1246,9 +1243,9 @@ export default function NutritionQuestionnaire({
           </CardSection>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CardSection title="Alergias">
+            <CardSection title="Alergias" hint="Sugerencia: separa cada elemento por coma.">
               <input
-                placeholder="Ej. Lácteos"
+                placeholder="Ej. Lácteos, gluten, nueces"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
                 value={p.allergies}
                 onChange={(e) => setPerson(profile, { allergies: e.target.value })}
@@ -1262,9 +1259,9 @@ export default function NutritionQuestionnaire({
               </div>
             </CardSection>
 
-            <CardSection title="Intolerancias">
+            <CardSection title="Intolerancias" hint="Sugerencia: separa cada elemento por coma.">
               <input
-                placeholder="Ej. Lactosa"
+                placeholder="Ej. Lactosa, fructosa"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
                 value={p.intolerances}
                 onChange={(e) => setPerson(profile, { intolerances: e.target.value })}
@@ -1403,9 +1400,9 @@ export default function NutritionQuestionnaire({
             💡 Esta sección es opcional.
           </p>
 
-          <CardSection title="Síntomas digestivos">
+          <CardSection title="Síntomas digestivos" hint="Sugerencia: separa cada elemento por coma.">
             <input
-              placeholder="Ej. Reflujo"
+              placeholder="Ej. Reflujo, distensión"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
               value={p.digestiveSymptoms}
               onChange={(e) => setPerson(profile, { digestiveSymptoms: e.target.value })}
@@ -1420,9 +1417,9 @@ export default function NutritionQuestionnaire({
           </CardSection>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CardSection title="Favoritos">
+            <CardSection title="Favoritos" hint="Sugerencia: separa cada elemento por coma.">
               <input
-                placeholder="Ej. Pollo"
+                placeholder="Ej. Pollo, atún, arroz"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
                 value={p.favoriteFoods}
                 onChange={(e) => setPerson(profile, { favoriteFoods: e.target.value })}
@@ -1436,9 +1433,9 @@ export default function NutritionQuestionnaire({
               </div>
             </CardSection>
 
-            <CardSection title="Jamás incluir">
+            <CardSection title="Jamás incluir" hint="Sugerencia: separa cada elemento por coma.">
               <input
-                placeholder="Ej. Hígado"
+                placeholder="Ej. Hígado, coliflor, yogurt"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
                 value={p.dislikedFoods}
                 onChange={(e) => setPerson(profile, { dislikedFoods: e.target.value })}
@@ -1489,21 +1486,22 @@ export default function NutritionQuestionnaire({
               })}
             </div>
           </CardSection>
-        </div>
-      );
-    }
-
-    if (type === 'horarios' && profile) {
-      const p = person(profile);
-
-      return (
-        <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
-            💡 Esta sección es opcional.
-          </p>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CardSection title="Hora de despertar">
+            <CardSection title="Frecuencia de entrenamiento">
+              <div className="grid grid-cols-2 gap-2">
+                {TRAINING_FREQUENCY_CHIPS.map((option) => (
+                  <ChipButton
+                    key={option}
+                    active={p.trainingFrequency === option}
+                    onClick={() => setPerson(profile, { trainingFrequency: option })}
+                  >
+                    {option}
+                  </ChipButton>
+                ))}
+              </div>
+            </CardSection>
+
+            <CardSection title="Hora de despertar" hint="Opcional. Sirve para ajustar mejor la rutina del plan.">
               <button
                 onClick={() => openTimePicker(profile, 'wakeTime', p.wakeTime)}
                 className="flex w-full items-center justify-between rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-3 text-sm font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-indigo-900/60 dark:bg-gradient-to-r dark:from-slate-950 dark:to-indigo-950/55 dark:text-indigo-200 dark:focus:ring-indigo-800"
@@ -1512,31 +1510,7 @@ export default function NutritionQuestionnaire({
                 <Clock className="w-4 h-4" />
               </button>
             </CardSection>
-
-            <CardSection title="Hora de dormir">
-              <button
-                onClick={() => openTimePicker(profile, 'sleepTime', p.sleepTime)}
-                className="flex w-full items-center justify-between rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-3 text-sm font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-indigo-900/60 dark:bg-gradient-to-r dark:from-slate-950 dark:to-indigo-950/55 dark:text-indigo-200 dark:focus:ring-indigo-800"
-              >
-                <span>{formatTimeForDisplay(p.sleepTime, '22:00')}</span>
-                <Clock className="w-4 h-4" />
-              </button>
-            </CardSection>
           </div>
-
-          <CardSection title="Frecuencia de entrenamiento">
-            <div className="grid grid-cols-2 gap-2">
-              {TRAINING_FREQUENCY_CHIPS.map((option) => (
-                <ChipButton
-                  key={option}
-                  active={p.trainingFrequency === option}
-                  onClick={() => setPerson(profile, { trainingFrequency: option })}
-                >
-                  {option}
-                </ChipButton>
-              ))}
-            </div>
-          </CardSection>
         </div>
       );
     }
@@ -1917,7 +1891,7 @@ export default function NutritionQuestionnaire({
                   </span>
 
                   {data.objectiveTimeline && <span className="sm:col-span-2">Tiempo: <strong>{data.objectiveTimeline}</strong></span>}
-                  {data.wakeTime && data.sleepTime && <span className="sm:col-span-2">Horario: <strong>{data.wakeTime} - {data.sleepTime}</strong></span>}
+                  {data.wakeTime && <span className="sm:col-span-2">Despierta: <strong>{data.wakeTime}</strong></span>}
                   {data.trainingFrequency && <span className="sm:col-span-2">Entreno: <strong>{data.trainingFrequency}</strong></span>}
                   {data.diagnostics && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Salud: {data.diagnostics}</span>}
                   {data.medications && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Medicamentos: {data.medications}</span>}
@@ -2073,7 +2047,6 @@ export default function NutritionQuestionnaire({
     type === 'medicos' ||
     type === 'assessment' ||
     type === 'preferencias' ||
-    type === 'horarios' ||
     type === 'portions' ||
     type === 'cocina';
 
