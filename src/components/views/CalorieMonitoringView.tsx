@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Flame, ShieldCheck, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
@@ -92,6 +93,30 @@ export default function CalorieMonitoringView() {
   }, daySummaries[0]);
 
   const palette = getMonitoringPalette(perfilActivo ?? (isAmbos ? 'ambos' : 'el'), isDarkMode);
+  const dayScrollerRef = React.useRef<HTMLDivElement | null>(null);
+  const dayButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+
+  React.useEffect(() => {
+    const container = dayScrollerRef.current;
+    const activeButton = dayButtonRefs.current[diaActivo];
+
+    if (!container || !activeButton) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    const isFullyVisible =
+      buttonRect.left >= containerRect.left && buttonRect.right <= containerRect.right;
+
+    if (isFullyVisible) return;
+
+    const nextScrollLeft =
+      activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;
+
+    container.scrollTo({
+      left: Math.max(0, nextScrollLeft),
+      behavior: 'smooth',
+    });
+  }, [diaActivo]);
 
   const statusPills: Record<StatusKey, string> = {
     low: isDarkMode ? 'bg-amber-950/60 text-amber-200' : 'bg-amber-50 text-amber-700',
@@ -164,13 +189,19 @@ export default function CalorieMonitoringView() {
           </div>
         </div>
 
-        <div className="mt-4 flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          ref={dayScrollerRef}
+          className="mt-4 flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {daySummaries.map((item) => {
             const percent = clampPercent(item.ratio * 100);
             const isActive = item.dia === diaActivo;
             return (
               <button
                 key={item.dia}
+                ref={(element) => {
+                  dayButtonRefs.current[item.dia] = element;
+                }}
                 type="button"
                 onClick={() => setDiaActivo(item.dia)}
                 className={`min-w-[180px] snap-start rounded-[24px] p-4 shadow-sm text-left transition-transform active:scale-[0.98] ${
