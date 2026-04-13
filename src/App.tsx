@@ -313,11 +313,12 @@ export default function App() {
           </motion.div>
         </div>
 
-        <div
-          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200 dark:bg-slate-950/95 dark:border-slate-800"
+        <nav
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/97 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/97"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          aria-label="Navegación principal móvil"
         >
-          <div className="flex justify-around items-center max-w-md mx-auto pt-1.5 pb-1.5 px-2">
+          <div className="mx-auto grid max-w-xl grid-cols-6 gap-1 px-2 pb-2 pt-1.5">
             {tabItems.map((tabItem) => {
               const active = activeTab === tabItem.key;
 
@@ -326,38 +327,20 @@ export default function App() {
                   key={tabItem.key}
                   onClick={() => setActiveTab(tabItem.key)}
                   data-testid={`mobile-tab-${tabItem.key}`}
-                  className={`relative flex flex-col items-center justify-center gap-1 w-[58px] py-1 transition-all duration-200 active:scale-95 ${active
-                    ? staticColors.text
-                    : 'text-slate-400 hover:text-slate-500 dark:text-slate-500 dark:hover:text-slate-300'
+                  className={`flex min-h-[58px] flex-col items-center justify-center rounded-xl px-1 py-1.5 transition-all duration-200 active:scale-95 ${active
+                    ? `bg-gradient-to-br ${staticColors.bgGradientLight} ${staticColors.textDark} shadow-sm dark:from-slate-800 dark:to-slate-700 dark:text-slate-100`
+                    : 'text-slate-500 hover:bg-slate-100/80 dark:text-slate-400 dark:hover:bg-slate-800/70'
                     }`}
                 >
-                  <div
-                    className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300 ${active
-                      ? `bg-gradient-to-br ${staticColors.bgGradientLight} shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] dark:from-slate-800 dark:to-slate-700`
-                      : 'bg-transparent'
-                      }`}
-                  >
-                    <tabItem.icon
-                      className={`w-[18px] h-[18px] ${tabIconColors[tabItem.key]} ${active ? 'fill-current opacity-20 absolute' : ''}`}
-                    />
-                    <tabItem.icon
-                      className={`w-[18px] h-[18px] relative z-10 ${tabIconColors[tabItem.key]}`}
-                      strokeWidth={active ? 2.5 : 2}
-                    />
-                  </div>
-                  <span
-                    className={`text-[10px] tracking-wide ${active
-                      ? `font-extrabold ${staticColors.textDark} dark:text-slate-100`
-                      : 'font-medium dark:text-slate-400'
-                      }`}
-                  >
+                  <tabItem.icon className={`mb-1 h-[18px] w-[18px] ${tabIconColors[tabItem.key]}`} strokeWidth={active ? 2.5 : 2} />
+                  <span className={`text-[11px] leading-none ${active ? 'font-bold' : 'font-medium'}`}>
                     {tabItem.shortLabel}
                   </span>
                 </button>
               );
             })}
           </div>
-        </div>
+        </nav>
 
         <AnimatePresence mode="wait">
           <Suspense fallback={<ViewFallback />}>
