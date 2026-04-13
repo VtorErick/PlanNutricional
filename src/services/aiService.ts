@@ -13,6 +13,11 @@ import {
   type AiDebugLog,
   type AiErrorWithLog,
 } from '../utils/aiDiagnostics';
+import {
+  FOOD_GROUP_KEYS,
+  remapFoodGroupRow,
+  resolveFoodGroupKey,
+} from '../utils/foodGroupKeys';
 
 export type PlanRevisionMode = 'adjust' | 'regenerate';
 
@@ -81,15 +86,6 @@ const ALLOWED_ICONS = [
 
 const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
 const MEAL_MOMENT_KEYS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
-const FOOD_GROUP_KEYS = [
-  'frutas',
-  'verduras',
-  'cereales',
-  'leguminosas',
-  'lacteos',
-  'proteina',
-  'grasas',
-];
 const MEAL_ITEM_REQUIRED_KEYS = [
   'nombre',
   'porciones',
@@ -1056,8 +1052,9 @@ function validateProfileStructure(
         );
       }
 
+      const remappedGoals = remapFoodGroupRow(distribution);
       FOOD_GROUP_KEYS.forEach((groupKey) => {
-        if (!isIntegerValue(distribution[groupKey])) {
+        if (!isIntegerValue(remappedGoals[groupKey])) {
           throw createInvalidStructureError(
             debugContext,
             `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento[${index}].${groupKey} no es entero.`,
@@ -1069,7 +1066,7 @@ function validateProfileStructure(
       });
 
       normalizedGoals[momentKey] = Object.fromEntries(
-        FOOD_GROUP_KEYS.map((groupKey) => [groupKey, distribution[groupKey]])
+        FOOD_GROUP_KEYS.map((groupKey) => [groupKey, remappedGoals[groupKey]])
       ) as Record<string, number>;
       seenGoalMoments.add(momentKey);
     });
@@ -1103,8 +1100,9 @@ function validateProfileStructure(
       );
     }
 
+    const remappedMoment = remapFoodGroupRow(distribution);
     FOOD_GROUP_KEYS.forEach((groupKey) => {
-      if (!isIntegerValue(distribution[groupKey])) {
+      if (!isIntegerValue(remappedMoment[groupKey])) {
         throw createInvalidStructureError(
           debugContext,
           `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento.${momentKey}.${groupKey} no es entero.`,
@@ -1114,6 +1112,11 @@ function validateProfileStructure(
         );
       }
     });
+    (perfil.objetivosPorMomento as Record<string, Record<string, number>>)[momentKey] =
+      Object.fromEntries(FOOD_GROUP_KEYS.map((groupKey) => [groupKey, remappedMoment[groupKey]!])) as Record<
+      string,
+      number
+    >;
   });
 
   if (!Array.isArray(perfil.distribucionDiaria) || perfil.distribucionDiaria.length === 0) {
@@ -1132,8 +1135,8 @@ function validateProfileStructure(
     validateRequiredIntegerField(item, 'total', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredStringField(item, 'detalle', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
 
-    const groupKey = item.grupo.trim();
-    if (!FOOD_GROUP_KEYS.includes(groupKey)) {
+    const resolvedGrupo = resolveFoodGroupKey(item.grupo.trim());
+    if (!resolvedGrupo || !FOOD_GROUP_KEYS.includes(resolvedGrupo)) {
       throw createInvalidStructureError(
         debugContext,
         `Respuesta de IA incompleta: perfil${profilePrefix}.distribucionDiaria[${index}].grupo no es valido.`,
@@ -1142,6 +1145,8 @@ function validateProfileStructure(
         modelName
       );
     }
+    item.grupo = resolvedGrupo;
+    const groupKey = resolvedGrupo;
 
     if (seenDistributionGroups.has(groupKey)) {
       throw createInvalidStructureError(
@@ -1900,9 +1905,9 @@ Reglas criticas:
 - Usa exactamente estos momentos dentro del JSON: ${MEAL_MOMENT_KEYS.join(', ')}.
 - "perfil" debe ser SIEMPRE una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>".
 - No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
-- perfil${prefix}.objetivosPorMomento debe ser un arreglo de 5 objetos, uno por cada momento, y cada objeto debe incluir: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
+- perfil${prefix}.objetivosPorMomento: arreglo de 5 objetos (uno por momento) con momento y SOLO claves de grupo con nombres literales exactos (sin abreviar): ${FOOD_GROUP_KEYS.join(', ')}.
 - perfil${prefix}.distribucionDiaria debe ser un arreglo de 7 objetos, uno por cada grupo: ${FOOD_GROUP_KEYS.join(', ')}.
-- Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo, total, detalle.
+- Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo (mismo literal exacto), total, detalle.
 - No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
 - Cada comida debe incluir exactamente estas claves: ${MEAL_ITEM_REQUIRED_KEYS.join(', ')}.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
@@ -1919,6 +1924,7 @@ Reglas criticas:
 - Si el usuario adjunto PDF o medidas corporales, usalos como contexto complementario.
 - Si hay conflicto entre PDF y cuestionario, prioriza el cuestionario.
 - Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
+- Rotacion semanal: si no aplica companionPlan, alterna opciones entre dias por momento cuando el catalogo lo permita.
 - No devuelvas null, undefined, placeholders, alias de claves ni dias con acentos distintos a los pedidos.`;
 }
 
@@ -1967,7 +1973,7 @@ Debes devolver el plan COMPLETO con el mismo contrato de una generacion normal:
 Reglas criticas:
 - Usa exactamente los dias ${WEEK_DAYS.join(', ')}.
 - Usa exactamente los momentos ${MEAL_MOMENT_KEYS.join(', ')}.
-- perfil${prefix}.objetivosPorMomento debe venir como arreglo de objetos con las claves: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
+- perfil${prefix}.objetivosPorMomento: arreglo de objetos con momento y claves de grupo literales exactas (sin abreviar): ${FOOD_GROUP_KEYS.join(', ')}.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener dia, momento y opciones.
 - Debe haber exactamente un slot por cada combinacion de dia + momento.

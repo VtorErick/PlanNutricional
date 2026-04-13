@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings,
@@ -18,6 +18,37 @@ import { getLandingTheme } from '../../utils/theme';
 // Constants
 const IMC_MIN = 16;
 const IMC_MAX = 45;
+
+const createDefaultQuestionnairePerson = (weight: string, height: string, age = '', targetWeightKg = '') => ({
+  age,
+  currentWeightKg: weight,
+  heightCm: height,
+  targetWeightKg,
+  objectives: [],
+  objectiveTimeline: '12 sem',
+  diagnostics: '',
+  allergies: '',
+  medications: '',
+  intolerances: '',
+  digestiveSymptoms: '',
+  favoriteFoods: '',
+  dislikedFoods: '',
+  favoriteCuisineStyles: '',
+  cookingTime: '',
+  activityLevel: 'Moderado',
+  wakeTime: '',
+  sleepTime: '',
+  trainingFrequency: '',
+  bodyMeasurements: {
+    waistCm: '',
+    hipCm: '',
+    neckCm: '',
+    chestCm: '',
+    armCm: '',
+    thighCm: '',
+  },
+  assessmentReportPdf: null,
+});
 
 // BMI progress bar
 function ImcBar({ imc, label }: { imc: number; label: string }) {
@@ -186,14 +217,15 @@ export default function LandingView() {
     setShowAdmin: setIsAdminOpen,
     setShowQuestionnaire: setIsQuestionnaireOpen,
     setQuestionnaireTargetProfile,
-    geminiModel,
-    setGeminiModel,
-    refreshGeminiAvailability,
+    setQuestionnaireEl,
+    setQuestionnaireElla,
+    setQuestionnairePortionMode,
+    setQuestionnaireManualPortions,
+    setQuestionnaireAdditionalNotes,
     notify,
     isDarkMode,
     setIsDarkMode,
   } = useDiet();
-  const [checkingQuestionnaire, setCheckingQuestionnaire] = useState(false);
 
   const elReady = dataVersions.el === 'custom';
   const ellaReady = dataVersions.ella === 'custom';
@@ -254,33 +286,26 @@ export default function LandingView() {
     }
   };
 
-  const openQuestionnaireWithCheck = async (target: 'el' | 'ella' | 'ambos') => {
-    if (checkingQuestionnaire) return;
-
-    setCheckingQuestionnaire(true);
-    try {
-      const status = await refreshGeminiAvailability({
-        preferredModel: geminiModel,
-        checkGeneration: true,
-      });
-
-      if (!status?.ok) {
-        await notify(
-          'Gemini no disponible',
-          status?.error || 'No fue posible validar Gemini desde el servidor.'
-        );
-        return;
-      }
-
-      if (status.selectedModel && status.selectedModel !== geminiModel) {
-        setGeminiModel(status.selectedModel);
-      }
-
-      setQuestionnaireTargetProfile(target);
-      setIsQuestionnaireOpen(true);
-    } finally {
-      setCheckingQuestionnaire(false);
-    }
+  // Open questionnaire without re-checking Gemini every time.
+  // Gemini availability is verified once at app startup in DietContext.
+  // Each profile restores its own saved step (independent progress).
+  const openQuestionnaire = (target: 'el' | 'ella' | 'ambos') => {
+    setQuestionnaireTargetProfile(target);
+    // Only set defaults if there's no existing data for this profile
+    setQuestionnaireEl((prev: any) =>
+      prev && (prev.currentWeightKg || prev.age)
+        ? prev
+        : createDefaultQuestionnairePerson('80', '170', '30', '70')
+    );
+    setQuestionnaireElla((prev: any) =>
+      prev && (prev.currentWeightKg || prev.age)
+        ? prev
+        : createDefaultQuestionnairePerson('65', '162', '28', '57')
+    );
+    setQuestionnairePortionMode('auto');
+    setQuestionnaireManualPortions({});
+    setQuestionnaireAdditionalNotes('');
+    setIsQuestionnaireOpen(true);
   };
 
   const profiles = [
@@ -304,7 +329,7 @@ export default function LandingView() {
         setActiveTab('plan');
       },
       onIA: () => {
-        void openQuestionnaireWithCheck('el');
+        openQuestionnaire('el');
       },
     },
     {
@@ -327,7 +352,7 @@ export default function LandingView() {
         setActiveTab('plan');
       },
       onIA: () => {
-        void openQuestionnaireWithCheck('ella');
+        openQuestionnaire('ella');
       },
     },
   ];
@@ -396,7 +421,6 @@ export default function LandingView() {
           >
             <Settings className="w-4 h-4 text-slate-600 dark:text-slate-200 group-hover:rotate-45 transition-transform duration-300" />
             <span className="whitespace-nowrap text-[11px] text-slate-600 dark:text-slate-200">Ajustes avanzados</span>
-            Opciones de respaldo y restauración
           </motion.button>
         </div>
 
@@ -629,7 +653,7 @@ export default function LandingView() {
                   dataTestId="landing-customize-ambos"
                   onClick={(e) => {
                     e.stopPropagation();
-                    void openQuestionnaireWithCheck('ambos');
+                    openQuestionnaire('ambos');
                   }}
                 />
 

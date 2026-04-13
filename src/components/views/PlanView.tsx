@@ -102,7 +102,7 @@ export default function PlanView() {
     planRevisionLoading,
     planRevisionError,
     planRevisionErrorLog,
-    lastQuestionnaireContext,
+    lastQuestionnaireContexts,
     handleRevisePlanWithAi,
     geminiModel,
     geminiFallbackModels,
@@ -334,6 +334,11 @@ export default function PlanView() {
   }, [perfilActivo, perfilesData]);
 
   const defaultPlanAiTarget = (perfilActivo === 'ambos' ? 'ambos' : (perfilActivo || 'el')) as 'el' | 'ella' | 'ambos';
+  const getQuestionnaireContextForTarget = React.useCallback(
+    (targetProfile: 'el' | 'ella' | 'ambos') =>
+      (lastQuestionnaireContexts?.[targetProfile] as Partial<QuestionnairePayload> | null) || null,
+    [lastQuestionnaireContexts]
+  );
 
   const handleOpenQuestionnaireFromPlanAi = React.useCallback(async (
     targetProfile: PlanRevisionRequest['targetProfile']
@@ -352,7 +357,7 @@ export default function PlanView() {
       return;
     }
 
-    const questionnaireContext = lastQuestionnaireContext as Partial<QuestionnairePayload> | null;
+    const questionnaireContext = getQuestionnaireContextForTarget(targetProfile);
     setQuestionnaireTargetProfile(targetProfile);
     setQuestionnaireStepIdx(1);
     setQuestionnairePortionMode(questionnaireContext?.portionMode === 'manual' ? 'manual' : 'auto');
@@ -373,7 +378,7 @@ export default function PlanView() {
     setShowQuestionnaire(true);
   }, [
     geminiModel,
-    lastQuestionnaireContext,
+    getQuestionnaireContextForTarget,
     notify,
     refreshGeminiAvailability,
     setQuestionnaireAdditionalNotes,
@@ -411,7 +416,7 @@ export default function PlanView() {
       requestMode,
       targetProfile,
       instruction,
-      questionnaireContext: lastQuestionnaireContext || null,
+      questionnaireContext: getQuestionnaireContextForTarget(targetProfile),
       currentContext: {
         ...(targetProfile === 'el' || targetProfile === 'ambos' ? { el: buildSnapshot('el') } : {}),
         ...(targetProfile === 'ella' || targetProfile === 'ambos' ? { ella: buildSnapshot('ella') } : {}),
@@ -427,7 +432,7 @@ export default function PlanView() {
   }, [
     equivalenciasData,
     handleRevisePlanWithAi,
-    lastQuestionnaireContext,
+    getQuestionnaireContextForTarget,
     perfilesData,
     supplementsData,
   ]);
@@ -911,7 +916,7 @@ export default function PlanView() {
         loading={planRevisionLoading}
         errorMessage={planRevisionError}
         aiErrorLog={planRevisionErrorLog}
-        hasQuestionnaireContext={Boolean(lastQuestionnaireContext)}
+        hasQuestionnaireContext={Boolean(lastQuestionnaireContexts?.el || lastQuestionnaireContexts?.ella || lastQuestionnaireContexts?.ambos)}
         defaultTarget={defaultPlanAiTarget}
         targetOptions={planAiTargetOptions}
         geminiModel={geminiModel}

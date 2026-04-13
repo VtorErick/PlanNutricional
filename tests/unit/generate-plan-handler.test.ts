@@ -189,6 +189,84 @@ function createMockRes() {
   };
 }
 
+test('handler acepta alias de grupos (verd, frut) en objetivos y distribucionDiaria', async () => {
+  process.env.GEMINI_API_KEY = 'test-key';
+  const payload = buildQuestionnairePayload();
+  const aiData = buildMockAiData(payload);
+
+  const grid = payload.profileContext.clinicalPortionsGrid;
+  aiData.perfilELLA.objetivosPorMomento = MOMENTS.map((moment) => {
+    const g = grid[moment];
+    return {
+      momento: moment,
+      frut: g.frutas,
+      verd: g.verduras,
+      cer: g.cereales,
+      leg: g.leguminosas,
+      lact: g.lacteos,
+      prot: g.proteina,
+      gras: g.grasas,
+    };
+  });
+
+  aiData.perfilELLA.distribucionDiaria = [
+    { grupo: 'frut', total: 2, detalle: 'test' },
+    { grupo: 'verd', total: 4, detalle: 'test' },
+    { grupo: 'cereal', total: 2, detalle: 'test' },
+    { grupo: 'legumbre', total: 0, detalle: 'test' },
+    { grupo: 'lacteo', total: 1, detalle: 'test' },
+    { grupo: 'proteinas', total: 26, detalle: 'test' },
+    { grupo: 'grasa', total: 2, detalle: 'test' },
+  ];
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string, options?: any) => {
+    if (url.includes(':generateContent')) {
+      return createMockResponse(200, {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: JSON.stringify(aiData) }],
+            },
+            finishReason: 'STOP',
+            index: 0,
+          },
+        ],
+        usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+        modelVersion: 'gemini-2.5-pro',
+      }) as any;
+    }
+    if (/\/models(?:\?|$)/.test(url)) {
+      return createMockResponse(200, {
+        models: [{ name: 'models/gemini-2.5-pro', supportedGenerationMethods: ['generateContent'] }],
+      }) as any;
+    }
+    throw new Error(`Unexpected fetch URL: ${url}`);
+  }) as any;
+
+  try {
+    const req = {
+      method: 'POST',
+      body: payload,
+      headers: { origin: 'http://localhost:5173', host: 'localhost:5173' },
+      socket: { remoteAddress: '127.0.0.1' },
+    } as any;
+    const res = createMockRes();
+    await handler(req, res as any);
+    assert.equal(res.statusCode, 200);
+    const desayuno = res.body?.ellaData?.perfilELLA?.objetivosPorMomento?.desayuno;
+    assert.equal(desayuno?.verduras, grid.desayuno.verduras);
+    assert.equal(desayuno?.frutas, grid.desayuno.frutas);
+    const grupos = new Set(
+      (res.body?.ellaData?.perfilELLA?.distribucionDiaria || []).map((d: { grupo: string }) => d.grupo)
+    );
+    assert.ok(grupos.has('verduras'));
+    assert.ok(grupos.has('frutas'));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('handler genera y la app rehidrata correctamente un plan de cuestionario de ella', async () => {
   process.env.GEMINI_API_KEY = 'test-key';
   const payload = buildQuestionnairePayload();

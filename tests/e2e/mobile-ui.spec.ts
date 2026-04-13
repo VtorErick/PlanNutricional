@@ -29,9 +29,6 @@ async function completeProfileQuestionnaire(page: Page, profile: 'el' | 'ella', 
 
   await expect(page.getByTestId(`questionnaire-step-lifestyle-${profile}`)).toBeVisible();
   await page.getByTestId('questionnaire-next').click();
-
-  await expect(page.getByTestId(`questionnaire-step-horarios-${profile}`)).toBeVisible();
-  await page.getByTestId('questionnaire-skip').click();
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -342,7 +339,7 @@ test('combined mobile navigation renders every major view with populated data', 
   expect(download.suggestedFilename()).toBe('Plan_Nutricional_Ambos.pdf');
 
   await page.getByTestId('mobile-tab-equivalencias').click();
-  await expect(page.getByRole('heading', { name: /Equivalencias/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Intercambios/i })).toBeVisible();
   await saveDocScreenshot(page, 'equivalencias-mobile.png');
 
   await page.getByTestId('mobile-tab-suplementos').click();

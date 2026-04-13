@@ -119,6 +119,10 @@ const OBJECTIVES = [
   { val: 'Mantener peso', emoji: '⚖️' },
   { val: 'Mejorar salud', emoji: '❤️' },
   { val: 'Control glucémico', emoji: '🩺' },
+  { val: 'Definición muscular', emoji: '🏋️' },
+  { val: 'Masa muscular', emoji: '🦾' },
+  { val: 'Mejorar sueño', emoji: '😴' },
+  { val: 'Reducir estrés', emoji: '🧘' },
 ];
 
 const ACTIVITY_LEVELS = [
@@ -129,11 +133,11 @@ const ACTIVITY_LEVELS = [
 ];
 
 const TIMELINE_OPTIONS = [
-  { val: '4 sem', label: '4 semanas', emoji: '⚡' },
-  { val: '8 sem', label: '8 semanas', emoji: '📅' },
-  { val: '12 sem', label: '12 semanas', emoji: '📆' },
-  { val: '16 sem', label: '16 semanas', emoji: '🗓️' },
-  { val: '20 sem', label: '20 semanas', emoji: '📌' },
+  { val: '4 sem',  label: '4 semanas',  emoji: '⚡' },
+  { val: '8 sem',  label: '8 semanas',  emoji: '🌱' },
+  { val: '12 sem', label: '12 semanas', emoji: '🎯' },
+  { val: '16 sem', label: '16 semanas', emoji: '🏔️' },
+  { val: '20 sem', label: '20 semanas', emoji: '💎' },
   { val: '24 sem', label: '24 semanas', emoji: '🔥' },
 ];
 
@@ -250,11 +254,56 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
 };
 
 const QUICK_TAGS = {
-  diagnostics: ['Diabetes', 'Hipertensión', 'SOP', 'Hipotiroidismo'],
-  medications: ['Metformina', 'Levotiroxina', 'Antihipertensivo'],
-  allergies: ['Lácteos', 'Gluten', 'Mariscos', 'Nueces'],
-  intolerances: ['Lactosa', 'Fructosa', 'Sorbitol'],
-  digestive: ['Reflujo', 'Distensión', 'Estreñimiento'],
+  diagnostics: [
+    'Ninguna', 
+    'Diabetes / Resistencia a la insulina', 
+    'Hipertensión', 
+    'Enfermedad renal', 
+    'Cálculos renales',
+    'Gota (Ácido úrico)',
+    'Hipotiroidismo', 
+    'SOP', 
+    'Colesterol alto', 
+    'Hígado graso'
+  ],
+  medications: [
+    'Ninguno', 
+    'Metformina', 
+    'Levotiroxina', 
+    'Antihipertensivos', 
+    'Estatinas', 
+    'Omeprazol', 
+    'Anticonceptivos', 
+    'Antidepresivos'
+  ],
+  allergies: [
+    'Ninguna', 
+    'Lácteos', 
+    'Gluten (Celiaquía)', 
+    'Cacahuates', 
+    'Mariscos / Pescado', 
+    'Nueces / Semillas', 
+    'Soya', 
+    'Huevo'
+  ],
+  intolerances: [
+    'Ninguna', 
+    'Lactosa', 
+    'Fructosa', 
+    'Sorbitol', 
+    'Leguminosas (frijoles/lentejas)', 
+    'Picante / Irritantes',
+    'Maíz'
+  ],
+  digestive: [
+    'Ninguno', 
+    'Reflujo / Acidez', 
+    'Gastritis', 
+    'Inflamación / Gases', 
+    'Síndrome de Intestino Irritable (FODMAP)',
+    'Estreñimiento', 
+    'Diarrea / Evacuaciones líquidas'
+  ],
   favorites: ['Pollo', 'Arroz', 'Atún', 'Avena'],
   disliked: ['Hígado', 'Brócoli', 'Coliflor'],
 };
@@ -312,6 +361,45 @@ function ChipButton({
   );
 }
 
+function CheckList({
+  options,
+  currentValueString,
+  onToggle
+}: {
+  options: string[];
+  currentValueString: string;
+  onToggle: (tag: string) => void;
+}) {
+  return (
+    <div className="max-h-56 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+      {options.map((option) => {
+        const isActive = currentValueString.includes(option);
+        return (
+          <button
+            type="button"
+            key={option}
+            onClick={() => onToggle(option)}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all active:scale-[.98] ${
+              isActive 
+                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-bold dark:border-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-200' 
+                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900'
+            }`}
+          >
+            <span className="text-[13px] leading-tight pr-2">{option}</span>
+            <div className={`w-5 h-5 flex-shrink-0 rounded-md flex items-center justify-center border transition-all ${
+              isActive
+                ? 'bg-indigo-600 border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500'
+                : 'border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-900'
+            }`}>
+              {isActive && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function QuickTag({
   onClick,
   children,
@@ -362,55 +450,28 @@ function NumField({
     return fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed;
   };
 
-  const updateValue = (next: number) => onChange(formatValue(clamp(next)));
-
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">
-          {label}
-          {required && <span className="text-rose-400 ml-1">*</span>}
-        </div>
-        <div className="text-xs font-semibold text-slate-400 uppercase dark:text-slate-500">{unit}</div>
+    <div className="flex flex-col gap-1.5 p-3 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 transition-colors focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:border-indigo-600 dark:focus-within:ring-indigo-900/50">
+      <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase dark:text-slate-400">
+        <label>
+          {label} {required && <span className="text-rose-400 ml-0.5">*</span>}
+        </label>
+        <span className="opacity-70 font-black">{unit}</span>
       </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => updateValue(safeValue - step)}
-          className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          aria-label={`Reducir ${label}`}
-        >
-          <Minus className="w-4 h-4" />
-        </button>
-
-        <div className="flex-1">
-          <input
-            type="number"
-            inputMode="decimal"
-            min={min}
-            max={max}
-            step={step}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full h-10 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50 dark:focus:ring-slate-700"
-          />
-          {(minIcon || maxIcon) && (
-            <div className="flex items-center justify-between px-1 mt-1">
-              <span className="text-[11px] text-slate-400 dark:text-slate-500">{minIcon || ''}</span>
-              <span className="text-[11px] text-slate-400 dark:text-slate-500">{maxIcon || ''}</span>
-            </div>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => updateValue(safeValue + step)}
-          className="h-10 w-10 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          aria-label={`Aumentar ${label}`}
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+      <div className="flex items-center justify-between gap-1">
+        {(minIcon || maxIcon) && <span className="text-[13px] text-slate-400 dark:text-slate-500">{minIcon}</span>}
+        <input
+          type="number"
+          inputMode="decimal"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          placeholder={unit}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full text-base font-black text-slate-800 bg-transparent outline-none dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 text-center"
+        />
+        {(minIcon || maxIcon) && <span className="text-[13px] text-slate-400 dark:text-slate-500">{maxIcon}</span>}
       </div>
     </div>
   );
@@ -793,6 +854,27 @@ export default function NutritionQuestionnaire({
     }
   };
 
+  const toggleListTag = (profile: 'el' | 'ella', field: keyof Person, tag: string) => {
+    const currentValue = String(person(profile)[field] ?? '').trim();
+    let values = currentValue
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+    if (tag === 'Ninguna' || tag === 'Ninguno') {
+      values = [tag];
+    } else {
+      values = values.filter((v) => v !== 'Ninguna' && v !== 'Ninguno');
+      if (values.includes(tag)) {
+        values = values.filter((v) => v !== tag);
+      } else {
+        values.push(tag);
+      }
+    }
+
+    setPerson(profile, { [field]: values.join(', ') } as Partial<Person>);
+  };
+
   const openTimePicker = (
     profile: 'el' | 'ella',
     field: 'wakeTime' | 'sleepTime',
@@ -916,17 +998,26 @@ export default function NutritionQuestionnaire({
     });
   };
 
+  // Cuisine styles are tracked independently per profile.
+  // For 'ambos', we display/edit el's styles in the shared cocina step.
   const selectedCuisineStyles = useMemo(() => {
-    return String(el.favoriteCuisineStyles || '')
+    const source = targetProfile === 'ella' ? ella : el;
+    return String(source.favoriteCuisineStyles || '')
       .split(',')
       .map((v: string) => v.trim())
       .filter(Boolean);
-  }, [el.favoriteCuisineStyles]);
+  }, [targetProfile, el, ella]);
 
   const setCuisineStyles = (styles: string[]) => {
     const joined = styles.join(', ');
-    setEl((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
-    setElla((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+    if (targetProfile === 'ella') {
+      setElla((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+    } else if (targetProfile === 'ambos') {
+      setEl((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+      setElla((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+    } else {
+      setEl((prev: any) => ({ ...prev, favoriteCuisineStyles: joined }));
+    }
   };
 
   const toggleCuisineStyle = (style: string) => {
@@ -1035,17 +1126,21 @@ export default function NutritionQuestionnaire({
           ] as const).map(([val, emoji, title, sub]) => {
             const t = THEME[val];
             const active = targetProfile === val;
+            // Only disable buttons for OTHER profiles that haven't been started
+            // The currently active profile is always clickable
+            const profileButtonDisabled = loading;
 
             return (
               <button
                 key={val}
-                onClick={() => selectProfile(val)}
+                onClick={() => !profileButtonDisabled && selectProfile(val)}
                 data-testid={`questionnaire-target-${val}`}
+                disabled={profileButtonDisabled}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 font-semibold text-left transition-all duration-200 active:scale-[.98] ${
                   active
                     ? `${t.border} ${t.light} shadow-sm`
                     : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
-                }`}
+                } ${profileButtonDisabled ? 'cursor-not-allowed opacity-55' : ''}`}
               >
                 <span className="text-2xl w-11 h-11 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center flex-shrink-0 dark:bg-slate-900 dark:border-slate-700">
                   {emoji}
@@ -1071,7 +1166,7 @@ export default function NutritionQuestionnaire({
     if (type === 'fisica' && profile) {
       const p = person(profile);
       return (
-        <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
           <NumField
             label="Edad"
             unit="años"
@@ -1131,8 +1226,10 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <CardSection title="Objetivos">
-            <div className="grid gap-2">
+          {/* ── Objetivos: grid 3 col compacto ── */}
+          <div>
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Objetivos</p>
+            <div className="grid grid-cols-3 gap-2">
               {OBJECTIVES.map((obj) => {
                 const isSelected = p.objectives.includes(obj.val);
                 const toggleObjective = () => {
@@ -1145,44 +1242,64 @@ export default function NutritionQuestionnaire({
                 return (
                   <button
                     key={obj.val}
+                    type="button"
                     onClick={toggleObjective}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 font-semibold text-sm transition-all duration-200 active:scale-[.98] ${
-                      isSelected
-                        ? `${tc.border} ${tc.light} ${tc.text} shadow-sm border-[2.5px]`
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900 dark:text-slate-100'
-                    }`}
+                    className={`
+                      relative flex flex-col items-center justify-center gap-1
+                      rounded-2xl border-2 py-2.5 px-1 text-center
+                      transition-all duration-150 active:scale-[.96] select-none
+                      ${isSelected
+                        ? `${tc.border} ${tc.light} ${tc.text} shadow-sm`
+                        : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
+                      }
+                    `}
                   >
-                    <span className="text-xl w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center dark:bg-slate-900 dark:border-slate-700">
-                      {obj.emoji}
+                    {/* Check badge */}
+                    {isSelected && (
+                      <span
+                        className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full"
+                        style={{ backgroundColor: tc.accent }}
+                      >
+                        <Check className="h-2.5 w-2.5 text-white" />
+                      </span>
+                    )}
+                    <span className="text-[22px] leading-none">{obj.emoji}</span>
+                    <span className={`text-[10px] font-bold leading-tight ${isSelected ? '' : 'text-slate-600 dark:text-slate-300'}`}>
+                      {obj.val}
                     </span>
-                    <span className="flex-1 text-left">{obj.val}</span>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 flex-shrink-0" />}
                   </button>
                 );
               })}
             </div>
-          </CardSection>
+          </div>
 
-          <CardSection title="Tiempo objetivo">
+          {/* ── Tiempo objetivo: grid 3×2 ── */}
+          <div>
+            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Tiempo objetivo</p>
             <div className="grid grid-cols-3 gap-2">
               {TIMELINE_OPTIONS.map((tl) => {
                 const active = p.objectiveTimeline === tl.val;
                 return (
                   <button
                     key={tl.val}
+                    type="button"
                     onClick={() => setPerson(profile, { objectiveTimeline: tl.val })}
-                    className={`py-2.5 px-1 rounded-xl border text-center transition-all active:scale-[.97] ${
-                      active
-                        ? `border-transparent ${tc.light} shadow-sm`
-                        : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
-                    }`}
+                    className={`
+                      flex flex-col items-center justify-center gap-0.5
+                      rounded-2xl border-2 py-2.5 transition-all active:scale-[.97]
+                      ${active
+                        ? `${tc.border} ${tc.light} ${tc.text} shadow-sm`
+                        : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
+                      }
+                    `}
                   >
-                    <span className="text-xs font-bold">{tl.val}</span>
+                    <span className="text-lg leading-none">{tl.emoji}</span>
+                    <span className="text-[10px] font-bold">{tl.val}</span>
                   </button>
                 );
               })}
             </div>
-          </CardSection>
+          </div>
         </div>
       );
     }
@@ -1196,21 +1313,12 @@ export default function NutritionQuestionnaire({
             💡 Esta sección es opcional. Puedes saltar si no aplica.
           </p>
 
-          <CardSection title="Condiciones médicas" hint="Sugerencia: separa cada elemento por coma.">
-            <textarea
-              rows={2}
-              placeholder="Ej. Diabetes, hipotiroidismo, SOP"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
-              value={p.diagnostics}
-              onChange={(e) => setPerson(profile, { diagnostics: e.target.value })}
+          <CardSection title="Condiciones médicas" hint="Selecciona si tienes alguna de las siguientes.">
+            <CheckList 
+              options={QUICK_TAGS.diagnostics} 
+              currentValueString={p.diagnostics || ''} 
+              onToggle={(tag) => toggleListTag(profile, 'diagnostics', tag)} 
             />
-            <div className="flex flex-wrap gap-2">
-              {QUICK_TAGS.diagnostics.map((tag) => (
-                <QuickTag key={tag} onClick={() => appendTag(profile, 'diagnostics', tag)}>
-                  {tag}
-                </QuickTag>
-              ))}
-            </div>
           </CardSection>
         </div>
       );
@@ -1225,54 +1333,29 @@ export default function NutritionQuestionnaire({
             💡 Esta sección es opcional.
           </p>
 
-          <CardSection title="Medicamentos" hint="Sugerencia: separa cada elemento por coma.">
-            <textarea
-              rows={2}
-              placeholder="Ej. Metformina, semaglutida"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
-              value={p.medications}
-              onChange={(e) => setPerson(profile, { medications: e.target.value })}
+          <CardSection title="Medicamentos" hint="Selecciona los que usas frecuentemente.">
+            <CheckList 
+              options={QUICK_TAGS.medications} 
+              currentValueString={p.medications || ''} 
+              onToggle={(tag) => toggleListTag(profile, 'medications', tag)} 
             />
-            <div className="flex flex-wrap gap-2">
-              {QUICK_TAGS.medications.map((tag) => (
-                <QuickTag key={tag} onClick={() => appendTag(profile, 'medications', tag)}>
-                  {tag}
-                </QuickTag>
-              ))}
-            </div>
           </CardSection>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CardSection title="Alergias" hint="Sugerencia: separa cada elemento por coma.">
-              <input
-                placeholder="Ej. Lácteos, gluten, nueces"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
-                value={p.allergies}
-                onChange={(e) => setPerson(profile, { allergies: e.target.value })}
+            <CardSection title="Alergias">
+              <CheckList 
+                options={QUICK_TAGS.allergies} 
+                currentValueString={p.allergies || ''} 
+                onToggle={(tag) => toggleListTag(profile, 'allergies', tag)} 
               />
-              <div className="flex flex-wrap gap-1.5">
-                {QUICK_TAGS.allergies.map((tag) => (
-                  <QuickTag key={tag} onClick={() => appendTag(profile, 'allergies', tag)}>
-                    {tag}
-                  </QuickTag>
-                ))}
-              </div>
             </CardSection>
 
-            <CardSection title="Intolerancias" hint="Sugerencia: separa cada elemento por coma.">
-              <input
-                placeholder="Ej. Lactosa, fructosa"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
-                value={p.intolerances}
-                onChange={(e) => setPerson(profile, { intolerances: e.target.value })}
+            <CardSection title="Intolerancias">
+              <CheckList 
+                options={QUICK_TAGS.intolerances} 
+                currentValueString={p.intolerances || ''} 
+                onToggle={(tag) => toggleListTag(profile, 'intolerances', tag)} 
               />
-              <div className="flex flex-wrap gap-1.5">
-                {QUICK_TAGS.intolerances.map((tag) => (
-                  <QuickTag key={tag} onClick={() => appendTag(profile, 'intolerances', tag)}>
-                    {tag}
-                  </QuickTag>
-                ))}
-              </div>
             </CardSection>
           </div>
         </div>
@@ -1334,9 +1417,9 @@ export default function NutritionQuestionnaire({
 
           <CardSection
             title="Medidas corporales opcionales"
-            hint="Llénalas solo si las tienes. Ayudan a dar más contexto al plan."
+            hint="Llénalas solo si las tienes. Ayudan a dar más contexto."
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <NumField
                 label="Cintura"
                 unit="cm"
@@ -1400,20 +1483,12 @@ export default function NutritionQuestionnaire({
             💡 Esta sección es opcional.
           </p>
 
-          <CardSection title="Síntomas digestivos" hint="Sugerencia: separa cada elemento por coma.">
-            <input
-              placeholder="Ej. Reflujo, distensión"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
-              value={p.digestiveSymptoms}
-              onChange={(e) => setPerson(profile, { digestiveSymptoms: e.target.value })}
+          <CardSection title="Síntomas digestivos" hint="Selecciona los que experimentes frecuentemente.">
+            <CheckList 
+              options={QUICK_TAGS.digestive} 
+              currentValueString={p.digestiveSymptoms || ''} 
+              onToggle={(tag) => toggleListTag(profile, 'digestiveSymptoms', tag)} 
             />
-            <div className="flex flex-wrap gap-2">
-              {QUICK_TAGS.digestive.map((tag) => (
-                <QuickTag key={tag} onClick={() => appendTag(profile, 'digestiveSymptoms', tag)}>
-                  {tag}
-                </QuickTag>
-              ))}
-            </div>
           </CardSection>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1458,14 +1533,26 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <CardSection title="Actividad física">
+          <CardSection title="Actividad y entrenamiento" hint="¿Cómo es tu actividad física a lo largo de la semana?">
             <div className="grid grid-cols-2 gap-2">
               {ACTIVITY_LEVELS.map((al) => {
                 const active = p.activityLevel === al.val;
                 return (
                   <button
                     key={al.val}
-                    onClick={() => setPerson(profile, { activityLevel: al.val })}
+                    type="button"
+                    onClick={() => {
+                        const freqMap: Record<string, string> = {
+                            'Sedentario': 'Sin ejercicio',
+                            'Ligero': '1-2 días',
+                            'Moderado': '3-4 días',
+                            'Intenso': '5+ días'
+                        };
+                        setPerson(profile, { 
+                            activityLevel: al.val,
+                            trainingFrequency: freqMap[al.val] || ''
+                        });
+                    }}
                     className={`flex flex-col items-start gap-0.5 p-3 rounded-2xl border-2 transition-all active:scale-[.97] ${
                       active
                         ? `${tc.border} ${tc.light} shadow-sm border-[2.5px]`
@@ -1487,27 +1574,25 @@ export default function NutritionQuestionnaire({
             </div>
           </CardSection>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CardSection title="Frecuencia de entrenamiento">
-              <div className="grid grid-cols-2 gap-2">
-                {TRAINING_FREQUENCY_CHIPS.map((option) => (
-                  <ChipButton
-                    key={option}
-                    active={p.trainingFrequency === option}
-                    onClick={() => setPerson(profile, { trainingFrequency: option })}
-                  >
-                    {option}
-                  </ChipButton>
-                ))}
-              </div>
-            </CardSection>
-
-            <CardSection title="Hora de despertar" hint="Opcional. Sirve para ajustar mejor la rutina del plan.">
+            <CardSection title="Hora de despertar" hint="Opcional.">
               <button
+                type="button"
                 onClick={() => openTimePicker(profile, 'wakeTime', p.wakeTime)}
-                className="flex w-full items-center justify-between rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-3 text-sm font-bold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-indigo-900/60 dark:bg-gradient-to-r dark:from-slate-950 dark:to-indigo-950/55 dark:text-indigo-200 dark:focus:ring-indigo-800"
+                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-indigo-800 transition shadow-sm hover:bg-slate-50"
               >
                 <span>{formatTimeForDisplay(p.wakeTime, '07:00')}</span>
-                <Clock className="w-4 h-4" />
+                <Clock className="w-4 h-4 text-slate-400" />
+              </button>
+            </CardSection>
+
+            <CardSection title="Hora de dormir" hint="Opcional.">
+              <button
+                type="button"
+                onClick={() => openTimePicker(profile, 'sleepTime', p.sleepTime)}
+                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-indigo-800 transition shadow-sm hover:bg-slate-50"
+              >
+                <span>{formatTimeForDisplay(p.sleepTime, '22:00')}</span>
+                <Clock className="w-4 h-4 text-slate-400" />
               </button>
             </CardSection>
           </div>

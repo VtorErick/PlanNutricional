@@ -15,3 +15,7 @@ test-*.js
 test-*.json
 .vercel
 .env*.local
+
+.vercel-dev.*
+.claude/
+perfil-el (1).json

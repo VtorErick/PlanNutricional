@@ -9,6 +9,25 @@ export interface CatalogMealItem {
   nombre: string;
   tags: string[];
   super: string[];
+  // Campos para filtrado por preferencias del usuario (OPCIONALES durante migración)
+  cuisineStyles?: ('Mexicana' | 'Italiana' | 'Asiática' | 'Mediterránea' | 'Casera' | 'Vegetariana')[];
+  // Condiciones médicas que DEBEN evitar esta comida (texto libre del usuario)
+  // Ejemplo: ['cálculos renales', 'got'] - si el usuario menciona esto, se excluye
+  medicalContraindications?: string[];
+  // Tiempo de preparación en minutos (realista)
+  prepTimeMinutes?: number;
+  // Dificultad de preparación
+  difficulty?: 'facil' | 'media' | 'dificil';
+  // Valores nutricionales estimados por porción estándar
+  // Fuentes: USDA FoodData Central, BEDCA, etiquetas comerciales mexicanas
+  macroEstimate?: {
+    calories: number;
+    protein: number; // gramos
+    carbs: number;   // gramos
+    fat: number;     // gramos
+  };
+  // Temporada recomendada (opcional)
+  season?: ('invierno' | 'primavera' | 'verano' | 'otoño')[];
 }
 
 export const mealsDatabase: CatalogMealItem[] = [
@@ -123,13 +142,13 @@ export const mealsDatabase: CatalogMealItem[] = [
   { id: 'com_29', momentos: ['comida'], nombre: 'Tortitas de papa con atún en sartén antiadherente', tags: ['casero', 'niños', 'economico', '15-30 min'], super: ['papa', 'atún lata', 'huevo', 'lechuga'] },
   { id: 'com_30', momentos: ['comida'], nombre: 'Hígado de res encebollado rico en hierro', tags: ['hierro', 'nutritivo', 'mexicano', 'economico', '15-30 min'], super: ['higado de res', 'cebolla', 'tortilla', 'frijol'] },
   { id: 'com_31', momentos: ['comida'], nombre: 'Milanesa de cerdo o pollo a la plancha fina', tags: ['comun', 'clasico', '15-30 min', 'economico'], super: ['carne cerdo magra', 'ensalada verde', 'arroz'] },
-  { id: 'com_32', momentos: ['comida'], nombre: 'Milanesa empanizada al aire libre (Airfryer)', tags: ['airfryer', 'crujiente', '15-30 min'], super: ['pollo', 'pan molido", "huevo", "papa'] },
+  { id: 'com_32', momentos: ['comida'], nombre: 'Milanesa empanizada al aire libre (Airfryer)', tags: ['airfryer', 'crujiente', '15-30 min'], super: ['pollo', 'pan molido', 'huevo', 'papa'] },
   { id: 'com_33', momentos: ['comida'], nombre: 'Chuleta ahumada asada al comal', tags: ['rápido', 'comun', '<15 min', 'economico'], super: ['chuleta de cerdo', 'nopales asados', 'tortilla'] },
   { id: 'com_34', momentos: ['comida'], nombre: 'Sopa de verduras juliana calientita con pechuga deshebrada', tags: ['sopa', 'liquid', 'confort', '+30 min', 'economico'], super: ['caldo pollo', 'pollo', 'verduras mixtas', 'tortilla'] },
   { id: 'com_35', momentos: ['comida'], nombre: 'Torta de pierna o milanesa en pan integral', tags: ['portatil', 'calle', 'mexicano', 'rápido'], super: ['bolillo integral', 'carne de res magra', 'jitomate', 'aguacate', 'frijol'] },
   { id: 'com_36', momentos: ['comida'], nombre: 'Rollos de sushi caseros sin freír (maki)', tags: ['oriental', 'divertido', '+30 min'], super: ['arroz sushi', 'alga nori', 'pepino', 'surimi', 'queso crema light'] },
   { id: 'com_37', momentos: ['comida'], nombre: 'Chop Suey de verduras con pollo', tags: ['oriental', 'volumen', 'ligero', '15-30 min'], super: ['pollo', 'germinado soya', 'zanahoria', 'salsa soya'] },
-  { id: 'com_38', momentos: ['comida'], nombre: 'Tamal fit o desgrasado (versión saludable hoja de plátano)', tags: ['mexicano", "fin-de-semana", "comun'], super: ['harina maiz', 'pollo', 'salsa verde', 'hoja plátano'] },
+  { id: 'com_38', momentos: ['comida'], nombre: 'Tamal fit o desgrasado (versión saludable hoja de plátano)', tags: ['mexicano', 'fin-de-semana', 'comun'], super: ['harina maiz', 'pollo', 'salsa verde', 'hoja plátano'] },
   { id: 'com_39', momentos: ['comida'], nombre: 'Guiso de nopales con carne de puerco magra', tags: ['mexicano', 'fibra', 'economico', '+30 min'], super: ['carne cerdo magra', 'nopal', 'salsa pasilla', 'tortilla'] },
   { id: 'com_40', momentos: ['comida'], nombre: 'Pollo a la mostaza y miel c/ arroz blanco', tags: ['cremoso', 'delicioso', '15-30 min'], super: ['pollo', 'mostaza dijón', 'miel', 'arroz'] },
 
@@ -167,7 +186,864 @@ export const mealsDatabase: CatalogMealItem[] = [
   { id: 'cen_31', momentos: ['cena'], nombre: 'Puré de manzanas baby sin azúcar añadida', tags: ['digestivo', 'suave', 'bebe', 'rápido'], super: ['puré manzana'] },
   { id: 'cen_32', momentos: ['cena'], nombre: 'Gordita de chicharrón prensado seca al comal', tags: ['mexicano', 'antojo', 'economico', '+30 min'], super: ['masa maiz', 'chicharrón prensado', 'lechuga'] },
   { id: 'cen_33', momentos: ['cena'], nombre: 'Tostadas siberia caseras de pechuga', tags: ['norteño', 'aguacate', 'rápido'], super: ['tostada horneada', 'pollo', 'crema light', 'aguacate'] },
-  { id: 'cen_35', momentos: ['cena'], nombre: 'Sándwich de crema de cacahuate y mermelada (PB&J)', tags: ['gringo', 'dulce', 'rápido', '<15 min', 'economico'], super: ['pan integral', 'crema cacahuate', 'mermelada light'] }
+  { id: 'cen_34', momentos: ['cena'], nombre: 'Ensalada de atún con garbanzo y vinagreta de limón', tags: ['proteina', 'fibra', 'fresco', '<15 min'], super: ['atún lata', 'garbanzo cocido', 'jitomate', 'cebolla morada', 'limón', 'aceite oliva'] },
+  { id: 'cen_35', momentos: ['cena'], nombre: 'Sándwich de crema de cacahuate y mermelada (PB&J)', tags: ['gringo', 'dulce', 'rápido', '<15 min', 'economico'], super: ['pan integral', 'crema cacahuate', 'mermelada light'] },
+
+  // === COMIDAS NUEVAS DOCUMENTADAS ===
+  // Fuentes: USDA FoodData Central, BEDCA (Base Española), etiquetas comerciales mexicanas
+  // Nota: Los valores macro son estimaciones por porción estándar de receta casera
+
+  // --- DESAYUNOS MEXICANOS CASEROS (Saludables, no de la calle) ---
+  {
+    id: 'des_41',
+    momentos: ['desayuno'],
+    nombre: 'Sopes de pollo deshebrado con frijol y nopal',
+    tags: ['mexicano', 'proteina', 'fibra', 'sin-freir'],
+    super: ['masa de maíz', 'pollo deshebrado', 'frijol refrito', 'nopal asado', 'queso fresco', 'salsa verde'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 320, protein: 22, carbs: 38, fat: 9 },
+    medicalContraindications: ['diabetes descontrolada', 'intolerancia al maíz']
+  },
+  {
+    id: 'des_42',
+    momentos: ['desayuno'],
+    nombre: 'Papas con chorizo de soya al comal',
+    tags: ['mexicano', 'vegano', 'proteina-vegetal', 'economico'],
+    super: ['papa cocida', 'chorizo de soya', 'cebolla', 'cilantro', 'tortilla de maíz'],
+    cuisineStyles: ['Mexicana', 'Vegetariana'],
+    prepTimeMinutes: 20,
+    difficulty: 'facil',
+    macroEstimate: { calories: 280, protein: 12, carbs: 48, fat: 6 },
+    medicalContraindications: ['dieta baja en carbohidratos', 'enfermedad renal (potasio alto)']
+  },
+  {
+    id: 'des_43',
+    momentos: ['desayuno'],
+    nombre: 'Memelitas de frijol con queso y aguacate',
+    tags: ['mexicano', 'vegetariano', 'saciante', 'oaxaqueño'],
+    super: ['masa de maíz', 'frijol negro', 'queso oaxaca', 'aguacate', 'salsa roja'],
+    cuisineStyles: ['Mexicana', 'Vegetariana'],
+    prepTimeMinutes: 20,
+    difficulty: 'facil',
+    macroEstimate: { calories: 340, protein: 15, carbs: 42, fat: 14 },
+    medicalContraindications: ['dieta keto', 'intolerancia a la lactosa']
+  },
+  {
+    id: 'des_44',
+    momentos: ['desayuno'],
+    nombre: 'Chilaquiles de salsa verde con pollo y crema ligera',
+    tags: ['mexicano', 'tradicional', 'proteina', 'fin-de-semana'],
+    super: ['tortilla de maíz horneada', 'pollo deshebrado', 'salsa verde', 'crema light', 'queso fresco', 'cebolla'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 35,
+    difficulty: 'media',
+    macroEstimate: { calories: 380, protein: 24, carbs: 42, fat: 12 },
+    medicalContraindications: ['reflujo gastroesofágico', 'gastritis (salsa muy ácida)']
+  },
+  {
+    id: 'des_45',
+    momentos: ['desayuno'],
+    nombre: 'Gorditas de nopal rellenas de requesón',
+    tags: ['mexicano', 'bajo-carb', 'digestivo', 'economico'],
+    super: ['nopal molido', 'masa de maíz', 'requesón', 'salsa verde', 'cebolla'],
+    cuisineStyles: ['Mexicana', 'Vegetariana'],
+    prepTimeMinutes: 30,
+    difficulty: 'media',
+    macroEstimate: { calories: 260, protein: 14, carbs: 32, fat: 8 },
+    medicalContraindications: ['diabetes descontrolada (limitar porción)']
+  },
+  {
+    id: 'des_46',
+    momentos: ['desayuno'],
+    nombre: 'Tlacoyos de haba con nopal ensalada',
+    tags: ['mexicano', 'proteina-vegetal', 'alto-fibra', 'tradicional'],
+    super: ['masa de maíz azul', 'habas cocidas', 'nopal', 'cebolla', 'cilantro', 'salsa verde'],
+    cuisineStyles: ['Mexicana', 'Vegetariana'],
+    prepTimeMinutes: 40,
+    difficulty: 'dificil',
+    macroEstimate: { calories: 300, protein: 14, carbs: 52, fat: 5 },
+    medicalContraindications: ['síndrome de intestino irritable (FODMAP alto)']
+  },
+  {
+    id: 'des_47',
+    momentos: ['desayuno'],
+    nombre: 'Caldo de pollo con verduras y garbanzo',
+    tags: ['mexicano', 'caldo', 'reconfortante', 'proteina'],
+    super: ['pollo con hueso', 'calabacita', 'zanahoria', 'apio', 'garbanzo', 'cebolla', 'epazote'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 45,
+    difficulty: 'media',
+    macroEstimate: { calories: 240, protein: 26, carbs: 18, fat: 8 },
+    medicalContraindications: ['dieta baja en sodio (controlar sal)']
+  },
+  {
+    id: 'des_48',
+    momentos: ['desayuno'],
+    nombre: 'Tortilla de patata española al horno (light)',
+    tags: ['español', 'europeo', 'proteina', 'sin-freir'],
+    super: ['huevo', 'papa', 'cebolla', 'aceite de oliva', 'pimentón'],
+    cuisineStyles: ['Mediterránea', 'Casera'],
+    prepTimeMinutes: 30,
+    difficulty: 'media',
+    macroEstimate: { calories: 290, protein: 16, carbs: 28, fat: 14 },
+    medicalContraindications: ['diabetes descontrolada', 'dieta baja en carbohidratos']
+  },
+  {
+    id: 'des_49',
+    momentos: ['desayuno'],
+    nombre: 'Frittata de espinaca y tomates secos',
+    tags: ['italiano', 'mediterraneo', 'proteina', 'sin-freir'],
+    super: ['huevo', 'espinaca', 'tomate seco', 'queso feta', 'aceituna', 'aceite de oliva'],
+    cuisineStyles: ['Italiana', 'Mediterránea'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 310, protein: 19, carbs: 8, fat: 22 },
+    medicalContraindications: ['cálculos renales (oxalatos en espinaca)', 'hipertensión (sodio en queso feta)']
+  },
+  {
+    id: 'des_50',
+    momentos: ['desayuno'],
+    nombre: 'Shakshuka (huevos en salsa de tomate)',
+    tags: ['medio-oriente', 'mediterraneo', 'proteina', 'vegetariano'],
+    super: ['huevo', 'tomate', 'pimentón', 'cebolla', 'comino', 'aceite de oliva', 'pan integral'],
+    cuisineStyles: ['Mediterránea', 'Casera'],
+    prepTimeMinutes: 30,
+    difficulty: 'media',
+    macroEstimate: { calories: 340, protein: 17, carbs: 32, fat: 16 },
+    medicalContraindications: ['reflujo gastroesofágico (tomate ácido)']
+  },
+
+  // --- DESAYUNOS ASIÁTICOS ---
+  {
+    id: 'des_51',
+    momentos: ['desayuno'],
+    nombre: 'Congee de arroz integral con pollo y jengibre',
+    tags: ['chino', 'sopa', 'digestivo', 'reconfortante'],
+    super: ['arroz integral', 'pollo deshebrado', 'jengibre fresco', 'cebolla verde', 'salsa de soya baja en sodio'],
+    cuisineStyles: ['Asiática', 'Casera'],
+    prepTimeMinutes: 40,
+    difficulty: 'media',
+    macroEstimate: { calories: 270, protein: 18, carbs: 38, fat: 5 },
+    medicalContraindications: ['diabetes descontrolada (limitar porción)']
+  },
+  {
+    id: 'des_52',
+    momentos: ['desayuno'],
+    nombre: 'Tamagoyaki (omelette japonés dulce)',
+    tags: ['japones', 'proteina', 'tradicional'],
+    super: ['huevo', 'mirin', 'salsa de soya', 'azúcar', 'aceite'],
+    cuisineStyles: ['Asiática'],
+    prepTimeMinutes: 15,
+    difficulty: 'media',
+    macroEstimate: { calories: 220, protein: 14, carbs: 12, fat: 14 },
+    medicalContraindications: ['diabetes (azúcar añadida)', 'intolerancia al huevo']
+  },
+  {
+    id: 'des_53',
+    momentos: ['desayuno'],
+    nombre: 'Miso shiru con tofu y algas wakame',
+    tags: ['japones', 'sopa', 'probioticos', 'bajo-carb'],
+    super: ['pasta de miso', 'tofu firme', 'alga wakame', 'cebolla verde', 'dashi'],
+    cuisineStyles: ['Asiática', 'Vegetariana'],
+    prepTimeMinutes: 15,
+    difficulty: 'facil',
+    macroEstimate: { calories: 120, protein: 10, carbs: 8, fat: 5 },
+    medicalContraindications: ['hipertensión (sodio en miso)', 'enfermedad tiroidea (yodo en algas)']
+  },
+  {
+    id: 'des_54',
+    momentos: ['desayuno'],
+    nombre: 'Bibimbap de desayuno con arroz y vegetales',
+    tags: ['coreano', 'bowl', 'vegetales', 'colorido'],
+    super: ['arroz', 'espinaca', 'zanahoria', 'brotes de soya', 'huevo', 'salsa de chile coreano (gochujang moderada)'],
+    cuisineStyles: ['Asiática'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 380, protein: 16, carbs: 52, fat: 12 },
+    medicalContraindications: ['diabetes descontrolada', 'reflujo (picante)']
+  },
+  {
+    id: 'des_55',
+    momentos: ['desayuno'],
+    nombre: 'Panqueques de matcha con azuki (sin azúcar añadida)',
+    tags: ['japones', 'dulce-natural', 'antioxidante'],
+    super: ['harina de trigo integral', 'polvo de matcha', 'pasta de frijol azuki sin azúcar', 'huevo', 'leche'],
+    cuisineStyles: ['Asiática', 'Vegetariana'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 290, protein: 11, carbs: 45, fat: 8 },
+    medicalContraindications: ['intolerancia al gluten']
+  },
+
+  // --- DESAYUNOS ITALIANOS ---
+  {
+    id: 'des_56',
+    momentos: ['desayuno'],
+    nombre: 'Uova in purgatorio (huevos en salsa de tomate)',
+    tags: ['italiano', 'mediterraneo', 'proteina', 'sencillo'],
+    super: ['huevo', 'tomate triturado', 'ajo', 'aceite de oliva', 'albahaca', 'pan integral'],
+    cuisineStyles: ['Italiana', 'Mediterránea'],
+    prepTimeMinutes: 20,
+    difficulty: 'facil',
+    macroEstimate: { calories: 320, protein: 16, carbs: 30, fat: 16 },
+    medicalContraindications: ['reflujo gastroesofágico']
+  },
+  {
+    id: 'des_57',
+    momentos: ['desayuno'],
+    nombre: 'Panini integral de mozzarella, tomate y albahaca',
+    tags: ['italiano', 'vegetariano', 'fresco', 'portatil'],
+    super: ['pan ciabatta integral', 'mozzarella fresca', 'tomate', 'albahaca', 'aceite de oliva'],
+    cuisineStyles: ['Italiana', 'Vegetariana'],
+    prepTimeMinutes: 10,
+    difficulty: 'facil',
+    macroEstimate: { calories: 340, protein: 16, carbs: 38, fat: 16 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+  {
+    id: 'des_58',
+    momentos: ['desayuno'],
+    nombre: 'Frittata de calabacín y parmesano',
+    tags: ['italiano', 'bajo-carb', 'proteina'],
+    super: ['huevo', 'calabacín', 'queso parmesano', 'aceite de oliva', 'nuez moscada'],
+    cuisineStyles: ['Italiana'],
+    prepTimeMinutes: 20,
+    difficulty: 'facil',
+    macroEstimate: { calories: 280, protein: 18, carbs: 6, fat: 20 },
+    medicalContraindications: ['alergia al huevo']
+  },
+  {
+    id: 'des_59',
+    momentos: ['desayuno'],
+    nombre: 'Ricotta toast con frutos rojos y miel',
+    tags: ['italiano', 'dulce', 'proteina', 'probióticos'],
+    super: ['pan integral', 'queso ricotta', 'fresa', 'mora', 'miel', 'nueces'],
+    cuisineStyles: ['Italiana', 'Mediterránea'],
+    prepTimeMinutes: 10,
+    difficulty: 'facil',
+    macroEstimate: { calories: 310, protein: 14, carbs: 38, fat: 12 },
+    medicalContraindications: ['diabetes (controlar miel)', 'intolerancia a la lactosa']
+  },
+  {
+    id: 'des_60',
+    momentos: ['desayuno'],
+    nombre: 'Polenta cremosa con champiñones salteados',
+    tags: ['italiano', 'vegetariano', 'confort', 'caliente'],
+    super: ['harina de maíz (polenta)', 'champiñón', 'mantequilla light', 'queso parmesano', 'tomillo'],
+    cuisineStyles: ['Italiana', 'Vegetariana'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 290, protein: 10, carbs: 42, fat: 10 },
+    medicalContraindications: ['diabetes descontrolada']
+  },
+
+  // --- COLACIONES SALUDABLES (15 nuevas) ---
+  {
+    id: 'col_36',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Yogurt griego natural con linaza molida',
+    tags: ['probioticos', 'omega3', 'proteina', 'rapido'],
+    super: ['yogurt griego sin azúcar', 'linaza molida', 'canela'],
+    cuisineStyles: ['Casera', 'Mediterránea'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 140, protein: 15, carbs: 9, fat: 5 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+  {
+    id: 'col_37',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Manzana con crema de cacahuate natural',
+    tags: ['saciante', 'fibra', 'grasas-saludables', 'portatil'],
+    super: ['manzana mediana', 'crema de cacahuate sin azúcar', 'canela'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 3,
+    difficulty: 'facil',
+    macroEstimate: { calories: 190, protein: 5, carbs: 25, fat: 9 },
+    medicalContraindications: ['alergia a nueces (cacahuate es legumbre pero consultar)']
+  },
+  {
+    id: 'col_38',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Requesón descremado con pepino y chía',
+    tags: ['bajo-carb', 'proteina', 'fresco', 'digestivo'],
+    super: ['requesón descremado', 'pepino', 'semillas de chía', 'sal de mar'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 120, protein: 14, carbs: 5, fat: 5 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+  {
+    id: 'col_39',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Hummus casero con bastones de zanahoria',
+    tags: ['vegano', 'fibra', 'proteina-vegetal', 'mediterraneo'],
+    super: ['garbanzo cocido', 'tahini', 'limón', 'ajo', 'aceite de oliva', 'zanahoria'],
+    cuisineStyles: ['Mediterránea', 'Vegetariana'],
+    prepTimeMinutes: 10,
+    difficulty: 'facil',
+    macroEstimate: { calories: 160, protein: 6, carbs: 18, fat: 8 },
+    medicalContraindications: ['síndrome de intestino irritable (FODMAP alto)']
+  },
+  {
+    id: 'col_40',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Edamames calientes con sal de mar',
+    tags: ['proteina-vegetal', 'oriental', 'isoflavonas'],
+    super: ['edamames en vaina', 'sal de mar'],
+    cuisineStyles: ['Asiática', 'Vegetariana'],
+    prepTimeMinutes: 8,
+    difficulty: 'facil',
+    macroEstimate: { calories: 150, protein: 13, carbs: 10, fat: 6 },
+    medicalContraindications: ['hipotiroidismo (soya cruda)', 'alergia a la soya']
+  },
+  {
+    id: 'col_41',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Pepino relleno de atún con mayonesa ligera',
+    tags: ['proteina', 'bajo-carb', 'fresco', 'rapido'],
+    super: ['pepino grande', 'atún en agua', 'mayonesa light', 'cebolla morada', 'limón'],
+    cuisineStyles: ['Mediterránea', 'Casera'],
+    prepTimeMinutes: 8,
+    difficulty: 'facil',
+    macroEstimate: { calories: 130, protein: 18, carbs: 4, fat: 4 },
+    medicalContraindications: []
+  },
+  {
+    id: 'col_42',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Queso cottage con piña natural',
+    tags: ['proteina-lenta', 'digestivo', 'bromelina'],
+    super: ['queso cottage bajo en grasa', 'piña natural', 'canela'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 140, protein: 16, carbs: 12, fat: 3 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+  {
+    id: 'col_43',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Rollo de pavo con queso crema y espinaca',
+    tags: ['proteina', 'bajo-carb', 'portatil', 'rapido'],
+    super: ['pechuga de pavo rebanada', 'queso crema light', 'hojas de espinaca'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 110, protein: 14, carbs: 2, fat: 5 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+  {
+    id: 'col_44',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Huevo cocido con aguacate y todo bagel seasoning',
+    tags: ['proteina', 'grasas-saludables', 'keto-friendly'],
+    super: ['huevo grande cocido', 'aguacate', 'semillas de sésamo', 'semillas de amapola', 'sal'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 12,
+    difficulty: 'facil',
+    macroEstimate: { calories: 180, protein: 8, carbs: 4, fat: 15 },
+    medicalContraindications: ['alergia al huevo', 'cálculos biliares (consultar grasa)']
+  },
+  {
+    id: 'col_45',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Berries con nueces y toque de limón',
+    tags: ['antioxidantes', 'omega3', 'fresco', 'sin-lacteos'],
+    super: ['fresas', 'moras', 'arándanos', 'nueces', 'limón'],
+    cuisineStyles: ['Vegetariana'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 150, protein: 3, carbs: 15, fat: 10 },
+    medicalContraindications: ['alergia a nueces']
+  },
+  {
+    id: 'col_46',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Batido de proteína con café frío (proteína frappé)',
+    tags: ['proteina', 'cafeina', 'post-entreno', 'liquido'],
+    super: ['proteína whey', 'café espresso frío', 'hielo', 'leche descremada'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 130, protein: 25, carbs: 5, fat: 2 },
+    medicalContraindications: ['intolerancia a la lactosa', 'hipertensión descontrolada (cafeína)']
+  },
+  {
+    id: 'col_47',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Palta chilena (aguacate) con tomate y sal marina',
+    tags: ['grasas-saludables', 'fresco', 'vegetariano', 'simple'],
+    super: ['aguacate', 'tomate', 'sal marina', 'aceite de oliva', 'pan integral'],
+    cuisineStyles: ['Mediterránea', 'Vegetariana'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 200, protein: 4, carbs: 18, fat: 14 },
+    medicalContraindications: []
+  },
+  {
+    id: 'col_48',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Chía pudding con leche de coco sin azúcar',
+    tags: ['vegano', 'omega3', 'fibra', 'meal-prep'],
+    super: ['semillas de chía', 'leche de coco sin azúcar', 'vainilla natural'],
+    cuisineStyles: ['Vegetariana'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 170, protein: 4, carbs: 10, fat: 14 },
+    medicalContraindications: ['dieta baja en grasa', 'síndrome de intestino irritable (fibra alta)']
+  },
+  {
+    id: 'col_49',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Jícama con limón y chile en polvo',
+    tags: ['mexicano', 'hidratante', 'bajo-carb', 'fresco'],
+    super: ['jícama', 'limón', 'chile en polvo (tajín sin sal opcional)', 'sal de mar mínima'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 50, protein: 1, carbs: 11, fat: 0 },
+    medicalContraindications: ['reflujo gastroesofágico (ácido del limón)']
+  },
+  {
+    id: 'col_50',
+    momentos: ['colacion_am', 'colacion_pm'],
+    nombre: 'Cottage cheese con ralladura de limón y hierbas',
+    tags: ['proteina', 'fresco', 'mediterraneo', 'digestivo'],
+    super: ['queso cottage bajo en grasa', 'cáscara de limón', 'hierbas provenzales', 'pimienta'],
+    cuisineStyles: ['Mediterránea', 'Casera'],
+    prepTimeMinutes: 3,
+    difficulty: 'facil',
+    macroEstimate: { calories: 110, protein: 14, carbs: 5, fat: 3 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+
+  // --- COMIDAS/ALMUERZOS DOCUMENTADOS (20 nuevas) ---
+  {
+    id: 'com_41',
+    momentos: ['comida'],
+    nombre: 'Mole verde con pollo y arroz (sin freír)',
+    tags: ['mexicano', 'tradicional', 'proteina', 'sin-freir'],
+    super: ['pollo con hueso', 'mole verde (pasta)', 'arroz blanco', 'calabacitas', 'ejotes'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 50,
+    difficulty: 'dificil',
+    macroEstimate: { calories: 420, protein: 32, carbs: 45, fat: 14 },
+    medicalContraindications: ['reflujo gastroesofágico (chile)', 'gastritis']
+  },
+  {
+    id: 'com_42',
+    momentos: ['comida'],
+    nombre: 'Pescado al mojo de ajo con puré de papa',
+    tags: ['mexicano', 'mariscos', 'omega3', 'proteina'],
+    super: ['filete de pescado blanco', 'ajo', 'mantequilla light', 'limón', 'papa', 'leche descremada'],
+    cuisineStyles: ['Mexicana', 'Mediterránea'],
+    prepTimeMinutes: 35,
+    difficulty: 'media',
+    macroEstimate: { calories: 380, protein: 35, carbs: 38, fat: 10 },
+    medicalContraindications: ['alergia al pescado']
+  },
+  {
+    id: 'com_43',
+    momentos: ['comida'],
+    nombre: 'Chiles rellenos de queso capeados (horno)',
+    tags: ['mexicano', 'vegetariano', 'proteina', 'sin-freir'],
+    super: ['chile poblano', 'queso oaxaca', 'huevo (capeado)', 'caldillo de tomate', 'cebolla'],
+    cuisineStyles: ['Mexicana', 'Vegetariana'],
+    prepTimeMinutes: 45,
+    difficulty: 'dificil',
+    macroEstimate: { calories: 310, protein: 22, carbs: 14, fat: 18 },
+    medicalContraindications: ['reflujo (poblano picante)', 'intolerancia a la lactosa']
+  },
+  {
+    id: 'com_44',
+    momentos: ['comida'],
+    nombre: 'Picadillo de res con verduras (zucchini, zanahoria)',
+    tags: ['mexicano', 'proteina', 'economico', 'economico'],
+    super: ['carne molida de res magra', 'calabacín', 'zanahoria', 'papa', 'jitomate', 'cebolla'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 35,
+    difficulty: 'media',
+    macroEstimate: { calories: 340, protein: 28, carbs: 22, fat: 16 },
+    medicalContraindications: ['dieta baja en purinas (gota)']
+  },
+  {
+    id: 'com_45',
+    momentos: ['comida'],
+    nombre: 'Pasta integral con pesto de espinaca y pollo',
+    tags: ['italiano', 'proteina', 'hidratos-complejos'],
+    super: ['pasta integral', 'pechuga de pollo', 'espinaca', 'piñón', 'aceite de oliva', 'ajo'],
+    cuisineStyles: ['Italiana', 'Casera'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 420, protein: 32, carbs: 48, fat: 12 },
+    medicalContraindications: ['cálculos renales (oxalatos en espinaca)']
+  },
+  {
+    id: 'com_46',
+    momentos: ['comida'],
+    nombre: 'Risotto de champiñones con parmesano',
+    tags: ['italiano', 'vegetariano', 'confort', 'sin-gluten'],
+    super: ['arroz arborio', 'champiñón', 'caldo de verduras', 'vino blanco (opcional)', 'queso parmesano', 'mantequilla light'],
+    cuisineStyles: ['Italiana', 'Vegetariana'],
+    prepTimeMinutes: 40,
+    difficulty: 'dificil',
+    macroEstimate: { calories: 360, protein: 12, carbs: 58, fat: 10 },
+    medicalContraindications: ['diabetes descontrolada']
+  },
+  {
+    id: 'com_47',
+    momentos: ['comida'],
+    nombre: 'Pollo a la parmesana al horno (light)',
+    tags: ['italiano', 'proteina', 'horneado', 'sin-freir'],
+    super: ['pechuga de pollo', 'pan integral molido', 'huevo', 'salsa de tomate', 'queso mozzarella light', 'albahaca'],
+    cuisineStyles: ['Italiana'],
+    prepTimeMinutes: 40,
+    difficulty: 'media',
+    macroEstimate: { calories: 380, protein: 42, carbs: 22, fat: 14 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+  {
+    id: 'com_48',
+    momentos: ['comida'],
+    nombre: 'Bowl de quinoa mediterráneo con falafel horneado',
+    tags: ['mediterraneo', 'vegetariano', 'proteina-vegetal', 'alto-fibra'],
+    super: ['quinoa cocida', 'falafel horneado', 'hummus', 'tomate cherry', 'pepino', 'aceituna', 'tahini'],
+    cuisineStyles: ['Mediterránea', 'Vegetariana'],
+    prepTimeMinutes: 35,
+    difficulty: 'media',
+    macroEstimate: { calories: 390, protein: 16, carbs: 52, fat: 14 },
+    medicalContraindications: ['síndrome de intestino irritable (FODMAP alto)']
+  },
+  {
+    id: 'com_49',
+    momentos: ['comida'],
+    nombre: 'Moussaka griega de berenjena (versión light)',
+    tags: ['griego', 'mediterraneo', 'proteina', 'vegetales'],
+    super: ['berenjena', 'carne de res molida magra', 'cebolla', 'tomate', 'queso feta', 'bechamel ligera'],
+    cuisineStyles: ['Mediterránea'],
+    prepTimeMinutes: 60,
+    difficulty: 'dificil',
+    macroEstimate: { calories: 340, protein: 26, carbs: 18, fat: 18 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+  {
+    id: 'com_50',
+    momentos: ['comida'],
+    nombre: 'Buddha bowl con tofu, vegetales y aderezo de sésamo',
+    tags: ['asiatico', 'vegano', 'proteina-vegetal', 'colorido'],
+    super: ['arroz integral', 'tofu firme', 'brócoli', 'zanahoria', 'edamame', 'salsa de sésamo', 'cebolla verde'],
+    cuisineStyles: ['Asiática', 'Vegetariana'],
+    prepTimeMinutes: 30,
+    difficulty: 'media',
+    macroEstimate: { calories: 380, protein: 18, carbs: 52, fat: 12 },
+    medicalContraindications: ['hipotiroidismo (soya)', 'síndrome de intestino irritable']
+  },
+  {
+    id: 'com_51',
+    momentos: ['comida'],
+    nombre: 'Mapo tofu (con carne molida de pavo)',
+    tags: ['chino', 'proteina', 'especiado', 'mapo'],
+    super: ['tofu firme', 'pavo molido magro', 'pasta de chile broad bean', 'ajo', 'jengibre', 'cebolla verde'],
+    cuisineStyles: ['Asiática'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 290, protein: 26, carbs: 8, fat: 16 },
+    medicalContraindications: ['reflujo (picante)', 'hipotiroidismo']
+  },
+  {
+    id: 'com_52',
+    momentos: ['comida'],
+    nombre: 'Teriyaki de salmón con arroz y edamame',
+    tags: ['japones', 'mariscos', 'omega3', 'proteina'],
+    super: ['filete de salmón', 'salsa teriyaki baja en sodio', 'arroz', 'edamame', 'semillas de sésamo'],
+    cuisineStyles: ['Asiática'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 460, protein: 38, carbs: 42, fat: 16 },
+    medicalContraindications: ['alergia al pescado', 'hipertensión (sodio en teriyaki)']
+  },
+  {
+    id: 'com_53',
+    momentos: ['comida'],
+    nombre: 'Curry de garbanzos y espinaca (chana saag)',
+    tags: ['indio', 'vegetariano', 'proteina-vegetal', 'curry'],
+    super: ['garbanzo cocido', 'espinaca', 'tomate', 'leche de coco light', 'garam masala', 'jengibre'],
+    cuisineStyles: ['Asiática', 'Vegetariana'],
+    prepTimeMinutes: 35,
+    difficulty: 'media',
+    macroEstimate: { calories: 320, protein: 14, carbs: 42, fat: 14 },
+    medicalContraindications: ['cálculos renales (oxalatos)', 'síndrome de intestino irritable']
+  },
+  {
+    id: 'com_54',
+    momentos: ['comida'],
+    nombre: 'Pad thai de pollo (fideos de arroz)',
+    tags: ['tailandes', 'asiatico', 'proteina', 'tamarindo'],
+    super: ['fideos de arroz', 'pollo', 'huevos', 'brotes de soya', 'cacahuates', 'salsa de pescado (opcional)', 'tamarindo'],
+    cuisineStyles: ['Asiática'],
+    prepTimeMinutes: 30,
+    difficulty: 'media',
+    macroEstimate: { calories: 420, protein: 28, carbs: 48, fat: 14 },
+    medicalContraindications: ['alergia a nueces (cacahuates)', 'soya']
+  },
+  {
+    id: 'com_55',
+    momentos: ['comida'],
+    nombre: 'Fajitas de pollo con pimientos y cebolla',
+    tags: ['mexicano', 'proteina', 'vegetales', 'rapido'],
+    super: ['pechuga de pollo en tiras', 'pimiento verde', 'pimiento rojo', 'cebolla', 'tortilla integral', 'limón'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 25,
+    difficulty: 'facil',
+    macroEstimate: { calories: 340, protein: 32, carbs: 32, fat: 10 },
+    medicalContraindications: ['reflujo (pimientos ácidos)']
+  },
+  {
+    id: 'com_56',
+    momentos: ['comida'],
+    nombre: 'Carnitas de cerdo horneadas con nopales asados',
+    tags: ['mexicano', 'proteina', 'horneado', 'michoacan'],
+    super: ['carne de cerdo magra', 'naranja', 'leche (técnica de cocción)', 'nopal asado', 'salsa verde'],
+    cuisineStyles: ['Mexicana'],
+    prepTimeMinutes: 90,
+    difficulty: 'dificil',
+    macroEstimate: { calories: 360, protein: 38, carbs: 12, fat: 18 },
+    medicalContraindications: ['dieta baja en purinas (gota)', 'dieta kosher', 'dieta halal']
+  },
+  {
+    id: 'com_57',
+    momentos: ['comida'],
+    nombre: 'Caldo tlalpeño con pollo y garbanzo',
+    tags: ['mexicano', 'sopa', 'caldo', 'reconfortante'],
+    super: ['pollo con hueso', 'caldo de pollo', 'garbanzo', 'chile chipotle (moderado)', 'aguacate', 'queso fresco', 'epazote'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 50,
+    difficulty: 'media',
+    macroEstimate: { calories: 290, protein: 26, carbs: 18, fat: 14 },
+    medicalContraindications: ['reflujo (chile)', 'intolerancia a la lactosa']
+  },
+  {
+    id: 'com_58',
+    momentos: ['comida'],
+    nombre: 'Milanesas de soya a la napolitana (horno)',
+    tags: ['mexicano', 'vegetariano', 'proteina-vegetal', 'sin-carne'],
+    super: ['milanesa de soya texturizada', 'salsa de tomate', 'queso mozzarella light', 'orégano'],
+    cuisineStyles: ['Mexicana', 'Vegetariana'],
+    prepTimeMinutes: 30,
+    difficulty: 'facil',
+    macroEstimate: { calories: 260, protein: 22, carbs: 18, fat: 12 },
+    medicalContraindications: ['hipotiroidismo (soya)', 'intolerancia a la lactosa']
+  },
+  {
+    id: 'com_59',
+    momentos: ['comida'],
+    nombre: 'Torta de jamón de pavo con aguacate (pan integral)',
+    tags: ['mexicano', 'proteina', 'rapido', 'portatil'],
+    super: ['pan integral', 'pechuga de pavo', 'aguacate', 'lechuga', 'jitomate', 'mostaza'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 10,
+    difficulty: 'facil',
+    macroEstimate: { calories: 320, protein: 22, carbs: 38, fat: 10 },
+    medicalContraindications: ['intolerancia al gluten']
+  },
+  {
+    id: 'com_60',
+    momentos: ['comida'],
+    nombre: 'Salmón al horno con costra de hierbas y espárragos',
+    tags: ['europeo', 'mariscos', 'omega3', 'proteina'],
+    super: ['filete de salmón', 'eneldo', 'perejil', 'limón', 'espárragos', 'aceite de oliva'],
+    cuisineStyles: ['Mediterránea'],
+    prepTimeMinutes: 25,
+    difficulty: 'media',
+    macroEstimate: { calories: 380, protein: 36, carbs: 8, fat: 22 },
+    medicalContraindications: ['alergia al pescado']
+  },
+
+  // --- CENAS LIGERAS DOCUMENTADAS (15 nuevas) ---
+  {
+    id: 'cen_36',
+    momentos: ['cena'],
+    nombre: 'Crema de calabaza con jengibre (sin crema)',
+    tags: ['ligero', 'caliente', 'digestivo', 'bajo-grasa'],
+    super: ['calabaza', 'cebolla', 'jengibre fresco', 'caldo de pollo bajo en sodio', 'aceite de oliva'],
+    cuisineStyles: ['Casera', 'Asiática'],
+    prepTimeMinutes: 30,
+    difficulty: 'facil',
+    macroEstimate: { calories: 140, protein: 4, carbs: 22, fat: 6 },
+    medicalContraindications: ['diabetes descontrolada (limitar porción)']
+  },
+  {
+    id: 'cen_37',
+    momentos: ['cena'],
+    nombre: 'Sopa de pollo con fideos integrales y espinaca',
+    tags: ['reconfortante', 'proteina', 'cena-caliente'],
+    super: ['caldo de pollo', 'pechuga de pollo deshebrada', 'fideos integrales', 'espinaca', 'zanahoria'],
+    cuisineStyles: ['Casera', 'Mexicana'],
+    prepTimeMinutes: 25,
+    difficulty: 'facil',
+    macroEstimate: { calories: 220, protein: 20, carbs: 22, fat: 6 },
+    medicalContraindications: ['cálculos renales (oxalatos en espinaca)']
+  },
+  {
+    id: 'cen_38',
+    momentos: ['cena'],
+    nombre: 'Rollitos de lechuga con pollo deshebrado y hummus',
+    tags: ['ligero', 'bajo-carb', 'proteina', 'fresco'],
+    super: ['lechuga romana', 'pollo deshebrado', 'hummus', 'pepino', 'zanahoria'],
+    cuisineStyles: ['Mediterránea', 'Casera'],
+    prepTimeMinutes: 15,
+    difficulty: 'facil',
+    macroEstimate: { calories: 180, protein: 24, carbs: 10, fat: 6 },
+    medicalContraindications: ['síndrome de intestino irritable (FODMAP alto en hummus)']
+  },
+  {
+    id: 'cen_39',
+    momentos: ['cena'],
+    nombre: 'Omelette de claras con champiñones y espinaca',
+    tags: ['proteina', 'bajo-carb', 'bajo-grasa', 'rapido'],
+    super: ['claras de huevo', 'champiñón', 'espinaca', 'aceite de oliva en spray'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 12,
+    difficulty: 'facil',
+    macroEstimate: { calories: 120, protein: 18, carbs: 4, fat: 4 },
+    medicalContraindications: ['cálculos renales (oxalatos)']
+  },
+  {
+    id: 'cen_40',
+    momentos: ['cena'],
+    nombre: 'Ensalada de garbanzos con tomate y pepino',
+    tags: ['vegetariano', 'proteina-vegetal', 'fresco', 'mediterraneo'],
+    super: ['garbanzo cocido', 'tomate', 'pepino', 'cebolla morada', 'perejil', 'aceite de oliva', 'limón'],
+    cuisineStyles: ['Mediterránea', 'Vegetariana'],
+    prepTimeMinutes: 10,
+    difficulty: 'facil',
+    macroEstimate: { calories: 240, protein: 10, carbs: 28, fat: 10 },
+    medicalContraindications: ['síndrome de intestino irritable (FODMAP alto)']
+  },
+  {
+    id: 'cen_41',
+    momentos: ['cena'],
+    nombre: 'Sardinas en lata con ensalada verde y tostada',
+    tags: ['omega3', 'proteina', 'economico', 'rapido'],
+    super: ['sardinas en agua (lata)', 'lechuga mixta', 'tomate cherry', 'tostada integral', 'limón'],
+    cuisineStyles: ['Mediterránea', 'Casera'],
+    prepTimeMinutes: 8,
+    difficulty: 'facil',
+    macroEstimate: { calories: 260, protein: 24, carbs: 16, fat: 12 },
+    medicalContraindications: ['alergia al pescado', 'dieta baja en sodio (verificar sardinas)']
+  },
+  {
+    id: 'cen_42',
+    momentos: ['cena'],
+    nombre: 'Requesón descremado con pepino y cebolla morada',
+    tags: ['proteina', 'bajo-carb', 'ligero', 'fresco'],
+    super: ['requesón descremado', 'pepino', 'cebolla morada', 'eneldo', 'aceite de oliva'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 5,
+    difficulty: 'facil',
+    macroEstimate: { calories: 140, protein: 18, carbs: 6, fat: 6 },
+    medicalContraindications: ['intolerancia a la lactosa']
+  },
+  {
+    id: 'cen_43',
+    momentos: ['cena'],
+    nombre: 'Verduras al vapor con tofu salteado',
+    tags: ['vegano', 'bajo-carb', 'proteina-vegetal', 'ligero'],
+    super: ['brócoli', 'coliflor', 'pimiento', 'tofu firme', 'salsa de soya baja en sodio', 'jengibre'],
+    cuisineStyles: ['Asiática', 'Vegetariana'],
+    prepTimeMinutes: 20,
+    difficulty: 'facil',
+    macroEstimate: { calories: 160, protein: 14, carbs: 12, fat: 8 },
+    medicalContraindications: ['hipotiroidismo (soya)', 'cálculos renales (oxalatos en brócoli)']
+  },
+  {
+    id: 'cen_44',
+    momentos: ['cena'],
+    nombre: 'Consomé de pollo con verduras julianas',
+    tags: ['digestivo', 'caliente', 'bajo-carb', 'ligero'],
+    super: ['caldo de pollo desgrasado', 'calabacín', 'zanahoria', 'apio', 'espinaca', 'cilantro'],
+    cuisineStyles: ['Mexicana', 'Casera'],
+    prepTimeMinutes: 20,
+    difficulty: 'facil',
+    macroEstimate: { calories: 80, protein: 12, carbs: 6, fat: 2 },
+    medicalContraindications: ['dieta baja en sodio (controlar caldo)']
+  },
+  {
+    id: 'cen_45',
+    momentos: ['cena'],
+    nombre: 'Atún a la plancha con ensalada de aguacate',
+    tags: ['proteina', 'omega3', 'bajo-carb', 'fresco'],
+    super: ['filete de atún fresco', 'aguacate', 'lechuga', 'pepino', 'aceite de oliva', 'limón'],
+    cuisineStyles: ['Mediterránea'],
+    prepTimeMinutes: 15,
+    difficulty: 'media',
+    macroEstimate: { calories: 280, protein: 34, carbs: 8, fat: 14 },
+    medicalContraindications: ['alergia al pescado']
+  },
+  {
+    id: 'cen_46',
+    momentos: ['cena'],
+    nombre: 'Huevo revuelto con espinaca y queso cottage',
+    tags: ['proteina', 'bajo-carb', 'rapido', 'ligero'],
+    super: ['huevo', 'espinaca', 'queso cottage bajo en grasa', 'aceite de oliva'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 10,
+    difficulty: 'facil',
+    macroEstimate: { calories: 220, protein: 20, carbs: 4, fat: 14 },
+    medicalContraindications: ['cálculos renales (oxalatos)', 'intolerancia a la lactosa']
+  },
+  {
+    id: 'cen_47',
+    momentos: ['cena'],
+    nombre: 'Guiso de lentejas con verduras (pequeña porción)',
+    tags: ['vegetariano', 'proteina-vegetal', 'fibra', 'caliente'],
+    super: ['lentejas cocidas', 'calabacín', 'zanahoria', 'cebolla', 'tomate', 'apio'],
+    cuisineStyles: ['Vegetariana', 'Casera'],
+    prepTimeMinutes: 35,
+    difficulty: 'media',
+    macroEstimate: { calories: 200, protein: 14, carbs: 28, fat: 4 },
+    medicalContraindications: ['síndrome de intestino irritable (FODMAP alto)', 'dieta baja en carbohidratos']
+  },
+  {
+    id: 'cen_48',
+    momentos: ['cena'],
+    nombre: 'Sopa de tomate casera con albahaca',
+    tags: ['vegetariana', 'digestiva', 'caliente', 'ligero'],
+    super: ['tomate rojo', 'cebolla', 'ajo', 'caldo de verduras', 'albahaca', 'aceite de oliva'],
+    cuisineStyles: ['Italiana', 'Vegetariana'],
+    prepTimeMinutes: 25,
+    difficulty: 'facil',
+    macroEstimate: { calories: 100, protein: 3, carbs: 14, fat: 5 },
+    medicalContraindications: ['reflujo gastroesofágico (tomate ácido)']
+  },
+  {
+    id: 'cen_49',
+    momentos: ['cena'],
+    nombre: 'Pechuga de pollo a la plancha con brócoli al vapor',
+    tags: ['proteina', 'bajo-carb', 'bajo-grasa', 'simple'],
+    super: ['pechuga de pollo', 'brócoli', 'aceite de oliva', 'limón', 'ajo'],
+    cuisineStyles: ['Casera'],
+    prepTimeMinutes: 20,
+    difficulty: 'facil',
+    macroEstimate: { calories: 220, protein: 36, carbs: 6, fat: 6 },
+    medicalContraindications: ['cálculos renales (oxalatos en brócoli)']
+  },
+  {
+    id: 'cen_50',
+    momentos: ['cena'],
+    nombre: 'Ensalada griega con queso feta y aceitunas',
+    tags: ['vegetariana', 'mediterranea', 'fresco', 'proteina'],
+    super: ['pepino', 'tomate', 'cebolla morada', 'queso feta', 'aceituna', 'aceite de oliva', 'orégano'],
+    cuisineStyles: ['Mediterránea', 'Vegetariana'],
+    prepTimeMinutes: 10,
+    difficulty: 'facil',
+    macroEstimate: { calories: 240, protein: 10, carbs: 10, fat: 18 },
+    medicalContraindications: ['intolerancia a la lactosa', 'dieta baja en sodio (aceitunas)']
+  }
 ];
 
 export function getCompactMealsCatalog(

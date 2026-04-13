@@ -46,6 +46,7 @@ import {
   hasPlanRevisionPatchChanges,
 } from '../utils/planAiUtils';
 import { repairBrokenText } from '../utils/text';
+import { remapFoodGroupRow, resolveFoodGroupKey } from '../utils/foodGroupKeys';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
 export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias' | 'suplementos';
@@ -122,6 +123,52 @@ function sanitizeCustomData(value: unknown) {
 
 function sanitizeNullableObject(value: unknown) {
   return isPlainObject(value) ? value : null;
+}
+
+type StoredQuestionnaireContexts = {
+  el: any | null;
+  ella: any | null;
+  ambos: any | null;
+};
+
+type QuestionnaireStepsByProfile = {
+  el: number;
+  ella: number;
+  ambos: number;
+};
+
+function sanitizeStepsByProfile(value: unknown): QuestionnaireStepsByProfile {
+  const empty: QuestionnaireStepsByProfile = { el: 0, ella: 0, ambos: 0 };
+  if (!isPlainObject(value)) return empty;
+  return {
+    el: typeof value.el === 'number' && value.el >= 0 ? value.el : 0,
+    ella: typeof value.ella === 'number' && value.ella >= 0 ? value.ella : 0,
+    ambos: typeof value.ambos === 'number' && value.ambos >= 0 ? value.ambos : 0,
+  };
+}
+
+function sanitizeStoredQuestionnaireContexts(value: unknown): StoredQuestionnaireContexts {
+  const empty = { el: null, ella: null, ambos: null };
+
+  if (!isPlainObject(value)) return empty;
+
+  // Backward compatibility: migrate the old single-slot payload into its target slot.
+  if (typeof value.targetProfile === 'string') {
+    const target = value.targetProfile === 'el' || value.targetProfile === 'ella' || value.targetProfile === 'ambos'
+      ? value.targetProfile
+      : null;
+    if (!target) return empty;
+    return {
+      ...empty,
+      [target]: sanitizeNullableObject(value),
+    };
+  }
+
+  return {
+    el: sanitizeNullableObject(value.el),
+    ella: sanitizeNullableObject(value.ella),
+    ambos: sanitizeNullableObject(value.ambos),
+  };
 }
 
 function isEquivalencesLike(value: unknown): value is any[] {
@@ -336,11 +383,13 @@ function normalizeObjectivesData(
 
   Object.entries(fallback).forEach(([momentKey, fallbackGroups]) => {
     const sourceGroups = isPlainObject(source[momentKey]) ? source[momentKey] : {};
+    const remappedGroups = remapFoodGroupRow(sourceGroups);
     normalized[momentKey] = {};
 
     Object.entries(fallbackGroups).forEach(([groupKey, fallbackAmount]) => {
+      const fromRemap = remappedGroups[groupKey as keyof typeof remappedGroups];
       normalized[momentKey][groupKey] = sanitizeNumberValue(
-        sourceGroups[groupKey],
+        fromRemap !== undefined ? fromRemap : sourceGroups[groupKey],
         fallbackAmount
       );
     });
@@ -364,7 +413,9 @@ function normalizeDistributionData(
         return fallbackEntry ? { ...fallbackEntry } : null;
       }
 
-      const grupo = sanitizeStringValue(entry.grupo, fallbackEntry?.grupo ?? '');
+      const grupoRaw = sanitizeStringValue(entry.grupo, fallbackEntry?.grupo ?? '');
+      const grupoCanon = resolveFoodGroupKey(grupoRaw);
+      const grupo = grupoCanon || grupoRaw;
       const detalle = sanitizeStringValue(entry.detalle, fallbackEntry?.detalle ?? '');
       const total = sanitizeNumberValue(entry.total, fallbackEntry?.total ?? 0);
 
@@ -630,7 +681,7 @@ interface DietContextType {
   planRevisionLoading: boolean;
   planRevisionError: string;
   planRevisionErrorLog: AiDebugLog | null;
-  lastQuestionnaireContext: any;
+  lastQuestionnaireContexts: StoredQuestionnaireContexts;
   handleGenerateWithAi: (payload: QuestionnairePayload) => Promise<void>;
   handleRevisePlanWithAi: (payload: PlanRevisionRequest) => Promise<void>;
 
@@ -638,7 +689,7 @@ interface DietContextType {
   questionnaireTargetProfile: TargetProfile;
   setQuestionnaireTargetProfile: React.Dispatch<React.SetStateAction<TargetProfile>>;
   questionnaireStepIdx: number;
-  setQuestionnaireStepIdx: React.Dispatch<React.SetStateAction<number>>;
+  setQuestionnaireStepIdx: (step: number | ((prev: number) => number)) => void;
   questionnaireEl: any;
   setQuestionnaireEl: React.Dispatch<React.SetStateAction<any>>;
   questionnaireElla: any;
@@ -684,8 +735,8 @@ interface DietContextType {
 const DietContext = createContext<DietContextType | undefined>(undefined);
 
 // ─── Default questionnaire data ──────────────────────────────────────
-const defaultQuestionnaireData = (weight: string, height: string) => ({
-  age: '', currentWeightKg: weight, heightCm: height, targetWeightKg: '',
+const defaultQuestionnaireData = (weight: string, height: string, age = '', targetWeightKg = '') => ({
+  age, currentWeightKg: weight, heightCm: height, targetWeightKg,
   objectives: [], objectiveTimeline: '12 sem', diagnostics: '', allergies: '',
   medications: '', intolerances: '', digestiveSymptoms: '', favoriteFoods: '',
   dislikedFoods: '', favoriteCuisineStyles: '', cookingTime: '', activityLevel: 'Moderado',
@@ -772,10 +823,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [planRevisionError, setPlanRevisionError] = useState('');
   const [planRevisionErrorLog, setPlanRevisionErrorLog] = useState<AiDebugLog | null>(null);
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
-  const [lastQuestionnaireContext, setLastQuestionnaireContext] = useLocalStorage<any>(
-    'lastQuestionnaireContext',
-    null,
-    sanitizeNullableObject
+  const [lastQuestionnaireContexts, setLastQuestionnaireContexts] = useLocalStorage<StoredQuestionnaireContexts>(
+    'lastQuestionnaireContexts',
+    { el: null, ella: null, ambos: null },
+    sanitizeStoredQuestionnaireContexts
   );
   const geminiModelRef = useRef(geminiModel);
 
@@ -788,13 +839,25 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useLocalStorage<TargetProfile>("questionnaireTargetProfile", 
     initialRoute.view === 'questionnaire' ? initialRoute.target : 'ambos'
   );
-  const [questionnaireStepIdx, setQuestionnaireStepIdx] = useLocalStorage<number>(
-    'questionnaireStepIdx',
-    0,
-    (v) => (typeof v === 'number' && v >= 0 ? v : 0)
+  const [questionnaireStepsByProfile, setQuestionnaireStepsByProfile] = useLocalStorage<QuestionnaireStepsByProfile>(
+    'questionnaireStepsByProfile',
+    { el: 0, ella: 0, ambos: 0 },
+    sanitizeStepsByProfile
   );
-  const [questionnaireEl, setQuestionnaireEl] = useLocalStorage<any>("questionnaireEl", defaultQuestionnaireData("70", "165"), sanitizeNullableObject);
-  const [questionnaireElla, setQuestionnaireElla] = useLocalStorage<any>("questionnaireElla", defaultQuestionnaireData("60", "160"), sanitizeNullableObject);
+  // Derived step for the current target profile
+  const questionnaireStepIdx = questionnaireStepsByProfile[questionnaireTargetProfile] ?? 0;
+  const setQuestionnaireStepIdx = useCallback(
+    (step: number | ((prev: number) => number)) => {
+      setQuestionnaireStepsByProfile((prev) => {
+        const current = prev[questionnaireTargetProfile] ?? 0;
+        const next = typeof step === 'function' ? step(current) : step;
+        return { ...prev, [questionnaireTargetProfile]: Math.max(0, next) };
+      });
+    },
+    [questionnaireTargetProfile, setQuestionnaireStepsByProfile]
+  );
+  const [questionnaireEl, setQuestionnaireEl] = useLocalStorage<any>("questionnaireEl", defaultQuestionnaireData("80", "170", "30", "70"), sanitizeNullableObject);
+  const [questionnaireElla, setQuestionnaireElla] = useLocalStorage<any>("questionnaireElla", defaultQuestionnaireData("60", "160", "28", "55"), sanitizeNullableObject);
   const [questionnairePortionMode, setQuestionnairePortionMode] = useState<'auto' | 'manual'>('auto');
   const [questionnaireManualPortions, setQuestionnaireManualPortions] = useState<Record<string, Record<string, number>>>({});
   const [questionnaireAdditionalNotes, setQuestionnaireAdditionalNotes] = useState('');
@@ -1259,14 +1322,31 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   }, [geminiModel]);
 
   const requestAiResponse = useCallback(async (payload: any) => {
-    const { buildQuestionnaireMealsCatalog, mealsDatabase } = await import('../data/mealsDB');
+    const { mealsDatabase } = await import('../data/mealsDB');
     const { buildQuestionnaireSupplementsCatalog } = await import('../data/supplementsDB');
+    const { buildOptimizedMealsCatalog } = await import('../utils/mealCatalogBuilder');
     const questionnaireContext = payload.questionnaireContext || payload;
+
+    // CONSERVADOR: Por defecto useRotation=false para mantener comportamiento existente
+    // Cambiar a true cuando se quiera activar la rotación de comidas
+    const USE_ROTATION = false;
+
+    const catalogResult = await buildOptimizedMealsCatalog(
+      mealsDatabase,
+      questionnaireContext,
+      {
+        useRotation: USE_ROTATION,
+        recentMealIds: [], // TODO: Cargar desde historial del usuario
+        varietyWindow: 14,
+        targetProfile: payload.targetProfile || 'el',
+        allowFallback: true,
+      }
+    );
 
     const payloadWithKey = {
       ...payload,
       preferredModel: geminiModel,
-      mealsCatalog: buildQuestionnaireMealsCatalog(mealsDatabase, questionnaireContext),
+      mealsCatalog: catalogResult.catalog,
       supplementsCatalog: buildQuestionnaireSupplementsCatalog(questionnaireContext),
     };
     let json: any;
@@ -1457,7 +1537,15 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         ellaData: parsedEllaData || null,
         modelUsed: json.modelUsed,
       });
-      setLastQuestionnaireContext(sanitizeQuestionnairePayloadForMemory(payload));
+      setLastQuestionnaireContexts((prev) => ({
+        ...prev,
+        [payload.targetProfile]: sanitizeQuestionnairePayloadForMemory(payload),
+      }));
+      // Reset the step for the generated profile so re-opening starts fresh
+      setQuestionnaireStepsByProfile((prev) => ({
+        ...prev,
+        [payload.targetProfile]: 0,
+      }));
 
       setCustomData((prev: any) => {
         const updated = { ...prev };
@@ -1487,7 +1575,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setGenerationLoading(false);
     }
-  }, [buildAttemptHistoryFromModelUsed, formatModelUsedLabel, geminiModel, notify, requestAiResponse, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContext]);
+  }, [buildAttemptHistoryFromModelUsed, formatModelUsedLabel, geminiModel, notify, requestAiResponse, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContexts, setQuestionnaireStepsByProfile]);
 
   const handleRevisePlanWithAi = useCallback(async (payload: PlanRevisionRequest) => {
     setPlanRevisionError('');
@@ -1688,10 +1776,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     syncModel?: boolean;
     force?: boolean;
   }) => {
-    // Throttle duplicate background checks (1 minute threshold)
+    // Throttle duplicate background checks (5 minute threshold for non-forced calls)
     const now = Date.now();
-    const isForced = options?.force || options?.checkGeneration;
-    if (!isForced && now - lastGeminiStatusCheckTime.current < 60000) {
+    const isForced = options?.force === true;
+    const THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
+    if (!isForced && now - lastGeminiStatusCheckTime.current < THROTTLE_MS) {
       return null;
     }
 
@@ -1903,9 +1992,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     geminiModelRef.current = geminiModel;
   }, [geminiModel]);
 
+  // Check Gemini availability once at app startup (non-blocking)
   useEffect(() => {
-    refreshGeminiAvailability();
-  }, [geminiModel, refreshGeminiAvailability]);
+    void refreshGeminiAvailability({ checkGeneration: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Scroll to top on day/tab change
   useEffect(() => {
@@ -1953,10 +2044,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     geminiAvailabilityMessage,
     refreshGeminiAvailability,
     generationLoading, generationError, generationErrorLog, lastGeneratedData,
-    planRevisionLoading, planRevisionError, planRevisionErrorLog, lastQuestionnaireContext,
+    planRevisionLoading, planRevisionError, planRevisionErrorLog, lastQuestionnaireContexts,
     handleGenerateWithAi, handleRevisePlanWithAi,
     questionnaireTargetProfile, setQuestionnaireTargetProfile,
-    questionnaireStepIdx, setQuestionnaireStepIdx,
+    questionnaireStepIdx, setQuestionnaireStepIdx: setQuestionnaireStepIdx as any,
     questionnaireEl, setQuestionnaireEl,
     questionnaireElla, setQuestionnaireElla,
     questionnairePortionMode, setQuestionnairePortionMode,

@@ -6,11 +6,7 @@ export default defineConfig(() => {
     plugins: [react()],
     server: {
       port: 3000,
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3001'
-        }
-      }
+      // Sin proxy - Vercel CLI maneja /api/* directamente
     },
   };
 });

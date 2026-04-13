@@ -28,9 +28,17 @@ function getAllowedHosts(req) {
       process.env.APP_URL,
       process.env.SITE_URL,
       'localhost:3000',
+      'localhost:3002',
+      'localhost:3003',
+      'localhost:3004',
+      'localhost:3005',
       'localhost:5173',
       'localhost:3001',
       '127.0.0.1:3000',
+      '127.0.0.1:3002',
+      '127.0.0.1:3003',
+      '127.0.0.1:3004',
+      '127.0.0.1:3005',
       '127.0.0.1:5173',
     ]
       .map(normalizeHostCandidate)

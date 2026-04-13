@@ -54,6 +54,7 @@ export default function App() {
     geminiRecommendedModel,
     geminiFallbackModels,
     lastGeneratedData,
+    lastQuestionnaireContexts,
     questionnaireTargetProfile,
     setQuestionnaireTargetProfile,
     questionnaireStepIdx: questionnaireStepIndex,

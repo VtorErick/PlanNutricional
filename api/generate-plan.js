@@ -1,4 +1,5 @@
 import { applyCorsHeaders, enforceRateLimit } from './_requestGuard.js';
+import { FOOD_GROUP_KEYS, remapFoodGroupRow, resolveFoodGroupKey } from './_foodGroupKeys.js';
 import {
   DEFAULT_GEMINI_MODEL,
   getGeminiFallbackModels,
@@ -22,15 +23,6 @@ const ALLOWED_ICONS = [
 ];
 const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
 const MEAL_MOMENT_KEYS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
-const FOOD_GROUP_KEYS = [
-  'frutas',
-  'verduras',
-  'cereales',
-  'leguminosas',
-  'lacteos',
-  'proteina',
-  'grasas',
-];
 const MEAL_ITEM_REQUIRED_KEYS = [
   'nombre',
   'porciones',
@@ -1031,8 +1023,9 @@ function validateProfileStructure(perfil, profilePrefix, debugContext, geminiReq
         );
       }
 
+      const remappedGoals = remapFoodGroupRow(distribution);
       FOOD_GROUP_KEYS.forEach((groupKey) => {
-        if (!isIntegerValue(distribution[groupKey])) {
+        if (!isIntegerValue(remappedGoals[groupKey])) {
           throw createInvalidStructureError(
             debugContext,
             `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento[${index}].${groupKey} no es entero.`,
@@ -1044,7 +1037,7 @@ function validateProfileStructure(perfil, profilePrefix, debugContext, geminiReq
       });
 
       normalizedGoals[momentKey] = Object.fromEntries(
-        FOOD_GROUP_KEYS.map((groupKey) => [groupKey, distribution[groupKey]])
+        FOOD_GROUP_KEYS.map((groupKey) => [groupKey, remappedGoals[groupKey]])
       );
       seenGoalMoments.add(momentKey);
     });
@@ -1074,8 +1067,9 @@ function validateProfileStructure(perfil, profilePrefix, debugContext, geminiReq
       );
     }
 
+    const remappedMoment = remapFoodGroupRow(distribution);
     FOOD_GROUP_KEYS.forEach((groupKey) => {
-      if (!isIntegerValue(distribution[groupKey])) {
+      if (!isIntegerValue(remappedMoment[groupKey])) {
         throw createInvalidStructureError(
           debugContext,
           `Respuesta de IA incompleta: perfil${profilePrefix}.objetivosPorMomento.${momentKey}.${groupKey} no es entero.`,
@@ -1085,6 +1079,9 @@ function validateProfileStructure(perfil, profilePrefix, debugContext, geminiReq
         );
       }
     });
+    perfil.objetivosPorMomento[momentKey] = Object.fromEntries(
+      FOOD_GROUP_KEYS.map((groupKey) => [groupKey, remappedMoment[groupKey]])
+    );
   });
 
   if (!Array.isArray(perfil.distribucionDiaria) || perfil.distribucionDiaria.length === 0) {
@@ -1103,8 +1100,8 @@ function validateProfileStructure(perfil, profilePrefix, debugContext, geminiReq
     validateRequiredIntegerField(item, 'total', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredStringField(item, 'detalle', `perfil${profilePrefix}.distribucionDiaria[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
 
-    const groupKey = item.grupo.trim();
-    if (!FOOD_GROUP_KEYS.includes(groupKey)) {
+    const resolvedGrupo = resolveFoodGroupKey(item.grupo.trim());
+    if (!resolvedGrupo || !FOOD_GROUP_KEYS.includes(resolvedGrupo)) {
       throw createInvalidStructureError(
         debugContext,
         `Respuesta de IA incompleta: perfil${profilePrefix}.distribucionDiaria[${index}].grupo no es valido.`,
@@ -1113,6 +1110,8 @@ function validateProfileStructure(perfil, profilePrefix, debugContext, geminiReq
         modelName
       );
     }
+    item.grupo = resolvedGrupo;
+    const groupKey = resolvedGrupo;
 
     if (seenDistributionGroups.has(groupKey)) {
       throw createInvalidStructureError(
@@ -1774,10 +1773,10 @@ Reglas criticas:
 - No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
 - Mantén todo el texto muy conciso para evitar respuestas largas.
 - detallesPerfil, descripcion y notaSalud deben ser breves.
-- perfil${prefix}.objetivosPorMomento debe ser un arreglo de 5 objetos, uno por cada momento, y cada objeto debe incluir: momento, frutas, verduras, cereales, leguminosas, lacteos, proteina, grasas.
+- perfil${prefix}.objetivosPorMomento: arreglo de 5 objetos (uno por momento). Cada objeto incluye momento y SOLO estas claves de grupo, con nombres literales exactos (sin abreviar: nunca uses "verd" por verduras ni "frut" por frutas): ${FOOD_GROUP_KEYS.join(', ')}.
 - Si el contexto del perfil del paciente provee 'clinicalPortionsGrid', estas porciones son LA LEY CLINICA. DEBES COPIARLAS de manera EXACTA en 'objetivosPorMomento' para cada momento del dia, sin desviarte ni intentar balancearlas. Usa estas porciones OBLIGATORIAMENTE para buscar en la base de datos las recetas ideales. Si ignoras las 'clinicalPortionsGrid', el paciente corre riesgo de salud.
 - perfil${prefix}.distribucionDiaria debe ser un arreglo de 7 objetos, uno por cada grupo: ${FOOD_GROUP_KEYS.join(', ')}.
-- Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo, total, detalle.
+- Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo (mismo literal exacto que en la lista anterior), total, detalle.
 - No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
 - En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog".
 - Cada entrada de "mealsCatalog" incluye id, nombre, tags, super y momentos. Usa SIEMPRE nombre + super para que "detalle" coincida con la receta base.
@@ -1793,6 +1792,7 @@ Reglas criticas:
 - No pongas suplementos dentro del plan ni como objetos.
 - No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
 - Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
+- Rotacion semanal: si no aplica la regla anterior de companionPlan, alterna idRef entre dias para el mismo momento (no repitas el mismo plato principal los 7 dias en el mismo horario si el catalogo ofrece alternativas compatibles con porciones y restricciones).
 - No devuelvas null, undefined, placeholders, alias de claves ni dias con acentos distintos a los pedidos.`;
 }
 
@@ -1807,7 +1807,7 @@ function buildUserPrompt(payload, prefix) {
       selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
       slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
-      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el campo 'nombre' y la lista 'super' del catalogo para redactar un 'detalle' corto pero claramente consistente con la receta base. OBLIGATORIO: recalcula 'porciones' con gramos realistas y coherentes con la receta base. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef. Los suplementos deben salir SOLO de 'supplementsCatalog' y devolverse unicamente como IDs.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el campo 'nombre' y la lista 'super' del catalogo para redactar un 'detalle' corto pero claramente consistente con la receta base. OBLIGATORIO: recalcula 'porciones' con gramos realistas y coherentes con la receta base. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef. Los suplementos deben salir SOLO de 'supplementsCatalog' y devolverse unicamente como IDs. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }
@@ -1882,7 +1882,7 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
       planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
       returnOnlyChangedSections: payload.requestMode === 'adjust',
       mealOptionsPerMoment: 3,
-      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa 'nombre' y 'super' del catalogo para mantener 'detalle' alineado con la receta base. OBLIGATORIO: recalcula 'porciones' con gramos realistas y coherentes con la receta base. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Si cambias suplementos, usa SOLO IDs válidos de 'supplementsCatalog'.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa 'nombre' y 'super' del catalogo para mantener 'detalle' alineado con la receta base. OBLIGATORIO: recalcula 'porciones' con gramos realistas y coherentes con la receta base. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Si cambias suplementos, usa SOLO IDs válidos de 'supplementsCatalog'. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }
