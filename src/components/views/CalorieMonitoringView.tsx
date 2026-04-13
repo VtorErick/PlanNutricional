@@ -119,7 +119,7 @@ export default function CalorieMonitoringView() {
   }, [diaActivo]);
 
   const statusPills: Record<StatusKey, string> = {
-    low: isDarkMode ? 'bg-amber-950/60 text-amber-200' : 'bg-amber-50 text-amber-700',
+    low: isDarkMode ? 'bg-amber-950/60 text-amber-200' : 'bg-orange-100 text-orange-800 border border-orange-200',
     near: `${palette.soft}`,
     high: isDarkMode ? 'bg-rose-950/60 text-rose-200' : 'bg-rose-50 text-rose-700',
   };
@@ -220,7 +220,7 @@ export default function CalorieMonitoringView() {
 
                 <div className={`mt-4 h-2.5 rounded-full overflow-hidden ${isActive ? 'bg-white/15' : palette.cardTrack}`}>
                   <div
-                    className={`h-full rounded-full ${isActive ? 'bg-white' : item.status === 'near' ? palette.bar : item.status === 'high' ? 'bg-rose-500' : 'bg-amber-400'}`}
+                    className={`h-full rounded-full ${isActive ? 'bg-white' : item.status === 'near' ? palette.bar : item.status === 'high' ? 'bg-rose-500' : 'bg-orange-500'}`}
                     style={{ width: `${Math.max(8, Math.min(100, percent))}%` }}
                   />
                 </div>
