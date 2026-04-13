@@ -68,9 +68,10 @@ export default function EquivalenciasView() {
                 <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${ac.bgGradient}`}>
                   {typeof Icon === 'string' ? (
                     <span className="text-lg">{Icon}</span>
-                  ) : (
-                    <Icon className="h-5 w-5 text-white" />
-                  )}
+                  ) : (() => {
+                    const LucideIcon = Icon as React.ComponentType<{ className?: string }>;
+                    return <LucideIcon className="h-5 w-5 text-white" />;
+                  })()}
                 </div>
 
                 <div>
