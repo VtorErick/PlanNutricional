@@ -19,3 +19,8 @@ test-*.json
 .vercel-dev.*
 .claude/
 perfil-el (1).json
+mobile-app/node_modules/
+mobile-app/android/
+mobile-app/ios/
+mobile-app/dist/
+mobile-app/.expo/
