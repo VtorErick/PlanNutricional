@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { PencilLine, RotateCcw, Utensils } from 'lucide-react';
+import { PencilLine, RotateCcw, Search, Utensils } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import type { MealItem } from '../types';
 import { isMealEdited } from '../utils/mealEditing';
 
@@ -30,9 +31,50 @@ export default function MealSelector({
   porciones = [],
   isDarkMode = false,
 }: MealSelectorProps) {
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMeals = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) return comidas;
+
+    return comidas.filter((comida) => {
+      const haystack = `${comida.nombre} ${comida.detalle} ${comida.porciones}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [comidas, searchQuery]);
+
+  const visibleMeals = showCatalog ? filteredMeals : comidas.slice(0, 3);
+
   return (
     <div className="grid gap-3">
-      {comidas.map((comida, idx) => {
+      {showCatalog ? (
+        <div className={`rounded-[22px] border p-3 ${isDarkMode ? 'border-slate-800 bg-slate-950/80' : 'border-slate-100 bg-white/80'}`}>
+          <label className={`flex h-11 items-center gap-2 rounded-2xl border px-3 ${
+            isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-100' : 'border-slate-200 bg-white text-slate-900'
+          }`}>
+            <Search className={`h-4 w-4 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+            <input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Buscar por nombre o ingrediente"
+              className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-slate-400"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setShowCatalog(false);
+              setSearchQuery('');
+            }}
+            className={`mt-2 text-xs font-black ${accentClasses.text}`}
+          >
+            Ver sugeridas
+          </button>
+        </div>
+      ) : null}
+
+      {visibleMeals.map((comida, idx) => {
         const esSeleccionada = selecciones[`${perfil}-${dia}-${momento}-${comida.nombre}`];
         const edited = isMealEdited(comida);
 
@@ -84,7 +126,7 @@ export default function MealSelector({
                             onRestoreMeal(comida, `${dia}::${momento}::${idx}`);
                           }}
                           data-testid={`meal-restore-${perfil}-${dia}-${momento}-${idx}`}
-                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                          className={`hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
                             isDarkMode
                               ? `${accentClasses.border} bg-slate-950 text-slate-100 hover:bg-slate-900`
                               : `${accentClasses.border} bg-white text-slate-700 hover:bg-slate-50`
@@ -103,7 +145,7 @@ export default function MealSelector({
                             onEditMeal(comida, `${dia}::${momento}::${idx}`);
                           }}
                           data-testid={`meal-edit-${perfil}-${dia}-${momento}-${idx}`}
-                          className={`w-8 h-8 rounded-full border flex items-center justify-center transition ${
+                          className={`hidden sm:flex w-8 h-8 rounded-full border items-center justify-center transition ${
                             isDarkMode
                               ? 'border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500'
                               : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
@@ -201,6 +243,24 @@ export default function MealSelector({
           </motion.div>
         );
       })}
+
+      {showCatalog && visibleMeals.length === 0 ? (
+        <div className={`rounded-2xl p-4 text-center text-sm font-semibold ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
+          No encontramos opciones con esa búsqueda.
+        </div>
+      ) : null}
+
+      {!showCatalog && comidas.length > 3 ? (
+        <button
+          type="button"
+          onClick={() => setShowCatalog(true)}
+          className={`rounded-2xl px-4 py-3 text-sm font-black transition active:scale-[0.99] ${
+            isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          Ver más opciones
+        </button>
+      ) : null}
     </div>
   );
 }

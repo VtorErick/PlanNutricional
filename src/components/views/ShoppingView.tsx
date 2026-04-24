@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import {
   ShoppingCart,
   CheckCircle2,
-  PackageCheck,
   ClipboardList,
   ChevronDown,
   ChevronUp,
@@ -50,6 +49,36 @@ const MEAL_ORDER: Record<string, number> = {
   colacion_pm: 3,
   cena: 4,
 };
+
+const SUPERMARKET_SECTIONS = [
+  { key: 'frutas_verduras', label: 'Frutas y verduras', icon: '🥬' },
+  { key: 'proteina', label: 'Proteínas', icon: '🥩' },
+  { key: 'lacteos', label: 'Lácteos y huevos', icon: '🥚' },
+  { key: 'despensa', label: 'Despensa', icon: '🧺' },
+  { key: 'otros', label: 'Otros', icon: '🛒' },
+] as const;
+
+function getSupermarketSection(ingredient: string) {
+  const value = ingredient.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  if (/(manzana|pera|platano|banana|fresa|fruta|naranja|limon|aguacate|tomate|jitomate|lechuga|espinaca|brocoli|pepino|zanahoria|calabaza|cebolla|pimiento|verdura|champi|cilantro|berries|arandano)/.test(value)) {
+    return 'frutas_verduras';
+  }
+
+  if (/(pollo|res|pavo|atun|salmon|pescado|camaron|carne|huevo|claras|tofu|tempeh|jamon)/.test(value)) {
+    return 'proteina';
+  }
+
+  if (/(yogur|yoghurt|leche|queso|kefir|lactosa|requeson)/.test(value)) {
+    return 'lacteos';
+  }
+
+  if (/(arroz|avena|pan|tortilla|pasta|quinoa|frijol|lenteja|garbanzo|aceite|nuez|almendra|semilla|chia|linaza|granola|cereal|tostada|crema|sal|canela|cacao)/.test(value)) {
+    return 'despensa';
+  }
+
+  return 'otros';
+}
 
 export default function ShoppingView() {
   const {
@@ -141,19 +170,12 @@ export default function ShoppingView() {
 
   const checkedCount = shoppingList.filter((item) => comprasCheck[item.ingrediente]).length;
   const pendingCount = shoppingList.length - checkedCount;
-
-  const getUsageSummary = React.useCallback((usos: ShoppingUsage[]) => {
-    const summary = usos.reduce((acc, uso) => {
-      if (uso.perfil === 'el') {
-        acc.el += 1;
-      } else if (uso.perfil === 'ella') {
-        acc.ella += 1;
-      }
-      return acc;
-    }, { el: 0, ella: 0 });
-
-    return summary;
-  }, []);
+  const groupedShoppingList = useMemo(() => {
+    return SUPERMARKET_SECTIONS.map((section) => ({
+      ...section,
+      items: shoppingList.filter((item) => getSupermarketSection(item.ingrediente) === section.key),
+    })).filter((section) => section.items.length > 0);
+  }, [shoppingList]);
 
   const getDisplayUsos = React.useCallback((usos: ShoppingUsage[]): ShoppingUsageDisplay[] => {
     if (!isAmbos) {
@@ -215,7 +237,7 @@ export default function ShoppingView() {
             : 'bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]'
         }`}
       >
-        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-48 pointer-events-none">
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-32 pointer-events-none">
           <div
             className="absolute inset-0 bg-cover bg-center opacity-28"
             style={{ backgroundImage: "url('/images/meal-prep.png')" }}
@@ -249,80 +271,26 @@ export default function ShoppingView() {
                 isDarkMode ? 'text-slate-300' : 'text-slate-500'
               }`}
             >
-              Tienes{' '}
+              {' '}
               <strong className={isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}>
                 {shoppingList.length} ingredientes
               </strong>{' '}
-              generados a partir de tus comidas seleccionadas.
+              de tus comidas seleccionadas.
             </p>
           </div>
         </div>
 
         {shoppingList.length > 0 && (
-          <div className="relative mb-5 grid grid-cols-3 gap-3">
-            <div
-              className={`rounded-2xl p-3 ${
-                isDarkMode
-                  ? 'bg-emerald-950/45'
-                  : 'bg-emerald-50'
-              }`}
-            >
-              <div className="mb-1 flex items-center gap-2">
-                <ClipboardList className="w-4 h-4 text-emerald-600" />
-                <span
-                  className={`text-[11px] uppercase tracking-[0.14em] font-bold ${
-                    isDarkMode ? 'text-emerald-300' : 'text-emerald-700'
-                  }`}
-                >
-                  Total
-                </span>
-              </div>
-              <p className={`text-xl font-black ${isDarkMode ? 'text-emerald-100' : 'text-emerald-900'}`}>
-                {shoppingList.length}
-              </p>
+          <div className={`relative mb-4 flex items-center justify-between rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-emerald-600" />
+              <span className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
+                {pendingCount} pendientes
+              </span>
             </div>
-
-            <div
-              className={`rounded-2xl p-3 ${
-                isDarkMode
-                  ? 'bg-amber-950/45'
-                  : 'bg-amber-50'
-              }`}
-            >
-              <div className="mb-1 flex items-center gap-2">
-                <ShoppingCart className="w-4 h-4 text-amber-600" />
-                <span
-                  className={`text-[11px] uppercase tracking-[0.14em] font-bold ${
-                    isDarkMode ? 'text-amber-300' : 'text-amber-700'
-                  }`}
-                >
-                  Pendientes
-                </span>
-              </div>
-              <p className={`text-xl font-black ${isDarkMode ? 'text-amber-100' : 'text-amber-900'}`}>
-                {pendingCount}
-              </p>
-            </div>
-
-            <div
-              className={`rounded-2xl p-3 ${
-                isDarkMode ? 'bg-sky-950/45' : 'bg-blue-50'
-              }`}
-            >
-              <div className="mb-1 flex items-center gap-2">
-                <PackageCheck className="w-4 h-4 text-blue-600" />
-                <span
-                  className={`text-[11px] uppercase tracking-[0.14em] font-bold ${
-                    isDarkMode ? 'text-sky-300' : 'text-blue-700'
-                  }`}
-                >
-                  Marcados
-                </span>
-              </div>
-              <p className={`text-xl font-black ${isDarkMode ? 'text-sky-100' : 'text-blue-900'}`}>
-                {checkedCount}
-              </p>
-            </div>
+            <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              {checkedCount}/{shoppingList.length} marcados
+            </span>
           </div>
         )}
 
@@ -345,10 +313,22 @@ export default function ShoppingView() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
-            {shoppingList.map((item) => {
+          <div className="space-y-4">
+            {groupedShoppingList.map((section) => (
+              <section key={section.key} className="space-y-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className={`flex items-center gap-2 text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                    <span aria-hidden="true">{section.icon}</span>
+                    {section.label}
+                  </h3>
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                    {section.items.length}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
+            {section.items.map((item) => {
               const isChecked = comprasCheck[item.ingrediente];
-              const usageSummary = getUsageSummary(item.usos);
               const displayUsos = getDisplayUsos(item.usos);
 
               return (
@@ -417,19 +397,10 @@ export default function ShoppingView() {
                         >
                           Aparece en {displayUsos.length} comida{displayUsos.length > 1 ? 's' : ''} seleccionada{displayUsos.length > 1 ? 's' : ''}
                         </p>
-                        {isAmbos && (usageSummary.el > 0 || usageSummary.ella > 0) ? (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {usageSummary.el > 0 ? (
-                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-black ${elAccent.tagBg} ${elAccent.tagText}`}>
-                                El {usageSummary.el}
-                              </span>
-                            ) : null}
-                            {usageSummary.ella > 0 ? (
-                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-black ${ellaAccent.tagBg} ${ellaAccent.tagText}`}>
-                                Ella {usageSummary.ella}
-                              </span>
-                            ) : null}
-                          </div>
+                        {isAmbos ? (
+                          <p className={`mt-1 text-[11px] font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {displayUsos.some((uso) => uso.perfiles.length === 2) ? 'Compartido' : 'Uso individual'}
+                          </p>
                         ) : null}
                       </div>
 
@@ -512,6 +483,9 @@ export default function ShoppingView() {
                 </motion.div>
               );
             })}
+                </div>
+              </section>
+            ))}
           </div>
         )}
         </div>

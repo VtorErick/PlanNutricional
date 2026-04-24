@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, BarChart3, Heart, Shield, TrendingDown, User } from 'lucide-react';
+import { AlertTriangle, BarChart3, ChevronDown, Heart, Shield, TrendingDown, User } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
 
@@ -19,7 +19,7 @@ const categories = [
 
 export default function SummaryView() {
   const { perfilActivo, perfilesData, ac, isDarkMode } = useDiet();
-  const [ambosSubTab, setAmbosSubTab] = useState<'el' | 'ella'>('el');
+  const [expandedSummaryPoint, setExpandedSummaryPoint] = useState<string | null>(null);
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
 
@@ -48,31 +48,6 @@ export default function SummaryView() {
               Resumen
             </h2>
           </div>
-
-          {isAmbos && (
-            <div className={`flex w-full rounded-2xl p-1 sm:w-auto sm:min-w-[200px] ${isDarkMode ? 'bg-slate-900' : 'bg-slate-100'}`}>
-              <button
-                onClick={() => setAmbosSubTab('el')}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
-                  ambosSubTab === 'el'
-                    ? `${elAccent.btnActive} shadow-sm`
-                    : isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                }`}
-              >
-                {perfilesData.el.nombre}
-              </button>
-              <button
-                onClick={() => setAmbosSubTab('ella')}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm font-bold transition-all ${
-                  ambosSubTab === 'ella'
-                    ? `${ellaAccent.btnActive} shadow-sm`
-                    : isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                }`}
-              >
-                {perfilesData.ella.nombre}
-              </button>
-            </div>
-          )}
         </div>
       </section>
 
@@ -87,18 +62,24 @@ export default function SummaryView() {
             `Diseño optimizado para paciente de ${p.edad} años.`,
             p.horariosTexto ? `Horarios estratégicos: ${p.horariosTexto}.` : null
           ].filter(Boolean) as string[];
-
-          const activeCategoryCount = categories.filter((cat) =>
-            mealKeys.some((mealKey) => (p.objetivosPorMomento?.[mealKey]?.[cat.key] || 0) > 0)
-          ).length;
+          const compactSummaryPoints = summaryPoints.map((linea, idx) => {
+            if (idx === 0) {
+              return 'Plan diseñado para pérdida de grasa y manejo de intolerancia a la lactosa.';
+            }
+            if (idx === 1 && p.metaCaloricaKcalDia) {
+              return `Meta diaria personalizada: ${p.metaCaloricaKcalDia} kcal.`;
+            }
+            if (idx === 2) {
+              return `Diseño optimizado para paciente de ${p.edad} años.`;
+            }
+            if (idx === 3) {
+              return 'Horarios estratégicos definidos para 5 momentos del día.';
+            }
+            return linea;
+          });
 
           const isFirst = pIdx === 0;
-          const pfKey = isFirst ? 'el' : 'ella';
-          const hiddenClass = isAmbos
-            ? ambosSubTab === pfKey
-              ? 'block'
-              : 'hidden lg:block'
-            : 'block';
+          const hiddenClass = 'block';
 
           const dynamicAc = isAmbos
             ? {
@@ -127,46 +108,40 @@ export default function SummaryView() {
                     <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
                     {isAmbos ? `Puntos clave de ${p.nombre}` : 'Puntos clave de tu plan'}
                   </h3>
-                  {isAmbos ? (
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
-                      {p.nombre}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mb-3 flex flex-wrap gap-1.5">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
-                    {summaryPoints.length} puntos
-                  </span>
-                  {p.objetivosPorMomento ? (
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
-                      {activeCategoryCount} grupos activos
-                    </span>
-                  ) : null}
-                  {p.notaSalud ? (
-                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-                      Nota de salud
-                    </span>
-                  ) : null}
                 </div>
 
                 <div className="space-y-2.5">
                   {summaryPoints.map((linea, idx) => (
-                    <motion.div
+                    <motion.button
                       key={idx}
+                      type="button"
                       initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.06 }}
-                      className={`flex gap-3 p-3 rounded-xl ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}
+                      onClick={() => {
+                        const pointKey = `${p.perfil}-${idx}`;
+                        setExpandedSummaryPoint((current) => current === pointKey ? null : pointKey);
+                      }}
+                      className={`flex w-full items-start gap-3 rounded-2xl p-3 text-left transition-all active:scale-[0.99] ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-50 hover:bg-slate-100'}`}
                       style={{ borderLeft: `3px solid ${dynamicAc.color500}` }}
                     >
                       <span className={`inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-black ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
                         {idx + 1}
                       </span>
-                      <p className={`text-xs sm:text-sm leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                        {linea}
-                      </p>
-                    </motion.div>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block text-sm font-semibold leading-relaxed ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
+                          {expandedSummaryPoint === `${p.perfil}-${idx}` ? linea : compactSummaryPoints[idx]}
+                        </span>
+                        {linea !== compactSummaryPoints[idx] ? (
+                          <span className={`mt-1 block text-[11px] font-bold ${dynamicAc.text}`}>
+                            {expandedSummaryPoint === `${p.perfil}-${idx}` ? 'Ocultar detalle' : 'Ver detalle'}
+                          </span>
+                        ) : null}
+                      </span>
+                      <ChevronDown
+                        className={`mt-1 h-4 w-4 flex-shrink-0 transition-transform ${expandedSummaryPoint === `${p.perfil}-${idx}` ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                      />
+                    </motion.button>
                   ))}
                 </div>
               </div>

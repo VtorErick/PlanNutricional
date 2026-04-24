@@ -5,12 +5,12 @@ import {
   ChevronUp,
   Coffee,
   FileText,
-  RefreshCcw,
+  Plus,
+  SlidersHorizontal,
   Moon,
   Sun,
   UtensilsCrossed,
   Apple,
-  Zap,
 } from 'lucide-react';
 import MealSelector from '../MealSelector';
 import MealEditSheet from '../MealEditSheet';
@@ -124,6 +124,13 @@ export default function PlanView() {
   const [mealEditorDraft, setMealEditorDraft] = React.useState<MealEditorDraft | null>(null);
   const [isSavingMealEdit, setIsSavingMealEdit] = React.useState(false);
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: isPlanAiSheetOpen }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: false }));
+    };
+  }, [isPlanAiSheetOpen]);
 
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
@@ -506,15 +513,17 @@ export default function PlanView() {
           onOpen();
         }
       }}
-      className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-5 text-center transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] ${
+      className={`flex items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-5 text-center transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] ${
         isDarkMode
-          ? `${accent.bgLight} shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]`
-          : `${accent.bgLight} shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]`
+          ? `border-slate-700 bg-slate-900/70 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]`
+          : `border-blue-200 bg-slate-50/70 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.10)]`
       }`}
     >
-      <Zap className={`w-4 h-4 flex-shrink-0 ${accent.text}`} />
+      <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${accent.bgGradient} text-white shadow-sm`}>
+        <Plus className="h-4 w-4" />
+      </span>
       <span className={`text-sm font-bold ${accent.text}`}>
-        Ir a elegir platillo
+        Elegir platillo
       </span>
     </div>
   ), [isDarkMode]);
@@ -530,15 +539,24 @@ export default function PlanView() {
         className="space-y-4"
       >
         <div className="space-y-4">
-          <div className="flex justify-start">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
+                Mi plan
+              </h2>
+            </div>
             <button
               type="button"
               onClick={() => setIsPlanAiSheetOpen(true)}
               data-testid="plan-ai-open"
-              className={`inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white bg-gradient-to-r ${ac.bgGradient} shadow-lg transition hover:brightness-110 active:scale-[0.99]`}
+              className={`inline-flex h-11 flex-shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black transition active:scale-[0.99] ${
+                isDarkMode
+                  ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                  : 'border-slate-200 bg-white text-blue-600 shadow-sm hover:bg-slate-50'
+              }`}
             >
-              <RefreshCcw className="h-4 w-4" />
-              Ajustar mi plan
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden min-[370px]:inline">Ajustar</span>
             </button>
           </div>
 
@@ -589,7 +607,7 @@ export default function PlanView() {
                 }}
                 id={`momento-${momento.key}`}
                 data-testid={`moment-section-${momento.key}`}
-                className={`rounded-[24px] sm:rounded-[28px] overflow-hidden transition-shadow duration-300 ${
+                className={`rounded-[24px] sm:rounded-[28px] overflow-hidden transition-all duration-300 ${
                   isDarkMode
                     ? 'bg-slate-950/92 shadow-[0_12px_32px_rgba(2,6,23,0.42)] hover:shadow-[0_16px_40px_rgba(2,6,23,0.5)]'
                     : 'bg-white shadow-[0_10px_28px_rgba(15,23,42,0.05)] hover:shadow-[0_14px_32px_rgba(15,23,42,0.07)]'
@@ -622,22 +640,22 @@ export default function PlanView() {
                 >
                   <div className="min-w-0 flex items-center gap-3">
                     <div
-                      className={`w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                         done ? ac.momentoIconBgDone : ac.momentoIconBgPending
                       }`}
                     >
                       <Icon
-                        className={`w-4 h-4 ${
+                        className={`w-5 h-5 ${
                           done ? ac.momentoIconColorDone : ac.momentoIconColorPending
                         }`}
                       />
                     </div>
 
                     <div className="min-w-0 flex items-center gap-2">
-                      <h3 className={`text-sm sm:text-[15px] font-bold truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                      <h3 className={`text-[1.15rem] sm:text-[1.2rem] font-black truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                         {momento.label}
                       </h3>
-                      <p className={`text-[11px] ml-auto whitespace-nowrap ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>
+                      <p className={`text-sm ml-auto whitespace-nowrap font-semibold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                         {momento.hora}
                       </p>
                     </div>

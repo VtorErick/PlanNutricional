@@ -361,11 +361,7 @@ export default function LandingView() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col relative overflow-hidden">
       {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.10),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#f3f6fb_48%,_#f5f3ff_100%)] dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(139,92,246,0.12),_transparent_30%),linear-gradient(180deg,_#020617_0%,_#0f172a_48%,_#111827_100%)]" />
-
-        <div className="absolute -top-24 -left-16 w-[28rem] h-[28rem] rounded-full bg-sky-300/20 blur-3xl" />
-        <div className="absolute top-[10%] -right-20 w-[26rem] h-[26rem] rounded-full bg-violet-300/20 blur-3xl" />
-        <div className="absolute bottom-[-8rem] left-[18%] w-[30rem] h-[30rem] rounded-full bg-violet-300/10 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef6f4_54%,_#f7f7fb_100%)] dark:bg-[linear-gradient(180deg,_#020617_0%,_#0f172a_54%,_#111827_100%)]" />
 
         <div
           className="absolute inset-0 opacity-[0.15]"
@@ -415,12 +411,12 @@ export default function LandingView() {
             animate={{ opacity: 1, x: 0 }}
             onClick={() => setIsAdminOpen(true)}
             data-testid="landing-admin-button"
-            className="group inline-flex h-10 items-center justify-center gap-2 rounded-full bg-slate-50/75 px-3.5 py-2 text-[0px] font-bold hover:bg-white transition-all shrink-0 dark:bg-slate-950/70 dark:hover:bg-slate-900"
+            className="group inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200/80 bg-slate-50/75 font-bold hover:bg-white transition-all shrink-0 dark:border-slate-800 dark:bg-slate-950/70 dark:hover:bg-slate-900"
             title="Ajustes avanzados"
             type="button"
           >
             <Settings className="w-4 h-4 text-slate-600 dark:text-slate-200 group-hover:rotate-45 transition-transform duration-300" />
-            <span className="whitespace-nowrap text-[11px] text-slate-600 dark:text-slate-200">Ajustes avanzados</span>
+            <span className="sr-only">Ajustes avanzados</span>
           </motion.button>
         </div>
 
@@ -429,30 +425,15 @@ export default function LandingView() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 }}
-          className="text-center pb-5"
+          className="text-left pb-3"
         >
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-tight mb-2 dark:text-slate-50">
-            Nutrición inteligente,{' '}
-            <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 bg-clip-text text-transparent">
-              sin complicaciones
-            </span>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2 dark:text-slate-50">
+            Elige tu plan
           </h1>
 
-          <p className="text-sm text-slate-500 max-w-md mx-auto mb-3 dark:text-slate-300">
-            Elige tu plan individual o armen su lista de compras juntos de forma automática.
+          <p className="text-sm text-slate-500 max-w-md mb-1 dark:text-slate-300">
+            Plan individual o vista conjunta para compras y seguimiento.
           </p>
-
-          <div className="flex flex-wrap justify-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600 dark:bg-slate-900/80 dark:text-slate-200">
-              <ChefHat className="w-3.5 h-3.5 text-violet-500" />
-              Plan editable
-            </div>
-
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/80 shadow-[0_6px_18px_rgba(15,23,42,0.05)] text-[11px] font-medium text-slate-600 dark:bg-slate-900/80 dark:text-slate-200">
-              <ShoppingBasket className="w-3.5 h-3.5 text-blue-500" />
-              Lista de compras
-            </div>
-          </div>
         </motion.div>
 
         {/* Status banners */}
@@ -460,48 +441,28 @@ export default function LandingView() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.14 }}
-          className="space-y-2 pb-4"
+          className="space-y-2 pb-3"
         >
           {!elReady && !ellaReady && (
-            <div className="rounded-2xl bg-violet-50/85 dark:bg-violet-950/35 shadow-[0_10px_30px_rgba(139,92,246,0.08)] dark:shadow-[0_12px_30px_rgba(54,11,84,0.28)] px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs font-semibold text-violet-800 dark:text-violet-200 text-center leading-relaxed">
-                Aún no hay planes generados.
-                <br />
-                Comienza con <Sparkles className="w-3 h-3 inline mx-1" />
-                <span className="font-bold italic text-base text-violet-900 dark:text-violet-100">Personalizar mi plan</span>.
-                <span className="block text-[11px] font-medium text-violet-600 dark:text-violet-300 mt-1">
-                  También puedes personalizar ambos para obtener más comidas compartidas.
-                </span>
+            <div className="rounded-2xl bg-white/85 px-4 py-3 shadow-sm backdrop-blur-sm dark:bg-slate-900/80">
+              <p className="text-xs font-bold text-slate-600 dark:text-slate-200">
+                Aún no hay planes generados. Usa Personalizar para empezar.
               </p>
             </div>
           )}
 
           {elReady !== ellaReady && (
-            <div className="rounded-2xl bg-violet-50/85 dark:bg-violet-950/35 shadow-[0_10px_30px_rgba(139,92,246,0.08)] dark:shadow-[0_12px_30px_rgba(54,11,84,0.28)] px-4 py-3 backdrop-blur-sm">
-              <p className="text-xs font-semibold text-violet-800 dark:text-violet-200 text-center leading-relaxed">
-                <Sparkles className="w-3 h-3 inline mr-1" />
-                <span className="font-bold italic text-base text-violet-900 dark:text-violet-100">{elReady ? 'El' : 'Ella'}</span>{' '}
-                ya tiene un plan listo.
-                <br />
-                Ahora puedes generar el de{' '}
-                <span className="font-bold italic text-base text-violet-900 dark:text-violet-100">{elReady ? 'Ella' : 'El'}</span>{' '}
-                desde <Sparkles className="w-3 h-3 inline mx-1" />
-                <span className="font-bold italic text-base text-violet-900 dark:text-violet-100">Personalizar mi plan</span>.
-                <span className="block text-[11px] font-medium text-violet-600 dark:text-violet-300 mt-1">
-                  O personaliza ambos para obtener más comidas compartidas.
-                </span>
+            <div className="rounded-2xl bg-white/85 px-4 py-3 shadow-sm backdrop-blur-sm dark:bg-slate-900/80">
+              <p className="text-xs font-bold text-slate-600 dark:text-slate-200">
+                {elReady ? 'El' : 'Ella'} ya tiene plan. Completa el otro cuando quieras.
               </p>
             </div>
           )}
 
           {elReady && ellaReady && (
-            <div className={ambosLandingTheme.combinedBannerSurface}>
-              <p className={ambosLandingTheme.combinedBannerText}>
-                Los planes de <span className="font-bold italic text-base">El</span> y{' '}
-                <span className="font-bold italic text-base">Ella</span> ya están listos.
-                <span className={ambosLandingTheme.combinedBannerSubtext}>
-                  Si quieres más comidas compartidas, puedes volver a personalizar ambos.
-                </span>
+            <div className="rounded-2xl bg-white/85 px-4 py-3 shadow-sm backdrop-blur-sm dark:bg-slate-900/80">
+              <p className="text-xs font-bold text-slate-600 dark:text-slate-200">
+                Ambos planes listos. Puedes entrar individual o juntos.
               </p>
             </div>
           )}
@@ -510,7 +471,7 @@ export default function LandingView() {
         {/* Profile cards */}
         <div className="flex flex-col gap-4 pb-10">
           {/* Individual profiles */}
-          <div className="grid grid-cols-2 gap-4 items-stretch">
+          <div className="grid grid-cols-1 gap-3 items-stretch sm:grid-cols-2 sm:gap-4">
             {profiles.map((p, i) => (
               <motion.div
                 key={p.id}
@@ -529,7 +490,7 @@ export default function LandingView() {
                 onClick={p.onCard}
                 onKeyDown={onKey(p.onCard)}
                 data-testid={`landing-profile-${p.id}-card`}
-                className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${p.gradient} shadow-[0_18px_44px_rgba(15,23,42,0.16)] hover:shadow-[0_24px_56px_rgba(15,23,42,0.2)] ${p.shadowHover} transition-all duration-300 cursor-pointer flex flex-col ring-1 ring-white/10 min-h-[300px] sm:min-h-[340px]`}
+                className={`group relative overflow-hidden rounded-[28px] bg-gradient-to-br ${p.gradient} shadow-[0_16px_34px_rgba(15,23,42,0.14)] hover:shadow-[0_24px_56px_rgba(15,23,42,0.2)] ${p.shadowHover} transition-all duration-300 cursor-pointer flex flex-col ring-1 ring-white/10 min-h-[230px] sm:min-h-[340px]`}
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center opacity-[0.07] mix-blend-luminosity"
@@ -559,7 +520,7 @@ export default function LandingView() {
                         </h3>
 
                         {(p.bio.weight || p.bio.height || p.bio.age) && (
-                          <div className="flex flex-wrap gap-1.5">
+                          <div className="hidden flex-wrap gap-1.5 sm:flex">
                             <BioChip icon={Scale} value={p.bio.weight} unit="kg" />
                             <BioChip icon={Ruler} value={p.bio.height} unit="m" />
                             <BioChip icon={Calendar} value={p.bio.age} unit="años" />
@@ -572,10 +533,14 @@ export default function LandingView() {
                   <div className="h-px bg-white/18" />
 
                   <div className="flex flex-col gap-3 flex-1">
-                    {p.imc && <ImcBar imc={p.imc.imc} label={p.imc.label} />}
+                    {p.imc && (
+                      <div>
+                        <ImcBar imc={p.imc.imc} label={p.imc.label} />
+                      </div>
+                    )}
 
-                    <div className="min-h-[48px] sm:min-h-[60px]">
-                      <p className={`text-xs sm:text-sm ${p.metaCls} font-medium leading-relaxed text-white/90 line-clamp-3`}>
+                    <div className="min-h-[38px] sm:min-h-[60px]">
+                      <p className={`text-xs sm:text-sm ${p.metaCls} font-medium leading-relaxed text-white/90 line-clamp-2 sm:line-clamp-3`}>
                         {p.meta}
                       </p>
                     </div>
@@ -642,7 +607,7 @@ export default function LandingView() {
                 </div>
 
                 <p className="text-sm text-white/90 font-medium leading-relaxed max-w-xl">
-                  Combina los planes de ambos en una sola vista y genera una lista de compras conjunta con un clic.
+                  Vista conjunta para plan, compras y seguimiento.
                 </p>
               </div>
 
@@ -657,7 +622,7 @@ export default function LandingView() {
                   }}
                 />
 
-                <div className="flex flex-wrap lg:flex-nowrap justify-center lg:justify-end gap-3">
+                <div className="hidden sm:flex flex-wrap lg:flex-nowrap justify-center lg:justify-end gap-3">
                   {[
                     { val: String(sharedPlanStats.shared), label: 'Compartidas', sub: 'comidas' },
                     { val: `${sharedPlanStats.pct}%`, label: 'Sinergia', sub: 'ingredientes' },

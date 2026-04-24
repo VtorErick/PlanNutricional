@@ -17,7 +17,6 @@ import {
 import type { AccentColors } from '../utils/theme';
 import type { PlanRevisionMode } from '../services/aiService';
 import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
-import { getGeminiModelLabel } from '../utils/geminiModels';
 
 type TargetProfile = 'el' | 'ella' | 'ambos';
 type RegeneratePath = 'instruction' | 'questionnaire';
@@ -53,7 +52,7 @@ function OptionCard({
       onClick={onClick}
       aria-pressed={active}
       data-testid={dataTestId}
-      className={`group relative overflow-hidden rounded-[24px] border px-4 py-4 text-left transition ${
+      className={`group relative overflow-hidden rounded-[20px] border px-3 py-3 text-left transition ${
         active
           ? `${accentClasses.border} ${accentClasses.bgLight} shadow-[0_12px_28px_rgba(15,23,42,0.08)]`
           : isDarkMode
@@ -62,7 +61,7 @@ function OptionCard({
       }`}
     >
       <div className="flex items-start gap-3">
-        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ${
+        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${
           active
             ? `${accentClasses.tagBg} ${accentClasses.tagText}`
             : isDarkMode
@@ -89,7 +88,7 @@ function OptionCard({
               ) : null}
             </span>
           </div>
-          <p className={`mt-1 text-[12px] leading-relaxed ${
+          <p className={`mt-1 hidden text-[12px] leading-relaxed sm:block ${
             isDarkMode ? 'text-slate-400' : 'text-slate-500'
           }`}>
             {description}
@@ -137,9 +136,6 @@ export default function PlanAiRefreshSheet({
   hasQuestionnaireContext,
   defaultTarget,
   targetOptions,
-  geminiModel,
-  geminiRecommendedModel,
-  geminiFallbackModels,
 }: PlanAiRefreshSheetProps) {
   const [mode, setMode] = React.useState<PlanRevisionMode>('adjust');
   const [regeneratePath, setRegeneratePath] = React.useState<RegeneratePath>('instruction');
@@ -175,13 +171,6 @@ export default function PlanAiRefreshSheet({
     : mode === 'regenerate'
       ? 'Recrear plan con IA'
       : 'Actualizar plan con IA';
-  const helperCopy = isQuestionnaireRegenerate
-    ? hasQuestionnaireContext
-      ? 'Revisaremos tus respuestas anteriores antes de rehacer el plan.'
-      : 'Revisaremos tus datos antes de rehacer el plan.'
-    : mode === 'regenerate'
-      ? 'Se armara una nueva version completa con tu contexto actual.'
-      : 'Se cambiara solo lo que pidas, sin mover lo demas.';
   const canSubmit = loading
     ? false
     : isOpeningQuestionnaire
@@ -189,14 +178,10 @@ export default function PlanAiRefreshSheet({
     : mode === 'regenerate'
       ? true
       : instruction.trim().length >= 8;
-  const plannedModel = geminiRecommendedModel || geminiModel;
-  const plannedModelLabel = getGeminiModelLabel(plannedModel);
-  const fallbackPreview = geminiFallbackModels.slice(0, 2).map((model) => getGeminiModelLabel(model)).join(', ');
-
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[90] bg-slate-950/60 backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -208,7 +193,7 @@ export default function PlanAiRefreshSheet({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex h-[100dvh] w-full flex-col overflow-hidden rounded-none border sm:h-auto sm:max-h-[88vh] sm:max-w-3xl sm:rounded-[32px] ${
+            className={`flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-[32px] border sm:h-auto sm:max-h-[88vh] sm:max-w-3xl sm:rounded-[32px] ${
               isDarkMode
                 ? 'border-slate-700 bg-slate-900 shadow-[0_20px_60px_rgba(2,6,23,0.55)]'
                 : 'border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]'
@@ -228,11 +213,8 @@ export default function PlanAiRefreshSheet({
                     Cambios con IA
                   </p>
                   <h3 className={`text-lg font-black tracking-tight leading-tight sm:text-xl ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
-                    Pide cambios sin repetir tus datos
+                    Ajustar plan
                   </h3>
-                  <p className={`mt-1 text-xs leading-relaxed sm:text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
-                    Usa tu plan actual y, si existe, tu informacion previa.
-                  </p>
                 </div>
 
                 <button
@@ -252,23 +234,7 @@ export default function PlanAiRefreshSheet({
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-              <div className="space-y-5">
-                <div className={`rounded-[24px] border p-4 ${
-                  isDarkMode ? `${accentClasses.bgLight} ${accentClasses.border}` : `${accentClasses.bgLight} ${accentClasses.border}`
-                }`}>
-                  <div className="flex items-start gap-3">
-                    <Sparkles className={`mt-0.5 h-4 w-4 flex-shrink-0 ${accentClasses.text}`} />
-                    <div className="space-y-1">
-                      <p className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                        La IA trabajara sobre tu plan actual
-                      </p>
-                      <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-                        {helperCopy}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
+              <div className="space-y-4">
                 <div className="space-y-4">
                   <div>
                     <div className="mb-2 flex items-center gap-2">
@@ -277,7 +243,7 @@ export default function PlanAiRefreshSheet({
                         Tipo de cambio
                       </p>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {([
                         {
                           id: 'adjust' as const,
@@ -314,10 +280,10 @@ export default function PlanAiRefreshSheet({
                         A quien actualizar
                       </p>
                     </div>
-                    <div className={`rounded-[28px] border p-2 ${
+                    <div className={`rounded-[24px] border p-1.5 ${
                       isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
                     }`}>
-                      <div className="grid gap-2 sm:grid-cols-3">
+                      <div className="grid grid-cols-3 gap-1.5">
                         {targetOptions.map((option) => (
                           <OptionCard
                             key={option.id}
@@ -343,10 +309,10 @@ export default function PlanAiRefreshSheet({
                           Antes de rehacerlo
                         </p>
                       </div>
-                      <div className={`rounded-[28px] border p-2 ${
+                      <div className={`rounded-[24px] border p-1.5 ${
                         isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
                       }`}>
-                        <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="grid grid-cols-2 gap-1.5">
                           <OptionCard
                             active={regeneratePath === 'instruction'}
                             title="Dar nuevas indicaciones"
@@ -394,15 +360,15 @@ export default function PlanAiRefreshSheet({
                     <textarea
                       value={instruction}
                       onChange={(event) => setInstruction(event.target.value)}
-                      rows={6}
+                      rows={4}
                       data-testid="plan-ai-instruction"
-                      className={`${inputClasses} min-h-[160px] resize-y`}
+                      className={`${inputClasses} min-h-[116px] resize-y`}
                       placeholder={mode === 'regenerate'
                         ? 'Ej. Rehaz el plan con cenas mas ligeras y opciones mas faciles de repetir entre semana.'
                         : 'Ej. Esta vez menos pescado en la noche, no combines atun con lacteos y prioriza cenas mas faciles.'}
                     />
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="hidden flex-wrap gap-2 sm:flex">
                       {EXAMPLE_PROMPTS.map((example) => (
                         <button
                           key={example}
@@ -422,7 +388,7 @@ export default function PlanAiRefreshSheet({
                   </div>
                 )}
 
-                <div className={`rounded-[24px] border px-4 py-3 ${
+                <div className={`rounded-[22px] border px-4 py-3 ${
                   isQuestionnaireRegenerate
                     ? isDarkMode
                       ? 'border-cyan-800/70 bg-cyan-950/30 text-cyan-100'
@@ -459,23 +425,6 @@ export default function PlanAiRefreshSheet({
                     </div>
                   </div>
                 </div>
-
-                <div
-                  data-testid="plan-ai-model-preview"
-                  className={`rounded-[24px] border px-4 py-3 ${
-                    isDarkMode
-                      ? 'border-indigo-900/70 bg-indigo-950/30 text-indigo-100'
-                      : 'border-indigo-200 bg-indigo-50 text-indigo-900'
-                  }`}
-                >
-                  <p className="text-sm font-black">Modelo previsto: {plannedModelLabel}</p>
-                  <p className="mt-1 text-xs leading-relaxed opacity-90">
-                    {fallbackPreview
-                      ? `Fallback automatico: ${fallbackPreview}.`
-                      : 'No hay otro fallback validado en este momento.'}
-                  </p>
-                </div>
-
                 {errorMessage ? (
                   <div className={`space-y-3 rounded-[24px] border px-4 py-3 text-sm ${
                     isDarkMode

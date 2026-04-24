@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useEffect } from 'react';
+import { Suspense, lazy, useMemo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -6,6 +6,7 @@ import {
   ChefHat,
   Flame,
   Lightbulb,
+  MoreHorizontal,
   Moon,
   Pill,
   ShoppingCart,
@@ -36,6 +37,8 @@ function ViewFallback() {
 }
 
 export default function App() {
+  const [showMobileMore, setShowMobileMore] = useState(false);
+  const [isPlanAdjustOpen, setIsPlanAdjustOpen] = useState(false);
   const {
     perfilActivo: activeProfile,
     tab: activeTab,
@@ -80,38 +83,19 @@ export default function App() {
     }
   }, [activeTab, activeProfile, setActiveTab]);
 
-  const staticColors = useMemo(() => {
-    switch (activeProfile) {
-      case 'el':
-        return {
-          text: 'text-blue-600',
-          textDark: 'text-blue-800',
-          bgGradientLight: 'from-blue-50 to-cyan-50',
-          borderLight: 'border-blue-100',
-        };
-      case 'ella':
-        return {
-          text: 'text-rose-600',
-          textDark: 'text-rose-800',
-          bgGradientLight: 'from-rose-50 to-pink-50',
-          borderLight: 'border-rose-100',
-        };
-      case 'ambos':
-        return {
-          text: 'text-indigo-600',
-          textDark: 'text-indigo-800',
-          bgGradientLight: 'from-indigo-50 to-purple-50',
-          borderLight: 'border-indigo-100',
-        };
-      default:
-        return {
-          text: 'text-slate-600',
-          textDark: 'text-slate-800',
-          bgGradientLight: 'from-slate-50 to-slate-100',
-          borderLight: 'border-slate-100',
-        };
-    }
-  }, [activeProfile]);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    setShowMobileMore(false);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handlePlanAdjustState = (event: Event) => {
+      setIsPlanAdjustOpen(Boolean((event as CustomEvent<boolean>).detail));
+    };
+
+    window.addEventListener('plan-adjust-open', handlePlanAdjustState);
+    return () => window.removeEventListener('plan-adjust-open', handlePlanAdjustState);
+  }, []);
 
   const desktopTabBackdrop = useMemo(() => {
     switch (activeTab) {
@@ -246,7 +230,7 @@ export default function App() {
   // 🔹 ORDEN DE TABS: 'plan' es el primero (principal) por defecto
   const tabItems = [
     { key: 'plan' as const, label: 'Mi Plan', shortLabel: 'Plan', icon: Calendar },
-    { key: 'equivalencias' as const, label: 'Equivalencias', shortLabel: 'Extras', icon: BookOpen },
+    { key: 'equivalencias' as const, label: 'Equivalencias', shortLabel: 'Equiv.', icon: BookOpen },
     { key: 'suplementos' as const, label: 'Suplementos', shortLabel: 'Sups', icon: Pill },
     { key: 'calorias' as const, label: 'Calorías', shortLabel: 'Kcal', icon: Flame },
     { key: 'compras' as const, label: 'Compras', shortLabel: 'Compras', icon: ShoppingCart },
@@ -262,6 +246,63 @@ export default function App() {
     resumen: 'text-violet-500 dark:text-violet-300',
   };
 
+  const mobileActiveStyles: Record<(typeof tabItems)[number]['key'] | 'more', string> = {
+    plan: 'bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-[0_10px_22px_rgba(37,99,235,0.32)]',
+    compras: 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_10px_22px_rgba(20,184,166,0.30)]',
+    resumen: 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-[0_10px_22px_rgba(139,92,246,0.30)]',
+    equivalencias: 'bg-gradient-to-br from-lime-500 to-emerald-500 text-white shadow-[0_10px_22px_rgba(34,197,94,0.26)]',
+    suplementos: 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-[0_10px_22px_rgba(244,63,94,0.26)]',
+    calorias: 'bg-gradient-to-br from-orange-500 to-amber-400 text-white shadow-[0_10px_22px_rgba(249,115,22,0.26)]',
+    more: 'bg-gradient-to-br from-slate-900 to-slate-700 text-white shadow-[0_10px_22px_rgba(15,23,42,0.28)]',
+  };
+
+  const planTabs = ['plan', 'compras', 'equivalencias'] as const;
+  const summaryTabs = ['resumen', 'calorias', 'suplementos'] as const;
+  const isSummaryMode = summaryTabs.some((tab) => tab === activeTab);
+  const visibleTabKeys = isSummaryMode ? summaryTabs : planTabs;
+  const visibleTabs = visibleTabKeys
+    .map((tabKey) => tabItems.find((item) => item.key === tabKey))
+    .filter((item): item is (typeof tabItems)[number] => Boolean(item));
+  const modeAnchors = [
+    {
+      key: 'plan' as const,
+      label: 'Mi plan',
+      shortLabel: 'Plan',
+      icon: Calendar,
+      targetTab: 'plan' as const,
+      helper: 'Compras y extras',
+      tint: 'from-sky-500 to-blue-600',
+    },
+    {
+      key: 'resumen' as const,
+      label: 'Resumen',
+      shortLabel: 'Resumen',
+      icon: Lightbulb,
+      targetTab: 'resumen' as const,
+      helper: 'Kcal y sups',
+      tint: 'from-violet-500 to-fuchsia-600',
+    },
+  ];
+  const activeModeKey = isSummaryMode ? 'resumen' : 'plan';
+  const activeMode = modeAnchors.find((mode) => mode.key === activeModeKey) ?? modeAnchors[0];
+
+  const handleModeAnchorClick = () => {
+    setActiveTab(isSummaryMode ? 'plan' : 'resumen');
+  };
+
+  const getMobileTabLabel = (tabKey: (typeof tabItems)[number]['key']) => {
+    if (tabKey === 'plan') return 'Mi plan';
+    if (tabKey === 'equivalencias') return 'Equivalencias';
+    if (tabKey === 'suplementos') return 'Suplementos';
+    if (tabKey === 'calorias') return 'Calorías';
+    return tabItems.find((item) => item.key === tabKey)?.shortLabel ?? '';
+  };
+  const moreTabKeys = ['resumen', 'equivalencias', 'calorias', 'suplementos'] as const;
+  const moreTabs = moreTabKeys
+    .map((tabKey) => tabItems.find((item) => item.key === tabKey))
+    .filter((item): item is (typeof tabItems)[number] => Boolean(item));
+  const moreTabActive = moreTabs.some((item) => item.key === activeTab);
+
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
@@ -269,7 +310,7 @@ export default function App() {
     >
       <Header />
 
-      <AnimatePresence>{activeTab === 'plan' && <DailyProgress />}</AnimatePresence>
+      <AnimatePresence>{activeTab === 'plan' && !isPlanAdjustOpen && <DailyProgress />}</AnimatePresence>
 
       <main className="relative z-0 max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-4">
         {desktopTabBackdrop ? (
@@ -295,21 +336,37 @@ export default function App() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="flex gap-1 rounded-2xl bg-white/88 p-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:bg-slate-900/88"
+            className="grid grid-cols-[184px_1fr] gap-2 rounded-[26px] border border-white/70 bg-white/88 p-2 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/88"
           >
-            {tabItems.map((tabItem) => (
-              <button
-                key={tabItem.key}
-                onClick={() => setActiveTab(tabItem.key)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-[14px] font-bold text-sm transition-all duration-300 active:scale-95 ${activeTab === tabItem.key
-                  ? `bg-white shadow-sm ${staticColors.text} dark:bg-slate-900`
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-700/60'
-                  }`}
-              >
-                <tabItem.icon className={`w-4 h-4 flex-shrink-0 ${tabIconColors[tabItem.key]}`} />
-                <span>{tabItem.label}</span>
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={handleModeAnchorClick}
+              className={`flex min-h-[64px] items-center gap-3 rounded-[20px] bg-gradient-to-br ${activeMode.tint} px-4 py-3 text-left text-white shadow-sm transition-all duration-300 active:scale-[0.98]`}
+            >
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-white/18">
+                <activeMode.icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-extrabold leading-tight">{activeMode.label}</span>
+                <span className="block truncate text-[11px] font-bold text-white/78">{activeMode.helper}</span>
+              </span>
+            </button>
+
+            <div className="grid grid-cols-3 gap-1.5">
+              {visibleTabs.map((tabItem) => (
+                <button
+                  key={tabItem.key}
+                  onClick={() => setActiveTab(tabItem.key)}
+                  className={`flex min-h-[64px] items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] ${activeTab === tabItem.key
+                    ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950'
+                    : 'bg-slate-100/72 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:bg-slate-800/70 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'
+                    }`}
+                >
+                  <tabItem.icon className={`w-4 h-4 flex-shrink-0 ${activeTab === tabItem.key ? 'text-white dark:text-slate-950' : tabIconColors[tabItem.key]}`} />
+                  <span>{tabItem.label}</span>
+                </button>
+              ))}
+            </div>
           </motion.div>
         </div>
 
@@ -317,45 +374,73 @@ export default function App() {
           className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200 dark:bg-slate-950/95 dark:border-slate-800"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <div className="flex justify-around items-center max-w-md mx-auto pt-1.5 pb-1.5 px-2">
-            {tabItems.map((tabItem) => {
-              const active = activeTab === tabItem.key;
-
-              return (
-                <button
-                  key={tabItem.key}
-                  onClick={() => setActiveTab(tabItem.key)}
-                  data-testid={`mobile-tab-${tabItem.key}`}
-                  className={`relative flex flex-col items-center justify-center gap-1 w-[58px] py-1 transition-all duration-200 active:scale-95 ${active
-                    ? staticColors.text
-                    : 'text-slate-400 hover:text-slate-500 dark:text-slate-500 dark:hover:text-slate-300'
+          {showMobileMore ? (
+            <div className="mx-auto max-w-md px-3 pt-2">
+              <div className={`grid grid-cols-2 gap-2 rounded-[24px] border p-2 shadow-[0_14px_34px_rgba(15,23,42,0.14)] ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
+                {moreTabs.map((tabItem) => (
+                  <button
+                    key={tabItem.key}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tabItem.key);
+                      setShowMobileMore(false);
+                    }}
+                    data-testid={`mobile-tab-${tabItem.key}`}
+                    className={`flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-black transition active:scale-95 ${
+                      activeTab === tabItem.key
+                        ? mobileActiveStyles[tabItem.key]
+                        : isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-600'
                     }`}
-                >
-                  <div
-                    className={`relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300 ${active
-                      ? `bg-gradient-to-br ${staticColors.bgGradientLight} shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] dark:from-slate-800 dark:to-slate-700`
-                      : 'bg-transparent'
+                  >
+                    <tabItem.icon className="h-4 w-4" />
+                    <span>{getMobileTabLabel(tabItem.key)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div className="mx-auto max-w-md px-3 py-2">
+            <div className="grid grid-cols-3 gap-1 rounded-[24px] border border-slate-200 bg-white p-1.5 shadow-[0_12px_34px_rgba(15,23,42,0.13)] dark:border-slate-800 dark:bg-slate-950">
+              {(['plan', 'compras'] as const).map((tabKey) => {
+                const tabItem = tabItems.find((item) => item.key === tabKey)!;
+                const active = activeTab === tabItem.key;
+                return (
+                  <button
+                    key={tabItem.key}
+                    onClick={() => {
+                      setActiveTab(tabItem.key);
+                      setShowMobileMore(false);
+                    }}
+                    data-testid={`mobile-tab-${tabItem.key}`}
+                    className={`relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${active
+                      ? mobileActiveStyles[tabItem.key]
+                      : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100'
                       }`}
                   >
                     <tabItem.icon
-                      className={`w-[18px] h-[18px] ${tabIconColors[tabItem.key]} ${active ? 'fill-current opacity-20 absolute' : ''}`}
-                    />
-                    <tabItem.icon
-                      className={`w-[18px] h-[18px] relative z-10 ${tabIconColors[tabItem.key]}`}
+                      className={`h-[19px] w-[19px] ${active ? 'text-white dark:text-slate-950' : tabIconColors[tabItem.key]}`}
                       strokeWidth={active ? 2.5 : 2}
                     />
-                  </div>
-                  <span
-                    className={`text-[10px] tracking-wide ${active
-                      ? `font-extrabold ${staticColors.textDark} dark:text-slate-100`
-                      : 'font-medium dark:text-slate-400'
-                      }`}
-                  >
-                    {tabItem.shortLabel}
-                  </span>
-                </button>
-              );
-            })}
+                    <span className="max-w-full truncate text-[10px] font-extrabold tracking-wide">
+                      {getMobileTabLabel(tabItem.key)}
+                    </span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setShowMobileMore((value) => !value)}
+                data-testid="mobile-more-button"
+                className={`relative flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
+                  moreTabActive || showMobileMore
+                    ? mobileActiveStyles.more
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100'
+                }`}
+              >
+                <MoreHorizontal className="h-[19px] w-[19px]" strokeWidth={moreTabActive || showMobileMore ? 2.5 : 2} />
+                <span className="max-w-full truncate text-[10px] font-extrabold tracking-wide">Más</span>
+              </button>
+            </div>
           </div>
         </div>
 
