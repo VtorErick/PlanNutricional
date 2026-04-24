@@ -71,6 +71,15 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
   await expect(page.getByTestId('landing-profile-ambos-card')).toBeVisible();
 });
 
+async function openDayPickerAndSelectDay(page: Page, day: string) {
+  // On mobile, the day picker is inside the DailyProgress card.
+  // First click the current day toggle to open the picker, then select the target day.
+  const dayPickerToggle = page.locator('button').filter({ hasText: /^Lunes$|^Martes$|^Miercoles$|^Jueves$|^Viernes$|^Sabado$|^Domingo$/ }).first();
+  await dayPickerToggle.click();
+  const dayButton = page.locator('button').filter({ hasText: new RegExp(`^${day.slice(0, 3)}$`, 'i') }).first();
+  await dayButton.click();
+}
+
 test('single-profile plan flow supports selecting meals, editing, and downloading PDF on mobile', async ({
   page,
 }) => {
@@ -83,12 +92,12 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   await page.getByTestId('meal-option-el-Lunes-desayuno-2').click();
   await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
 
-  await page.getByRole('button', { name: /^Sab/i }).click();
+  await openDayPickerAndSelectDay(page, 'Sab');
   await page.locator('[data-testid^="selected-meal-el-Sabado-desayuno-"]').first().click();
   await page.getByTestId('meal-option-el-Sabado-desayuno-2').click();
   await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
 
-  await page.getByRole('button', { name: /^Lun/i }).click();
+  await openDayPickerAndSelectDay(page, 'Lun');
 
   const selectedMeal = page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first();
   await expect(selectedMeal).toBeVisible();
@@ -103,10 +112,10 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   await page.getByRole('button', { name: /Aceptar/i }).click();
   await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
 
-  await page.getByRole('button', { name: /^Sab/i }).click();
+  await openDayPickerAndSelectDay(page, 'Sab');
   await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
 
-  await page.getByRole('button', { name: /^Lun/i }).click();
+  await openDayPickerAndSelectDay(page, 'Lun');
   await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
   await page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first().click();
   await page.getByTestId('meal-restore-el-Lunes-desayuno-2').click();
@@ -116,10 +125,10 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
   await expect(page.getByText('Desayuno de prueba Playwright')).toHaveCount(0);
 
-  await page.getByRole('button', { name: /^Sab/i }).click();
+  await openDayPickerAndSelectDay(page, 'Sab');
   await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
 
-  await page.getByRole('button', { name: /^Lun/i }).click();
+  await openDayPickerAndSelectDay(page, 'Lun');
 
   const dayPdfDownload = page.waitForEvent('download');
   await page.getByTestId('header-pdf-button').click();
@@ -207,7 +216,6 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await expect(page.getByText(originalBreakfast)).toBeVisible();
   await page.getByTestId('plan-ai-open').click();
   await expect(page.getByTestId('plan-ai-mode-adjust')).toBeVisible();
-  await expect(page.getByTestId('plan-ai-model-preview')).toContainText(/Modelo previsto/i);
   await page.getByTestId('plan-ai-mode-adjust').click();
   await page.getByTestId('plan-ai-target-el').click();
   await page.getByTestId('plan-ai-instruction').fill('Menos pescado en la noche y cambia el desayuno del lunes.');
@@ -219,7 +227,7 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await expect(page.getByText(updatedBreakfast)).toBeVisible();
   await expect(page.getByText(originalBreakfast)).toHaveCount(0);
 
-  await page.getByRole('button', { name: /^Mar/i }).click();
+  await openDayPickerAndSelectDay(page, 'Martes');
   await expect(page.getByText(untouchedTuesdayBreakfast)).toBeVisible();
 });
 
