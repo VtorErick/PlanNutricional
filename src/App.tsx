@@ -167,15 +167,18 @@ export default function App() {
     resumen: 'text-violet-500 dark:text-violet-300',
   };
 
-  const mobileActiveStyles: Record<(typeof tabItems)[number]['key'] | 'more', string> = {
-    plan: 'bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-[0_10px_22px_rgba(37,99,235,0.32)]',
-    compras: 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_10px_22px_rgba(20,184,166,0.30)]',
-    resumen: 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-[0_10px_22px_rgba(139,92,246,0.30)]',
-    equivalencias: 'bg-gradient-to-br from-lime-500 to-emerald-500 text-white shadow-[0_10px_22px_rgba(34,197,94,0.26)]',
-    suplementos: 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-[0_10px_22px_rgba(244,63,94,0.26)]',
-    calorias: 'bg-gradient-to-br from-orange-500 to-amber-400 text-white shadow-[0_10px_22px_rgba(249,115,22,0.26)]',
-    more: 'bg-gradient-to-br from-slate-900 to-slate-700 text-white shadow-[0_10px_22px_rgba(15,23,42,0.28)]',
-  };
+  // ── Mobile nav active tint by active profile (uniform shadow size to prevent jump) ──
+  const navActiveTint = useMemo(() => {
+    switch (activeProfile) {
+      case 'el':
+        return 'bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-[0_8px_20px_rgba(37,99,235,0.30)]';
+      case 'ella':
+        return 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-[0_8px_20px_rgba(236,72,153,0.30)]';
+      case 'ambos':
+      default:
+        return 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(99,102,241,0.30)]';
+    }
+  }, [activeProfile]);
 
   const planTabs = ['plan', 'compras', 'equivalencias'] as const;
   const summaryTabs = ['resumen', 'calorias', 'suplementos'] as const;
@@ -249,7 +252,7 @@ export default function App() {
                 data-testid={`mobile-tab-${tabItem.key}`}
                 className={`flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-black transition active:scale-95 ${
                   activeTab === tabItem.key
-                    ? mobileActiveStyles[tabItem.key]
+                    ? navActiveTint
                     : isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-600'
                 }`}
               >
@@ -271,7 +274,7 @@ export default function App() {
             data-testid="mobile-tab-inicio"
             className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
               !activeProfile
-                ? 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(99,102,241,0.30)]'
+                ? navActiveTint
                 : 'text-slate-400 dark:text-slate-500'
             }`}
           >
@@ -291,7 +294,7 @@ export default function App() {
             data-testid="mobile-tab-plan"
             className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
               activeProfile && activeTab === 'plan'
-                ? mobileActiveStyles.plan
+                ? navActiveTint
                 : 'text-slate-400 dark:text-slate-500'
             }`}
           >
@@ -311,7 +314,7 @@ export default function App() {
             data-testid="mobile-tab-compras"
             className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
               activeProfile && activeTab === 'compras'
-                ? mobileActiveStyles.compras
+                ? navActiveTint
                 : 'text-slate-400 dark:text-slate-500'
             }`}
           >
@@ -324,7 +327,7 @@ export default function App() {
             data-testid="mobile-more-button"
             className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
               activeProfile && (moreTabActive || showMobileMore)
-                ? mobileActiveStyles.more
+                ? navActiveTint
                 : 'text-slate-400 dark:text-slate-500'
             }`}
           >
@@ -499,8 +502,6 @@ export default function App() {
           </motion.div>
         </div>
 
-        {mobileNavigationBar}
-
         <AnimatePresence mode="wait">
           <Suspense fallback={<ViewFallback />}>
             {activeTab === 'plan' && <PlanView />}
@@ -512,6 +513,8 @@ export default function App() {
           </Suspense>
         </AnimatePresence>
       </main>
+
+      {mobileNavigationBar}
 
       <footer className="bg-white/40 mt-10 dark:bg-slate-950/60">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 text-center text-slate-500 text-xs sm:text-sm dark:text-slate-400">
