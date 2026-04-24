@@ -1329,7 +1329,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
     // CONSERVADOR: Por defecto useRotation=false para mantener comportamiento existente
     // Cambiar a true cuando se quiera activar la rotación de comidas
-    const USE_ROTATION = false;
+    const USE_ROTATION = true;
 
     const catalogResult = await buildOptimizedMealsCatalog(
       mealsDatabase,

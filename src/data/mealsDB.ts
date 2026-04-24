@@ -1048,12 +1048,11 @@ export const mealsDatabase: CatalogMealItem[] = [
 
 export function getCompactMealsCatalog(
   db: CatalogMealItem[] = mealsDatabase
-): {id: string, nombre: string, tags: string[], super: string[], momentos: string[]}[] {
+): {id: string, nombre: string, tags: string[], momentos: string[]}[] {
   return db.map(m => ({
     id: m.id,
     nombre: m.nombre,
     tags: m.tags,
-    super: m.super.slice(0, 6),
     momentos: m.momentos,
   }));
 }
@@ -1192,7 +1191,7 @@ function scoreMealForQuestionnaire(item: CatalogMealItem, questionnaire: any) {
 export function buildQuestionnaireMealsCatalog(
   db: CatalogMealItem[],
   questionnaire: any
-): {id: string, nombre: string, tags: string[], super: string[], momentos: string[]}[] {
+): {id: string, nombre: string, tags: string[], momentos: string[]}[] {
   const filtered = filterCatalogForQuestionnaire(db, questionnaire);
   const source = filtered.length > 0 ? filtered : db;
   const limitByMoment: Record<string, number> = {

@@ -1,4 +1,4 @@
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-pro-preview';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
 export const MAX_MODEL_CANDIDATES = 4;
 
 export const GEMINI_MODEL_OPTIONS = [

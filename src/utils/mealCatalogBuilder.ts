@@ -35,18 +35,7 @@ export interface CompactMealCatalogItem {
   id: string;
   nombre: string;
   tags: string[];
-  super: string[];
   momentos: string[];
-  // Campos opcionales para IA (puede usarlos o ignorarlos)
-  cuisineStyles?: string[];
-  prepTimeMinutes?: number;
-  difficulty?: string;
-  macroEstimate?: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
 }
 
 /**
@@ -83,12 +72,7 @@ function toCompactFormat(meal: CatalogMealItem): CompactMealCatalogItem {
     id: meal.id,
     nombre: meal.nombre,
     tags: meal.tags,
-    super: meal.super,
     momentos: meal.momentos,
-    cuisineStyles: meal.cuisineStyles,
-    prepTimeMinutes: meal.prepTimeMinutes,
-    difficulty: meal.difficulty,
-    macroEstimate: meal.macroEstimate,
   };
 }
 
@@ -256,7 +240,7 @@ export function validateCatalogForAI(catalog: CompactMealCatalogItem[]): {
   }
 
   // Verificar que cada comida tiene campos requeridos
-  const requiredFields = ['id', 'nombre', 'tags', 'super', 'momentos'];
+  const requiredFields = ['id', 'nombre', 'tags', 'momentos'];
   for (let i = 0; i < catalog.length; i++) {
     const meal = catalog[i];
     for (const field of requiredFields) {

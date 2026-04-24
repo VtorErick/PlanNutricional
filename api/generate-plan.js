@@ -2,10 +2,9 @@ import { applyCorsHeaders, enforceRateLimit } from './_requestGuard.js';
 import { FOOD_GROUP_KEYS, remapFoodGroupRow, resolveFoodGroupKey } from './_foodGroupKeys.js';
 import {
   DEFAULT_GEMINI_MODEL,
-  getGeminiFallbackModels,
+  MAX_MODEL_CANDIDATES,
   getOrderedGeminiModels,
   isSupportedGeminiTextModel,
-  modelSupportsGenerateContent,
   normalizeModelName,
 } from './_geminiModels.js';
 
@@ -301,18 +300,18 @@ function getThinkingConfig(modelName, debugContext) {
 
 function getGeminiRequestTimeoutMs(debugContext) {
   if (debugContext.requestMode === 'adjust') {
-    return 60_000;
+    return 35_000;
   }
 
   if (debugContext.targetProfile === 'ambos') {
-    return 120_000;
+    return 55_000;
   }
 
   if (debugContext.requestMode === 'regenerate') {
-    return 120_000;
+    return 55_000;
   }
 
-  return 150_000;
+  return 45_000;
 }
 
 function buildMealItemSchema() {
@@ -1779,7 +1778,7 @@ Reglas criticas:
 - Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo (mismo literal exacto que en la lista anterior), total, detalle.
 - No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
 - En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog".
-- Cada entrada de "mealsCatalog" incluye id, nombre, tags, super y momentos. Usa SIEMPRE nombre + super para que "detalle" coincida con la receta base.
+- Cada entrada de "mealsCatalog" incluye id, nombre, tags y momentos. Usa el nombre de la receta para redactar un "detalle" corto y claro.
 - CRITICO: Debes respetar ESTRICTAMENTE todo lo pedido en el cuestionario: preferencias alimenticias (ej. vegano, mexicano, asiático), restricciones medicas, ingredientes excluidos, tiempos de cocina, etc. Selecciona unicamente IDs del catalogo que casen con estas preferencias e ignora los demas.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener exactamente estas claves: dia, momento, opciones.
@@ -1807,7 +1806,7 @@ function buildUserPrompt(payload, prefix) {
       selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
       slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
-      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el campo 'nombre' y la lista 'super' del catalogo para redactar un 'detalle' corto pero claramente consistente con la receta base. OBLIGATORIO: recalcula 'porciones' con gramos realistas y coherentes con la receta base. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef. Los suplementos deben salir SOLO de 'supplementsCatalog' y devolverse unicamente como IDs. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el campo 'nombre' de la receta para redactar un 'detalle' corto y claro. OBLIGATORIO: recalcula 'porciones' con gramos realistas coherentes con la receta. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef. Los suplementos deben salir SOLO de 'supplementsCatalog' y devolverse unicamente como IDs. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }
@@ -1832,7 +1831,7 @@ Reglas criticas:
 - Usa exactamente los momentos ${MEAL_MOMENT_KEYS.join(', ')}.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener dia, momento y la clave 'opciones' que es un arreglo de 3 objetos hibridos.
-- Cada objeto dentro de 'opciones' debe tener su 'idRef' (valido del mealsCatalog) y recalcular porciones y detalle de forma coherente con la receta base usando 'nombre' y 'super' del catalogo.
+- Cada objeto dentro de 'opciones' debe tener su 'idRef' (valido del mealsCatalog) y recalcular porciones y detalle de forma coherente usando el 'nombre' de la receta.
 - CRITICO: Respeta ESTRICTAMENTE: preferencias, estilo de comida, exclusions y restricciones. NUNCA metas algo que el usuario dijo excluir.
 - En caso de duda, prioriza la coherencia. No devuelvas summary ni profilePatch.`;
   }
@@ -1882,7 +1881,7 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
       planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
       returnOnlyChangedSections: payload.requestMode === 'adjust',
       mealOptionsPerMoment: 3,
-      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa 'nombre' y 'super' del catalogo para mantener 'detalle' alineado con la receta base. OBLIGATORIO: recalcula 'porciones' con gramos realistas y coherentes con la receta base. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Si cambias suplementos, usa SOLO IDs válidos de 'supplementsCatalog'. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el 'nombre' de la receta para mantener 'detalle' alineado. OBLIGATORIO: recalcula 'porciones' con gramos realistas coherentes con la receta. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Si cambias suplementos, usa SOLO IDs válidos de 'supplementsCatalog'. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }
@@ -1913,108 +1912,6 @@ function sanitizeAiJson(text) {
 
   return cleaned.slice(firstBrace, lastBrace + 1);
 }
-
-async function listAvailableModels(apiKey, debugContext) {
-  const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
-    headers: {
-      'x-goog-api-key': apiKey,
-    },
-  });
-  const responseText = await response.text();
-  const parsedBody = safeParseJson(responseText);
-
-  if (!response.ok) {
-    const rawMessage =
-      parsedBody?.error?.message || 'No fue posible listar modelos disponibles de Gemini.';
-    const geminiRequest = {
-      method: 'GET',
-      url: 'https://generativelanguage.googleapis.com/v1beta/models',
-    };
-    const geminiResponse = {
-      status: response.status,
-      body: parsedBody,
-    };
-    throw createLoggedAiError(
-      {
-        ...debugContext,
-        stage: 'models-list',
-      },
-      {
-        rawMessage,
-        statusCode: response.status,
-        geminiRequest,
-        geminiResponse,
-        attempts: [
-          buildAttemptLog(null, {
-            order: 1,
-            modelName: debugContext.requestedModel,
-            stage: 'models-list',
-            statusCode: response.status,
-            rawMessage,
-            willRetry: false,
-            geminiRequest,
-            geminiResponse,
-          }),
-        ],
-      }
-    );
-  }
-
-  if (!parsedBody || typeof parsedBody !== 'object') {
-    const rawMessage = 'La respuesta de modelos de Gemini no fue JSON valido.';
-    const geminiRequest = {
-      method: 'GET',
-      url: 'https://generativelanguage.googleapis.com/v1beta/models',
-    };
-    const geminiResponse = {
-      status: response.status,
-      body: responseText,
-    };
-    throw createLoggedAiError(
-      {
-        ...debugContext,
-        stage: 'models-list',
-      },
-      {
-        rawMessage,
-        statusCode: response.status,
-        geminiRequest,
-        geminiResponse,
-        attempts: [
-          buildAttemptLog(null, {
-            order: 1,
-            modelName: debugContext.requestedModel,
-            stage: 'models-list',
-            statusCode: response.status,
-            rawMessage,
-            willRetry: false,
-            geminiRequest,
-            geminiResponse,
-          }),
-        ],
-      }
-    );
-  }
-
-  return (parsedBody?.models || []).filter(
-    (model) => modelSupportsGenerateContent(model) && isSupportedGeminiTextModel(model?.name)
-  );
-}
-
-function pickBestModel(models, preferredModelRaw) {
-  if (!models.length) {
-    throw new Error('No hay modelos compatibles con generateContent en tu cuenta/API key.');
-  }
-
-  const modelNames = models.map((model) => normalizeModelName(model.name));
-  return getOrderedGeminiModels(modelNames, preferredModelRaw)[0];
-}
-
-function getFallbackModels(models, primaryModel) {
-  const modelNames = models.map((model) => normalizeModelName(model.name));
-  return getGeminiFallbackModels(modelNames, primaryModel);
-}
-
 function shouldRetryStatusCode(statusCode) {
   return [408, 429, 500, 502, 503, 504].includes(Number(statusCode));
 }
@@ -2508,9 +2405,15 @@ export default async function handler(req, res) {
       apiKeySource: 'server-env',
     };
 
-    const models = await listAvailableModels(apiKey, debugBase);
-    const selectedModel = pickBestModel(models, preferredModel);
-    const modelCandidates = [selectedModel, ...getFallbackModels(models, selectedModel)];
+    const hardcodedModelNames = [
+      'gemini-3-flash-preview',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-3.1-pro-preview',
+    ];
+    const orderedModels = getOrderedGeminiModels(hardcodedModelNames, preferredModel);
+    const selectedModel = orderedModels[0];
+    const modelCandidates = orderedModels.slice(0, MAX_MODEL_CANDIDATES);
 
     let elData = null;
     let ellaData = null;
