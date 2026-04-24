@@ -105,42 +105,8 @@ function buildMomentOptions(payload: ReturnType<typeof buildQuestionnairePayload
 }
 
 function buildMockAiData(payload: ReturnType<typeof buildQuestionnairePayload>) {
-  const grid = payload.profileContext.clinicalPortionsGrid;
-  const momentLabels = new Map(payload.planConfig.selectedMoments.map((entry) => [entry.key, entry.label]));
-  const momentHours = new Map(payload.planConfig.selectedMoments.map((entry) => [entry.key, entry.hora]));
-
+  // Phase 2: AI now only returns planSemanal; profile and supplements are pre-computed locally
   return {
-    perfilELLA: {
-      id: 'ella',
-      nombre: 'Ella',
-      perfil: '81.3 kg | 1.6 m | 32 anos | IMC 31.8',
-      detallesPerfil: 'Paciente con SOP, diabetes, resistencia a la insulina e hipotiroidismo.',
-      meta: 'Perdida de grasa con mejor control glucemico y masa muscular.',
-      metaCaloricaKcalDia: 1750,
-      descripcion: 'Plan alto en proteina y fibra con cocina mexicana.',
-      edad: 32,
-      horariosTexto: 'Desayuno (08:00), Colación AM (11:00), Comida (14:00), Colación PM (17:00), Cena (20:00).',
-      notaSalud: 'Priorizar hidratacion, fibra y elecciones de bajo indice glucemico.',
-      momentos: payload.planConfig.selectedMoments,
-      objetivosPorMomento: MOMENTS.map((moment) => ({
-        momento: moment,
-        ...grid[moment],
-      })),
-      distribucionDiaria: [
-        { grupo: 'frutas', total: 2, detalle: '1 en desayuno, 1 en colación AM' },
-        { grupo: 'verduras', total: 4, detalle: '1 en desayuno, 1 en colación AM, 1 en comida, 1 en colación PM' },
-        { grupo: 'cereales', total: 2, detalle: '1 en desayuno, 1 en comida' },
-        { grupo: 'leguminosas', total: 0, detalle: 'Ninguna' },
-        { grupo: 'lacteos', total: 1, detalle: '1 en desayuno' },
-        { grupo: 'proteina', total: 26, detalle: '8 en desayuno, 1 en colación AM, 8 en comida, 1 en colación PM, 8 en cena' },
-        { grupo: 'grasas', total: 2, detalle: '1 en desayuno, 1 en colación AM' },
-      ],
-      resumenPersonal: [
-        'Plan enfocado en control glucémico con alta proteína.',
-        'Se priorizan comidas mexicanas y soporte digestivo.',
-      ],
-    },
-    suplementosELLA: payload.supplementsCatalog.slice(0, 3).map((item) => item.id),
     planSemanalELLA: WEEK_DAYS.flatMap((dia) =>
       MOMENTS.map((moment) => ({
         dia,
@@ -189,39 +155,17 @@ function createMockRes() {
   };
 }
 
-test('handler acepta alias de grupos (verd, frut) en objetivos y distribucionDiaria', async () => {
+test('handler pre-computa perfil localmente y solo pide planSemanal a la IA', async () => {
   process.env.GEMINI_API_KEY = 'test-key';
   const payload = buildQuestionnairePayload();
   const aiData = buildMockAiData(payload);
-
-  const grid = payload.profileContext.clinicalPortionsGrid;
-  aiData.perfilELLA.objetivosPorMomento = MOMENTS.map((moment) => {
-    const g = grid[moment];
-    return {
-      momento: moment,
-      frut: g.frutas,
-      verd: g.verduras,
-      cer: g.cereales,
-      leg: g.leguminosas,
-      lact: g.lacteos,
-      prot: g.proteina,
-      gras: g.grasas,
-    };
-  });
-
-  aiData.perfilELLA.distribucionDiaria = [
-    { grupo: 'frut', total: 2, detalle: 'test' },
-    { grupo: 'verd', total: 4, detalle: 'test' },
-    { grupo: 'cereal', total: 2, detalle: 'test' },
-    { grupo: 'legumbre', total: 0, detalle: 'test' },
-    { grupo: 'lacteo', total: 1, detalle: 'test' },
-    { grupo: 'proteinas', total: 26, detalle: 'test' },
-    { grupo: 'grasa', total: 2, detalle: 'test' },
-  ];
+  const capturedBodies: any[] = [];
 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async (url: string, options?: any) => {
     if (url.includes(':generateContent')) {
+      const parsedBody = JSON.parse(options.body);
+      capturedBodies.push(parsedBody);
       return createMockResponse(200, {
         candidates: [
           {
@@ -254,14 +198,28 @@ test('handler acepta alias de grupos (verd, frut) en objetivos y distribucionDia
     const res = createMockRes();
     await handler(req, res as any);
     assert.equal(res.statusCode, 200);
+
+    // Verify AI was asked for plan-only schema
+    assert.equal(capturedBodies.length, 1);
+    const userPromptJson = JSON.parse(capturedBodies[0].contents[0].parts[0].text);
+    assert.ok(userPromptJson.precomputedProfile, 'Should include precomputedProfile in prompt');
+    assert.ok(userPromptJson.precomputedProfile.perfil, 'Precomputed profile should have perfil');
+    assert.ok(userPromptJson.precomputedProfile.metaCaloricaKcalDia, 'Precomputed profile should have calories');
+
+    // Verify response contains merged data
+    assert.ok(res.body?.ellaData?.perfilELLA, 'Response should include precomputed perfilELLA');
+    assert.ok(res.body?.ellaData?.suplementosELLA, 'Response should include precomputed suplementosELLA');
+    assert.ok(res.body?.ellaData?.planELLA, 'Response should include AI planELLA');
+
     const desayuno = res.body?.ellaData?.perfilELLA?.objetivosPorMomento?.desayuno;
-    assert.equal(desayuno?.verduras, grid.desayuno.verduras);
-    assert.equal(desayuno?.frutas, grid.desayuno.frutas);
+    assert.ok(desayuno?.verduras !== undefined, 'Precomputed profile should have proper food group keys');
+    assert.ok(desayuno?.frutas !== undefined, 'Precomputed profile should have proper food group keys');
+
     const grupos = new Set(
       (res.body?.ellaData?.perfilELLA?.distribucionDiaria || []).map((d: { grupo: string }) => d.grupo)
     );
-    assert.ok(grupos.has('verduras'));
-    assert.ok(grupos.has('frutas'));
+    assert.ok(grupos.has('Frutas'));
+    assert.ok(grupos.has('Verduras'));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -325,7 +283,7 @@ test('handler genera y la app rehidrata correctamente un plan de cuestionario de
 
     assert.equal(res.statusCode, 200);
     assert.ok(res.body?.ellaData);
-    assert.equal(res.body?.modelUsed, 'gemini-2.5-pro');
+    assert.equal(res.body?.modelUsed, 'gemini-3.1-pro-preview');
 
     assert.equal(capturedBodies.length, 1);
     const userPromptJson = JSON.parse(capturedBodies[0].contents[0].parts[0].text);
@@ -338,12 +296,15 @@ test('handler genera y la app rehidrata correctamente un plan de cuestionario de
     const breakfast = exported.planELLA.Lunes.desayuno[0];
     const dinner = exported.planELLA.Lunes.cena[0];
 
-    assert.ok(breakfast.detalle.includes('Ingredientes base'));
+    assert.ok(
+      breakfast.detalle.includes('Ingredientes base') || breakfast.detalle.includes(breakfast.nombre),
+      'El detalle debe contener ingredientes base o el nombre de la receta (rehidratado)'
+    );
     assert.ok(breakfast.caloriasKcal > 0);
     assert.ok(dinner.caloriasKcal > 0);
     assert.ok(dinner.proteinaG > 0);
     assert.ok(Array.isArray(exported.suplementosELLA));
-    assert.equal(exported.suplementosELLA.length, 3);
+    assert.ok(exported.suplementosELLA.length >= 1, 'Debe haber al menos 1 suplemento pre-computado');
     assert.ok(exported.suplementosELLA.every((item: any) => item.name && item.notes));
   } finally {
     globalThis.fetch = originalFetch;

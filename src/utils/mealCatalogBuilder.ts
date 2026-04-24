@@ -7,6 +7,35 @@
 import type { CatalogMealItem } from '../data/mealsDB';
 import type { RotationConfig } from './mealRotation';
 
+// Phase 3: In-memory cache for filtered catalogs (5 min TTL)
+const catalogCache = new Map<string, { result: MealCatalogResult; expiresAt: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(questionnaire: any, options: MealCatalogBuildOptions): string {
+  const keyParts = [
+    JSON.stringify(questionnaire?.healthContext || {}),
+    JSON.stringify(questionnaire?.preferences || {}),
+    JSON.stringify(questionnaire?.planConfig?.selectedMoments || []),
+    options.useRotation ? 'rot' : 'norot',
+    options.targetProfile || 'el',
+  ];
+  return keyParts.join('|');
+}
+
+function getCachedCatalog(key: string): MealCatalogResult | null {
+  const entry = catalogCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    catalogCache.delete(key);
+    return null;
+  }
+  return entry.result;
+}
+
+function setCachedCatalog(key: string, result: MealCatalogResult): void {
+  catalogCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 export interface MealCatalogBuildOptions {
   // Si true, usa rotación para seleccionar exactamente 35 comidas (5×7)
   // Si false, usa el comportamiento original (56 comidas máximo)
@@ -96,6 +125,15 @@ export async function buildOptimizedMealsCatalog(
     allowFallback = true,
   } = options;
 
+  // Phase 3: Check cache first (skip if using rotation with recent history)
+  if (recentMealIds.length === 0) {
+    const cacheKey = getCacheKey(questionnaire, options);
+    const cached = getCachedCatalog(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const warnings: string[] = [];
 
   // PASO 1: Importar dinámicamente para evitar dependencias circulares
@@ -108,6 +146,8 @@ export async function buildOptimizedMealsCatalog(
   // PASO 3: Si no hay suficientes comidas, usar comportamiento original
   const MIN_MEALS_FOR_ROTATION = 40; // Necesitamos variedad suficiente
 
+  let result: MealCatalogResult;
+
   if (!useRotation || source.length < MIN_MEALS_FOR_ROTATION) {
     if (useRotation && source.length < MIN_MEALS_FOR_ROTATION) {
       warnings.push(`Catálogo insuficiente para rotación (${source.length} < ${MIN_MEALS_FOR_ROTATION}). Usando filtrado estándar.`);
@@ -117,7 +157,7 @@ export async function buildOptimizedMealsCatalog(
     const { buildQuestionnaireMealsCatalog } = await import('../data/mealsDB');
     const catalog = buildQuestionnaireMealsCatalog(allMeals, questionnaire);
 
-    return {
+    result = {
       catalog,
       meta: {
         method: filtered.length > 0 ? 'filtered' : 'fallback',
@@ -127,93 +167,100 @@ export async function buildOptimizedMealsCatalog(
         warnings,
       },
     };
-  }
+  } else {
+    // PASO 4: Intentar usar rotación (solo si useRotation=true y hay suficientes comidas)
+    try {
+      const { selectMealsForWeek } = await import('./mealRotation');
 
-  // PASO 4: Intentar usar rotación (solo si useRotation=true y hay suficientes comidas)
-  try {
-    const { selectMealsForWeek } = await import('./mealRotation');
+      const rotationConfig: RotationConfig = {
+        availableMeals: source,
+        objectives: {}, // Rotation espera objetivos por momento, no usamos por ahora
+        history: recentMealIds,
+        varietyWindow,
+        targetProfile,
+      };
 
-    const rotationConfig: RotationConfig = {
-      availableMeals: source,
-      objectives: {}, // Rotation espera objetivos por momento, no usamos por ahora
-      history: recentMealIds,
-      varietyWindow,
-      targetProfile,
-    };
+      const rotationResult = selectMealsForWeek(rotationConfig);
 
-    const rotationResult = selectMealsForWeek(rotationConfig);
+      // Verificar que tenemos suficientes comidas seleccionadas
+      const selectedIds = Object.values(rotationResult.selected).flat();
+      const totalSelected = selectedIds.length;
+      const EXPECTED_MIN = 30; // 5 momentos × 6 días mínimo
 
-    // Verificar que tenemos suficientes comidas seleccionadas
-    const selectedIds = Object.values(rotationResult.selected).flat();
-    const totalSelected = selectedIds.length;
-    const EXPECTED_MIN = 30; // 5 momentos × 6 días mínimo
+      // Crear mapa de comidas por ID para lookup rápido
+      const mealsById = new Map(source.map(m => [m.id, m]));
+      const selectedMeals = selectedIds
+        .map(id => mealsById.get(id))
+        .filter((m): m is CatalogMealItem => m !== undefined);
 
-    // Crear mapa de comidas por ID para lookup rápido
-    const mealsById = new Map(source.map(m => [m.id, m]));
-    const selectedMeals = selectedIds
-      .map(id => mealsById.get(id))
-      .filter((m): m is CatalogMealItem => m !== undefined);
+      if (totalSelected < EXPECTED_MIN && allowFallback) {
+        warnings.push(`Rotación devolvió pocas comidas (${totalSelected}). Complementando con filtrado.`);
 
-    if (totalSelected < EXPECTED_MIN && allowFallback) {
-      warnings.push(`Rotación devolvió pocas comidas (${totalSelected}). Complementando con filtrado.`);
+        // Complementar con comidas adicionales filtradas
+        const selectedIdSet = new Set(selectedIds);
 
-      // Complementar con comidas adicionales filtradas
-      const selectedIdSet = new Set(selectedIds);
+        const additional = source
+          .filter(m => !selectedIdSet.has(m.id))
+          .slice(0, 56 - totalSelected)
+          .map(toCompactFormat);
 
-      const additional = source
-        .filter(m => !selectedIdSet.has(m.id))
-        .slice(0, 56 - totalSelected)
-        .map(toCompactFormat);
+        const rotationCatalog = selectedMeals.map(toCompactFormat);
+        const combined = [...rotationCatalog, ...additional];
 
-      const rotationCatalog = selectedMeals.map(toCompactFormat);
-      const combined = [...rotationCatalog, ...additional];
+        result = {
+          catalog: combined,
+          meta: {
+            method: 'rotation+filtered',
+            totalAvailable: source.length,
+            finalCount: combined.length,
+            selectedIds: combined.map(m => m.id),
+            warnings,
+          },
+        };
+      } else {
+        // Éxito: Rotación funcionó bien
+        const catalog = selectedMeals.map(toCompactFormat);
 
-      return {
-        catalog: combined,
+        result = {
+          catalog,
+          meta: {
+            method: 'rotation',
+            totalAvailable: source.length,
+            finalCount: catalog.length,
+            selectedIds: catalog.map(m => m.id),
+            warnings: rotationResult.warnings.length > 0
+              ? [...warnings, ...rotationResult.warnings]
+              : warnings,
+          },
+        };
+      }
+    } catch (error) {
+      // FALLBACK SEGURO: Si rotación falla, usar comportamiento original
+      warnings.push(`Error en rotación: ${error instanceof Error ? error.message : 'desconocido'}. Usando filtrado estándar.`);
+
+      const { buildQuestionnaireMealsCatalog } = await import('../data/mealsDB');
+      const catalog = buildQuestionnaireMealsCatalog(allMeals, questionnaire);
+
+      result = {
+        catalog,
         meta: {
-          method: 'rotation+filtered',
-          totalAvailable: source.length,
-          finalCount: combined.length,
-          selectedIds: combined.map(m => m.id),
+          method: 'filtered',
+          totalAvailable: allMeals.length,
+          finalCount: catalog.length,
+          selectedIds: catalog.map(m => m.id),
           warnings,
         },
       };
     }
-
-    // Éxito: Rotación funcionó bien
-    const catalog = selectedMeals.map(toCompactFormat);
-
-    return {
-      catalog,
-      meta: {
-        method: 'rotation',
-        totalAvailable: source.length,
-        finalCount: catalog.length,
-        selectedIds: catalog.map(m => m.id),
-        warnings: rotationResult.warnings.length > 0
-          ? [...warnings, ...rotationResult.warnings]
-          : warnings,
-      },
-    };
-
-  } catch (error) {
-    // FALLBACK SEGURO: Si rotación falla, usar comportamiento original
-    warnings.push(`Error en rotación: ${error instanceof Error ? error.message : 'desconocido'}. Usando filtrado estándar.`);
-
-    const { buildQuestionnaireMealsCatalog } = await import('../data/mealsDB');
-    const catalog = buildQuestionnaireMealsCatalog(allMeals, questionnaire);
-
-    return {
-      catalog,
-      meta: {
-        method: 'filtered',
-        totalAvailable: allMeals.length,
-        finalCount: catalog.length,
-        selectedIds: catalog.map(m => m.id),
-        warnings,
-      },
-    };
   }
+
+  // Phase 3: Cache result if not using rotation history
+  if (recentMealIds.length === 0) {
+    const cacheKey = getCacheKey(questionnaire, options);
+    setCachedCatalog(cacheKey, result);
+  }
+
+  return result;
 }
 
 /**

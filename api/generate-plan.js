@@ -7,6 +7,7 @@ import {
   isSupportedGeminiTextModel,
   normalizeModelName,
 } from './_geminiModels.js';
+import { generateProfile, generateSupplements } from './profileGenerator.js';
 
 const ALLOWED_ICONS = [
   'Apple',
@@ -332,7 +333,6 @@ function buildMealItemSchema() {
 function buildMomentDistributionSchema() {
   return {
     type: 'object',
-    additionalProperties: false,
     required: ['momento', ...FOOD_GROUP_KEYS],
     properties: {
       momento: { type: 'string' },
@@ -344,14 +344,11 @@ function buildMomentDistributionSchema() {
 function buildDailyDistributionSchema() {
   return {
     type: 'array',
-    minItems: FOOD_GROUP_KEYS.length,
-    maxItems: FOOD_GROUP_KEYS.length,
     items: {
       type: 'object',
-      additionalProperties: false,
       required: ['grupo', 'total', 'detalle'],
       properties: {
-        grupo: { type: 'string', enum: FOOD_GROUP_KEYS },
+        grupo: { type: 'string' },
         total: { type: 'integer' },
         detalle: { type: 'string' },
       },
@@ -362,7 +359,6 @@ function buildDailyDistributionSchema() {
 function buildMomentTimeSchema() {
   return {
     type: 'object',
-    additionalProperties: false,
     required: ['key', 'label', 'hora'],
     properties: {
       key: { type: 'string' },
@@ -375,19 +371,18 @@ function buildMomentTimeSchema() {
 function buildProfileSchema(partial = false) {
   return {
     type: 'object',
-    additionalProperties: false,
     required: partial ? [] : PROFILE_REQUIRED_KEYS,
     properties: {
       id: { type: 'string' },
       nombre: { type: 'string' },
-      perfil: { type: 'string', maxLength: 48 },
-      detallesPerfil: { type: 'string', maxLength: 360 },
-      meta: { type: 'string', maxLength: 180 },
+      perfil: { type: 'string' },
+      detallesPerfil: { type: 'string' },
+      meta: { type: 'string' },
       metaCaloricaKcalDia: { type: 'integer' },
-      descripcion: { type: 'string', maxLength: 240 },
+      descripcion: { type: 'string' },
       edad: { type: 'integer' },
-      horariosTexto: { type: 'string', maxLength: 140 },
-      notaSalud: { type: 'string', maxLength: 220 },
+      horariosTexto: { type: 'string' },
+      notaSalud: { type: 'string' },
       momentos: {
         type: 'array',
         items: buildMomentTimeSchema(),
@@ -409,15 +404,13 @@ function buildProfileSchema(partial = false) {
 function buildEquivalenciasSchema() {
   return {
     type: 'array',
-    minItems: 1,
     items: {
       type: 'object',
-      additionalProperties: false,
       required: ['titulo', 'icon', 'items'],
       properties: {
         titulo: { type: 'string' },
-        icon: { type: 'string', enum: ALLOWED_ICONS },
-        items: { type: 'array', maxItems: 6, items: { type: 'string', maxLength: 120 } },
+        icon: { type: 'string' },
+        items: { type: 'array', items: { type: 'string' } },
       },
     },
   };
@@ -426,31 +419,26 @@ function buildEquivalenciasSchema() {
 function buildSuplementosSchema() {
   return {
     type: 'array',
-    maxItems: 5,
-    items: { type: 'string', maxLength: 40 },
+    items: { type: 'string' },
   };
 }
 
 function buildPlanSlotSchema() {
   return {
     type: 'object',
-    additionalProperties: false,
     required: ['dia', 'momento', 'opciones'],
     properties: {
       dia: { type: 'string' },
       momento: { type: 'string' },
       opciones: {
         type: 'array',
-        minItems: 3,
-        maxItems: 3,
         items: {
           type: 'object',
-          additionalProperties: false,
           required: ['idRef', 'porciones', 'detalle', 'caloriasKcal', 'proteinaG', 'grasasG'],
           properties: {
-            idRef: { type: 'string', maxLength: 100 },
-            porciones: { type: 'string', maxLength: 200 },
-            detalle: { type: 'string', maxLength: 400 },
+            idRef: { type: 'string' },
+            porciones: { type: 'string' },
+            detalle: { type: 'string' },
             caloriasKcal: { type: 'integer' },
             proteinaG: { type: 'integer' },
             grasasG: { type: 'integer' },
@@ -474,9 +462,7 @@ function buildFullResponseSchema(prefix) {
   const planTransportKey = `planSemanal${prefix}`;
   return {
     type: 'object',
-    additionalProperties: false,
     required: [profileKey, suplementosKey, planTransportKey],
-    propertyOrdering: [profileKey, suplementosKey, planTransportKey],
     properties: {
       [profileKey]: buildProfileSchema(false),
       [suplementosKey]: buildSuplementosSchema(),
@@ -488,20 +474,27 @@ function buildFullResponseSchema(prefix) {
 function buildAdjustResponseSchema() {
   return {
     type: 'object',
-    additionalProperties: false,
     required: ['summary'],
-    propertyOrdering: ['summary', 'noChangesReason', 'profilePatch', 'suplementos', 'planPatchSlots'],
     properties: {
       summary: {
         type: 'array',
-        minItems: 1,
-        maxItems: 2,
-        items: { type: 'string', maxLength: 140 },
+        items: { type: 'string' },
       },
       noChangesReason: { type: 'string' },
       profilePatch: buildProfileSchema(true),
       suplementos: buildSuplementosSchema(),
       planPatchSlots: buildPlanSlotsSchema(false),
+    },
+  };
+}
+
+function buildPlanOnlyResponseSchema(prefix) {
+  const planTransportKey = `planSemanal${prefix}`;
+  return {
+    type: 'object',
+    required: [planTransportKey],
+    properties: {
+      [planTransportKey]: buildPlanSlotsSchema(true),
     },
   };
 }
@@ -1413,44 +1406,50 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
   const planTransportKey = `planSemanal${profilePrefix}`;
   const perfil = normalized[perfilKey];
 
-  if (perfil && typeof perfil === 'object' && !Array.isArray(perfil)) {
-    if (!perfil.id) {
-      perfil.id = getExpectedProfileId(profilePrefix);
-    }
+  // Phase 2: support plan-only responses when profile was pre-computed locally
+  const isPlanOnlyResponse = !perfil && Array.isArray(normalized[planTransportKey]);
+  let momentKeys = MEAL_MOMENT_KEYS;
 
-    if (!perfil.nombre) {
-      perfil.nombre = getExpectedProfileName(profilePrefix);
-    }
+  if (!isPlanOnlyResponse) {
+    if (perfil && typeof perfil === 'object' && !Array.isArray(perfil)) {
+      if (!perfil.id) {
+        perfil.id = getExpectedProfileId(profilePrefix);
+      }
 
-    if (!Array.isArray(perfil.momentos) || perfil.momentos.length === 0) {
-      const sourceMoments = resolveMomentSource(debugContext.payload, profilePrefix);
-      if (sourceMoments.length) {
-        perfil.momentos = sourceMoments;
+      if (!perfil.nombre) {
+        perfil.nombre = getExpectedProfileName(profilePrefix);
+      }
+
+      if (!Array.isArray(perfil.momentos) || perfil.momentos.length === 0) {
+        const sourceMoments = resolveMomentSource(debugContext.payload, profilePrefix);
+        if (sourceMoments.length) {
+          perfil.momentos = sourceMoments;
+        }
       }
     }
+
+    momentKeys = validateProfileStructure(
+      perfil,
+      profilePrefix,
+      debugContext,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
+
+    if (!Array.isArray(normalized[supplementsKey])) {
+      normalized[supplementsKey] = [];
+    }
+
+    validateSupplementsStructure(
+      normalized[supplementsKey],
+      supplementsKey,
+      debugContext,
+      geminiRequest,
+      geminiResponseBody,
+      modelName
+    );
   }
-
-  const momentKeys = validateProfileStructure(
-    perfil,
-    profilePrefix,
-    debugContext,
-    geminiRequest,
-    geminiResponseBody,
-    modelName
-  );
-
-  if (!Array.isArray(normalized[supplementsKey])) {
-    normalized[supplementsKey] = [];
-  }
-
-  validateSupplementsStructure(
-    normalized[supplementsKey],
-    supplementsKey,
-    debugContext,
-    geminiRequest,
-    geminiResponseBody,
-    modelName
-  );
 
   if (Array.isArray(normalized[planTransportKey])) {
     normalized[planKey] = buildPlanObjectFromSlots(
@@ -1759,24 +1758,15 @@ Perfil objetivo:
 - id fijo: "${lowerPrefix}"
 - nombre fijo: "${profileLabel}"
 
-Claves raiz obligatorias:
-- perfil${prefix}
-- suplementos${prefix}
+El perfil completo (incluyendo objetivosPorMomento, distribucionDiaria, suplementos, descripcion, meta, etc.) ya esta pre-calculado por la app. TU SOLO DEBES GENERAR EL PLAN SEMANAL.
+
+Clave raiz obligatoria:
 - ${planTransportKey}
 
 Reglas criticas:
 - No cambies id ni nombre.
 - Usa exactamente estos dias dentro del JSON: ${WEEK_DAYS.join(', ')}.
 - Usa exactamente estos momentos dentro del JSON: ${MEAL_MOMENT_KEYS.join(', ')}.
-- "perfil" debe ser SIEMPRE una sola linea con este formato: "<peso> kg | <altura> m | <edad> anos | IMC <valor>".
-- No pongas narrativa dentro de "perfil"; usa "detallesPerfil" para el analisis completo.
-- Mantén todo el texto muy conciso para evitar respuestas largas.
-- detallesPerfil, descripcion y notaSalud deben ser breves.
-- perfil${prefix}.objetivosPorMomento: arreglo de 5 objetos (uno por momento). Cada objeto incluye momento y SOLO estas claves de grupo, con nombres literales exactos (sin abreviar: nunca uses "verd" por verduras ni "frut" por frutas): ${FOOD_GROUP_KEYS.join(', ')}.
-- Si el contexto del perfil del paciente provee 'clinicalPortionsGrid', estas porciones son LA LEY CLINICA. DEBES COPIARLAS de manera EXACTA en 'objetivosPorMomento' para cada momento del dia, sin desviarte ni intentar balancearlas. Usa estas porciones OBLIGATORIAMENTE para buscar en la base de datos las recetas ideales. Si ignoras las 'clinicalPortionsGrid', el paciente corre riesgo de salud.
-- perfil${prefix}.distribucionDiaria debe ser un arreglo de 7 objetos, uno por cada grupo: ${FOOD_GROUP_KEYS.join(', ')}.
-- Cada item de perfil${prefix}.distribucionDiaria debe incluir exactamente: grupo (mismo literal exacto que en la lista anterior), total, detalle.
-- No devuelvas perfil${prefix}.distribucionDiaria vacio ni con grupos repetidos o faltantes.
 - En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog".
 - Cada entrada de "mealsCatalog" incluye id, nombre, tags y momentos. Usa el nombre de la receta para redactar un "detalle" corto y claro.
 - CRITICO: Debes respetar ESTRICTAMENTE todo lo pedido en el cuestionario: preferencias alimenticias (ej. vegano, mexicano, asiático), restricciones medicas, ingredientes excluidos, tiempos de cocina, etc. Selecciona unicamente IDs del catalogo que casen con estas preferencias e ignora los demas.
@@ -1787,8 +1777,6 @@ Reglas criticas:
 - Cada slot debe devolver exactamente 3 objetos en 'opciones'.
 - No anides momentos dentro de dias ni dias dentro de objetos complejos; usa solo el arreglo plano de slots.
 - Las calorias y macros deben ser enteros realistas y consistentes con las porciones; prioriza coherencia de receta y porciones sobre hacer calculos perfectos.
-- Los suplementos son opcionales. Debe ser UN ARREGLO DE STRINGS (IDs) validados de supplementsCatalog. Si no aportan valor, devuelve []. NUNCA inventes IDs.
-- No pongas suplementos dentro del plan ni como objetos.
 - No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
 - Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
 - Rotacion semanal: si no aplica la regla anterior de companionPlan, alterna idRef entre dias para el mismo momento (no repitas el mismo plato principal los 7 dias en el mismo horario si el catalogo ofrece alternativas compatibles con porciones y restricciones).
@@ -1796,17 +1784,26 @@ Reglas criticas:
 }
 
 function buildUserPrompt(payload, prefix) {
+  const precomputed = payload.precomputedProfile;
   return JSON.stringify({
     profilePrefix: prefix,
     questionnaire: sanitizePromptPayload(payload),
     mealsCatalog: payload.mealsCatalog || [],
     supplementsCatalog: payload.supplementsCatalog || [],
+    precomputedProfile: precomputed ? {
+      perfil: precomputed.perfil,
+      metaCaloricaKcalDia: precomputed.metaCaloricaKcalDia,
+      objetivosPorMomento: precomputed.objetivosPorMomento,
+      distribucionDiaria: precomputed.distribucionDiaria,
+      momentos: precomputed.momentos,
+      suplementos: payload.precomputedSupplements || [],
+    } : undefined,
     outputHints: {
-      rootKeys: buildGenerationOutputContract(prefix).rootKeys,
+      rootKeys: [`planSemanal${prefix}`],
       selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
       slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
-      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el campo 'nombre' de la receta para redactar un 'detalle' corto y claro. OBLIGATORIO: recalcula 'porciones' con gramos realistas coherentes con la receta. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar o añadir algo fuera de bd, usa '|MOD: cambio' en el idRef. Los suplementos deben salir SOLO de 'supplementsCatalog' y devolverse unicamente como IDs. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+      noteToAI: `El perfil, objetivosPorMomento, distribucionDiaria y suplementos YA ESTAN PRE-CALCULADOS en 'precomputedProfile'. TU SOLO DEBES GENERAR 'planSemanal${prefix}'. En 'opciones' regresa objetos usando SOLO 'idRef' válidos de 'mealsCatalog'. Usa el campo 'nombre' para redactar un 'detalle' corto. OBLIGATORIO: recalcula 'porciones' con gramos realistas. Mantén macros/calorias como enteros razonables. Si piden ignorar/añadir fuera de bd, usa '|MOD: cambio' en el idRef. Variedad: alterna idRef entre dias por momento.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }
@@ -1863,6 +1860,8 @@ Reglas criticas:
 
 function buildRevisionUserPrompt(prefix, payload, profilePayload) {
   const outputMode = payload.requestMode === 'regenerate' ? 'full_regeneration' : 'delta_patch';
+  const isRegenerate = payload.requestMode === 'regenerate';
+  const precomputed = profilePayload?.precomputedProfile;
   return JSON.stringify({
     profilePrefix: prefix,
     mode: payload.requestMode,
@@ -1872,16 +1871,26 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
     questionnaireContext: sanitizePromptPayload(payload.questionnaireContext),
     currentContext: compactSnapshotForPrompt(profilePayload.currentContext),
     originalContext:
-      payload.requestMode === 'regenerate'
+      isRegenerate
         ? compactSnapshotForPrompt(profilePayload.originalContext)
         : undefined,
     companionContext: compactSnapshotForPrompt(profilePayload.companionContext),
+    precomputedProfile: precomputed ? {
+      perfil: precomputed.perfil,
+      metaCaloricaKcalDia: precomputed.metaCaloricaKcalDia,
+      objetivosPorMomento: precomputed.objetivosPorMomento,
+      distribucionDiaria: precomputed.distribucionDiaria,
+      momentos: precomputed.momentos,
+      suplementos: profilePayload?.precomputedSupplements || [],
+    } : undefined,
     outputMode,
     outputNotes: {
-      planTransportKey: payload.requestMode === 'adjust' ? 'planPatchSlots' : `planSemanal${prefix}`,
-      returnOnlyChangedSections: payload.requestMode === 'adjust',
+      planTransportKey: isRegenerate ? `planSemanal${prefix}` : 'planPatchSlots',
+      returnOnlyChangedSections: !isRegenerate,
       mealOptionsPerMoment: 3,
-      noteToAI: `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el 'nombre' de la receta para mantener 'detalle' alineado. OBLIGATORIO: recalcula 'porciones' con gramos realistas coherentes con la receta. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Si cambias suplementos, usa SOLO IDs válidos de 'supplementsCatalog'. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+      noteToAI: isRegenerate && precomputed
+        ? `El perfil, objetivosPorMomento, distribucionDiaria y suplementos YA ESTAN PRE-CALCULADOS en 'precomputedProfile'. TU SOLO DEBES GENERAR 'planSemanal${prefix}'. En 'opciones' regresa objetos usando SOLO 'idRef' válidos de 'mealsCatalog'. Usa el 'nombre' para mantener 'detalle' alineado. OBLIGATORIO: recalcula 'porciones' con gramos realistas. Mantén macros/calorias como enteros razonables. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Variedad: alterna idRef entre dias por momento.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`
+        : `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el 'nombre' de la receta para mantener 'detalle' alineado. OBLIGATORIO: recalcula 'porciones' con gramos realistas coherentes con la receta. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Si cambias suplementos, usa SOLO IDs válidos de 'supplementsCatalog'. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }
@@ -2421,44 +2430,142 @@ export default async function handler(req, res) {
     let ellaModelUsed = null;
 
     if (isPlanRevisionRequest(payload)) {
-      if (target === 'el' || target === 'ambos') {
-        const result = await generateWithGeminiWithFallback(
-          buildRevisionRequestParts('EL', payload, buildRevisionScopedPayload(payload, 'el')),
-          apiKey,
-          modelCandidates,
-          buildRevisionSystemPrompt('EL', payload.requestMode),
-          payload.requestMode === 'regenerate'
-            ? buildFullResponseSchema('EL')
-            : buildAdjustResponseSchema(),
-          {
-            ...debugBase,
-            stage: 'generate-content',
-            selectedModel,
-            profilePrefix: 'EL',
-          }
-        );
-        elData = result.data;
-        elModelUsed = result.modelUsed;
-      }
+      if (target === 'ambos' && payload.requestMode === 'regenerate') {
+        // Phase 3: Parallelize regenerate for ambos
+        const revisionPayloadEl = buildRevisionScopedPayload(payload, 'el');
+        const questionnaireEl = payload.questionnaireContext?.el || payload.questionnaireContext;
+        const precomputedProfileEl = generateProfile(questionnaireEl, 'el');
+        const precomputedSupplementsEl = generateSupplements(questionnaireEl, payload.supplementsCatalog || []);
+        revisionPayloadEl.precomputedProfile = precomputedProfileEl;
+        revisionPayloadEl.precomputedSupplements = precomputedSupplementsEl;
+        const requestPartsEl = buildRevisionRequestParts('EL', payload, revisionPayloadEl);
 
-      if (target === 'ella' || target === 'ambos') {
-        const result = await generateWithGeminiWithFallback(
-          buildRevisionRequestParts('ELLA', payload, buildRevisionScopedPayload(payload, 'ella')),
-          apiKey,
-          modelCandidates,
-          buildRevisionSystemPrompt('ELLA', payload.requestMode),
-          payload.requestMode === 'regenerate'
-            ? buildFullResponseSchema('ELLA')
-            : buildAdjustResponseSchema(),
-          {
-            ...debugBase,
-            stage: 'generate-content',
-            selectedModel,
-            profilePrefix: 'ELLA',
+        const revisionPayloadElla = buildRevisionScopedPayload(payload, 'ella');
+        const questionnaireElla = payload.questionnaireContext?.ella || payload.questionnaireContext;
+        const precomputedProfileElla = generateProfile(questionnaireElla, 'ella');
+        const precomputedSupplementsElla = generateSupplements(questionnaireElla, payload.supplementsCatalog || []);
+        revisionPayloadElla.precomputedProfile = precomputedProfileElla;
+        revisionPayloadElla.precomputedSupplements = precomputedSupplementsElla;
+        const requestPartsElla = buildRevisionRequestParts('ELLA', payload, revisionPayloadElla);
+
+        const [elResult, ellaResult] = await Promise.all([
+          generateWithGeminiWithFallback(
+            requestPartsEl,
+            apiKey,
+            modelCandidates,
+            buildRevisionSystemPrompt('EL', payload.requestMode),
+            buildPlanOnlyResponseSchema('EL'),
+            {
+              ...debugBase,
+              stage: 'generate-content',
+              selectedModel,
+              profilePrefix: 'EL',
+            }
+          ),
+          generateWithGeminiWithFallback(
+            requestPartsElla,
+            apiKey,
+            modelCandidates,
+            buildRevisionSystemPrompt('ELLA', payload.requestMode),
+            buildPlanOnlyResponseSchema('ELLA'),
+            {
+              ...debugBase,
+              stage: 'generate-content',
+              selectedModel,
+              profilePrefix: 'ELLA',
+            }
+          ),
+        ]);
+
+        elData = {
+          perfilEL: precomputedProfileEl,
+          suplementosEL: precomputedSupplementsEl,
+          planEL: elResult.data?.planEL,
+        };
+        elModelUsed = elResult.modelUsed;
+        ellaData = {
+          perfilELLA: precomputedProfileElla,
+          suplementosELLA: precomputedSupplementsElla,
+          planELLA: ellaResult.data?.planELLA,
+        };
+        ellaModelUsed = ellaResult.modelUsed;
+      } else {
+        // Sequential for adjust mode or single profile
+        if (target === 'el' || target === 'ambos') {
+          const revisionPayloadEl = buildRevisionScopedPayload(payload, 'el');
+          let schemaEl = buildAdjustResponseSchema();
+          let requestPartsEl = buildRevisionRequestParts('EL', payload, revisionPayloadEl);
+          if (payload.requestMode === 'regenerate') {
+            const questionnaireEl = payload.questionnaireContext?.el || payload.questionnaireContext;
+            const precomputedProfile = generateProfile(questionnaireEl, 'el');
+            const precomputedSupplements = generateSupplements(questionnaireEl, payload.supplementsCatalog || []);
+            revisionPayloadEl.precomputedProfile = precomputedProfile;
+            revisionPayloadEl.precomputedSupplements = precomputedSupplements;
+            requestPartsEl = buildRevisionRequestParts('EL', payload, revisionPayloadEl);
+            schemaEl = buildPlanOnlyResponseSchema('EL');
           }
-        );
-        ellaData = result.data;
-        ellaModelUsed = result.modelUsed;
+          const result = await generateWithGeminiWithFallback(
+            requestPartsEl,
+            apiKey,
+            modelCandidates,
+            buildRevisionSystemPrompt('EL', payload.requestMode),
+            schemaEl,
+            {
+              ...debugBase,
+              stage: 'generate-content',
+              selectedModel,
+              profilePrefix: 'EL',
+            }
+          );
+          if (payload.requestMode === 'regenerate') {
+            elData = {
+              perfilEL: revisionPayloadEl.precomputedProfile,
+              suplementosEL: revisionPayloadEl.precomputedSupplements,
+              planEL: result.data?.planEL,
+            };
+          } else {
+            elData = result.data;
+          }
+          elModelUsed = result.modelUsed;
+        }
+
+        if (target === 'ella' || target === 'ambos') {
+          const revisionPayloadElla = buildRevisionScopedPayload(payload, 'ella');
+          let schemaElla = buildAdjustResponseSchema();
+          let requestPartsElla = buildRevisionRequestParts('ELLA', payload, revisionPayloadElla);
+          if (payload.requestMode === 'regenerate') {
+            const questionnaireElla = payload.questionnaireContext?.ella || payload.questionnaireContext;
+            const precomputedProfile = generateProfile(questionnaireElla, 'ella');
+            const precomputedSupplements = generateSupplements(questionnaireElla, payload.supplementsCatalog || []);
+            revisionPayloadElla.precomputedProfile = precomputedProfile;
+            revisionPayloadElla.precomputedSupplements = precomputedSupplements;
+            requestPartsElla = buildRevisionRequestParts('ELLA', payload, revisionPayloadElla);
+            schemaElla = buildPlanOnlyResponseSchema('ELLA');
+          }
+          const result = await generateWithGeminiWithFallback(
+            requestPartsElla,
+            apiKey,
+            modelCandidates,
+            buildRevisionSystemPrompt('ELLA', payload.requestMode),
+            schemaElla,
+            {
+              ...debugBase,
+              stage: 'generate-content',
+              selectedModel,
+              profilePrefix: 'ELLA',
+            }
+          );
+          if (payload.requestMode === 'regenerate') {
+            ellaData = {
+              perfilELLA: revisionPayloadElla.precomputedProfile,
+              suplementosELLA: revisionPayloadElla.precomputedSupplements,
+              planELLA: result.data?.planELLA,
+            };
+          } else {
+            ellaData = result.data;
+          }
+          ellaModelUsed = result.modelUsed;
+        }
       }
 
       const modelUsed = Array.from(new Set([elModelUsed, ellaModelUsed].filter(Boolean))).join(', ');
@@ -2470,14 +2577,72 @@ export default async function handler(req, res) {
       });
     }
 
-    if (target === 'el' || target === 'ambos') {
-      const payloadEl = target === 'ambos' ? buildScopedPayload(payload, payload.el) : payload;
+    if (target === 'ambos') {
+      // Phase 3: Parallelize both profile generations
+      const payloadEl = buildScopedPayload(payload, payload.el);
+      const precomputedProfileEl = generateProfile(payloadEl, 'el');
+      const precomputedSupplementsEl = generateSupplements(payloadEl, payload.supplementsCatalog || []);
+      payloadEl.precomputedProfile = precomputedProfileEl;
+      payloadEl.precomputedSupplements = precomputedSupplementsEl;
+
+      const payloadElla = buildScopedPayload(payload, payload.ella);
+      const precomputedProfileElla = generateProfile(payloadElla, 'ella');
+      const precomputedSupplementsElla = generateSupplements(payloadElla, payload.supplementsCatalog || []);
+      payloadElla.precomputedProfile = precomputedProfileElla;
+      payloadElla.precomputedSupplements = precomputedSupplementsElla;
+
+      const [elResult, ellaResult] = await Promise.all([
+        generateWithGeminiWithFallback(
+          buildRequestParts('EL', payloadEl),
+          apiKey,
+          modelCandidates,
+          buildSystemPrompt('EL'),
+          buildPlanOnlyResponseSchema('EL'),
+          {
+            ...debugBase,
+            stage: 'generate-content',
+            selectedModel,
+            profilePrefix: 'EL',
+          }
+        ),
+        generateWithGeminiWithFallback(
+          buildRequestParts('ELLA', payloadElla),
+          apiKey,
+          modelCandidates,
+          buildSystemPrompt('ELLA'),
+          buildPlanOnlyResponseSchema('ELLA'),
+          {
+            ...debugBase,
+            stage: 'generate-content',
+            selectedModel,
+            profilePrefix: 'ELLA',
+          }
+        ),
+      ]);
+
+      elData = {
+        perfilEL: precomputedProfileEl,
+        suplementosEL: precomputedSupplementsEl,
+        planEL: elResult.data?.planEL,
+      };
+      elModelUsed = elResult.modelUsed;
+      ellaData = {
+        perfilELLA: precomputedProfileElla,
+        suplementosELLA: precomputedSupplementsElla,
+        planELLA: ellaResult.data?.planELLA,
+      };
+      ellaModelUsed = ellaResult.modelUsed;
+    } else if (target === 'el') {
+      const precomputedProfile = generateProfile(payload, 'el');
+      const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);
+      payload.precomputedProfile = precomputedProfile;
+      payload.precomputedSupplements = precomputedSupplements;
       const result = await generateWithGeminiWithFallback(
-        buildRequestParts('EL', payloadEl),
+        buildRequestParts('EL', payload),
         apiKey,
         modelCandidates,
         buildSystemPrompt('EL'),
-        buildFullResponseSchema('EL'),
+        buildPlanOnlyResponseSchema('EL'),
         {
           ...debugBase,
           stage: 'generate-content',
@@ -2485,22 +2650,23 @@ export default async function handler(req, res) {
           profilePrefix: 'EL',
         }
       );
-      elData = result.data;
+      elData = {
+        perfilEL: precomputedProfile,
+        suplementosEL: precomputedSupplements,
+        planEL: result.data?.planEL,
+      };
       elModelUsed = result.modelUsed;
-    }
-
-    if (target === 'ella' || target === 'ambos') {
-      const payloadElla = target === 'ambos' ? buildScopedPayload(payload, payload.ella) : payload;
-      if (target === 'ambos' && elData?.planEL) {
-        payloadElla.companionPlan = elData.planEL;
-      }
-
+    } else if (target === 'ella') {
+      const precomputedProfile = generateProfile(payload, 'ella');
+      const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);
+      payload.precomputedProfile = precomputedProfile;
+      payload.precomputedSupplements = precomputedSupplements;
       const result = await generateWithGeminiWithFallback(
-        buildRequestParts('ELLA', payloadElla),
+        buildRequestParts('ELLA', payload),
         apiKey,
         modelCandidates,
         buildSystemPrompt('ELLA'),
-        buildFullResponseSchema('ELLA'),
+        buildPlanOnlyResponseSchema('ELLA'),
         {
           ...debugBase,
           stage: 'generate-content',
@@ -2508,7 +2674,11 @@ export default async function handler(req, res) {
           profilePrefix: 'ELLA',
         }
       );
-      ellaData = result.data;
+      ellaData = {
+        perfilELLA: precomputedProfile,
+        suplementosELLA: precomputedSupplements,
+        planELLA: result.data?.planELLA,
+      };
       ellaModelUsed = result.modelUsed;
     }
 

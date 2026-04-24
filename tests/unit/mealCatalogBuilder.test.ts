@@ -252,7 +252,7 @@ test('buildOptimizedMealsCatalog formato compacto correcto', async () => {
     assert.ok(firstMeal.id, 'Debe tener id');
     assert.ok(firstMeal.nombre, 'Debe tener nombre');
     assert.ok(Array.isArray(firstMeal.tags), 'Tags debe ser array');
-    assert.ok(Array.isArray(firstMeal.super), 'Super debe ser array');
+    assert.ok(!('super' in firstMeal), 'Formato compacto no debe incluir super');
     assert.ok(Array.isArray(firstMeal.momentos), 'Momentos debe ser array');
   }
 });
