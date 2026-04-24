@@ -80,6 +80,17 @@ async function openDayPickerAndSelectDay(page: Page, day: string) {
   await dayButton.click();
 }
 
+async function selectMobileTab(page: Page, tab: string) {
+  const directTab = page.getByTestId(`mobile-tab-${tab}`);
+  if (await directTab.isVisible().catch(() => false)) {
+    await directTab.click();
+    return;
+  }
+
+  await page.getByTestId('mobile-more-button').click();
+  await page.getByTestId(`mobile-tab-${tab}`).click();
+}
+
 test('single-profile plan flow supports selecting meals, editing, and downloading PDF on mobile', async ({
   page,
 }) => {
@@ -346,27 +357,27 @@ test('combined mobile navigation renders every major view with populated data', 
   const download = await fullPlanDownload;
   expect(download.suggestedFilename()).toBe('Plan_Nutricional_Ambos.pdf');
 
-  await page.getByTestId('mobile-tab-equivalencias').click();
+  await selectMobileTab(page, 'equivalencias');
   await expect(page.getByRole('heading', { name: /Intercambios/i })).toBeVisible();
   await saveDocScreenshot(page, 'equivalencias-mobile.png');
 
-  await page.getByTestId('mobile-tab-suplementos').click();
-  await expect(page.getByRole('heading', { name: /Suplementos/i })).toBeVisible();
+  await selectMobileTab(page, 'suplementos');
+  await expect(page.getByRole('heading', { name: 'Suplementos', exact: true })).toBeVisible();
   await saveDocScreenshot(page, 'supplements-mobile.png');
 
-  await page.getByTestId('mobile-tab-calorias').click();
-  await expect(page.getByText(/Semana en un vistazo/i)).toBeVisible();
-  await page.getByRole('button', { name: /Martes/i }).click();
+  await selectMobileTab(page, 'calorias');
+  await expect(page.getByRole('heading', { name: /Kcal por/i })).toBeVisible();
+  await page.getByRole('button', { name: /^Mar/i }).first().click();
   await saveDocScreenshot(page, 'calories-mobile.png');
 
-  await page.getByTestId('mobile-tab-compras').click();
+  await selectMobileTab(page, 'compras');
   await expect(page.getByRole('heading', { name: /Supermercado/i })).toBeVisible();
   const expandButton = page.locator('button[aria-label^="Expandir comidas de"]').first();
   await expandButton.click();
   await page.locator('button[aria-label^="Marcar ingrediente"]').first().click();
   await saveDocScreenshot(page, 'shopping-mobile.png');
 
-  await page.getByTestId('mobile-tab-resumen').click();
+  await selectMobileTab(page, 'resumen');
   await expect(page.getByRole('heading', { name: /^Resumen$/ })).toBeVisible();
   await saveDocScreenshot(page, 'summary-mobile.png');
 });

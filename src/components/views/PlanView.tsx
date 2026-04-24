@@ -354,6 +354,7 @@ export default function PlanView() {
       preferredModel: geminiModel,
       checkGeneration: true,
       syncModel: true,
+      force: true,
     });
 
     if (!status?.ok) {
@@ -366,7 +367,7 @@ export default function PlanView() {
 
     const questionnaireContext = getQuestionnaireContextForTarget(targetProfile);
     setQuestionnaireTargetProfile(targetProfile);
-    setQuestionnaireStepIdx(1);
+    setQuestionnaireStepIdx(1, targetProfile);
     setQuestionnairePortionMode(questionnaireContext?.portionMode === 'manual' ? 'manual' : 'auto');
     setQuestionnaireManualPortions(cloneQuestionnaireValue(
       questionnaireContext?.planConfig?.manualPortions || {}

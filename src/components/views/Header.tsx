@@ -143,7 +143,7 @@ export default function Header() {
             </div>
           </div>
 
-          <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2 relative" ref={pdfMenuRef}>
+          <div className="relative flex flex-shrink-0 items-center gap-1.5 sm:mr-[248px] sm:gap-2" ref={pdfMenuRef}>
           <button
             type="button"
             onClick={() => setIsDarkMode((prev) => !prev)}

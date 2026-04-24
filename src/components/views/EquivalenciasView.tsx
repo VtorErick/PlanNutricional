@@ -46,7 +46,7 @@ export default function EquivalenciasView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         {equivalencesDB.map((eq, idx) => {
           const Icon = eq.icon;
 
@@ -58,7 +58,7 @@ export default function EquivalenciasView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.03 }}
-              className={`aspect-square rounded-2xl p-3 sm:p-4 text-left transition-all active:scale-[0.98] ${
+              className={`aspect-square rounded-2xl p-3 text-left transition-all active:scale-[0.98] sm:aspect-[1.18] sm:p-4 ${
                 isDarkMode
                   ? 'bg-slate-950/92 border border-slate-800 hover:border-slate-700'
                   : 'bg-white border border-slate-100 hover:border-slate-200 shadow-[0_6px_18px_rgba(15,23,42,0.06)]'
@@ -74,8 +74,21 @@ export default function EquivalenciasView() {
                   })()}
                 </div>
 
+                <ul className="mt-4 hidden space-y-1.5 sm:block">
+                  {eq.items.slice(0, 3).map((item) => (
+                    <li
+                      key={item}
+                      className={`line-clamp-1 text-xs font-semibold leading-relaxed ${
+                        isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                      }`}
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+
                 <div>
-                  <h3 className={`line-clamp-2 text-sm sm:text-base font-black leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                  <h3 className={`line-clamp-2 text-sm font-black leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                     {eq.titulo}
                   </h3>
                   <p className={`mt-1 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>

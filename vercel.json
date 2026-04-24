@@ -21,6 +21,15 @@
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/home", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/questionnaire", "destination": "/index.html" },
+    { "source": "/miplan", "destination": "/index.html" },
+    { "source": "/equivalencias", "destination": "/index.html" },
+    { "source": "/calorias", "destination": "/index.html" },
+    { "source": "/compras", "destination": "/index.html" },
+    { "source": "/resumen", "destination": "/index.html" },
+    { "source": "/suplementos", "destination": "/index.html" }
   ]
 }

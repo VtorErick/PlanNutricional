@@ -115,9 +115,16 @@ export default function DailyProgress() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-md px-3 pb-3 pt-3 sm:hidden">
-        <button
-          type="button"
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setProgressExpanded((expanded) => !expanded)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setProgressExpanded((expanded) => !expanded);
+            }
+          }}
           className={`w-full rounded-[24px] border p-3.5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.06)] ${
             isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-white'
           }`}
@@ -219,8 +226,7 @@ export default function DailyProgress() {
               transition={{ type: 'spring', stiffness: 80, damping: 15 }}
             />
           </div>
-
-        </button>
+        </div>
       </div>
 
       <div className="relative z-10 hidden max-w-5xl mx-auto px-3 sm:block sm:px-6 pt-3 pb-2">

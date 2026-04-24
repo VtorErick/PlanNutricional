@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo, useEffect, useState, useRef } from 'react';
+import { Suspense, lazy, useMemo, useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -101,7 +101,7 @@ export default function App() {
     }
   }, [activeTab, activeProfile, setActiveTab]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
     setShowMobileMore(false);
   }, [activeTab]);
@@ -206,20 +206,20 @@ export default function App() {
   const modeAnchors = [
     {
       key: 'plan' as const,
-      label: 'Mi plan',
+      label: 'Plan diario',
       shortLabel: 'Plan',
       icon: Calendar,
       targetTab: 'plan' as const,
-      helper: 'Compras y extras',
+      helper: isSummaryMode ? 'Ver comidas' : 'Ir a resumen',
       tint: 'from-sky-500 to-blue-600',
     },
     {
       key: 'resumen' as const,
-      label: 'Resumen',
+      label: 'Analisis',
       shortLabel: 'Resumen',
       icon: Lightbulb,
       targetTab: 'resumen' as const,
-      helper: 'Kcal y sups',
+      helper: isSummaryMode ? 'Volver al plan' : 'Kcal y sups',
       tint: 'from-violet-500 to-fuchsia-600',
     },
   ];
@@ -458,7 +458,7 @@ export default function App() {
     >
       {!isPlanAdjustOpen && <Header />}
 
-      <AnimatePresence>{activeTab === 'plan' && !isPlanAdjustOpen && <DailyProgress />}</AnimatePresence>
+      {activeTab === 'plan' && !isPlanAdjustOpen ? <DailyProgress /> : null}
 
       <main className="relative z-0 max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-4">
         {desktopTabBackdrop ? (

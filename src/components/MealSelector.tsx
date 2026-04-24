@@ -126,7 +126,7 @@ export default function MealSelector({
                             onRestoreMeal(comida, `${dia}::${momento}::${idx}`);
                           }}
                           data-testid={`meal-restore-${perfil}-${dia}-${momento}-${idx}`}
-                          className={`hidden sm:inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${
                             isDarkMode
                               ? `${accentClasses.border} bg-slate-950 text-slate-100 hover:bg-slate-900`
                               : `${accentClasses.border} bg-white text-slate-700 hover:bg-slate-50`
@@ -145,7 +145,7 @@ export default function MealSelector({
                             onEditMeal(comida, `${dia}::${momento}::${idx}`);
                           }}
                           data-testid={`meal-edit-${perfil}-${dia}-${momento}-${idx}`}
-                          className={`hidden sm:flex w-8 h-8 rounded-full border items-center justify-center transition ${
+                          className={`flex w-8 h-8 rounded-full border items-center justify-center transition ${
                             isDarkMode
                               ? 'border-slate-700 bg-slate-900 text-slate-200 hover:border-slate-500'
                               : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'

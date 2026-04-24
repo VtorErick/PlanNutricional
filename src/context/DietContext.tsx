@@ -171,6 +171,18 @@ function sanitizeStoredQuestionnaireContexts(value: unknown): StoredQuestionnair
   };
 }
 
+function getInitialQuestionnaireContexts(): StoredQuestionnaireContexts {
+  const empty = { el: null, ella: null, ambos: null };
+  if (typeof window === 'undefined') return empty;
+
+  try {
+    const legacyRaw = readStorageValue(window.localStorage, 'lastQuestionnaireContext');
+    return legacyRaw ? sanitizeStoredQuestionnaireContexts(JSON.parse(legacyRaw)) : empty;
+  } catch {
+    return empty;
+  }
+}
+
 function isEquivalencesLike(value: unknown): value is any[] {
   return Array.isArray(value);
 }
@@ -673,6 +685,7 @@ interface DietContextType {
     preferredModel?: string;
     checkGeneration?: boolean;
     syncModel?: boolean;
+    force?: boolean;
   }) => Promise<GeminiStatusResponse | null>;
   generationLoading: boolean;
   generationError: string;
@@ -689,7 +702,7 @@ interface DietContextType {
   questionnaireTargetProfile: TargetProfile;
   setQuestionnaireTargetProfile: React.Dispatch<React.SetStateAction<TargetProfile>>;
   questionnaireStepIdx: number;
-  setQuestionnaireStepIdx: (step: number | ((prev: number) => number)) => void;
+  setQuestionnaireStepIdx: (step: number | ((prev: number) => number), targetOverride?: TargetProfile) => void;
   questionnaireEl: any;
   setQuestionnaireEl: React.Dispatch<React.SetStateAction<any>>;
   questionnaireElla: any;
@@ -825,7 +838,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [lastGeneratedData, setLastGeneratedData] = useState<any>(null);
   const [lastQuestionnaireContexts, setLastQuestionnaireContexts] = useLocalStorage<StoredQuestionnaireContexts>(
     'lastQuestionnaireContexts',
-    { el: null, ella: null, ambos: null },
+    getInitialQuestionnaireContexts(),
     sanitizeStoredQuestionnaireContexts
   );
   const geminiModelRef = useRef(geminiModel);
@@ -847,11 +860,12 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   // Derived step for the current target profile
   const questionnaireStepIdx = questionnaireStepsByProfile[questionnaireTargetProfile] ?? 0;
   const setQuestionnaireStepIdx = useCallback(
-    (step: number | ((prev: number) => number)) => {
+    (step: number | ((prev: number) => number), targetOverride?: TargetProfile) => {
       setQuestionnaireStepsByProfile((prev) => {
-        const current = prev[questionnaireTargetProfile] ?? 0;
+        const target = targetOverride ?? questionnaireTargetProfile;
+        const current = prev[target] ?? 0;
         const next = typeof step === 'function' ? step(current) : step;
-        return { ...prev, [questionnaireTargetProfile]: Math.max(0, next) };
+        return { ...prev, [target]: Math.max(0, next) };
       });
     },
     [questionnaireTargetProfile, setQuestionnaireStepsByProfile]
@@ -868,6 +882,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const hasInitializedRouteRef = useRef(false);
   const lastStorageErrorRef = useRef<Record<string, number>>({});
   const lastGeminiStatusCheckTime = useRef<number>(0);
+  const lastGeminiStatusRef = useRef<GeminiStatusResponse | null>(null);
 
   // ─── Utilities ─────────────────────────────────────────────────────
   const notify = useCallback(async (title: string, message: string) => { await showAppAlert({ title, message }); }, []);
@@ -1794,7 +1809,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     const isForced = options?.force === true;
     const THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
     if (!isForced && now - lastGeminiStatusCheckTime.current < THROTTLE_MS) {
-      return null;
+      return lastGeminiStatusRef.current;
     }
 
     setGeminiAvailabilityLoading(true);
@@ -1807,6 +1822,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       });
 
       lastGeminiStatusCheckTime.current = Date.now();
+      lastGeminiStatusRef.current = status;
 
       setGeminiAvailableModels(status.availableModels);
       setGeminiFallbackModels(status.fallbackModels);
@@ -1829,7 +1845,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       setGeminiFallbackModels([]);
       setGeminiRecommendedModel('');
       setGeminiAvailabilityMessage(message);
-      return {
+      const fallbackStatus = {
         ok: false,
         error: message,
         selectedModel: '',
@@ -1837,6 +1853,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         orderedModels: [],
         fallbackModels: [],
       } satisfies GeminiStatusResponse;
+      lastGeminiStatusRef.current = fallbackStatus;
+      return fallbackStatus;
     } finally {
       setGeminiAvailabilityLoading(false);
     }

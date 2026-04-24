@@ -224,9 +224,9 @@ export default function ShoppingView() {
   return (
     <motion.div
       key="compras"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="space-y-4"
     >
