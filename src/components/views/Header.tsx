@@ -1,7 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ChefHat, ChevronDown, FileText, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, ChefHat, FileText, Moon, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
+import {
+  getCombinedProfileLabel,
+  getCompactProfileLabel,
+  getProfileLabel,
+} from '../../utils/profileLabels';
 
 export default function Header() {
   const [showPdfMenu, setShowPdfMenu] = React.useState(false);
@@ -13,6 +18,7 @@ export default function Header() {
     setPerfilActivo: setActiveProfile,
     perfilActivo: activeProfile,
     perfilesData: profilesData,
+    profileLabels,
     diaActivo: activeDay,
     selecciones: selections,
     ac: accentColors,
@@ -20,6 +26,11 @@ export default function Header() {
     setIsDarkMode,
     notify,
   } = useDiet();
+  const activeProfileLabel = activeProfile
+    ? getCompactProfileLabel(profileLabels, activeProfile)
+    : 'Perfil';
+  const menuProfileLabel = (profileId: 'el' | 'ella' | 'ambos') =>
+    profileId === 'ambos' ? getCombinedProfileLabel(profileLabels) : getProfileLabel(profileLabels, profileId);
 
   React.useEffect(() => {
     if (!showPdfMenu) return;
@@ -121,7 +132,7 @@ export default function Header() {
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <button
               onClick={() => setActiveProfile(null)}
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl hover:bg-slate-100 active:scale-95 transition-all dark:hover:bg-slate-800"
+              className="hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl hover:bg-slate-100 active:scale-95 transition-all dark:hover:bg-slate-800 sm:flex"
               aria-label="Volver a perfiles"
             >
               <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-200" />
@@ -168,6 +179,41 @@ export default function Header() {
             <span className="hidden sm:inline text-xs font-bold">Descargar</span>
           </button>
 
+          <div className="relative sm:hidden" ref={profileMenuRef}>
+            <button
+              type="button"
+              onClick={() => setShowProfileMenu((value) => !value)}
+              className={`inline-flex h-10 min-w-[58px] max-w-[76px] items-center justify-center rounded-2xl px-2 text-[11px] font-black leading-none transition active:scale-95 ${accentColors.btnActive} shadow-sm`}
+              aria-label="Cambiar perfil"
+            >
+              <span className="truncate">{activeProfileLabel}</span>
+            </button>
+
+            {showProfileMenu ? (
+              <div className={`absolute right-0 top-12 z-50 w-44 rounded-2xl border p-1.5 shadow-xl ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-white'}`}>
+                {(['el', 'ella', 'ambos'] as const).map((profileId) => (
+                  <button
+                    key={profileId}
+                    type="button"
+                    onClick={() => {
+                      setActiveProfile(profileId);
+                      setShowProfileMenu(false);
+                    }}
+                    data-testid={`header-profile-${profileId}`}
+                    className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-sm font-bold ${
+                      activeProfile === profileId
+                        ? `${accentColors.bgLight} ${accentColors.text}`
+                        : isDarkMode ? 'text-slate-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="truncate">{menuProfileLabel(profileId)}</span>
+                    {activeProfile === profileId ? <span className="ml-2 text-xs">Activo</span> : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
           {showPdfMenu && (
             <div
               className={`absolute top-12 right-0 z-50 w-48 rounded-2xl shadow-xl p-1.5 ${
@@ -208,47 +254,6 @@ export default function Header() {
           </div>
         </div>
 
-        <div className="relative mt-2 sm:hidden" ref={profileMenuRef}>
-          <button
-            type="button"
-            onClick={() => setShowProfileMenu((value) => !value)}
-            className={`flex h-11 w-full items-center justify-between rounded-2xl px-4 text-sm font-black transition active:scale-[0.99] ${accentColors.btnActive} shadow-sm`}
-          >
-            <span>
-              {activeProfile === 'ambos'
-                ? 'Ambos perfiles'
-                : activeProfile
-                  ? profilesData[activeProfile]?.nombre || activeProfile
-                  : 'Perfil'}
-            </span>
-            <ChevronDown className={`h-4 w-4 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showProfileMenu ? (
-            <div className={`absolute left-0 right-0 top-12 z-50 rounded-2xl border p-1.5 shadow-xl ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-white'}`}>
-              {(['el', 'ella', 'ambos'] as const).map((profileId) => (
-                <button
-                  key={profileId}
-                  type="button"
-                  onClick={() => {
-                    setActiveProfile(profileId);
-                    setShowProfileMenu(false);
-                  }}
-                  data-testid={`header-profile-${profileId}`}
-                  className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-sm font-bold ${
-                    activeProfile === profileId
-                      ? `${accentColors.bgLight} ${accentColors.text}`
-                      : isDarkMode ? 'text-slate-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>{profileId === 'ambos' ? 'Ambos perfiles' : profilesData[profileId]?.nombre || profileId}</span>
-                  {activeProfile === profileId ? <span className="text-xs">Activo</span> : null}
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-
         <div className="mt-2 hidden grid-cols-3 gap-1.5 sm:absolute sm:right-[max(1.5rem,calc((100vw-64rem)/2+1.5rem))] sm:top-2.5 sm:mt-0 sm:flex">
           {(['el', 'ella', 'ambos'] as const).map((profileId) => {
             const isActive = activeProfile === profileId;
@@ -275,7 +280,7 @@ export default function Header() {
                   }
                 `}
               >
-                {profileId === 'ambos' ? 'Ambos' : profilesData[profileId]?.nombre || profileId}
+                {profileId === 'ambos' ? 'Ambos' : getProfileLabel(profileLabels, profileId)}
               </button>
             );
           })}

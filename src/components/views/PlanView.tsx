@@ -32,6 +32,7 @@ import {
   getMealOccurrences,
   type MealEditorDraft,
 } from '../../utils/mealEditing';
+import { getCombinedProfileLabel, getProfileLabel } from '../../utils/profileLabels';
 
 function cloneQuestionnaireValue<T>(value: T): T {
   if (value === null || value === undefined) {
@@ -82,6 +83,7 @@ export default function PlanView() {
     perfilActivo,
     perfilBase,
     perfilesData,
+    profileLabels,
     equivalenciasData,
     supplementsData,
     diaActivo,
@@ -134,6 +136,9 @@ export default function PlanView() {
 
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
+  const labelEl = getProfileLabel(profileLabels, 'el');
+  const labelElla = getProfileLabel(profileLabels, 'ella');
+  const labelAmbos = getCombinedProfileLabel(profileLabels);
 
   const handleDownloadDayPdf = React.useCallback(async () => {
     if (!perfilActivo) return;
@@ -201,7 +206,7 @@ export default function PlanView() {
 
   const mealEditorOccurrences = React.useMemo(() => {
     if (!mealEditor) return [];
-    const profileLabel = mealEditor.profileId === 'el' ? 'El' : 'Ella';
+    const profileLabel = mealEditor.profileId === 'el' ? labelEl : labelElla;
     const occurrences = getMealOccurrences(perfilesData[mealEditor.profileId], mealEditor.meal).map((occurrence) => ({
       ...occurrence,
       profileId: mealEditor.profileId,
@@ -217,7 +222,7 @@ export default function PlanView() {
       if (right.id === mealEditor.currentOccurrenceId) return 1;
       return 0;
     });
-  }, [mealEditor, perfilesData]);
+  }, [labelEl, labelElla, mealEditor, perfilesData]);
 
   const handleMealDraftChange = React.useCallback((field: keyof MealEditorDraft, value: string) => {
     setMealEditorDraft((prev) => (prev ? { ...prev, [field]: value } : prev));
@@ -318,9 +323,9 @@ export default function PlanView() {
   const planAiTargetOptions = React.useMemo(() => {
     if (perfilActivo === 'ambos') {
       return [
-        { id: 'ambos' as const, label: 'Ambos perfiles', description: 'Ajusta o recrea los dos planes al mismo tiempo.' },
-        { id: 'el' as const, label: perfilesData.el.nombre, description: 'Solo cambia el plan de este perfil.' },
-        { id: 'ella' as const, label: perfilesData.ella.nombre, description: 'Solo cambia el plan de este perfil.' },
+        { id: 'ambos' as const, label: labelAmbos, description: 'Ajusta o recrea los dos planes al mismo tiempo.' },
+        { id: 'el' as const, label: labelEl, description: 'Solo cambia el plan de este perfil.' },
+        { id: 'ella' as const, label: labelElla, description: 'Solo cambia el plan de este perfil.' },
       ];
     }
 
@@ -329,16 +334,16 @@ export default function PlanView() {
     return [
       {
         id: currentProfileId,
-        label: `Solo ${perfilesData[currentProfileId].nombre}`,
+        label: `Solo ${currentProfileId === 'el' ? labelEl : labelElla}`,
         description: 'Aplica cambios solo al perfil que estas viendo.',
       },
       {
         id: 'ambos' as const,
-        label: 'Ambos perfiles',
+        label: labelAmbos,
         description: 'Mantiene la experiencia alineada para los dos perfiles.',
       },
     ];
-  }, [perfilActivo, perfilesData]);
+  }, [labelAmbos, labelEl, labelElla, perfilActivo]);
 
   const defaultPlanAiTarget = (perfilActivo === 'ambos' ? 'ambos' : (perfilActivo || 'el')) as 'el' | 'ella' | 'ambos';
   const getQuestionnaireContextForTarget = React.useCallback(
@@ -755,7 +760,7 @@ export default function PlanView() {
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="space-y-3">
                                   <div className={`text-[10px] font-bold uppercase tracking-wider px-1 ${elAccent.text}`}>
-                                    Para {perfilesData.el.nombre}
+                                    Para {labelEl}
                                   </div>
 
                                   {!estaEnEdicionEl ? (
@@ -816,7 +821,7 @@ export default function PlanView() {
 
                                 <div className="space-y-3">
                                   <div className={`text-[10px] font-bold uppercase tracking-wider px-1 ${ellaAccent.text}`}>
-                                    Para {perfilesData.ella.nombre}
+                                    Para {labelElla}
                                   </div>
 
                                   {!estaEnEdicionElla ? (

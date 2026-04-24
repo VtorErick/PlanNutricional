@@ -40,6 +40,12 @@ import { showAppAlert } from '../utils/appDialogs';
 import { getGeminiModelLabel } from '../utils/geminiModels';
 import { getQuestionnaireTheme } from '../utils/theme';
 import { calculateClinicalTDEE, generateSmaePortionsFromKcal, distributeSmaeToMeals } from '../utils/nutrition';
+import {
+  cleanProfileLabel,
+  getCombinedProfileLabel,
+  getProfileLabel,
+  type ProfileLabels,
+} from '../utils/profileLabels';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type TargetProfile = 'el' | 'ella' | 'ambos';
@@ -92,6 +98,8 @@ interface Props {
   geminiRecommendedModel: string;
   geminiFallbackModels: string[];
   lastGeneratedData?: any;
+  profileLabels: ProfileLabels;
+  setProfileLabels: (v: ProfileLabels | ((prev: ProfileLabels) => ProfileLabels)) => void;
   targetProfile: TargetProfile;
   setTargetProfile: (p: TargetProfile) => void;
   stepIdx: number;
@@ -689,6 +697,8 @@ export default function NutritionQuestionnaire({
   geminiRecommendedModel,
   geminiFallbackModels,
   lastGeneratedData,
+  profileLabels,
+  setProfileLabels,
   targetProfile,
   setTargetProfile,
   stepIdx,
@@ -796,6 +806,11 @@ export default function NutritionQuestionnaire({
   const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
   const stepsLeft = Math.max(steps.length - (stepIdx + 1), 0);
   const tc = THEME[currentStep.profile ?? targetProfile];
+  const labelEl = getProfileLabel(profileLabels, 'el');
+  const labelElla = getProfileLabel(profileLabels, 'ella');
+  const labelAmbos = getCombinedProfileLabel(profileLabels);
+  const targetLabel =
+    targetProfile === 'ambos' ? labelAmbos : targetProfile === 'el' ? labelEl : labelElla;
 
   const person = (p: 'el' | 'ella') => (p === 'el' ? el : ella);
 
@@ -828,6 +843,13 @@ export default function NutritionQuestionnaire({
       setStepIdx(1);
       selectProfileTimeoutRef.current = null;
     }, 220);
+  };
+
+  const updateProfileLabel = (profileId: 'el' | 'ella', value: string) => {
+    setProfileLabels((prev) => ({
+      ...prev,
+      [profileId]: cleanProfileLabel(value, profileId === 'el' ? 'El' : 'Ella'),
+    }));
   };
 
   const canContinue = () => {
@@ -1126,6 +1148,8 @@ export default function NutritionQuestionnaire({
           ] as const).map(([val, emoji, title, sub]) => {
             const t = THEME[val];
             const active = targetProfile === val;
+            const titleLabel =
+              val === 'el' ? `Perfil ${labelEl}` : val === 'ella' ? `Perfil ${labelElla}` : labelAmbos;
             // Only disable buttons for OTHER profiles that haven't been started
             // The currently active profile is always clickable
             const profileButtonDisabled = loading;
@@ -1148,7 +1172,7 @@ export default function NutritionQuestionnaire({
 
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-slate-800 dark:text-slate-100'}`}>
-                    {title}
+                    {titleLabel}
                   </p>
                   <p className={`text-[11px] mt-0.5 ${active ? `${t.text} opacity-70` : 'text-slate-400'}`}>
                     {sub}
@@ -1159,6 +1183,36 @@ export default function NutritionQuestionnaire({
               </button>
             );
           })}
+
+          <div className="grid grid-cols-1 gap-3 rounded-[24px] border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 sm:grid-cols-2">
+            <label className="space-y-1.5">
+              <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                Nombre visual de El
+              </span>
+              <input
+                value={labelEl}
+                onChange={(event) => updateProfileLabel('el', event.target.value)}
+                maxLength={24}
+                data-testid="questionnaire-label-el"
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:ring-indigo-950"
+                placeholder="El"
+              />
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                Nombre visual de Ella
+              </span>
+              <input
+                value={labelElla}
+                onChange={(event) => updateProfileLabel('ella', event.target.value)}
+                maxLength={24}
+                data-testid="questionnaire-label-ella"
+                className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:ring-indigo-950"
+                placeholder="Ella"
+              />
+            </label>
+          </div>
         </div>
       );
     }
@@ -1880,7 +1934,7 @@ export default function NutritionQuestionnaire({
               <span className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-slate-400" />
                 Perfil:
-                <strong>{targetProfile === 'ambos' ? 'Ambos' : targetProfile === 'el' ? 'El' : 'Ella'}</strong>
+                <strong>{targetLabel}</strong>
               </span>
 
               <span className="flex items-center gap-1.5">
@@ -1937,7 +1991,7 @@ export default function NutritionQuestionnaire({
             return (
               <div key={p} className={`p-4 rounded-2xl border ${t.border} ${t.light}`}>
                 <p className={`text-xs font-bold uppercase tracking-wider mb-2.5 ${t.text}`}>
-                  {p === 'el' ? '👨 Perfil El' : '👩 Perfil Ella'}
+                  {p === 'el' ? `Perfil ${labelEl}` : `Perfil ${labelElla}`}
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600">
@@ -2136,8 +2190,8 @@ export default function NutritionQuestionnaire({
     type === 'cocina';
 
   const { label: stepLabel, Icon: StepIcon } = STEP_META[type];
-  const profileSuffix =
-    currentStep.profile === 'el' ? ' · El' : currentStep.profile === 'ella' ? ' · Ella' : '';
+  const visualProfileSuffix =
+    currentStep.profile === 'el' ? ` - ${labelEl}` : currentStep.profile === 'ella' ? ` - ${labelElla}` : '';
 
   return (
     <>
@@ -2159,7 +2213,7 @@ export default function NutritionQuestionnaire({
             <div className="min-w-0">
               <p className="text-sm font-bold text-slate-800 leading-tight truncate dark:text-slate-100">
                 {stepLabel}
-                {profileSuffix}
+                {visualProfileSuffix}
               </p>
               <p className="text-xs text-slate-500 font-medium dark:text-slate-400">
                 Paso {stepIdx + 1} de {steps.length} · {stepsLeft <= 3 ? 'Ya casi terminamos' : `Solo ${stepsLeft} pasos más`}

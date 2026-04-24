@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { buildProfileInspectionText, extractProfileMetrics } from '../../utils/profileSummary';
+import { getProfileLabel } from '../../utils/profileLabels';
 
 /* ─── constants ──────────────────────────────────────────────────── */
 const IMC_MIN = 16;
@@ -134,6 +135,7 @@ export default function LandingView() {
     setDiaActivo: setActiveDay,
     setTab: setActiveTab,
     perfilesData: profilesData,
+    profileLabels,
     dataVersions,
     setShowAdmin: setIsAdminOpen,
     setShowQuestionnaire: setIsQuestionnaireOpen,
@@ -149,6 +151,8 @@ export default function LandingView() {
 
   const elReady = dataVersions.el === 'custom';
   const ellaReady = dataVersions.ella === 'custom';
+  const labelEl = getProfileLabel(profileLabels, 'el');
+  const labelElla = getProfileLabel(profileLabels, 'ella');
 
   const sharedPlanStats = useMemo(() => {
     const norm = (v: string) => v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
@@ -202,7 +206,7 @@ export default function LandingView() {
   /* ── card data ── */
   const cards = [
     {
-      id: 'el' as const, label: 'El', emoji: '🧍‍♂️', ready: elReady,
+      id: 'el' as const, label: labelEl, emoji: '🧍‍♂️', ready: elReady,
       grad: isDarkMode ? 'from-[#1e3a5f] via-[#1e40af] to-[#312e81]' : 'from-[#6366f1] via-[#3b82f6] to-[#38bdf8]',
       shadow: isDarkMode ? 'shadow-[0_16px_40px_rgba(30,58,138,0.35)]' : 'shadow-[0_16px_40px_rgba(99,102,241,0.22)]',
       imc: elImc, bio: elBio, meta: profilesData.el.meta,
@@ -210,7 +214,7 @@ export default function LandingView() {
       onIA: () => openQuestionnaire('el'),
     },
     {
-      id: 'ella' as const, label: 'Ella', emoji: '🧍‍♀️', ready: ellaReady,
+      id: 'ella' as const, label: labelElla, emoji: '🧍‍♀️', ready: ellaReady,
       grad: isDarkMode ? 'from-[#5b1a3a] via-[#9d174d] to-[#be185d]' : 'from-[#ec4899] via-[#f472b6] to-[#fb923c]',
       shadow: isDarkMode ? 'shadow-[0_16px_40px_rgba(157,23,77,0.35)]' : 'shadow-[0_16px_40px_rgba(236,72,153,0.22)]',
       imc: ellaImc, bio: ellaBio, meta: profilesData.ella.meta,
@@ -226,7 +230,7 @@ export default function LandingView() {
     ? { main: 'Aún no hay planes generados.', cta: 'Comienza con ✨ Personalizar mi plan.', sub: 'También puedes personalizar ambos para obtener más comidas compartidas.' }
     : elReady && ellaReady
       ? { main: 'Ambos planes listos.', cta: 'Puedes entrar individual o juntos.', sub: '' }
-      : { main: `${elReady ? 'El' : 'Ella'} ya tiene plan.`, cta: 'Completa el otro cuando quieras.', sub: '' };
+      : { main: `${elReady ? labelEl : labelElla} ya tiene plan.`, cta: 'Completa el otro cuando quieras.', sub: '' };
 
   /* ═══ RENDER ═══════════════════════════════════════════════════════ */
   return (

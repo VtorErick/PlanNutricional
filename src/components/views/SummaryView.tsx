@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, BarChart3, ChevronDown, Heart, Shield, TrendingDown, User } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
+import { getProfileLabel } from '../../utils/profileLabels';
 
 const mealKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'] as const;
 const mealLabels = ['Des', 'C.AM', 'Com', 'C.PM', 'Cen'];
@@ -18,7 +19,7 @@ const categories = [
 ] as const;
 
 export default function SummaryView() {
-  const { perfilActivo, perfilesData, ac, isDarkMode } = useDiet();
+  const { perfilActivo, perfilesData, profileLabels, ac, isDarkMode } = useDiet();
   const [expandedSummaryPoint, setExpandedSummaryPoint] = useState<string | null>(null);
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
@@ -54,6 +55,7 @@ export default function SummaryView() {
       <div className={isAmbos ? 'grid lg:grid-cols-2 gap-6' : 'space-y-8'}>
         {(isAmbos ? [perfilesData.el, perfilesData.ella] : [perfil]).map((p, pIdx) => {
           if (!p) return null;
+          const profileLabel = getProfileLabel(profileLabels, p.id === 'ella' ? 'ella' : 'el');
           
           // Data-Driven: Construimos el resumen a partir de las descripciones estáticas del perfil y sus metas
           const summaryPoints = [
@@ -102,7 +104,7 @@ export default function SummaryView() {
                       : `${ellaAccent.textDark}`
                   }`}
                 >
-                  Resumen de {p.nombre}
+                  Resumen de {profileLabel}
                 </h3>
               )}
 
@@ -110,7 +112,7 @@ export default function SummaryView() {
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h3 className={`font-bold flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                     <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
-                    {isAmbos ? `Puntos clave de ${p.nombre}` : 'Puntos clave de tu plan'}
+                    {isAmbos ? `Puntos clave de ${profileLabel}` : 'Puntos clave de tu plan'}
                   </h3>
                 </div>
 

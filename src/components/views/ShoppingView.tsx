@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
+import { getCompactProfileLabel } from '../../utils/profileLabels';
 
 type ShoppingUsage = {
   texto: string;
@@ -85,6 +86,7 @@ export default function ShoppingView() {
     selecciones,
     perfilActivo,
     perfilesData,
+    profileLabels,
     comprasCheck,
     setComprasCheck,
     isDarkMode,
@@ -458,7 +460,7 @@ export default function ShoppingView() {
                                         : `${ellaAccent.tagBg} ${ellaAccent.tagText}`
                                     }`}
                                   >
-                                    {perfil === 'el' ? 'El' : 'Ella'}
+                                    {getCompactProfileLabel(profileLabels, perfil)}
                                   </span>
                                 ))}
                               </div>

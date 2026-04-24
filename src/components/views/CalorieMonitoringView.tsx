@@ -4,6 +4,7 @@ import { CalendarDays, Flame, ShieldCheck, Target, TrendingDown, TrendingUp } fr
 import { useDiet } from '../../context/DietContext';
 import { estimateDailyCaloriesFromObjectives, estimateDailyMacroTargetsFromObjectives } from '../../utils/nutrition';
 import { getAccentColors, getMonitoringPalette } from '../../utils/theme';
+import { getProfileLabel } from '../../utils/profileLabels';
 
 const STATUS_LABELS = {
   low: 'Debajo',
@@ -22,6 +23,7 @@ export default function CalorieMonitoringView() {
   const {
     perfilActivo,
     perfilesData,
+    profileLabels,
     selecciones,
     diasDisponibles,
     isAmbos,
@@ -37,6 +39,7 @@ export default function CalorieMonitoringView() {
   const isCombined = profileIds.length > 1;
 
   const palette = getMonitoringPalette(perfilActivo ?? (isAmbos ? 'ambos' : 'el'), isDarkMode);
+  const getLabel = React.useCallback((profileId: ProfileId) => getProfileLabel(profileLabels, profileId), [profileLabels]);
   const dayScrollerRef = React.useRef<HTMLDivElement | null>(null);
   const dayButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -173,7 +176,7 @@ export default function CalorieMonitoringView() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-extrabold">
-                {metrics.profile.nombre}
+                {getLabel(profileId)}
               </p>
               <h2 className="mt-2 text-3xl font-black leading-none">{active.kcal} kcal</h2>
               <p className="mt-2 text-sm text-white/85 flex items-center gap-1.5">
@@ -222,7 +225,7 @@ export default function CalorieMonitoringView() {
         <div className={`rounded-[24px] p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
           <div className="flex items-center gap-2">
             <Flame className={`w-4 h-4 ${accent.text}`} />
-            <h3 className={`text-sm font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>Semana de {metrics.profile.nombre}</h3>
+            <h3 className={`text-sm font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>Semana de {getLabel(profileId)}</h3>
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {metrics.daySummaries.map((item) => (
@@ -337,7 +340,7 @@ export default function CalorieMonitoringView() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[11px] font-black uppercase tracking-[0.16em]">
-                      {metrics.profile.nombre}
+                      {getLabel(profileId)}
                     </p>
                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${selected ? 'bg-white/15 text-white' : statusPills[active.status]}`}>
                       {percent}%

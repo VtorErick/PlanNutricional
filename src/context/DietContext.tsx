@@ -47,6 +47,11 @@ import {
 } from '../utils/planAiUtils';
 import { repairBrokenText } from '../utils/text';
 import { remapFoodGroupRow, resolveFoodGroupKey } from '../utils/foodGroupKeys';
+import {
+  DEFAULT_PROFILE_LABELS,
+  sanitizeProfileLabels,
+  type ProfileLabels,
+} from '../utils/profileLabels';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
 export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias' | 'suplementos';
@@ -672,6 +677,8 @@ interface DietContextType {
   perfilesData: Record<string, Profile>;
   equivalenciasData: Record<string, Equivalencia[]>;
   supplementsData: Record<string, SupplementRecommendation[]>;
+  profileLabels: ProfileLabels;
+  setProfileLabels: React.Dispatch<React.SetStateAction<ProfileLabels>>;
 
   // Gemini AI settings
   geminiModel: string;
@@ -813,6 +820,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     ella: 'original' | 'custom';
   }>('dataVersions', { el: 'original', ella: 'original' }, sanitizeDataVersions);
   const [customData, setCustomData] = useLocalStorage<any>('customData', {}, sanitizeCustomData);
+  const [profileLabels, setProfileLabels] = useLocalStorage<ProfileLabels>(
+    'profileLabels',
+    DEFAULT_PROFILE_LABELS,
+    sanitizeProfileLabels
+  );
 
   // 4. UI States
   const [progressExpanded, setProgressExpanded] = useState(false);
@@ -2066,6 +2078,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     comprasCheck, setComprasCheck,
     dataVersions, setDataVersions,
     customData, setCustomData,
+    profileLabels, setProfileLabels,
     perfilesData, equivalenciasData, supplementsData,
     geminiModel, setGeminiModel,
     geminiAvailableModels,

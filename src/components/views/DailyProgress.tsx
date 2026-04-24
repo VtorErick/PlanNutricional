@@ -15,6 +15,7 @@ import {
   estimateDailyCaloriesFromObjectives,
   sumSelectedMealCalories,
 } from '../../utils/nutrition';
+import { getProfileLabel } from '../../utils/profileLabels';
 
 const mealTimeIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
@@ -33,6 +34,7 @@ export default function DailyProgress() {
     diaActivo: activeDay,
     setDiaActivo: setActiveDay,
     perfilesData: profilesData,
+    profileLabels,
     selecciones: selections,
     isAmbos: isCombinedProfile,
     perfilBase: baseProfile,
@@ -44,6 +46,8 @@ export default function DailyProgress() {
     ac: accentColors,
     isDarkMode,
   } = useDiet();
+  const labelEl = getProfileLabel(profileLabels, 'el');
+  const labelElla = getProfileLabel(profileLabels, 'ella');
   const [showDayPicker, setShowDayPicker] = React.useState(false);
   const dayScrollerRef = React.useRef<HTMLDivElement | null>(null);
   const dayButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
@@ -190,7 +194,7 @@ export default function DailyProgress() {
                     {(['el', 'ella'] as const).map((profileId) => (
                       <div key={`progress-${profileId}`} className="min-w-[92px]">
                         <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${profileId === 'el' ? 'text-blue-600 dark:text-sky-300' : 'text-rose-600 dark:text-rose-300'}`}>
-                          {profilesData[profileId].nombre}
+                          {profileId === 'el' ? labelEl : labelElla}
                         </p>
                         <p className={`text-lg font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
                           {profileDayStats[profileId].kcal}

@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import { ChevronDown, Clock3, Pill, ShieldAlert } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
+import { getProfileLabel } from '../../utils/profileLabels';
 
 export default function SupplementsView() {
-  const { perfilActivo, perfilesData, supplementsData, isAmbos, ac, isDarkMode } = useDiet();
+  const { perfilActivo, supplementsData, profileLabels, isAmbos, ac, isDarkMode } = useDiet();
   const [expandedSupplement, setExpandedSupplement] = useState<string | null>(null);
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
@@ -60,7 +61,6 @@ export default function SupplementsView() {
 
       <div className={isAmbos ? 'grid gap-4 lg:grid-cols-2' : 'space-y-4'}>
         {profilesToRender.map((profileId, index) => {
-          const profile = perfilesData[profileId];
           const items = supplementsData[profileId] || [];
           const profileAccent = profileId === 'el' ? elAccent : ellaAccent;
           return (
@@ -69,7 +69,7 @@ export default function SupplementsView() {
                 <div className={`flex items-center justify-between rounded-[22px] border p-3 ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-100 bg-white'}`}>
                   <div>
                     <p className={`text-[11px] font-black uppercase tracking-[0.16em] ${profileAccent.text}`}>
-                      {profile.nombre}
+                      {getProfileLabel(profileLabels, profileId)}
                     </p>
                     <h3 className={`text-base font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                       Suplementos sugeridos

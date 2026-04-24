@@ -70,6 +70,8 @@ export default function App() {
     geminiFallbackModels,
     lastGeneratedData,
     lastQuestionnaireContexts,
+    profileLabels,
+    setProfileLabels,
     questionnaireTargetProfile,
     setQuestionnaireTargetProfile,
     questionnaireStepIdx: questionnaireStepIndex,
@@ -412,6 +414,8 @@ export default function App() {
                 geminiRecommendedModel={geminiRecommendedModel}
                 geminiFallbackModels={geminiFallbackModels}
                 lastGeneratedData={lastGeneratedData}
+                profileLabels={profileLabels}
+                setProfileLabels={setProfileLabels}
                 targetProfile={questionnaireTargetProfile}
                 setTargetProfile={setQuestionnaireTargetProfile}
                 stepIdx={questionnaireStepIndex}
