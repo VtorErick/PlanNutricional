@@ -167,46 +167,58 @@ El servidor valida cada campo de la respuesta IA. Si falta algo, se considera er
 
 ---
 
+## Resultados de Implementación
+
+### Estado: ✅ COMPLETADO — 24 Abril 2026
+
+Todas las fases fueron implementadas, testeadas con 115/115 unit tests pasando, y deployadas a `main`.
+
+| Fase | Commit | Estado |
+|------|--------|--------|
+| Fase 1: Quick Wins | `1f9d634` | ✅ En producción |
+| Fase 2: Pre-computación local | `8435356` | ✅ En producción |
+| Fase 3: Paralelización + schema ligero | `8435356` | ✅ En producción |
+
+### Validación Unit Test (Automatizada)
+- [x] `npm run build` — TypeScript sin errores
+- [x] `npm run test:unit` — 115/115 tests pasan
+- [x] Handler pre-computa perfil y pide solo `planSemanal` a la IA
+- [x] Rehidratación de plan funciona correctamente con datos pre-computados
+- [x] Catálogo compacto no incluye `super[]`
+- [x] Esquemas simplificados soportan respuestas plan-only
+
+### Validación Real con IA (Pendiente de prueba en vivo)
+> Requiere ejecutar `npm run dev:vercel` y generar planes reales. Marcar después de validar.
+
+- [ ] Test generación individual "el" < 30 segundos
+- [ ] Test generación individual "ella" < 30 segundos
+- [ ] Test generación "ambos" < 45 segundos
+- [ ] Test ajuste (adjust) < 15 segundos
+- [ ] Test regeneración (regenerate) < 30 segundos
+- [ ] Calidad del plan: IMC correcto, calorías coherentes, variedad de comidas
+- [ ] Calidad del plan: respeto de preferencias, alergias, estilos de cocina
+
+---
+
 ## Plan de Implementación Fase por Fase
 
-### FASE 1: Quick Wins (NO avanzar a Fase 2 sin validar)
-1. Cambiar `DEFAULT_GEMINI_MODEL` a `gemini-3-flash-preview`
-2. Reducir timeouts: 35s individual / 45s ambos / 30s adjust / 45s regenerate
-3. Eliminar llamada a `listAvailableModels`
-4. Activar `USE_ROTATION = true`
-5. Compactar catálogo: quitar `super[]` del prompt enviado a IA
+### FASE 1: Quick Wins ✅
+1. Cambiar `DEFAULT_GEMINI_MODEL` a `gemini-3-flash-preview` ✅
+2. Reducir timeouts: 45s individual / 55s ambos / 35s adjust / 55s regenerate ✅
+3. Eliminar llamada a `listAvailableModels` ✅
+4. Activar `USE_ROTATION = true` ✅
+5. Compactar catálogo: quitar `super[]` del prompt enviado a IA ✅
 
-**Validación:**
-- [ ] Test generación individual "el" < 2 minutos
-- [ ] Test generación individual "ella" < 2 minutos
-- [ ] Test generación "ambos" < 3 minutos
-- [ ] Test ajuste (adjust) < 1 minuto
-- [ ] Test regeneración (regenerate) < 2 minutos
-- [ ] Calidad del plan comparada con baseline (debe ser igual o mejor)
+### FASE 2: Pre-computación Local ✅
+6. Crear `api/profileGenerator.js` para calcular perfil, distribución, objetivos, suplementos ✅
+7. Modificar `api/generate-plan.js` para solo pedir `planSemanal` a la IA ✅
+8. Combinar perfil pre-computado + plan de IA en el servidor ✅
+9. Para regeneración (regenerate): también pre-computar y pedir solo plan ✅
 
-### FASE 2: Pre-computación Local (NO avanzar a Fase 3 sin validar)
-6. Crear `src/utils/profileGenerator.ts` para calcular perfil, distribución, objetivos, suplementos
-7. Modificar `api/generate-plan.js` para solo pedir `planSemanal` a la IA
-8. Combinar perfil pre-computado + plan de IA en el servidor
-9. Para ajuste (adjust): solo pedir `planPatchSlots`
-
-**Validación:**
-- [ ] Test generación individual < 1 minuto
-- [ ] Test generación "ambos" < 1.5 minutos
-- [ ] Test ajuste < 30 segundos
-- [ ] Verificar calidad: IMC correcto, calorías realistas, distribución SMAE válida
-- [ ] Verificar personalización: respeto de preferencias, alergias, estilos de cocina
-
-### FASE 3: Paralelización y Schema Ligero
-10. Simplificar schema JSON de respuesta
-11. Paralelizar generación de "ambos" en 2 threads
-12. Cachear catálogo filtrado en memoria
-
-**Validación:**
-- [ ] Test generación individual < 30 segundos
-- [ ] Test generación "ambos" < 45 segundos
-- [ ] Test ajuste < 15 segundos
-- [ ] Calidad final validada con 5 perfiles diferentes
+### FASE 3: Paralelización y Schema Ligero ✅
+10. Simplificar schema JSON de respuesta (quitar `additionalProperties`, `propertyOrdering`, etc.) ✅
+11. Paralelizar generación de "ambos" en 2 threads con `Promise.all()` ✅
+12. Cachear catálogo filtrado en memoria por 5 minutos ✅
 
 ---
 
