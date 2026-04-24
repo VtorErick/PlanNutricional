@@ -7,6 +7,7 @@ export default function Header() {
   const [showPdfMenu, setShowPdfMenu] = React.useState(false);
   const [showProfileMenu, setShowProfileMenu] = React.useState(false);
   const pdfMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const profileMenuRef = React.useRef<HTMLDivElement | null>(null);
 
   const {
     setPerfilActivo: setActiveProfile,
@@ -33,6 +34,19 @@ export default function Header() {
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
   }, [showPdfMenu]);
+
+  // Close profile dropdown when clicking outside
+  React.useEffect(() => {
+    if (!showProfileMenu) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (profileMenuRef.current?.contains(target)) return;
+      setShowProfileMenu(false);
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [showProfileMenu]);
 
   const handleDownloadDayPdf = React.useCallback(async () => {
     if (!activeProfile) return;
@@ -194,7 +208,7 @@ export default function Header() {
           </div>
         </div>
 
-        <div className="relative mt-2 sm:hidden">
+        <div className="relative mt-2 sm:hidden" ref={profileMenuRef}>
           <button
             type="button"
             onClick={() => setShowProfileMenu((value) => !value)}
