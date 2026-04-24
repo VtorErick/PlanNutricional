@@ -308,7 +308,7 @@ export default function App() {
       className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
       data-profile={activeProfile}
     >
-      <Header />
+      {!isPlanAdjustOpen && <Header />}
 
       <AnimatePresence>{activeTab === 'plan' && !isPlanAdjustOpen && <DailyProgress />}</AnimatePresence>
 
@@ -370,9 +370,10 @@ export default function App() {
           </motion.div>
         </div>
 
-        <div
-          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200 dark:bg-slate-950/95 dark:border-slate-800"
+        <nav
+          className="sm:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/97 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/97"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          aria-label="Navegación principal móvil"
         >
           {showMobileMore ? (
             <div className="mx-auto max-w-md px-3 pt-2">
@@ -442,7 +443,7 @@ export default function App() {
               </button>
             </div>
           </div>
-        </div>
+        </nav>
 
         <AnimatePresence mode="wait">
           <Suspense fallback={<ViewFallback />}>

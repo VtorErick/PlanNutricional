@@ -10,7 +10,6 @@ import {
   MessageSquareText,
   RefreshCcw,
   Sparkles,
-  UserRound,
   Wand2,
   X,
 } from 'lucide-react';
@@ -181,7 +180,7 @@ export default function PlanAiRefreshSheet({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[90] bg-slate-950/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[999] bg-slate-950/60 backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -193,7 +192,7 @@ export default function PlanAiRefreshSheet({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-[32px] border sm:h-auto sm:max-h-[88vh] sm:max-w-3xl sm:rounded-[32px] ${
+            className={`flex h-[100dvh] w-full flex-col overflow-hidden rounded-none border sm:h-auto sm:max-h-[88vh] sm:max-w-3xl sm:rounded-[32px] ${
               isDarkMode
                 ? 'border-slate-700 bg-slate-900 shadow-[0_20px_60px_rgba(2,6,23,0.55)]'
                 : 'border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]'
@@ -243,32 +242,35 @@ export default function PlanAiRefreshSheet({
                         Tipo de cambio
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className={`grid grid-cols-2 gap-1.5 rounded-[24px] border p-1.5 ${
+                      isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
+                    }`}>
                       {([
                         {
                           id: 'adjust' as const,
-                          icon: Wand2,
-                          title: 'Ajustar lo actual',
-                          description: 'Solo cambia lo que pidas.',
+                          title: 'Ajustar',
                         },
                         {
                           id: 'regenerate' as const,
-                          icon: RefreshCcw,
-                          title: 'Recrear desde cero',
-                          description: 'Arma una nueva version completa.',
+                          title: 'Recrear',
                         },
                       ]).map((item) => (
-                        <OptionCard
+                        <button
                           key={item.id}
-                          active={mode === item.id}
-                          title={item.title}
-                          description={item.description}
-                          icon={item.icon}
+                          type="button"
+                          data-testid={`plan-ai-mode-${item.id}`}
                           onClick={() => setMode(item.id)}
-                          accentClasses={accentClasses}
-                          isDarkMode={isDarkMode}
-                          dataTestId={`plan-ai-mode-${item.id}`}
-                        />
+                          className={`flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-black transition active:scale-[0.98] ${
+                            mode === item.id
+                              ? `${accentClasses.btnActive} shadow-sm`
+                              : isDarkMode
+                                ? 'bg-slate-900 text-slate-300'
+                                : 'bg-white text-slate-600'
+                          }`}
+                        >
+                          {item.id === 'adjust' ? <Wand2 className="h-4 w-4" /> : <RefreshCcw className="h-4 w-4" />}
+                          {item.title}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -285,17 +287,21 @@ export default function PlanAiRefreshSheet({
                     }`}>
                       <div className="grid grid-cols-3 gap-1.5">
                         {targetOptions.map((option) => (
-                          <OptionCard
+                          <button
                             key={option.id}
-                            active={targetProfile === option.id}
-                            title={option.label}
-                            description={option.description}
-                            icon={option.id === 'ambos' ? Users : UserRound}
+                            type="button"
+                            data-testid={`plan-ai-target-${option.id}`}
                             onClick={() => setTargetProfile(option.id)}
-                            accentClasses={accentClasses}
-                            isDarkMode={isDarkMode}
-                            dataTestId={`plan-ai-target-${option.id}`}
-                          />
+                            className={`flex h-12 items-center justify-center rounded-2xl text-sm font-black transition active:scale-[0.98] ${
+                              targetProfile === option.id
+                                ? `${accentClasses.btnActive} shadow-sm`
+                                : isDarkMode
+                                  ? 'bg-slate-900 text-slate-300'
+                                  : 'bg-white text-slate-600'
+                            }`}
+                          >
+                            {option.id === 'ambos' ? 'Ambos' : option.label}
+                          </button>
                         ))}
                       </div>
                     </div>

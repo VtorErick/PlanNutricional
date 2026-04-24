@@ -88,6 +88,10 @@ export default function SummaryView() {
               }
             : ac;
 
+          const profileTextTone = isDarkMode
+            ? (isAmbos ? (isFirst ? elAccent.text : ellaAccent.text) : dynamicAc.text)
+            : (isAmbos ? (isFirst ? elAccent.textDark : ellaAccent.textDark) : dynamicAc.textDark);
+
           return (
             <div key={p.perfil} className={`space-y-4 ${hiddenClass}`}>
               {isAmbos && (
@@ -161,7 +165,7 @@ export default function SummaryView() {
                         <TrendingDown className="w-3.5 h-3.5" />
                         Meta
                       </h3>
-                      <p className={`${dynamicAc.text} text-xs sm:text-sm leading-relaxed`}>
+                      <p className={`${isDarkMode ? dynamicAc.text : dynamicAc.textDark} text-xs sm:text-sm leading-relaxed`}>
                         {p.meta}
                       </p>
                     </div>
@@ -187,15 +191,7 @@ export default function SummaryView() {
                         <User className="w-3.5 h-3.5" />
                         Perfil
                       </h3>
-                      <p
-                        className={`text-xs sm:text-sm leading-relaxed ${
-                          isAmbos
-                            ? isFirst
-                              ? elAccent.text
-                              : ellaAccent.text
-                            : dynamicAc.text
-                        }`}
-                      >
+                      <p className={`text-xs sm:text-sm leading-relaxed ${profileTextTone}`}>
                         {p.perfil}
                       </p>
                     </div>

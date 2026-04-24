@@ -25,36 +25,34 @@ export default function SupplementsView() {
       <section
         className={`rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className={`flex h-11 w-11 items-center justify-center rounded-[18px] bg-gradient-to-br ${ac.bgGradient} shadow-sm`}>
-              <Pill className="h-5 w-5 text-white" />
+        <div className="flex items-start gap-3 min-w-0">
+          <div className={`flex h-11 w-11 items-center justify-center rounded-[18px] bg-gradient-to-br ${ac.bgGradient} shadow-sm`}>
+            <Pill className="h-5 w-5 text-white" />
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h2 className={`text-xl font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                Suplementos
+              </h2>
+              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-300">
+                Opcional
+              </span>
             </div>
 
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <h2 className={`text-xl font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
-                  Suplementos
-                </h2>
-                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-300">
-                  Opcional
+            <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+              Opcionales. Consulta el detalle solo si quieres usarlos.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {isAmbos ? (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ac.tagBg} ${ac.tagText}`}>
+                  2 perfiles
                 </span>
-              </div>
-
-              <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
-                Opcionales. Consulta el detalle solo si quieres usarlos.
-              </p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {isAmbos ? (
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ac.tagBg} ${ac.tagText}`}>
-                    2 perfiles
-                  </span>
-                ) : (
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ac.tagBg} ${ac.tagText}`}>
-                    {(supplementsData[profilesToRender[0]] || []).length} opciones
-                  </span>
-                )}
-              </div>
+              ) : (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ac.tagBg} ${ac.tagText}`}>
+                  {(supplementsData[profilesToRender[0]] || []).length} opciones
+                </span>
+              )}
             </div>
           </div>
         </div>
