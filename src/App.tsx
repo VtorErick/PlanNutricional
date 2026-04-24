@@ -37,10 +37,20 @@ function ViewFallback() {
   );
 }
 
+function getStoredProfileFromLocalStorage(): import('./context/DietContext').PerfilActivo {
+  try {
+    const raw = window.localStorage.getItem('perfilActivo');
+    return raw === 'el' || raw === 'ella' || raw === 'ambos' ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
   const [showMobileMore, setShowMobileMore] = useState(false);
   const [isPlanAdjustOpen, setIsPlanAdjustOpen] = useState(false);
   const mobileNavRef = useRef<HTMLElement | null>(null);
+  const lastProfileRef = useRef(getStoredProfileFromLocalStorage());
   const {
     perfilActivo: activeProfile,
     tab: activeTab,
@@ -79,6 +89,12 @@ export default function App() {
   } = useDiet();
 
   // 🔹 ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS (React rules of hooks)
+  useEffect(() => {
+    if (activeProfile) {
+      lastProfileRef.current = activeProfile;
+    }
+  }, [activeProfile]);
+
   useEffect(() => {
     if (!activeTab && activeProfile) {
       setActiveTab('plan');
@@ -243,7 +259,7 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   if (!activeProfile) {
-                    setActiveProfile('ambos');
+                    setActiveProfile(lastProfileRef.current || 'ambos');
                     setActiveDay('Lunes');
                   }
                   setActiveTab(tabItem.key);
@@ -285,7 +301,7 @@ export default function App() {
             type="button"
             onClick={() => {
               if (!activeProfile) {
-                setActiveProfile('ambos');
+                setActiveProfile(lastProfileRef.current || 'ambos');
                 setActiveDay('Lunes');
               }
               setActiveTab('plan');
@@ -305,7 +321,7 @@ export default function App() {
             type="button"
             onClick={() => {
               if (!activeProfile) {
-                setActiveProfile('ambos');
+                setActiveProfile(lastProfileRef.current || 'ambos');
                 setActiveDay('Lunes');
               }
               setActiveTab('compras');
