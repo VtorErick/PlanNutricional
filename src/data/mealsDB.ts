@@ -1261,6 +1261,7 @@ export function rehydratePlanRecord(plan: Record<string, Record<string, any[]>>,
               const repairedSuper = found.super.map((ingredient) => repairBrokenText(ingredient));
               const repairedDetail = repairBrokenText(typeof op.detalle === 'string' ? op.detalle : '');
               const baseMeal: MealItem = {
+                id: op.idRef, // Preserve idRef for rotation tracking
                 nombre: repairedName,
                 tags: repairedTags,
                 super: repairedSuper,
@@ -1286,13 +1287,14 @@ export function rehydratePlanRecord(plan: Record<string, Record<string, any[]>>,
              if (found) {
                const repairedName = repairBrokenText(found.nombre);
                const repairedSuper = found.super.map((ingredient) => repairBrokenText(ingredient));
-               return ensureMealNutrition({
-                 nombre: repairedName,
-                 tags: found.tags.map((tag) => repairBrokenText(tag)),
-                 super: repairedSuper,
-                 porciones: 'N/A',
-                 detalle: buildCanonicalMealDetail(repairedName, repairedSuper),
-               });
+                return ensureMealNutrition({
+                  id: op,
+                  nombre: repairedName,
+                  tags: found.tags.map((tag) => repairBrokenText(tag)),
+                  super: repairedSuper,
+                  porciones: 'N/A',
+                  detalle: buildCanonicalMealDetail(repairedName, repairedSuper),
+                });
              }
           }
           return ensureMealNutrition(op);

@@ -1327,8 +1327,21 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     const { buildOptimizedMealsCatalog } = await import('../utils/mealCatalogBuilder');
     const questionnaireContext = payload.questionnaireContext || payload;
 
-    // CONSERVADOR: Por defecto useRotation=false para mantener comportamiento existente
-    // Cambiar a true cuando se quiera activar la rotación de comidas
+    // Extract recent meal IDs from current plan for rotation variety
+    const targetProfile = payload.targetProfile || 'el';
+    const profileId = targetProfile === 'ambos' ? 'el' : targetProfile;
+    const currentPlan = perfilesData[profileId]?.plan || {};
+    const recentMealIds: string[] = [];
+    Object.values(currentPlan).forEach((dayPlan: any) => {
+      Object.values(dayPlan || {}).forEach((options: any) => {
+        if (Array.isArray(options)) {
+          options.forEach((meal: any) => {
+            if (meal?.id) recentMealIds.push(meal.id);
+          });
+        }
+      });
+    });
+
     const USE_ROTATION = true;
 
     const catalogResult = await buildOptimizedMealsCatalog(
@@ -1336,9 +1349,9 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       questionnaireContext,
       {
         useRotation: USE_ROTATION,
-        recentMealIds: [], // TODO: Cargar desde historial del usuario
+        recentMealIds: [...new Set(recentMealIds)],
         varietyWindow: 14,
-        targetProfile: payload.targetProfile || 'el',
+        targetProfile,
         allowFallback: true,
       }
     );
@@ -1422,7 +1435,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     }
 
     return { json, payloadWithKey };
-  }, [geminiModel]);
+  }, [geminiModel, perfilesData]);
 
   const handleGenerateWithAi = useCallback(async (payload: QuestionnairePayload) => {
     setGenerationError('');

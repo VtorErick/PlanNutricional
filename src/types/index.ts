@@ -15,6 +15,7 @@ export interface MealEditMeta {
 }
 
 export interface MealItem {
+  id?: string; // Preserved idRef from AI response for rotation tracking
   nombre: string;
   porciones: string;
   detalle: string;
