@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChefHat, FileText } from 'lucide-react';
+import { Check, ChefHat, ChevronDown, FileText, Moon, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import {
   getCombinedProfileLabel,
@@ -9,7 +9,9 @@ import {
 
 export default function Header() {
   const [showPdfMenu, setShowPdfMenu] = React.useState(false);
+  const [showProfileMenu, setShowProfileMenu] = React.useState(false);
   const pdfMenuRef = React.useRef<HTMLDivElement | null>(null);
+  const profileMenuRef = React.useRef<HTMLDivElement | null>(null);
 
   const {
     setPerfilActivo: setActiveProfile,
@@ -20,25 +22,32 @@ export default function Header() {
     selecciones: selections,
     ac: accentColors,
     isDarkMode,
+    setIsDarkMode,
     notify,
   } = useDiet();
 
   const menuProfileLabel = (profileId: 'el' | 'ella' | 'ambos') =>
     profileId === 'ambos' ? getCombinedProfileLabel(profileLabels) : getProfileLabel(profileLabels, profileId);
+  const activeProfileLabel = activeProfile ? menuProfileLabel(activeProfile) : 'Perfil';
+  const profileOptions = (['el', 'ella', 'ambos'] as const).map((profileId) => ({
+    id: profileId,
+    label: menuProfileLabel(profileId),
+  }));
 
   React.useEffect(() => {
-    if (!showPdfMenu) return;
+    if (!showPdfMenu && !showProfileMenu) return;
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Node)) return;
-      if (pdfMenuRef.current?.contains(target)) return;
+      if (pdfMenuRef.current?.contains(target) || profileMenuRef.current?.contains(target)) return;
       setShowPdfMenu(false);
+      setShowProfileMenu(false);
     };
 
     document.addEventListener('pointerdown', handlePointerDown);
     return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [showPdfMenu]);
+  }, [showPdfMenu, showProfileMenu]);
 
   const handleDownloadDayPdf = React.useCallback(async () => {
     if (!activeProfile) return;
@@ -127,43 +136,83 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Profile pills */}
-          <div className="flex flex-1 items-center gap-1 sm:gap-1.5 min-w-0">
-            {(['el', 'ella', 'ambos'] as const).map((profileId) => {
-              const isActive = activeProfile === profileId;
-              return (
-                <button
-                  key={profileId}
-                  onClick={() => setActiveProfile(profileId)}
-                  data-testid={`header-profile-${profileId}`}
-                  className={`
-                    flex-1 min-w-0 h-9 sm:h-10 px-1.5 sm:px-3.5
-                    rounded-2xl
-                    text-[11px] sm:text-xs font-bold
-                    transition-all duration-300
-                    whitespace-nowrap
-                    active:scale-95
-                    ${
-                      isActive
-                        ? `${accentColors.btnActive} shadow-sm`
-                        : isDarkMode
-                          ? 'bg-slate-900/90 text-slate-300 hover:bg-slate-800 border border-slate-800'
-                          : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/80 border border-slate-200'
-                    }
-                  `}
-                >
-                  {menuProfileLabel(profileId)}
-                </button>
-              );
-            })}
+          {/* Profile dropdown */}
+          <div className="relative ml-auto w-[116px] flex-shrink-0 sm:w-[144px]" ref={profileMenuRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowProfileMenu((value) => !value);
+                setShowPdfMenu(false);
+              }}
+              data-testid="header-profile-menu-button"
+              aria-expanded={showProfileMenu}
+              className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-2xl px-3 text-left text-xs font-black transition active:scale-[0.98] sm:text-sm ${accentColors.bgLight} ${accentColors.text} shadow-sm hover:opacity-95`}
+            >
+              <span className="min-w-0 truncate">{activeProfileLabel}</span>
+              <ChevronDown
+                className={`h-4 w-4 flex-shrink-0 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {showProfileMenu ? (
+              <div
+                className={`absolute left-0 right-0 top-12 z-[80] rounded-2xl border p-1.5 shadow-xl ${
+                  isDarkMode
+                    ? 'border-slate-800 bg-slate-950'
+                    : 'border-slate-200 bg-white'
+                }`}
+              >
+                {profileOptions.map((profile) => {
+                  const isActive = activeProfile === profile.id;
+                  return (
+                    <button
+                      key={profile.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveProfile(profile.id);
+                        setShowProfileMenu(false);
+                      }}
+                      data-testid={`header-profile-${profile.id}`}
+                      className={`flex h-10 w-full items-center justify-between rounded-xl px-3 text-sm font-bold transition ${
+                        isActive
+                          ? `${accentColors.bgLight} ${accentColors.text}`
+                          : isDarkMode
+                            ? 'text-slate-200 hover:bg-slate-900'
+                            : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="truncate">{profile.label}</span>
+                      {isActive ? <Check className="h-4 w-4 flex-shrink-0" /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
+
+          <button
+            type="button"
+            onClick={() => setIsDarkMode((prev) => !prev)}
+            className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border transition active:scale-95 ${
+              isDarkMode
+                ? 'border-slate-800 bg-slate-900 text-amber-200 hover:bg-slate-800'
+                : 'border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50'
+            }`}
+            aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
+          >
+            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
 
           {/* PDF button */}
           <div className="relative flex flex-shrink-0 items-center" ref={pdfMenuRef}>
             <button
-              onClick={() => setShowPdfMenu((value) => !value)}
+              onClick={() => {
+                setShowPdfMenu((value) => !value);
+                setShowProfileMenu(false);
+              }}
               data-testid="header-pdf-button"
-              className={`inline-flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl transition-all active:scale-95 ${accentColors.bgLight} ${accentColors.text} shadow-sm hover:opacity-95`}
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl transition-all active:scale-95 ${accentColors.bgLight} ${accentColors.text} shadow-sm hover:opacity-95`}
               title="Descargar plan"
             >
               <FileText className="w-4 h-4" />

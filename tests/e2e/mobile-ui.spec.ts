@@ -91,54 +91,23 @@ async function selectMobileTab(page: Page, tab: string) {
   await page.getByTestId(`mobile-tab-${tab}`).click();
 }
 
-test('single-profile plan flow supports selecting meals, editing, and downloading PDF on mobile', async ({
+test('single-profile plan flow supports selecting meals and downloading PDF on mobile', async ({
   page,
 }) => {
-  const originalLinkedBreakfast = 'Tostadas de Aguacate y Huevo';
-
   await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Sabado'] });
   await page.goto('/miplan?profile=el');
 
-  await page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first().click();
-  await page.getByTestId('meal-option-el-Lunes-desayuno-2').click();
-  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+  const selectedMeal = page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first();
+  await expect(selectedMeal).toBeVisible();
+
+  await selectedMeal.click();
+  await expect(page.getByText('Elegir platillo')).toBeVisible();
+  await page.getByTestId('meal-swap-option-el-Lunes-desayuno-2').click();
+  await expect(page.getByText('Elegir platillo')).not.toBeVisible();
 
   await openDayPickerAndSelectDay(page, 'Sab');
   await page.locator('[data-testid^="selected-meal-el-Sabado-desayuno-"]').first().click();
-  await page.getByTestId('meal-option-el-Sabado-desayuno-2').click();
-  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
-
-  await openDayPickerAndSelectDay(page, 'Lun');
-
-  const selectedMeal = page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first();
-  await expect(selectedMeal).toBeVisible();
-  await selectedMeal.click();
-  await page.getByTestId('meal-edit-el-Lunes-desayuno-2').click();
-
-  await page.getByTestId('meal-edit-manual-mode').click();
-  await page.getByPlaceholder('Ej. Omelette con fruta').fill('Desayuno de prueba Playwright');
-  await expect(page.getByText(/Los cambios se aplicaran solo en esta comida/i)).toBeVisible();
-  await page.getByTestId('meal-edit-save').click();
-  await page.getByRole('button', { name: /Confirmar/i }).click();
-  await expect(page.getByText(/Platillo actualizado/i)).toBeVisible();
-  await page.getByRole('button', { name: /Aceptar/i }).click();
-  await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
-
-  await openDayPickerAndSelectDay(page, 'Sab');
-  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
-
-  await openDayPickerAndSelectDay(page, 'Lun');
-  await expect(page.getByText('Desayuno de prueba Playwright')).toBeVisible();
-  await page.locator('[data-testid^="selected-meal-el-Lunes-desayuno-"]').first().click();
-  await page.getByTestId('meal-restore-el-Lunes-desayuno-2').click();
-  await page.getByRole('button', { name: /Confirmar/i }).click();
-  await expect(page.getByText(/Platillo restaurado/i)).toBeVisible();
-  await page.getByRole('button', { name: /Aceptar/i }).click();
-  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
-  await expect(page.getByText('Desayuno de prueba Playwright')).toHaveCount(0);
-
-  await openDayPickerAndSelectDay(page, 'Sab');
-  await expect(page.getByText(originalLinkedBreakfast)).toBeVisible();
+  await page.getByTestId('meal-swap-option-el-Sabado-desayuno-2').click();
 
   await openDayPickerAndSelectDay(page, 'Lun');
 
@@ -398,9 +367,11 @@ test('combined mobile navigation renders every major view with populated data', 
   const download = await fullPlanDownload;
   expect(download.suggestedFilename()).toBe('Plan_Nutricional_Ambos.pdf');
 
-  await selectMobileTab(page, 'equivalencias');
-  await expect(page.getByRole('heading', { name: /Intercambios/i })).toBeVisible();
+  await selectMobileTab(page, 'plan');
+  await page.getByTestId('plan-equivalencias-open').click();
+  await expect(page.getByRole('heading', { name: /Equivalencias/i })).toBeVisible();
   await saveDocScreenshot(page, 'equivalencias-mobile.png');
+  await page.getByLabel('Cerrar guía de equivalencias').click();
 
   await selectMobileTab(page, 'suplementos');
   await expect(page.getByRole('heading', { name: 'Suplementos', exact: true })).toBeVisible();

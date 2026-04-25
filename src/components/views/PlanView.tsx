@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  BookOpen,
   CheckCircle2,
   ChevronUp,
   Coffee,
@@ -12,7 +13,8 @@ import {
   UtensilsCrossed,
   Apple,
 } from 'lucide-react';
-import MealSelector from '../MealSelector';
+import MealSwapSheet from '../MealSwapSheet';
+import EquivalenciasSheet from '../EquivalenciasSheet';
 import PlanAiRefreshSheet from '../PlanAiRefreshSheet';
 import type { QuestionnairePayload } from '../NutritionQuestionnaire';
 import { useDiet } from '../../context/DietContext';
@@ -26,7 +28,7 @@ import {
   supplementsData as defaultSupplementsData,
 } from '../../data';
 import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
-import { getCombinedProfileLabel, getProfileLabel } from '../../utils/profileLabels';
+import { getProfileLabel } from '../../utils/profileLabels';
 
 function cloneQuestionnaireValue<T>(value: T): T {
   if (value === null || value === undefined) {
@@ -44,20 +46,16 @@ const momentoIcons: Record<string, React.ElementType> = {
   cena: Moon,
 };
 
-type EditableProfileId = 'el' | 'ella';
+type ProfileId = 'el' | 'ella';
 
-function buildMealMacroLine(meal: MealItem) {
-  const parts = [`${meal.caloriasKcal || 0} kcal`];
-
-  if (typeof meal.proteinaG === 'number') {
-    parts.push(`${meal.proteinaG}g proteina`);
-  }
-
-  if (typeof meal.grasasG === 'number') {
-    parts.push(`${meal.grasasG}g grasas`);
-  }
-
-  return parts.join(' - ');
+interface SwapSheetState {
+  profileId: ProfileId;
+  momentoKey: string;
+  momentoLabel: string;
+  momentoHora: string;
+  meals: MealItem[];
+  portions: { key: string; label: string; icon: string; cantidad: number }[];
+  accent: AccentColors;
 }
 
 export default function PlanView() {
@@ -72,8 +70,6 @@ export default function PlanView() {
     isAmbos,
     selecciones,
     toggleSeleccion,
-    momentosEnEdicion,
-    setMomentosEnEdicion,
     momentosColapsados,
     setMomentosColapsados,
     momentoCompletado,
@@ -102,7 +98,9 @@ export default function PlanView() {
     confirmAction,
   } = useDiet();
 
+  const [isEquivalenciasSheetOpen, setIsEquivalenciasSheetOpen] = React.useState(false);
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
+  const [swapSheet, setSwapSheet] = React.useState<SwapSheetState | null>(null);
 
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: isPlanAiSheetOpen }));
@@ -258,12 +256,31 @@ export default function PlanView() {
 
 
 
+  const openSwapSheet = React.useCallback((
+    profileId: ProfileId,
+    momentoKey: string,
+    momentoLabel: string,
+    momentoHora: string,
+    meals: MealItem[],
+    portions: { key: string; label: string; icon: string; cantidad: number }[],
+    accent: AccentColors,
+  ) => {
+    setSwapSheet({ profileId, momentoKey, momentoLabel, momentoHora, meals, portions, accent });
+  }, []);
+
+  const closeSwapSheet = React.useCallback(() => {
+    setSwapSheet(null);
+  }, []);
+
+  const handleSwapToggle = React.useCallback((perfil: string, dia: string, momento: string, nombre: string) => {
+    toggleSeleccion(perfil, dia, momento, nombre);
+    setSwapSheet(null);
+  }, [toggleSeleccion]);
+
   const renderSelectedMealCard = React.useCallback((
     meal: MealItem,
     accent: AccentColors,
     portions: { key: string; label: string; icon: string; cantidad: number }[],
-    _profileId: EditableProfileId,
-    onChangeMeal: () => void,
     dataTestId?: string
   ) => (
     <div
@@ -271,62 +288,55 @@ export default function PlanView() {
       role="button"
       tabIndex={0}
       data-testid={dataTestId}
-      onClick={onChangeMeal}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onChangeMeal();
-        }
-      }}
-      className={`p-4 rounded-2xl bg-gradient-to-br ${
+      className={`rounded-2xl p-4 ${
         isDarkMode
-          ? `${accent.bgGradientLight} shadow-[0_14px_28px_rgba(2,6,23,0.32)]`
-          : `${accent.bgLight} via-white to-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]`
+          ? `bg-slate-900/70`
+          : `bg-white`
       } cursor-pointer transition-all hover:opacity-95 active:scale-[0.99]`}
     >
-      <h4 className={`font-bold text-sm mb-1 ${accent.textDark}`}>
+      <h4 className={`font-black text-sm leading-snug ${accent.text}`}>
         {meal.nombre}
       </h4>
-      <p className={`text-xs leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-600'}`}>
+      <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
         {meal.detalle}
       </p>
-      <p className={`text-[11px] mt-2 font-bold ${accent.text}`}>
-        {buildMealMacroLine(meal)}
+      <p className={`mt-2 text-[11px] font-black ${accent.text}`}>
+        {meal.caloriasKcal || 0} kcal
+        {typeof meal.proteinaG === 'number' ? ` - ${meal.proteinaG}g proteina` : ''}
+        {typeof meal.grasasG === 'number' ? ` - ${meal.grasasG}g grasas` : ''}
       </p>
 
-      <div className="mt-3 flex flex-wrap gap-1">
-        {portions.map((item) => (
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {portions.slice(0, 3).map((item) => (
           <span
             key={`${meal.nombre}-${item.key}-${item.cantidad}`}
             title={`${item.label} ${item.cantidad}`}
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${accent.tagBg} ${accent.tagText} text-[10px] font-bold`}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${accent.tagBg} ${accent.tagText}`}
           >
-            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shadow-sm ${isDarkMode ? 'bg-slate-900 text-slate-100 shadow-black/30' : 'bg-white/70 shadow-slate-200/50'}`}>
+            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${isDarkMode ? 'bg-slate-900 text-slate-100' : 'bg-white/70'}`}>
               {item.icon}
             </span>
             <span>x{item.cantidad}</span>
           </span>
         ))}
+        {portions.length > 3 ? (
+          <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isDarkMode ? 'bg-slate-950 text-slate-400' : 'bg-white text-slate-500'}`}>
+            +{portions.length - 3}
+          </span>
+        ) : null}
       </div>
     </div>
   ), [isDarkMode]);
 
   const renderEmptyMealState = React.useCallback((
     accent: AccentColors,
-    onOpen: () => void,
+    _hora: string,
     dataTestId?: string
   ) => (
     <div
       role="button"
       tabIndex={0}
       data-testid={dataTestId}
-      onClick={onOpen}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onOpen();
-        }
-      }}
       className={`flex items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-5 text-center transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] ${
         isDarkMode
           ? `border-slate-700 bg-slate-900/70 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]`
@@ -359,31 +369,39 @@ export default function PlanView() {
                 Mi plan
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsPlanAiSheetOpen(true)}
-              data-testid="plan-ai-open"
-              className={`inline-flex h-11 flex-shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black transition active:scale-[0.99] ${
-                isDarkMode
-                  ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
-                  : 'border-slate-200 bg-white text-blue-600 shadow-sm hover:bg-slate-50'
-              }`}
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span className="hidden min-[370px]:inline">Ajustar</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEquivalenciasSheetOpen(true)}
+                data-testid="plan-equivalencias-open"
+                className={`inline-flex h-11 flex-shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black transition active:scale-[0.99] ${
+                  isDarkMode
+                    ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                    : 'border-slate-200 bg-white text-emerald-600 shadow-sm hover:bg-slate-50'
+                }`}
+              >
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden min-[370px]:inline">Guía</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPlanAiSheetOpen(true)}
+                data-testid="plan-ai-open"
+                className={`inline-flex h-11 flex-shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black transition active:scale-[0.99] ${
+                  isDarkMode
+                    ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                    : 'border-slate-200 bg-white text-blue-600 shadow-sm hover:bg-slate-50'
+                }`}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="hidden min-[370px]:inline">Ajustar</span>
+              </button>
+            </div>
           </div>
 
           {perfilBase.momentos.map((momento) => {
             const Icon = momentoIcons[momento.key] || UtensilsCrossed;
             const done = momentoCompletado[momento.key];
-
-            const estaEnEdicionEl = Boolean(momentosEnEdicion[`${momento.key}-el`]);
-            const estaEnEdicionElla = Boolean(momentosEnEdicion[`${momento.key}-ella`]);
-            const estaEnEdicionSingle = Boolean(momentosEnEdicion[momento.key]);
-            const estaEnEdicion = isAmbos
-              ? estaEnEdicionEl || estaEnEdicionElla
-              : estaEnEdicionSingle;
 
             const mealsSingleAll = perfilBase.plan[diaActivo]?.[momento.key] || [];
             const mealsElAll = perfilesData.el.plan[diaActivo]?.[momento.key] || [];
@@ -408,9 +426,10 @@ export default function PlanView() {
             const porcionesEllaMomento = getMomentMacroPortions(perfilesData.ella, momento.key);
             const singleEmptyAccent = perfilActivo === 'ella' ? ellaAccent : elAccent;
             const isElegidoVacio =
-              !estaEnEdicion &&
               !isAmbos &&
               mealsSingleSeleccionadas.length === 0;
+
+            const singleProfileId = (perfilActivo === 'ella' ? 'ella' : 'el') as ProfileId;
 
             return (
               <motion.div
@@ -435,12 +454,10 @@ export default function PlanView() {
               >
                 <button
                   onClick={() => {
-                    if (!estaEnEdicion) {
-                      setMomentosColapsados((prev) => ({
-                        ...prev,
-                        [momento.key]: !prev[momento.key],
-                      }));
-                    }
+                    setMomentosColapsados((prev) => ({
+                      ...prev,
+                      [momento.key]: !prev[momento.key],
+                    }));
                   }}
                   className={`w-full flex items-center justify-between text-left p-4 sm:p-5 transition-colors focus:outline-none ${
                     done
@@ -450,17 +467,19 @@ export default function PlanView() {
                       : isDarkMode
                         ? 'hover:bg-slate-900'
                         : 'hover:bg-slate-50'
-                  } ${estaEnEdicion ? 'cursor-default' : ''}`}
+                  }`}
                 >
                   <div className="min-w-0 flex items-center gap-3">
                     <div
                       className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                        done ? ac.momentoIconBgDone : ac.momentoIconBgPending
+                        done
+                          ? `bg-gradient-to-br ${ac.bgGradient} text-white shadow-[0_10px_24px_rgba(37,99,235,0.22)]`
+                          : ac.momentoIconBgPending
                       }`}
                     >
                       <Icon
                         className={`w-5 h-5 ${
-                          done ? ac.momentoIconColorDone : ac.momentoIconColorPending
+                          done ? 'text-white' : ac.momentoIconColorPending
                         }`}
                       />
                     </div>
@@ -475,26 +494,17 @@ export default function PlanView() {
                     </div>
                   </div>
 
-                  {estaEnEdicion ? (
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`hidden sm:inline text-[11px] font-semibold ${ac.text}`}>
-                        Editando
-                      </span>
-                      <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${ac.bgGradient}`} />
-                    </div>
-                  ) : (
-                    <motion.div
-                      animate={{ rotate: momentosColapsados[momento.key] ? -180 : 0 }}
-                      transition={{ type: 'spring', damping: 20 }}
-                      className="flex-shrink-0"
-                    >
-                      <ChevronUp className={`w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-                    </motion.div>
-                  )}
+                  <motion.div
+                    animate={{ rotate: momentosColapsados[momento.key] ? -180 : 0 }}
+                    transition={{ type: 'spring', damping: 20 }}
+                    className="flex-shrink-0"
+                  >
+                    <ChevronUp className={`w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                  </motion.div>
                 </button>
 
                 <AnimatePresence initial={false}>
-                  {(!momentosColapsados[momento.key] || estaEnEdicion) ? (
+                  {!momentosColapsados[momento.key] ? (
                     <motion.div
                       key="content"
                       initial={{ height: 0, opacity: 0 }}
@@ -502,168 +512,105 @@ export default function PlanView() {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ type: 'spring', damping: 26, stiffness: 200 }}
                     >
-                        <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
-                          {isElegidoVacio ? (
-                            renderEmptyMealState(
+                      <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
+                        {!isAmbos ? (
+                          <div
+                            onClick={() => openSwapSheet(
+                              singleProfileId,
+                              momento.key,
+                              momento.label,
+                              momento.hora,
+                              mealsSingleAll,
+                              porcionesSingleMomento,
                               singleEmptyAccent,
-                              () =>
-                                setMomentosEnEdicion((prev) => ({
-                                  ...prev,
-                                  [momento.key]: true,
-                                })),
-                              `moment-empty-${momento.key}-single`
-                            )
-                          ) : (
-                          <>
-                            {!isAmbos ? (
-                              !estaEnEdicion ? (
-                                <div className="space-y-3">
-                                  {mealsSingleSeleccionadas.map((meal) => renderSelectedMealCard(
-                                    meal,
-                                    ac,
-                                    porcionesSingleMomento,
-                                    perfilActivo as EditableProfileId,
-                                    () =>
-                                      setMomentosEnEdicion((prev) => ({
-                                        ...prev,
-                                        [momento.key]: true,
-                                      })),
-                                    `selected-meal-${perfilActivo}-${diaActivo}-${momento.key}-${meal.nombre}`
-                                  ))}
-                                </div>
-                              ) : (
-                              <MealSelector
-                                perfil={perfilActivo as EditableProfileId}
-                                comidas={mealsSingleAll}
-                                dia={diaActivo}
-                                momento={momento.key}
-                                selecciones={selecciones}
-                                porciones={porcionesSingleMomento}
-                                onToggle={(perfilId, dia, momentoKey, nombre) => {
-                                  toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                  setMomentosEnEdicion((prev) => ({
-                                    ...prev,
-                                    [momentoKey]: false,
-                                  }));
-                                }}
-                                accentClasses={ac}
-                                isDarkMode={isDarkMode}
-                              />
+                            )}
+                            className="cursor-pointer"
+                          >
+                            {isElegidoVacio ? (
+                              renderEmptyMealState(
+                                singleEmptyAccent,
+                                momento.hora,
+                                `moment-empty-${momento.key}-single`
                               )
                             ) : (
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <div className="space-y-3">
+                              <div className="space-y-3">
+                                {mealsSingleSeleccionadas.map((meal) => renderSelectedMealCard(
+                                  meal,
+                                  singleEmptyAccent,
+                                  porcionesSingleMomento,
+                                  `selected-meal-${perfilActivo}-${diaActivo}-${momento.key}-${meal.nombre}`
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div
+                              onClick={() => openSwapSheet(
+                                'el',
+                                momento.key,
+                                momento.label,
+                                momento.hora,
+                                mealsElAll,
+                                porcionesElMomento,
+                                elAccent,
+                              )}
+                              className="cursor-pointer space-y-3"
+                            >
+                              {mealsElSeleccionadas.length > 0 ? (
+                                mealsElSeleccionadas.map((meal) => renderSelectedMealCard(
+                                  meal,
+                                  elAccent,
+                                  porcionesElMomento,
+                                  `selected-meal-el-${diaActivo}-${momento.key}-${meal.nombre}`
+                                ))
+                              ) : (
+                                <>
                                   <div className={`text-[10px] font-bold uppercase tracking-wider px-1 ${elAccent.text}`}>
                                     Para {labelEl}
                                   </div>
-
-                                  {!estaEnEdicionEl ? (
-                                    <>
-                                      {mealsElSeleccionadas.length > 0 ? (
-                                        mealsElSeleccionadas.map((meal) => renderSelectedMealCard(
-                                          meal,
-                                          elAccent,
-                                          porcionesElMomento,
-                                          'el',
-                                          () =>
-                                            setMomentosEnEdicion((prev) => ({
-                                              ...prev,
-                                              [`${momento.key}-el`]: true,
-                                            })),
-                                          `selected-meal-el-${diaActivo}-${momento.key}-${meal.nombre}`
-                                        ))
-                                      ) : (
-                                        renderEmptyMealState(
-                                          elAccent,
-                                          () =>
-                                            setMomentosEnEdicion((prev) => ({
-                                              ...prev,
-                                              [`${momento.key}-el`]: true,
-                                            })),
-                                          `moment-empty-${momento.key}-el`
-                                        )
-                                      )}
-                                    </>
-                                  ) : (
-                                    <div className={`p-3 rounded-2xl ${isDarkMode ? `${elAccent.bgLight}` : 'bg-blue-50/50'}`}>
-                                      <MealSelector
-                                        perfil="el"
-                                        comidas={mealsElAll}
-                                        dia={diaActivo}
-                                        momento={momento.key}
-                                        selecciones={selecciones}
-                                        porciones={porcionesElMomento}
-                                        onToggle={(perfilId, dia, momentoKey, nombre) => {
-                                          toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                          setMomentosEnEdicion((prev) => ({
-                                            ...prev,
-                                            [`${momentoKey}-el`]: false,
-                                          }));
-                                        }}
-                                        accentClasses={elAccent}
-                                        isDarkMode={isDarkMode}
-                                      />
-                                    </div>
+                                  {renderEmptyMealState(
+                                    elAccent,
+                                    momento.hora,
+                                    `moment-empty-${momento.key}-el`
                                   )}
-                                </div>
+                                </>
+                              )}
+                            </div>
 
-                                <div className="space-y-3">
+                            <div
+                              onClick={() => openSwapSheet(
+                                'ella',
+                                momento.key,
+                                momento.label,
+                                momento.hora,
+                                mealsEllaAll,
+                                porcionesEllaMomento,
+                                ellaAccent,
+                              )}
+                              className="cursor-pointer space-y-3"
+                            >
+                              {mealsEllaSeleccionadas.length > 0 ? (
+                                mealsEllaSeleccionadas.map((meal) => renderSelectedMealCard(
+                                  meal,
+                                  ellaAccent,
+                                  porcionesEllaMomento,
+                                  `selected-meal-ella-${diaActivo}-${momento.key}-${meal.nombre}`
+                                ))
+                              ) : (
+                                <>
                                   <div className={`text-[10px] font-bold uppercase tracking-wider px-1 ${ellaAccent.text}`}>
                                     Para {labelElla}
                                   </div>
-
-                                  {!estaEnEdicionElla ? (
-                                    <>
-                                      {mealsEllaSeleccionadas.length > 0 ? (
-                                        mealsEllaSeleccionadas.map((meal) => renderSelectedMealCard(
-                                          meal,
-                                          ellaAccent,
-                                          porcionesEllaMomento,
-                                          'ella',
-                                          () =>
-                                            setMomentosEnEdicion((prev) => ({
-                                              ...prev,
-                                              [`${momento.key}-ella`]: true,
-                                            })),
-                                          `selected-meal-ella-${diaActivo}-${momento.key}-${meal.nombre}`
-                                        ))
-                                      ) : (
-                                        renderEmptyMealState(
-                                          ellaAccent,
-                                          () =>
-                                            setMomentosEnEdicion((prev) => ({
-                                              ...prev,
-                                              [`${momento.key}-ella`]: true,
-                                            })),
-                                          `moment-empty-${momento.key}-ella`
-                                        )
-                                      )}
-                                    </>
-                                  ) : (
-                                    <div className={`p-3 rounded-2xl ${isDarkMode ? `${ellaAccent.bgLight}` : 'bg-rose-50/50'}`}>
-                                      <MealSelector
-                                        perfil="ella"
-                                        comidas={mealsEllaAll}
-                                        dia={diaActivo}
-                                        momento={momento.key}
-                                        selecciones={selecciones}
-                                        porciones={porcionesEllaMomento}
-                                        onToggle={(perfilId, dia, momentoKey, nombre) => {
-                                          toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                          setMomentosEnEdicion((prev) => ({
-                                            ...prev,
-                                            [`${momentoKey}-ella`]: false,
-                                          }));
-                                        }}
-                                        accentClasses={ellaAccent}
-                                        isDarkMode={isDarkMode}
-                                      />
-                                    </div>
+                                  {renderEmptyMealState(
+                                    ellaAccent,
+                                    momento.hora,
+                                    `moment-empty-${momento.key}-ella`
                                   )}
-                                </div>
-                              </div>
-                            )}
-                          </>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                     </motion.div>
@@ -711,6 +658,30 @@ export default function PlanView() {
           </motion.div>
         ) : null}
       </motion.div>
+
+      {swapSheet ? (
+        <MealSwapSheet
+          open
+          title="Elegir platillo"
+          profileId={swapSheet.profileId}
+          meals={swapSheet.meals}
+          dia={diaActivo}
+          momentoKey={swapSheet.momentoKey}
+          momentoLabel={swapSheet.momentoLabel}
+          momentoHora={swapSheet.momentoHora}
+          selecciones={selecciones}
+          onToggle={handleSwapToggle}
+          onClose={closeSwapSheet}
+          porciones={swapSheet.portions}
+          accentClasses={swapSheet.accent}
+          isDarkMode={isDarkMode}
+        />
+      ) : null}
+
+      <EquivalenciasSheet
+        open={isEquivalenciasSheetOpen}
+        onClose={() => setIsEquivalenciasSheetOpen(false)}
+      />
 
       <PlanAiRefreshSheet
         open={isPlanAiSheetOpen}

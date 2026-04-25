@@ -728,9 +728,6 @@ interface DietContextType {
   setMomentosColapsados: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   progressExpanded: boolean;
   setProgressExpanded: React.Dispatch<React.SetStateAction<boolean>>;
-  momentosEnEdicion: Record<string, boolean>;
-  setMomentosEnEdicion: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
-
   // Progress Tracking
   momentoCompletado: Record<string, boolean>;
   progresoDia: number;
@@ -828,8 +825,6 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
   // 4. UI States
   const [progressExpanded, setProgressExpanded] = useState(false);
-  const [momentosEnEdicion, setMomentosEnEdicion] = useState<Record<string, boolean>>({});
-
   // 5. Gemini AI settings
   const [geminiModel, setGeminiModel] = useState(() => {
     try {
@@ -2064,7 +2059,6 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     setProgressExpanded(false);
     setMomentosColapsados({});
-    setMomentosEnEdicion({});
   }, [tab, diaActivo, perfilActivo]);
 
   // ─── Context Value ─────────────────────────────────────────────────
@@ -2100,7 +2094,6 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     isDarkMode, setIsDarkMode,
     momentosColapsados, setMomentosColapsados,
     progressExpanded, setProgressExpanded,
-    momentosEnEdicion, setMomentosEnEdicion,
     momentoCompletado, progresoDia, completadosCount, totalMomentosProgress,
     scrollToMomento, mealSectionRefs,
     isAmbos, perfilBase, perfilObj, ac,

@@ -1,7 +1,6 @@
 import { Suspense, lazy, useMemo, useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  BookOpen,
   Calendar,
   ChefHat,
   Flame,
@@ -24,7 +23,6 @@ const AdminLayout = lazy(() => import('./components/views/AdminLayout'));
 const PlanView = lazy(() => import('./components/views/PlanView'));
 const ShoppingView = lazy(() => import('./components/views/ShoppingView'));
 const SummaryView = lazy(() => import('./components/views/SummaryView'));
-const EquivalenciasView = lazy(() => import('./components/views/EquivalenciasView'));
 const CalorieMonitoringView = lazy(() => import('./components/views/CalorieMonitoringView'));
 const NutritionQuestionnaire = lazy(() => import('./components/NutritionQuestionnaire'));
 const SupplementsView = lazy(() => import('./components/views/SupplementsView'));
@@ -137,12 +135,6 @@ export default function App() {
           imagePosition: 'center 22%',
           overlay: 'from-sky-200/45 via-white/40 to-transparent',
         };
-      case 'equivalencias':
-        return {
-          imageSrc: '/images/hero.png',
-          imagePosition: 'center 18%',
-          overlay: 'from-emerald-200/40 via-white/35 to-transparent',
-        };
       case 'suplementos':
         return {
           imageSrc: '/images/meal-prep.png',
@@ -169,7 +161,6 @@ export default function App() {
   // 🔹 ORDEN DE TABS: 'plan' es el primero (principal) por defecto
   const tabItems = [
     { key: 'plan' as const, label: 'Mi Plan', shortLabel: 'Plan', icon: Calendar },
-    { key: 'equivalencias' as const, label: 'Equivalencias', shortLabel: 'Equiv.', icon: BookOpen },
     { key: 'suplementos' as const, label: 'Suplementos', shortLabel: 'Sups', icon: Pill },
     { key: 'calorias' as const, label: 'Calorías', shortLabel: 'Kcal', icon: Flame },
     { key: 'compras' as const, label: 'Compras', shortLabel: 'Compras', icon: ShoppingCart },
@@ -178,7 +169,6 @@ export default function App() {
 
   const tabIconColors: Record<(typeof tabItems)[number]['key'], string> = {
     plan: 'text-blue-500 dark:text-sky-300',
-    equivalencias: 'text-emerald-500 dark:text-emerald-300',
     suplementos: 'text-fuchsia-500 dark:text-pink-300',
     calorias: 'text-orange-500 dark:text-amber-300',
     compras: 'text-teal-500 dark:text-teal-300',
@@ -200,12 +190,11 @@ export default function App() {
 
   const getMobileTabLabel = (tabKey: (typeof tabItems)[number]['key']) => {
     if (tabKey === 'plan') return 'Mi plan';
-    if (tabKey === 'equivalencias') return 'Equivalencias';
     if (tabKey === 'suplementos') return 'Suplementos';
     if (tabKey === 'calorias') return 'Calorías';
     return tabItems.find((item) => item.key === tabKey)?.shortLabel ?? '';
   };
-  const moreTabKeys = ['resumen', 'equivalencias', 'suplementos'] as const;
+  const moreTabKeys = ['resumen', 'suplementos'] as const;
   const moreTabs = moreTabKeys
     .map((tabKey) => tabItems.find((item) => item.key === tabKey))
     .filter((item): item is (typeof tabItems)[number] => Boolean(item));
@@ -244,16 +233,6 @@ export default function App() {
                 <span>{getMobileTabLabel(tabItem.key)}</span>
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => setIsDarkMode((prev) => !prev)}
-              className={`flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-black transition active:scale-95 ${
-                isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-600'
-              }`}
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              <span>{isDarkMode ? 'Claro' : 'Oscuro'}</span>
-            </button>
           </div>
         </div>
       ) : null}
@@ -484,7 +463,7 @@ export default function App() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="grid grid-cols-6 gap-1.5 rounded-[26px] border border-white/70 bg-white/88 p-2 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/88"
+            className="grid grid-cols-5 gap-1.5 rounded-[26px] border border-white/70 bg-white/88 p-2 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/88"
           >
             {tabItems.map((tabItem) => (
               <button
@@ -505,7 +484,6 @@ export default function App() {
         <AnimatePresence mode="wait">
           <Suspense fallback={<ViewFallback />}>
             {activeTab === 'plan' && <PlanView />}
-            {activeTab === 'equivalencias' && <EquivalenciasView />}
             {activeTab === 'suplementos' && <SupplementsView />}
             {activeTab === 'calorias' && <CalorieMonitoringView />}
             {activeTab === 'resumen' && <SummaryView />}
