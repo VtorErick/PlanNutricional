@@ -97,7 +97,6 @@ interface PlanAiRefreshSheetProps {
   onClose: () => void;
   onSubmit: (payload: { requestMode: PlanRevisionMode; targetProfile: TargetProfile; instruction: string }) => Promise<void>;
   onOpenQuestionnaire: (targetProfile: TargetProfile) => Promise<void> | void;
-  onOpenMealReplacement?: () => void;
   isDarkMode?: boolean;
   accentClasses: AccentColors;
   loading?: boolean;
@@ -115,7 +114,6 @@ export default function PlanAiRefreshSheet({
   onClose,
   onSubmit,
   onOpenQuestionnaire,
-  onOpenMealReplacement,
   isDarkMode = false,
   accentClasses,
   loading = false,
@@ -331,29 +329,6 @@ export default function PlanAiRefreshSheet({
                     />
                   </div>
                 )}
-
-                {!isQuestionnaireRegenerate && onOpenMealReplacement ? (
-                  <button
-                    type="button"
-                    onClick={onOpenMealReplacement}
-                    data-testid="plan-ai-open-meal-replacement"
-                    className={`flex w-full items-center gap-3 rounded-[22px] border px-4 py-3 text-left transition ${
-                      isDarkMode
-                        ? 'border-slate-800 bg-slate-950/70 text-slate-100 hover:border-slate-700'
-                        : 'border-slate-200 bg-slate-50/80 text-slate-800 hover:border-slate-300'
-                    }`}
-                  >
-                    <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${accentClasses.tagBg} ${accentClasses.tagText}`}>
-                      <UtensilsCrossed className="h-4 w-4" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-black">Elegir comida de la semana</span>
-                      <span className={`mt-1 block text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        Reemplaza una opcion exacta usando la base local de la app.
-                      </span>
-                    </span>
-                  </button>
-                ) : null}
 
                 {isQuestionnaireRegenerate ? (
                 <div className={`rounded-[22px] border px-4 py-3 ${

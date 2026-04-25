@@ -13,9 +13,7 @@ import {
   Apple,
 } from 'lucide-react';
 import MealSelector from '../MealSelector';
-import MealEditSheet from '../MealEditSheet';
 import PlanAiRefreshSheet from '../PlanAiRefreshSheet';
-import WeeklyMealReplacementSheet, { type LocalMealReplacementItem } from '../WeeklyMealReplacementSheet';
 import type { QuestionnairePayload } from '../NutritionQuestionnaire';
 import { useDiet } from '../../context/DietContext';
 import { getMomentMacroPortions } from '../../utils/macros';
@@ -28,14 +26,6 @@ import {
   supplementsData as defaultSupplementsData,
 } from '../../data';
 import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
-import {
-  createMealEditorDraft,
-  createMealEditorDraftFromRecommendation,
-  getRecommendedCatalogMealsForSlot,
-  getMealOccurrences,
-  type CatalogMealRecommendation,
-  type MealEditorDraft,
-} from '../../utils/mealEditing';
 import { getCombinedProfileLabel, getProfileLabel } from '../../utils/profileLabels';
 
 function cloneQuestionnaireValue<T>(value: T): T {
@@ -55,18 +45,6 @@ const momentoIcons: Record<string, React.ElementType> = {
 };
 
 type EditableProfileId = 'el' | 'ella';
-
-type ActiveMealEditor = {
-  profileId: EditableProfileId;
-  meal: MealItem;
-  accent: AccentColors;
-  title: string;
-  suggestions: { key: string; label: string; icon: string; cantidad: number }[];
-  dia: string;
-  momentoKey: string;
-  editStateKey: string;
-  currentOccurrenceId: string;
-};
 
 function buildMealMacroLine(meal: MealItem) {
   const parts = [`${meal.caloriasKcal || 0} kcal`];
@@ -94,8 +72,6 @@ export default function PlanView() {
     isAmbos,
     selecciones,
     toggleSeleccion,
-    editMealRecipe,
-    restoreMealRecipe,
     momentosEnEdicion,
     setMomentosEnEdicion,
     momentosColapsados,
@@ -126,34 +102,19 @@ export default function PlanView() {
     confirmAction,
   } = useDiet();
 
-  const [mealEditor, setMealEditor] = React.useState<ActiveMealEditor | null>(null);
-  const [mealEditorDraft, setMealEditorDraft] = React.useState<MealEditorDraft | null>(null);
-  const [isSavingMealEdit, setIsSavingMealEdit] = React.useState(false);
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
-  const [isLocalReplacementOpen, setIsLocalReplacementOpen] = React.useState(false);
-  const [isSavingLocalReplacement, setIsSavingLocalReplacement] = React.useState(false);
 
   React.useEffect(() => {
-    window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: isPlanAiSheetOpen || isLocalReplacementOpen }));
+    window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: isPlanAiSheetOpen }));
     return () => {
       window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: false }));
     };
-  }, [isLocalReplacementOpen, isPlanAiSheetOpen]);
+  }, [isPlanAiSheetOpen]);
 
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
   const labelEl = getProfileLabel(profileLabels, 'el');
   const labelElla = getProfileLabel(profileLabels, 'ella');
-  const labelAmbos = getCombinedProfileLabel(profileLabels);
-
-  const getQuestionnaireContextForProfile = React.useCallback(
-    (profileId: EditableProfileId) => {
-      const direct = lastQuestionnaireContexts?.[profileId] as Partial<QuestionnairePayload> | null;
-      const both = lastQuestionnaireContexts?.ambos as any;
-      return direct || both?.[profileId] || null;
-    },
-    [lastQuestionnaireContexts]
-  );
 
   const handleDownloadDayPdf = React.useCallback(async () => {
     if (!perfilActivo) return;
@@ -189,168 +150,6 @@ export default function PlanView() {
       await notify('Error al exportar PDF', error?.message || 'No fue posible generar el PDF del dia.');
     }
   }, [perfilActivo, diaActivo, notify, perfilesData, selecciones]);
-
-  const closeMealEditor = React.useCallback(() => {
-    setMealEditor(null);
-    setMealEditorDraft(null);
-    setIsSavingMealEdit(false);
-  }, []);
-
-  const openMealEditor = React.useCallback((
-    profileId: EditableProfileId,
-    meal: MealItem,
-    suggestions: { key: string; label: string; icon: string; cantidad: number }[],
-    accent: AccentColors,
-    momentoKey: string,
-    editStateKey: string,
-    currentOccurrenceId: string
-  ) => {
-    setMealEditor({
-      profileId,
-      meal,
-      accent,
-      title: meal.nombre,
-      suggestions,
-      dia: diaActivo,
-      momentoKey,
-      editStateKey,
-      currentOccurrenceId,
-    });
-    setMealEditorDraft(createMealEditorDraft(meal));
-  }, [diaActivo]);
-
-  const mealEditorOccurrences = React.useMemo(() => {
-    if (!mealEditor) return [];
-    const profileLabel = mealEditor.profileId === 'el' ? labelEl : labelElla;
-    const occurrences = getMealOccurrences(perfilesData[mealEditor.profileId], mealEditor.meal).map((occurrence) => ({
-      ...occurrence,
-      profileId: mealEditor.profileId,
-      profileLabel,
-    }));
-
-    if (!mealEditor.currentOccurrenceId) {
-      return occurrences;
-    }
-
-    return [...occurrences].sort((left, right) => {
-      if (left.id === mealEditor.currentOccurrenceId) return -1;
-      if (right.id === mealEditor.currentOccurrenceId) return 1;
-      return 0;
-    });
-  }, [labelEl, labelElla, mealEditor, perfilesData]);
-
-  const mealEditorRecommendations = React.useMemo(() => {
-    if (!mealEditor) return [];
-
-    return getRecommendedCatalogMealsForSlot(
-      perfilesData[mealEditor.profileId],
-      mealEditor.profileId,
-      mealEditor.momentoKey,
-      getQuestionnaireContextForProfile(mealEditor.profileId),
-      mealEditor.meal.id,
-      6
-    );
-  }, [getQuestionnaireContextForProfile, mealEditor, perfilesData]);
-
-  const handleMealDraftChange = React.useCallback((field: keyof MealEditorDraft, value: string) => {
-    setMealEditorDraft((prev) => (prev ? { ...prev, [field]: value } : prev));
-  }, []);
-
-  const handleRecommendedMealSelect = React.useCallback((recommendation: CatalogMealRecommendation) => {
-    setMealEditorDraft(createMealEditorDraftFromRecommendation(recommendation));
-  }, []);
-
-  const handleMealEditorSave = React.useCallback(async (selectedOccurrenceIds: string[]) => {
-    if (!mealEditor || !mealEditorDraft) return;
-
-    const selectedOccurrences = mealEditorOccurrences.filter((occurrence) => (
-      selectedOccurrenceIds.includes(occurrence.id)
-    ));
-    const selectedCount = selectedOccurrenceIds.length;
-    const confirmationLines = selectedOccurrences.map(
-      (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel} - ${occurrence.profileLabel || 'El'}`
-    );
-
-    const accepted = await confirmAction(
-      selectedCount === 1 ? 'Confirmar edicion' : 'Confirmar cambios',
-      `${selectedCount === 1 ? 'Se actualizara esta comida' : `Se actualizaran ${selectedCount} comidas`}:\n${confirmationLines.join('\n')}`
-    );
-
-    if (!accepted) {
-      return;
-    }
-
-    setIsSavingMealEdit(true);
-
-    try {
-      const result = editMealRecipe(
-        mealEditor.profileId,
-        mealEditor.meal,
-        mealEditorDraft,
-        selectedOccurrenceIds
-      );
-      closeMealEditor();
-
-      const visibleRows = result.affectedLabels.slice(0, 4);
-      const extra = result.affectedLabels.length > 4
-        ? `\ny ${result.affectedLabels.length - 4} mas`
-        : '';
-      const affectedCountLabel = result.affectedCount === 1
-        ? 'Se actualizo esta comida'
-        : `Se actualizaron ${result.affectedCount} comidas`;
-
-      await notify(
-        'Platillo actualizado',
-        `${affectedCountLabel}:\n${visibleRows.join('\n')}${extra}`
-      );
-    } catch (error) {
-      console.error('Failed to save meal edition:', error);
-      setIsSavingMealEdit(false);
-      await notify(
-        'No se pudo guardar',
-        'Ocurrio un error al actualizar el platillo. Intenta nuevamente.'
-      );
-    }
-  }, [closeMealEditor, confirmAction, editMealRecipe, mealEditor, mealEditorDraft, mealEditorOccurrences, notify]);
-
-  const handleRestoreMeal = React.useCallback(async (
-    profileId: EditableProfileId,
-    meal: MealItem,
-    occurrenceId?: string
-  ) => {
-    try {
-      const totalLinkedOccurrences = getMealOccurrences(perfilesData[profileId], meal).length;
-      const accepted = await confirmAction(
-        'Restaurar platillo',
-        occurrenceId && totalLinkedOccurrences > 1
-          ? 'Se restaurara solo esta comida. Las otras apariciones editadas se conservaran como estan. ¿Deseas continuar?'
-          : totalLinkedOccurrences > 1
-            ? 'Se restauraran todas las apariciones editadas de este platillo. ¿Deseas continuar?'
-          : 'Se restaurara esta comida a su version original. ¿Deseas continuar?'
-      );
-
-      if (!accepted) {
-        return;
-      }
-
-      const result = restoreMealRecipe(profileId, meal, occurrenceId ? [occurrenceId] : undefined);
-      const visibleRows = result.affectedLabels.slice(0, 4);
-      const extra = result.affectedLabels.length > 4
-        ? `\ny ${result.affectedLabels.length - 4} mas`
-        : '';
-
-      await notify(
-        'Platillo restaurado',
-        `Se restauro en ${result.affectedCount} comida${result.affectedCount === 1 ? '' : 's'}:\n${visibleRows.join('\n')}${extra}`
-      );
-    } catch (error) {
-      console.error('Failed to restore meal edition:', error);
-      await notify(
-        'No se pudo restaurar',
-        'Ocurrio un error al restaurar el platillo.'
-      );
-    }
-  }, [confirmAction, notify, perfilesData, restoreMealRecipe]);
 
   const defaultPlanAiTarget = (perfilActivo === 'ambos' ? 'ambos' : (perfilActivo || 'el')) as 'el' | 'ella' | 'ambos';
   const getQuestionnaireContextForTarget = React.useCallback(
@@ -457,84 +256,7 @@ export default function PlanView() {
     supplementsData,
   ]);
 
-  const handleOpenMealReplacementFromAi = React.useCallback(() => {
-    setIsPlanAiSheetOpen(false);
-    setIsLocalReplacementOpen(true);
-  }, []);
 
-  const handleApplyLocalMealReplacement = React.useCallback(async (items: LocalMealReplacementItem[]) => {
-    const targetProfile = defaultPlanAiTarget;
-    const allowedProfiles = targetProfile === 'ambos'
-      ? new Set(['el', 'ella'])
-      : new Set([targetProfile]);
-    const invalidItem = items.find((item) => !allowedProfiles.has(item.profileId));
-
-    if (invalidItem) {
-      console.warn('[meal-replacement] blocked invalid profile scope', {
-        targetProfile,
-        invalidProfile: invalidItem.profileId,
-      });
-      await notify('Reemplazo no aplicado', 'La seleccion no pertenece al perfil activo.');
-      return;
-    }
-
-    if (targetProfile === 'ambos' && items.length !== 2) {
-      console.warn('[meal-replacement] blocked incomplete ambos replacement', {
-        targetProfile,
-        itemCount: items.length,
-      });
-      await notify('Reemplazo no aplicado', 'En vista Ambos se necesita una opcion para El y Ella.');
-      return;
-    }
-
-    const confirmationLines = items.map((item) => (
-      `${item.profileLabel} - ${item.dia} - ${item.momentoLabel} - opcion ${item.optionIndex + 1}: ${item.currentMeal.nombre} -> ${item.replacement.nombre}`
-    ));
-    const accepted = await confirmAction(
-      targetProfile === 'ambos' ? 'Confirmar reemplazos' : 'Confirmar reemplazo',
-      confirmationLines.join('\n')
-    );
-
-    if (!accepted) return;
-
-    setIsSavingLocalReplacement(true);
-
-    try {
-      console.info('[meal-replacement] applying local replacement', {
-        targetProfile,
-        items: items.map((item) => ({
-          profileId: item.profileId,
-          dia: item.dia,
-          momento: item.momentoKey,
-          optionIndex: item.optionIndex,
-          from: item.currentMeal.nombre,
-          to: item.replacement.nombre,
-        })),
-      });
-
-      const results = items.map((item) => editMealRecipe(
-        item.profileId,
-        item.currentMeal,
-        createMealEditorDraftFromRecommendation(item.replacement),
-        [item.occurrenceId]
-      ));
-
-      setIsLocalReplacementOpen(false);
-      setIsSavingLocalReplacement(false);
-
-      const affectedLabels = results.flatMap((result) => result.affectedLabels);
-      await notify(
-        targetProfile === 'ambos' ? 'Comidas reemplazadas' : 'Comida reemplazada',
-        affectedLabels.length > 0
-          ? affectedLabels.join('\n')
-          : 'El cambio se guardo en el plan.'
-      );
-    } catch (error) {
-      console.error('[meal-replacement] failed to apply local replacement', error);
-      setIsSavingLocalReplacement(false);
-      await notify('No se pudo reemplazar', 'Ocurrio un error al guardar el reemplazo local.');
-    }
-  }, [confirmAction, defaultPlanAiTarget, editMealRecipe, notify]);
 
   const renderSelectedMealCard = React.useCallback((
     meal: MealItem,
@@ -810,37 +532,23 @@ export default function PlanView() {
                                   ))}
                                 </div>
                               ) : (
-                                <MealSelector
-                                  perfil={perfilActivo as EditableProfileId}
-                                  comidas={mealsSingleAll}
-                                  dia={diaActivo}
-                                  momento={momento.key}
-                                  selecciones={selecciones}
-                                  porciones={porcionesSingleMomento}
-                                  onToggle={(perfilId, dia, momentoKey, nombre) => {
-                                    toggleSeleccion(perfilId, dia, momentoKey, nombre);
-                                    setMomentosEnEdicion((prev) => ({
-                                      ...prev,
-                                      [momentoKey]: false,
-                                    }));
-                                  }}
-                                  onEditMeal={(meal, occurrenceId) => {
-                                    openMealEditor(
-                                      perfilActivo as EditableProfileId,
-                                      meal,
-                                      porcionesSingleMomento,
-                                      ac,
-                                      momento.key,
-                                      momento.key,
-                                      occurrenceId
-                                    );
-                                  }}
-                                  onRestoreMeal={(meal, occurrenceId) => {
-                                    void handleRestoreMeal(perfilActivo as EditableProfileId, meal, occurrenceId);
-                                  }}
-                                  accentClasses={ac}
-                                  isDarkMode={isDarkMode}
-                                />
+                              <MealSelector
+                                perfil={perfilActivo as EditableProfileId}
+                                comidas={mealsSingleAll}
+                                dia={diaActivo}
+                                momento={momento.key}
+                                selecciones={selecciones}
+                                porciones={porcionesSingleMomento}
+                                onToggle={(perfilId, dia, momentoKey, nombre) => {
+                                  toggleSeleccion(perfilId, dia, momentoKey, nombre);
+                                  setMomentosEnEdicion((prev) => ({
+                                    ...prev,
+                                    [momentoKey]: false,
+                                  }));
+                                }}
+                                accentClasses={ac}
+                                isDarkMode={isDarkMode}
+                              />
                               )
                             ) : (
                               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -891,12 +599,6 @@ export default function PlanView() {
                                             ...prev,
                                             [`${momentoKey}-el`]: false,
                                           }));
-                                        }}
-                                        onEditMeal={(meal, occurrenceId) => {
-                                          openMealEditor('el', meal, porcionesElMomento, elAccent, momento.key, `${momento.key}-el`, occurrenceId);
-                                        }}
-                                        onRestoreMeal={(meal, occurrenceId) => {
-                                          void handleRestoreMeal('el', meal, occurrenceId);
                                         }}
                                         accentClasses={elAccent}
                                         isDarkMode={isDarkMode}
@@ -952,12 +654,6 @@ export default function PlanView() {
                                             ...prev,
                                             [`${momentoKey}-ella`]: false,
                                           }));
-                                        }}
-                                        onEditMeal={(meal, occurrenceId) => {
-                                          openMealEditor('ella', meal, porcionesEllaMomento, ellaAccent, momento.key, `${momento.key}-ella`, occurrenceId);
-                                        }}
-                                        onRestoreMeal={(meal, occurrenceId) => {
-                                          void handleRestoreMeal('ella', meal, occurrenceId);
                                         }}
                                         accentClasses={ellaAccent}
                                         isDarkMode={isDarkMode}
@@ -1021,7 +717,6 @@ export default function PlanView() {
         onClose={() => setIsPlanAiSheetOpen(false)}
         onSubmit={(payload) => handlePlanAiSubmit(payload)}
         onOpenQuestionnaire={(targetProfile) => handleOpenQuestionnaireFromPlanAi(targetProfile)}
-        onOpenMealReplacement={handleOpenMealReplacementFromAi}
         isDarkMode={isDarkMode}
         accentClasses={ac}
         loading={planRevisionLoading}
@@ -1033,51 +728,6 @@ export default function PlanView() {
         geminiRecommendedModel={geminiRecommendedModel}
         geminiFallbackModels={geminiFallbackModels}
       />
-
-      <WeeklyMealReplacementSheet
-        open={isLocalReplacementOpen}
-        targetProfile={defaultPlanAiTarget}
-        profilesData={perfilesData}
-        profileLabels={{
-          el: labelEl,
-          ella: labelElla,
-        }}
-        questionnaireContexts={{
-          el: getQuestionnaireContextForProfile('el'),
-          ella: getQuestionnaireContextForProfile('ella'),
-        }}
-        selecciones={selecciones}
-        onClose={() => {
-          setIsLocalReplacementOpen(false);
-          setIsSavingLocalReplacement(false);
-        }}
-        onApply={handleApplyLocalMealReplacement}
-        isDarkMode={isDarkMode}
-        accentClasses={ac}
-        isSaving={isSavingLocalReplacement}
-      />
-
-      {mealEditor && mealEditorDraft ? (
-        <MealEditSheet
-          open
-          title={mealEditor.title}
-          draft={mealEditorDraft}
-          referencePortions={mealEditor.meal.porciones}
-          onDraftChange={handleMealDraftChange}
-          onClose={closeMealEditor}
-          onSave={(selectedOccurrenceIds) => {
-            void handleMealEditorSave(selectedOccurrenceIds);
-          }}
-          affectedMeals={mealEditorOccurrences}
-          currentOccurrenceId={mealEditor.currentOccurrenceId}
-          suggestions={mealEditor.suggestions}
-          recommendations={mealEditorRecommendations}
-          onSelectRecommendation={handleRecommendedMealSelect}
-          isDarkMode={isDarkMode}
-          accentClasses={mealEditor.accent}
-          isSaving={isSavingMealEdit}
-        />
-      ) : null}
     </>
   );
 }

@@ -239,7 +239,7 @@ export default function App() {
     if (tabKey === 'calorias') return 'Calorías';
     return tabItems.find((item) => item.key === tabKey)?.shortLabel ?? '';
   };
-  const moreTabKeys = ['resumen', 'equivalencias', 'calorias', 'suplementos'] as const;
+  const moreTabKeys = ['resumen', 'equivalencias', 'suplementos'] as const;
   const moreTabs = moreTabKeys
     .map((tabKey) => tabItems.find((item) => item.key === tabKey))
     .filter((item): item is (typeof tabItems)[number] => Boolean(item));
@@ -254,7 +254,7 @@ export default function App() {
     >
       {showMobileMore ? (
         <div className="mx-auto max-w-md px-3 pt-2">
-          <div className={`grid grid-cols-2 gap-2 rounded-[24px] border p-2 shadow-[0_14px_34px_rgba(15,23,42,0.14)] ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
+          <div className={`grid grid-cols-3 gap-2 rounded-[24px] border p-2 shadow-[0_14px_34px_rgba(15,23,42,0.14)] ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
             {moreTabs.map((tabItem) => (
               <button
                 key={tabItem.key}
@@ -282,7 +282,7 @@ export default function App() {
         </div>
       ) : null}
       <div className="mx-auto max-w-md px-3 py-2">
-        <div className="grid grid-cols-4 gap-1 rounded-[24px] border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-[0_12px_34px_rgba(15,23,42,0.13)]">
+        <div className="grid grid-cols-5 gap-0.5 rounded-[24px] border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-[0_12px_34px_rgba(15,23,42,0.13)]">
           <button
             type="button"
             onClick={() => {
@@ -290,13 +290,13 @@ export default function App() {
               setShowMobileMore(false);
             }}
             data-testid="mobile-tab-inicio"
-            className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
+            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
               !activeProfile
                 ? navActiveTint
                 : 'text-slate-400 dark:text-slate-500'
             }`}
           >
-            <Home className={`h-[18px] w-[18px] ${!activeProfile ? 'text-white' : ''}`} strokeWidth={!activeProfile ? 2.5 : 1.8} />
+            <Home className={`h-[17px] w-[17px] ${!activeProfile ? 'text-white' : ''}`} strokeWidth={!activeProfile ? 2.5 : 1.8} />
             <span className="text-[9px] font-bold tracking-wide">Inicio</span>
           </button>
           <button
@@ -310,14 +310,34 @@ export default function App() {
               setShowMobileMore(false);
             }}
             data-testid="mobile-tab-plan"
-            className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
+            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
               activeProfile && activeTab === 'plan'
                 ? navActiveTint
                 : 'text-slate-400 dark:text-slate-500'
             }`}
           >
-            <Calendar className={`h-[18px] w-[18px] ${activeProfile && activeTab === 'plan' ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeProfile && activeTab === 'plan' ? 2.5 : 1.8} />
-            <span className="text-[9px] font-bold tracking-wide">Mi plan</span>
+            <Calendar className={`h-[17px] w-[17px] ${activeProfile && activeTab === 'plan' ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeProfile && activeTab === 'plan' ? 2.5 : 1.8} />
+            <span className="text-[9px] font-bold tracking-wide">Plan</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!activeProfile) {
+                setActiveProfile(lastProfileRef.current || 'ambos');
+                setActiveDay('Lunes');
+              }
+              setActiveTab('calorias');
+              setShowMobileMore(false);
+            }}
+            data-testid="mobile-tab-calorias"
+            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
+              activeProfile && activeTab === 'calorias'
+                ? navActiveTint
+                : 'text-slate-400 dark:text-slate-500'
+            }`}
+          >
+            <Flame className={`h-[17px] w-[17px] ${activeProfile && activeTab === 'calorias' ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeProfile && activeTab === 'calorias' ? 2.5 : 1.8} />
+            <span className="text-[9px] font-bold tracking-wide">Progreso</span>
           </button>
           <button
             type="button"
@@ -330,26 +350,26 @@ export default function App() {
               setShowMobileMore(false);
             }}
             data-testid="mobile-tab-compras"
-            className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
+            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
               activeProfile && activeTab === 'compras'
                 ? navActiveTint
                 : 'text-slate-400 dark:text-slate-500'
             }`}
           >
-            <ShoppingCart className={`h-[18px] w-[18px] ${activeProfile && activeTab === 'compras' ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeProfile && activeTab === 'compras' ? 2.5 : 1.8} />
+            <ShoppingCart className={`h-[17px] w-[17px] ${activeProfile && activeTab === 'compras' ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeProfile && activeTab === 'compras' ? 2.5 : 1.8} />
             <span className="text-[9px] font-bold tracking-wide">Compras</span>
           </button>
           <button
             type="button"
             onClick={() => setShowMobileMore((value) => !value)}
             data-testid="mobile-more-button"
-            className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-[18px] px-1 transition-all duration-200 active:scale-95 ${
+            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
               activeProfile && (moreTabActive || showMobileMore)
                 ? navActiveTint
                 : 'text-slate-400 dark:text-slate-500'
             }`}
           >
-            <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={activeProfile && (moreTabActive || showMobileMore) ? 2.5 : 1.8} />
+            <MoreHorizontal className="h-[17px] w-[17px]" strokeWidth={activeProfile && (moreTabActive || showMobileMore) ? 2.5 : 1.8} />
             <span className="text-[9px] font-bold tracking-wide">Más</span>
           </button>
         </div>

@@ -220,59 +220,6 @@ export function isMealEdited(meal: MealItem) {
   return Boolean(meal.editMeta?.isEdited);
 }
 
-export function createMealEditorDraft(meal: MealItem): MealEditorDraft {
-  return {
-    nombre: meal.nombre,
-    detalle: meal.detalle,
-    porciones: meal.porciones,
-    tagsText: (meal.tags || []).join(', '),
-    superText: (meal.super || []).join(', '),
-    caloriasKcal: meal.caloriasKcal ? String(meal.caloriasKcal) : '',
-    proteinaG: typeof meal.proteinaG === 'number' ? String(meal.proteinaG) : '',
-    grasasG: typeof meal.grasasG === 'number' ? String(meal.grasasG) : '',
-  };
-}
-
-export function createMealEditorDraftFromRecommendation(recommendation: CatalogMealRecommendation): MealEditorDraft {
-  return {
-    nombre: recommendation.nombre,
-    detalle: recommendation.detalle,
-    porciones: recommendation.porciones,
-    tagsText: recommendation.tags.join(', '),
-    superText: recommendation.super.join(', '),
-    caloriasKcal: String(recommendation.caloriasKcal),
-    proteinaG: String(recommendation.proteinaG),
-    grasasG: String(recommendation.grasasG),
-  };
-}
-
-export function getRecommendedCatalogMealsForSlot(
-  profile: Profile,
-  profileId: 'el' | 'ella',
-  momentoKey: string,
-  questionnaireContext: any,
-  currentMealId?: string,
-  limit = 6
-): CatalogMealRecommendation[] {
-  const context = questionnaireContext || {};
-  const config = buildConfigFromQuestionnaire({
-    ...context,
-    targetProfile: profileId,
-  });
-  const currentBaseId = getBaseMealId(currentMealId);
-  const slotMeals = mealsDatabase.filter((meal) => (
-    meal.momentos.includes(momentoKey) && meal.id !== currentBaseId
-  ));
-  const ranked = getRankedMealsForUser(slotMeals, config);
-  const source = ranked.length > 0
-    ? ranked
-    : slotMeals.map((meal) => ({ meal, score: 0 }));
-
-  return source
-    .slice(0, limit)
-    .map(({ meal, score }) => catalogMealToRecommendation(meal, profile, momentoKey, context, score));
-}
-
 export function buildMealFromDraft(meal: MealItem, draft: MealEditorDraft): MealItem {
   const original = getMealOriginalSnapshot(meal);
   const nextMeal = ensureMealNutrition({
