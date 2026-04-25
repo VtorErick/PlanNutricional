@@ -29,7 +29,10 @@ import {
 import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
 import {
   createMealEditorDraft,
+  createMealEditorDraftFromRecommendation,
+  getRecommendedCatalogMealsForSlot,
   getMealOccurrences,
+  type CatalogMealRecommendation,
   type MealEditorDraft,
 } from '../../utils/mealEditing';
 import { getCombinedProfileLabel, getProfileLabel } from '../../utils/profileLabels';
@@ -140,6 +143,15 @@ export default function PlanView() {
   const labelElla = getProfileLabel(profileLabels, 'ella');
   const labelAmbos = getCombinedProfileLabel(profileLabels);
 
+  const getQuestionnaireContextForProfile = React.useCallback(
+    (profileId: EditableProfileId) => {
+      const direct = lastQuestionnaireContexts?.[profileId] as Partial<QuestionnairePayload> | null;
+      const both = lastQuestionnaireContexts?.ambos as any;
+      return direct || both?.[profileId] || null;
+    },
+    [lastQuestionnaireContexts]
+  );
+
   const handleDownloadDayPdf = React.useCallback(async () => {
     if (!perfilActivo) return;
     try {
@@ -224,8 +236,25 @@ export default function PlanView() {
     });
   }, [labelEl, labelElla, mealEditor, perfilesData]);
 
+  const mealEditorRecommendations = React.useMemo(() => {
+    if (!mealEditor) return [];
+
+    return getRecommendedCatalogMealsForSlot(
+      perfilesData[mealEditor.profileId],
+      mealEditor.profileId,
+      mealEditor.momentoKey,
+      getQuestionnaireContextForProfile(mealEditor.profileId),
+      mealEditor.meal.id,
+      6
+    );
+  }, [getQuestionnaireContextForProfile, mealEditor, perfilesData]);
+
   const handleMealDraftChange = React.useCallback((field: keyof MealEditorDraft, value: string) => {
     setMealEditorDraft((prev) => (prev ? { ...prev, [field]: value } : prev));
+  }, []);
+
+  const handleRecommendedMealSelect = React.useCallback((recommendation: CatalogMealRecommendation) => {
+    setMealEditorDraft(createMealEditorDraftFromRecommendation(recommendation));
   }, []);
 
   const handleMealEditorSave = React.useCallback(async (selectedOccurrenceIds: string[]) => {
@@ -319,31 +348,6 @@ export default function PlanView() {
       );
     }
   }, [confirmAction, notify, perfilesData, restoreMealRecipe]);
-
-  const planAiTargetOptions = React.useMemo(() => {
-    if (perfilActivo === 'ambos') {
-      return [
-        { id: 'ambos' as const, label: labelAmbos, description: 'Ajusta o recrea los dos planes al mismo tiempo.' },
-        { id: 'el' as const, label: labelEl, description: 'Solo cambia el plan de este perfil.' },
-        { id: 'ella' as const, label: labelElla, description: 'Solo cambia el plan de este perfil.' },
-      ];
-    }
-
-    const currentProfileId = (perfilActivo || 'el') as 'el' | 'ella';
-
-    return [
-      {
-        id: currentProfileId,
-        label: `Solo ${currentProfileId === 'el' ? labelEl : labelElla}`,
-        description: 'Aplica cambios solo al perfil que estas viendo.',
-      },
-      {
-        id: 'ambos' as const,
-        label: labelAmbos,
-        description: 'Mantiene la experiencia alineada para los dos perfiles.',
-      },
-    ];
-  }, [labelAmbos, labelEl, labelElla, perfilActivo]);
 
   const defaultPlanAiTarget = (perfilActivo === 'ambos' ? 'ambos' : (perfilActivo || 'el')) as 'el' | 'ella' | 'ambos';
   const getQuestionnaireContextForTarget = React.useCallback(
@@ -449,6 +453,35 @@ export default function PlanView() {
     perfilesData,
     supplementsData,
   ]);
+
+  const handleOpenMealReplacementFromAi = React.useCallback(() => {
+    const firstMomentKey = perfilBase.momentos.find((momento) => !momentosColapsados[momento.key])?.key
+      || perfilBase.momentos[0]?.key
+      || 'desayuno';
+    setIsPlanAiSheetOpen(false);
+    setMomentosColapsados((prev) => ({
+      ...prev,
+      [firstMomentKey]: false,
+    }));
+    setMomentosEnEdicion((prev) => {
+      if (perfilActivo === 'ambos') {
+        return {
+          ...prev,
+          [`${firstMomentKey}-el`]: true,
+          [`${firstMomentKey}-ella`]: true,
+        };
+      }
+
+      return {
+        ...prev,
+        [firstMomentKey]: true,
+      };
+    });
+
+    window.setTimeout(() => {
+      mealSectionRefs.current[firstMomentKey]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }, [mealSectionRefs, momentosColapsados, perfilActivo, perfilBase.momentos, setMomentosColapsados, setMomentosEnEdicion]);
 
   const renderSelectedMealCard = React.useCallback((
     meal: MealItem,
@@ -935,6 +968,7 @@ export default function PlanView() {
         onClose={() => setIsPlanAiSheetOpen(false)}
         onSubmit={(payload) => handlePlanAiSubmit(payload)}
         onOpenQuestionnaire={(targetProfile) => handleOpenQuestionnaireFromPlanAi(targetProfile)}
+        onOpenMealReplacement={handleOpenMealReplacementFromAi}
         isDarkMode={isDarkMode}
         accentClasses={ac}
         loading={planRevisionLoading}
@@ -942,7 +976,6 @@ export default function PlanView() {
         aiErrorLog={planRevisionErrorLog}
         hasQuestionnaireContext={Boolean(lastQuestionnaireContexts?.el || lastQuestionnaireContexts?.ella || lastQuestionnaireContexts?.ambos)}
         defaultTarget={defaultPlanAiTarget}
-        targetOptions={planAiTargetOptions}
         geminiModel={geminiModel}
         geminiRecommendedModel={geminiRecommendedModel}
         geminiFallbackModels={geminiFallbackModels}
@@ -962,6 +995,8 @@ export default function PlanView() {
           affectedMeals={mealEditorOccurrences}
           currentOccurrenceId={mealEditor.currentOccurrenceId}
           suggestions={mealEditor.suggestions}
+          recommendations={mealEditorRecommendations}
+          onSelectRecommendation={handleRecommendedMealSelect}
           isDarkMode={isDarkMode}
           accentClasses={mealEditor.accent}
           isSaving={isSavingMealEdit}

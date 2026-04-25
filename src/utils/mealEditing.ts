@@ -1,5 +1,9 @@
 import type { MealItem, MealOriginalSnapshot, Profile } from '../types';
+import type { CatalogMealItem } from '../data/mealsDB';
+import { mealsDatabase } from '../data/mealsDB';
 import { ensureMealNutrition } from './nutrition';
+import { buildCanonicalMealDetail } from './nutritionValidation';
+import { buildConfigFromQuestionnaire, getRankedMealsForUser } from './mealScoring';
 
 export interface MealOccurrence {
   id: string;
@@ -14,11 +18,26 @@ export interface MealOccurrence {
 export interface MealEditorDraft {
   nombre: string;
   detalle: string;
+  porciones: string;
   tagsText: string;
   superText: string;
   caloriasKcal: string;
   proteinaG: string;
   grasasG: string;
+}
+
+export interface CatalogMealRecommendation {
+  id: string;
+  nombre: string;
+  detalle: string;
+  tags: string[];
+  super: string[];
+  porciones: string;
+  caloriasKcal: number;
+  proteinaG: number;
+  grasasG: number;
+  score: number;
+  reasons: string[];
 }
 
 export interface PortionDiffItem {
@@ -56,6 +75,17 @@ const PORTION_ALIASES: Record<string, string> = {
   grasa: 'grasas',
 };
 
+const PORTION_ORDER = ['frutas', 'verduras', 'cereales', 'leguminosas', 'lacteos', 'proteina', 'grasas'];
+const PORTION_TEXT_LABELS: Record<string, string> = {
+  frutas: 'frutas',
+  verduras: 'verduras',
+  cereales: 'cereales',
+  leguminosas: 'leguminosas',
+  lacteos: 'lacteos',
+  proteina: 'proteina',
+  grasas: 'grasas',
+};
+
 function normalizePortionKeyToken(value: string) {
   return value
     .normalize('NFD')
@@ -78,6 +108,95 @@ function parseNumberInput(value: string) {
 
 function getMomentLabel(profile: Profile, momentoKey: string) {
   return profile.momentos.find((momento) => momento.key === momentoKey)?.label || momentoKey;
+}
+
+function normalizeText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function buildTargetPortionsText(profile: Profile, momentoKey: string, fallback: string) {
+  const momentPortions = profile.objetivosPorMomento?.[momentoKey];
+  if (!momentPortions) return fallback;
+
+  const portions = PORTION_ORDER
+    .map((key) => ({ key, amount: momentPortions[key] || 0 }))
+    .filter(({ amount }) => amount > 0)
+    .map(({ key, amount }) => `${amount} ${PORTION_TEXT_LABELS[key] || key}`);
+
+  return portions.length > 0 ? portions.join(' | ') : fallback;
+}
+
+function buildRecommendationReasons(meal: CatalogMealItem, questionnaireContext: any, score: number) {
+  const reasons: string[] = [];
+  const tagsText = normalizeText([meal.nombre, ...meal.tags, ...meal.super, ...(meal.cuisineStyles || [])].join(' '));
+  const prefs = questionnaireContext?.preferences || questionnaireContext?.preferencesContext || {};
+  const rawFavorites = [
+    prefs.favoriteFoods,
+    prefs.favoriteCuisineStyles,
+    questionnaireContext?.profileContext?.objectives,
+  ].flat().filter(Boolean).join(' ');
+  const favoriteTokens = normalizeText(rawFavorites).split(/[,;\s]+/).filter((token) => token.length > 3);
+
+  if (favoriteTokens.some((token) => tagsText.includes(token))) {
+    reasons.push('Coincide con gustos');
+  }
+  if (meal.macroEstimate?.protein && meal.macroEstimate.protein >= 20) {
+    reasons.push('Buena proteina');
+  }
+  if (meal.prepTimeMinutes && meal.prepTimeMinutes <= 15) {
+    reasons.push('Rapido');
+  }
+  if (/(fibra|omega3|saciante|digestivo|anti-inflamatorio|volumen)/.test(tagsText)) {
+    reasons.push('Buen perfil nutricional');
+  }
+  if (score >= 10 && reasons.length < 3) {
+    reasons.push('Alta afinidad');
+  }
+
+  return Array.from(new Set(reasons)).slice(0, 3);
+}
+
+function getBaseMealId(mealId?: string) {
+  return mealId?.split('|MOD:')[0]?.trim() || '';
+}
+
+function catalogMealToRecommendation(
+  meal: CatalogMealItem,
+  profile: Profile,
+  momentoKey: string,
+  questionnaireContext: any,
+  score: number
+): CatalogMealRecommendation {
+  const porciones = buildTargetPortionsText(profile, momentoKey, '1 porcion');
+  const hydrated = ensureMealNutrition({
+    id: meal.id,
+    nombre: meal.nombre,
+    porciones,
+    detalle: buildCanonicalMealDetail(meal.nombre, meal.super),
+    tags: meal.tags,
+    super: meal.super,
+    caloriasKcal: meal.macroEstimate?.calories,
+    proteinaG: meal.macroEstimate?.protein,
+    grasasG: meal.macroEstimate?.fat,
+  });
+
+  return {
+    id: meal.id,
+    nombre: hydrated.nombre,
+    detalle: hydrated.detalle,
+    tags: hydrated.tags,
+    super: hydrated.super,
+    porciones: hydrated.porciones,
+    caloriasKcal: hydrated.caloriasKcal || 0,
+    proteinaG: hydrated.proteinaG || 0,
+    grasasG: hydrated.grasasG || 0,
+    score,
+    reasons: buildRecommendationReasons(meal, questionnaireContext, score),
+  };
 }
 
 export function snapshotMeal(meal: MealItem): MealOriginalSnapshot {
@@ -105,6 +224,7 @@ export function createMealEditorDraft(meal: MealItem): MealEditorDraft {
   return {
     nombre: meal.nombre,
     detalle: meal.detalle,
+    porciones: meal.porciones,
     tagsText: (meal.tags || []).join(', '),
     superText: (meal.super || []).join(', '),
     caloriasKcal: meal.caloriasKcal ? String(meal.caloriasKcal) : '',
@@ -113,13 +233,53 @@ export function createMealEditorDraft(meal: MealItem): MealEditorDraft {
   };
 }
 
+export function createMealEditorDraftFromRecommendation(recommendation: CatalogMealRecommendation): MealEditorDraft {
+  return {
+    nombre: recommendation.nombre,
+    detalle: recommendation.detalle,
+    porciones: recommendation.porciones,
+    tagsText: recommendation.tags.join(', '),
+    superText: recommendation.super.join(', '),
+    caloriasKcal: String(recommendation.caloriasKcal),
+    proteinaG: String(recommendation.proteinaG),
+    grasasG: String(recommendation.grasasG),
+  };
+}
+
+export function getRecommendedCatalogMealsForSlot(
+  profile: Profile,
+  profileId: 'el' | 'ella',
+  momentoKey: string,
+  questionnaireContext: any,
+  currentMealId?: string,
+  limit = 6
+): CatalogMealRecommendation[] {
+  const context = questionnaireContext || {};
+  const config = buildConfigFromQuestionnaire({
+    ...context,
+    targetProfile: profileId,
+  });
+  const currentBaseId = getBaseMealId(currentMealId);
+  const slotMeals = mealsDatabase.filter((meal) => (
+    meal.momentos.includes(momentoKey) && meal.id !== currentBaseId
+  ));
+  const ranked = getRankedMealsForUser(slotMeals, config);
+  const source = ranked.length > 0
+    ? ranked
+    : slotMeals.map((meal) => ({ meal, score: 0 }));
+
+  return source
+    .slice(0, limit)
+    .map(({ meal, score }) => catalogMealToRecommendation(meal, profile, momentoKey, context, score));
+}
+
 export function buildMealFromDraft(meal: MealItem, draft: MealEditorDraft): MealItem {
   const original = getMealOriginalSnapshot(meal);
   const nextMeal = ensureMealNutrition({
     ...meal,
     nombre: draft.nombre.trim() || meal.nombre,
     detalle: draft.detalle.trim(),
-    porciones: meal.porciones,
+    porciones: draft.porciones.trim() || meal.porciones,
     tags: sanitizeList(draft.tagsText.split(',')),
     super: sanitizeList(draft.superText.split(',')),
     caloriasKcal: parseNumberInput(draft.caloriasKcal),

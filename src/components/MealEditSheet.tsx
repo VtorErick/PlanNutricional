@@ -1,8 +1,8 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle, ChevronDown, ChevronUp, Circle, PencilLine, Save, X } from 'lucide-react';
+import { CheckCircle, ChevronDown, ChevronUp, Circle, ListChecks, PencilLine, Save, SlidersHorizontal, X } from 'lucide-react';
 import type { AccentColors } from '../utils/theme';
-import type { MealEditorDraft, MealOccurrence } from '../utils/mealEditing';
+import type { CatalogMealRecommendation, MealEditorDraft, MealOccurrence } from '../utils/mealEditing';
 
 interface MealEditSheetProps {
   open: boolean;
@@ -15,6 +15,8 @@ interface MealEditSheetProps {
   affectedMeals: MealOccurrence[];
   currentOccurrenceId?: string;
   suggestions: { key: string; label: string; icon: string; cantidad: number }[];
+  recommendations?: CatalogMealRecommendation[];
+  onSelectRecommendation?: (recommendation: CatalogMealRecommendation) => void;
   isDarkMode?: boolean;
   accentClasses: AccentColors;
   isSaving?: boolean;
@@ -51,6 +53,8 @@ export default function MealEditSheet({
   affectedMeals,
   currentOccurrenceId,
   suggestions,
+  recommendations = [],
+  onSelectRecommendation,
   isDarkMode = false,
   accentClasses,
   isSaving = false,
@@ -58,6 +62,9 @@ export default function MealEditSheet({
   const [showAllAffected, setShowAllAffected] = React.useState(false);
   const [showLinkedSelector, setShowLinkedSelector] = React.useState(false);
   const [selectedOccurrenceIds, setSelectedOccurrenceIds] = React.useState<string[]>([]);
+  const [editMode, setEditMode] = React.useState<'recommended' | 'manual'>(
+    recommendations.length > 0 ? 'recommended' : 'manual'
+  );
 
   const currentOccurrence = currentOccurrenceId
     ? affectedMeals.find((occurrence) => occurrence.id === currentOccurrenceId) || null
@@ -74,17 +81,19 @@ export default function MealEditSheet({
       setShowAllAffected(false);
       setShowLinkedSelector(false);
       setSelectedOccurrenceIds([]);
+      setEditMode(recommendations.length > 0 ? 'recommended' : 'manual');
     }
-  }, [open]);
+  }, [open, recommendations.length]);
 
   React.useEffect(() => {
     if (!open) return;
+    setEditMode(recommendations.length > 0 ? 'recommended' : 'manual');
     if (currentOccurrenceId) {
       setSelectedOccurrenceIds([currentOccurrenceId]);
       return;
     }
     setSelectedOccurrenceIds(affectedMeals.map((occurrence) => occurrence.id));
-  }, [affectedMeals, currentOccurrenceId, open]);
+  }, [affectedMeals, currentOccurrenceId, open, recommendations.length]);
 
   if (!open) return null;
 
@@ -96,6 +105,7 @@ export default function MealEditSheet({
     draft.nombre.trim(),
     draft.detalle.trim(),
     draft.superText.trim(),
+    draft.porciones.trim(),
     draft.caloriasKcal.trim(),
     draft.proteinaG.trim(),
     draft.grasasG.trim(),
@@ -137,6 +147,11 @@ export default function MealEditSheet({
   const selectOnlyCurrentOccurrence = () => {
     if (!currentOccurrenceId) return;
     setSelectedOccurrenceIds([currentOccurrenceId]);
+  };
+
+  const handleSelectRecommendation = (recommendation: CatalogMealRecommendation) => {
+    onSelectRecommendation?.(recommendation);
+    setEditMode('recommended');
   };
 
   return (
@@ -403,91 +418,179 @@ export default function MealEditSheet({
                   ) : null}
                 </div>
 
-                <div className="grid gap-4">
-                  <Field label="Nombre">
-                    <input
-                      value={draft.nombre}
-                      onChange={(event) => onDraftChange('nombre', event.target.value)}
-                      className={inputClasses}
-                      placeholder="Ej. Omelette con fruta"
-                    />
-                  </Field>
+                {recommendations.length > 0 ? (
+                  <div className={`rounded-[22px] border p-4 ${
+                    isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
+                  }`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                          Platillos recomendados
+                        </p>
+                        <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          Opciones de la base de la app ajustadas al perfil y horario.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditMode(editMode === 'manual' ? 'recommended' : 'manual')}
+                        data-testid="meal-edit-manual-mode"
+                        className={`inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-[11px] font-black transition ${
+                          editMode === 'manual'
+                            ? `${accentClasses.tagBg} ${accentClasses.tagText} ${accentClasses.border}`
+                            : isDarkMode
+                              ? 'border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900'
+                              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {editMode === 'manual' ? <ListChecks className="h-3.5 w-3.5" /> : <SlidersHorizontal className="h-3.5 w-3.5" />}
+                        {editMode === 'manual' ? 'Ver recomendadas' : 'Editar manual'}
+                      </button>
+                    </div>
 
-                  <Field label="Descripcion" hint="Texto principal del platillo">
-                    <textarea
-                      value={draft.detalle}
-                      onChange={(event) => onDraftChange('detalle', event.target.value)}
-                      rows={5}
-                      className={`${inputClasses} min-h-[140px] resize-y`}
-                      placeholder="Describe como queda el platillo y sus partes principales"
-                    />
-                  </Field>
+                    {editMode === 'recommended' ? (
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {recommendations.map((recommendation) => {
+                          const isSelected = draft.nombre.trim() === recommendation.nombre;
 
-                  <Field label="Ingredientes o extras" hint="Separados por coma">
-                    <textarea
-                      value={draft.superText}
-                      onChange={(event) => onDraftChange('superText', event.target.value)}
-                      rows={4}
-                      className={`${inputClasses} min-h-[120px] resize-y`}
-                      placeholder="Ej. huevo, tortilla, espinaca, aguacate"
-                    />
-                  </Field>
-
-                  <Field label="Etiquetas" hint="Separadas por coma">
-                    <input
-                      value={draft.tagsText}
-                      onChange={(event) => onDraftChange('tagsText', event.target.value)}
-                      className={inputClasses}
-                      placeholder="Ej. rapido, post-entreno, sin lacteos"
-                    />
-                  </Field>
-                </div>
-
-                <div className={`rounded-[22px] border p-4 ${
-                  isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
-                }`}>
-                  <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
-                    Valores del platillo
-                  </p>
-                  <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Edita las calorias, proteina y grasas que se mostraran para este platillo.
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <Field label="kcal">
-                      <input
-                        inputMode="numeric"
-                        type="text"
-                        value={draft.caloriasKcal}
-                        onChange={(event) => handleNumericChange('caloriasKcal', event.target.value)}
-                        className={numericFieldClasses}
-                        placeholder="Ej. 320"
-                      />
-                    </Field>
-
-                    <Field label="Proteina (g)">
-                      <input
-                        inputMode="numeric"
-                        type="text"
-                        value={draft.proteinaG}
-                        onChange={(event) => handleNumericChange('proteinaG', event.target.value)}
-                        className={numericFieldClasses}
-                        placeholder="Ej. 24"
-                      />
-                    </Field>
-
-                    <Field label="Grasas (g)">
-                      <input
-                        inputMode="numeric"
-                        type="text"
-                        value={draft.grasasG}
-                        onChange={(event) => handleNumericChange('grasasG', event.target.value)}
-                        className={numericFieldClasses}
-                        placeholder="Ej. 12"
-                      />
-                    </Field>
+                          return (
+                            <button
+                              type="button"
+                              key={recommendation.id}
+                              onClick={() => handleSelectRecommendation(recommendation)}
+                              data-testid={`meal-edit-recommendation-${recommendation.id}`}
+                              className={`rounded-2xl border px-3.5 py-3 text-left transition ${
+                                isSelected
+                                  ? `${accentClasses.border} ${accentClasses.bgLight}`
+                                  : isDarkMode
+                                    ? 'border-slate-800 bg-slate-950 text-slate-200 hover:border-slate-700'
+                                    : 'border-white bg-white text-slate-700 hover:border-slate-200'
+                              }`}
+                            >
+                              <span className="flex items-start gap-3">
+                                {isSelected ? (
+                                  <CheckCircle className={`mt-0.5 h-4 w-4 flex-shrink-0 ${accentClasses.text}`} />
+                                ) : (
+                                  <Circle className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" />
+                                )}
+                                <span className="min-w-0 flex-1">
+                                  <span className={`block text-sm font-black leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                                    {recommendation.nombre}
+                                  </span>
+                                  <span className={`mt-1 block text-[11px] font-bold ${accentClasses.text}`}>
+                                    {recommendation.caloriasKcal} kcal - {recommendation.proteinaG}g proteina - {recommendation.grasasG}g grasas
+                                  </span>
+                                  {recommendation.reasons.length > 0 ? (
+                                    <span className="mt-2 flex flex-wrap gap-1.5">
+                                      {recommendation.reasons.map((reason) => (
+                                        <span
+                                          key={`${recommendation.id}-${reason}`}
+                                          className={`rounded-full px-2 py-1 text-[10px] font-bold ${accentClasses.tagBg} ${accentClasses.tagText}`}
+                                        >
+                                          {reason}
+                                        </span>
+                                      ))}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
-                </div>
+                ) : null}
+
+                {editMode === 'manual' ? (
+                  <>
+                    <div className="grid gap-4">
+                      <Field label="Nombre">
+                        <input
+                          value={draft.nombre}
+                          onChange={(event) => onDraftChange('nombre', event.target.value)}
+                          className={inputClasses}
+                          placeholder="Ej. Omelette con fruta"
+                        />
+                      </Field>
+
+                      <Field label="Descripcion" hint="Texto principal del platillo">
+                        <textarea
+                          value={draft.detalle}
+                          onChange={(event) => onDraftChange('detalle', event.target.value)}
+                          rows={5}
+                          className={`${inputClasses} min-h-[140px] resize-y`}
+                          placeholder="Describe como queda el platillo y sus partes principales"
+                        />
+                      </Field>
+
+                      <Field label="Ingredientes o extras" hint="Separados por coma">
+                        <textarea
+                          value={draft.superText}
+                          onChange={(event) => onDraftChange('superText', event.target.value)}
+                          rows={4}
+                          className={`${inputClasses} min-h-[120px] resize-y`}
+                          placeholder="Ej. huevo, tortilla, espinaca, aguacate"
+                        />
+                      </Field>
+
+                      <Field label="Etiquetas" hint="Separadas por coma">
+                        <input
+                          value={draft.tagsText}
+                          onChange={(event) => onDraftChange('tagsText', event.target.value)}
+                          className={inputClasses}
+                          placeholder="Ej. rapido, post-entreno, sin lacteos"
+                        />
+                      </Field>
+                    </div>
+
+                    <div className={`rounded-[22px] border p-4 ${
+                      isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
+                    }`}>
+                      <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                        Valores del platillo
+                      </p>
+                      <p className={`mt-1 text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Edita las calorias, proteina y grasas que se mostraran para este platillo.
+                      </p>
+
+                      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <Field label="kcal">
+                          <input
+                            inputMode="numeric"
+                            type="text"
+                            value={draft.caloriasKcal}
+                            onChange={(event) => handleNumericChange('caloriasKcal', event.target.value)}
+                            className={numericFieldClasses}
+                            placeholder="Ej. 320"
+                          />
+                        </Field>
+
+                        <Field label="Proteina (g)">
+                          <input
+                            inputMode="numeric"
+                            type="text"
+                            value={draft.proteinaG}
+                            onChange={(event) => handleNumericChange('proteinaG', event.target.value)}
+                            className={numericFieldClasses}
+                            placeholder="Ej. 24"
+                          />
+                        </Field>
+
+                        <Field label="Grasas (g)">
+                          <input
+                            inputMode="numeric"
+                            type="text"
+                            value={draft.grasasG}
+                            onChange={(event) => handleNumericChange('grasasG', event.target.value)}
+                            className={numericFieldClasses}
+                            placeholder="Ej. 12"
+                          />
+                        </Field>
+                      </div>
+                    </div>
+                  </>
+                ) : null}
 
                 <div className={`rounded-[22px] border p-4 ${
                   isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
@@ -501,7 +604,7 @@ export default function MealEditSheet({
                   <div className={`mt-3 rounded-2xl border px-3.5 py-3 text-sm ${
                     isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-200' : 'border-slate-200 bg-white text-slate-700'
                   }`}>
-                    {referencePortions}
+                    {draft.porciones || referencePortions}
                   </div>
 
                   {suggestions.length > 0 ? (

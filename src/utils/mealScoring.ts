@@ -35,6 +35,9 @@ export interface MealScoreConfig {
 }
 
 const DIFFICULTY_ORDER = { facil: 1, media: 2, dificil: 3 };
+const PRACTICAL_TAGS = ['rapido', 'portatil', 'meal-prep', 'economico', 'facil', 'sencillo'];
+const QUALITY_TAGS = ['saciante', 'fibra', 'omega3', 'anti-inflamatorio', 'volumen', 'digestivo', 'proteina', 'alto-proteina'];
+const GLUCOSE_RISK_TAGS = ['dulce', 'postre', 'alto-carb', 'carbohidrato-rapido', 'miel', 'pan dulce', 'galleta'];
 
 /**
  * Normaliza texto para comparación (minúsculas, sin acentos)
@@ -53,6 +56,67 @@ function normalizeText(text: string): string {
 function containsAny(text: string, keywords: string[]): boolean {
   const normalizedText = normalizeText(text);
   return keywords.some(kw => normalizedText.includes(normalizeText(kw)));
+}
+
+function splitTextList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => splitTextList(entry)).filter(Boolean);
+  }
+
+  if (typeof value !== 'string') return [];
+
+  return value
+    .split(/[,;]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function uniqueList(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  values.forEach((value) => {
+    const key = normalizeText(value);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    result.push(value);
+  });
+
+  return result;
+}
+
+function collectQuestionnaireSections(questionnaire: any) {
+  const sources = [
+    questionnaire,
+    questionnaire?.el,
+    questionnaire?.ella,
+    questionnaire?.questionnaireContext,
+    questionnaire?.questionnaireContext?.el,
+    questionnaire?.questionnaireContext?.ella,
+  ].filter(Boolean);
+
+  return sources.map((source) => ({
+    profile: source?.profileContext || source,
+    health: source?.healthContext || source,
+    preferences: source?.preferences || source,
+    routine: source?.routine || source,
+  }));
+}
+
+function resolveObjective(values: string[]): MealScoreConfig['objective'] {
+  const joined = normalizeText(values.join(' '));
+  if (/(perder|bajar|grasa|definicion|definir)/.test(joined)) return 'perder';
+  if (/(ganar|musculo|masa|fuerza|aumentar)/.test(joined)) return 'ganar';
+  if (/(mantener|mantenimiento)/.test(joined)) return 'mantener';
+  return 'salud';
+}
+
+function resolveCookingTimeMax(values: string[]) {
+  const parsed = values
+    .map((value) => Number.parseInt(String(value), 10))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  return parsed.length > 0 ? Math.min(...parsed) : 0;
 }
 
 /**
@@ -99,32 +163,34 @@ function containsForbiddenIngredients(
  */
 export function scoreMeal(meal: CatalogMealItem, config: MealScoreConfig): number {
   let score = 0;
+  const searchSpace = [meal.nombre, ...meal.super, ...meal.tags, ...(meal.cuisineStyles || [])].join(' ');
+  const normalizedSearch = normalizeText(searchSpace);
 
   // 1. Coincidencia con estilos de cocina favoritos (+10 cada uno)
   if (meal.cuisineStyles && config.favoriteCuisineStyles.length > 0) {
     for (const style of config.favoriteCuisineStyles) {
       if (meal.cuisineStyles.some(s => normalizeText(s) === normalizeText(style))) {
-        score += 10;
+        score += 14;
+      } else if (containsAny(searchSpace, [style])) {
+        score += 8;
       }
     }
   }
 
   // 2. Coincidencia con alimentos favoritos (+5 cada uno)
   if (config.favoriteFoods.length > 0) {
-    const searchSpace = [meal.nombre, ...meal.super].join(' ');
     for (const food of config.favoriteFoods) {
       if (containsAny(searchSpace, [food])) {
-        score += 5;
+        score += 7;
       }
     }
   }
 
   // 3. Penalización por alimentos no deseados (-20 cada uno)
   if (config.dislikedFoods.length > 0) {
-    const searchSpace = [meal.nombre, ...meal.super].join(' ');
     for (const food of config.dislikedFoods) {
       if (containsAny(searchSpace, [food])) {
-        score -= 20;
+        score -= 35;
       }
     }
   }
@@ -136,34 +202,49 @@ export function scoreMeal(meal: CatalogMealItem, config: MealScoreConfig): numbe
     switch (config.objective) {
       case 'perder':
         // Favorecer comidas altas en proteína, bajas en carbos
-        if (protein > 20 && carbs < 30) score += 3;
-        if (calories < 300) score += 2;
+        if (protein > 20 && carbs < 30) score += 8;
+        if (protein >= 15) score += 3;
+        if (calories < 350) score += 4;
+        if (carbs > 55) score -= 5;
         break;
       case 'ganar':
         // Favorecer comidas calóricas con proteína
-        if (calories > 350) score += 2;
-        if (protein > 25) score += 3;
+        if (calories > 350) score += 4;
+        if (protein > 25) score += 7;
         break;
       case 'mantener':
         // Balance
-        if (protein > 15 && calories > 250 && calories < 450) score += 1;
+        if (protein > 15 && calories > 250 && calories < 500) score += 4;
         break;
       case 'salud':
         // Favorecer comidas con tags saludables
-        if (meal.tags.some(t => normalizeText(t).includes('omega3'))) score += 2;
-        if (meal.tags.some(t => normalizeText(t).includes('fibra'))) score += 2;
+        if (meal.tags.some(t => normalizeText(t).includes('omega3'))) score += 4;
+        if (meal.tags.some(t => normalizeText(t).includes('fibra'))) score += 4;
         break;
     }
   }
 
   // 5. Bonus por dificultad fácil (si no hay restricción de dificultad)
+  if (config.medicalConditions.some((condition) => /(diabetes|insulina|sop|poliquistico|gluc)/.test(normalizeText(condition)))) {
+    if (QUALITY_TAGS.some((tag) => normalizedSearch.includes(tag))) score += 6;
+    if (GLUCOSE_RISK_TAGS.some((tag) => normalizedSearch.includes(tag))) score -= 12;
+  }
+
+  if (config.medicalConditions.some((condition) => /(reflujo|gastritis|colitis|distension)/.test(normalizeText(condition)))) {
+    if (/(caldo|sopa|digestivo|suave|ligero|pollo|calabaza)/.test(normalizedSearch)) score += 5;
+    if (/(chipotle|chile|salsa roja|frito|cremoso)/.test(normalizedSearch)) score -= 6;
+  }
+
+  if (PRACTICAL_TAGS.some((tag) => normalizedSearch.includes(tag))) score += 2;
+  if (QUALITY_TAGS.some((tag) => normalizedSearch.includes(tag))) score += 2;
+
   if (meal.difficulty === 'facil') {
-    score += 1;
+    score += 2;
   }
 
   // 6. Bonus por tiempo rápido
   if (meal.prepTimeMinutes && meal.prepTimeMinutes <= 15) {
-    score += 2;
+    score += 3;
   }
 
   return score;
@@ -293,38 +374,39 @@ export function getMealsByMaxPrepTime(
  * Extrae preferencias del objeto questionnaire.
  */
 export function buildConfigFromQuestionnaire(questionnaire: any): MealScoreConfig {
-  const prefs = questionnaire?.preferences || {};
-  const health = questionnaire?.healthContext || {};
+  const sections = collectQuestionnaireSections(questionnaire);
+  const favoriteFoods = uniqueList(sections.flatMap(({ preferences }) => splitTextList(preferences?.favoriteFoods)));
+  const favoriteCuisineStyles = uniqueList(sections.flatMap(({ preferences }) => splitTextList(preferences?.favoriteCuisineStyles)));
+  const dislikedFoods = uniqueList(sections.flatMap(({ preferences }) => splitTextList(preferences?.dislikedFoods)));
+  const allergies = uniqueList(sections.flatMap(({ health }) => splitTextList(health?.allergies)));
+  const intolerances = uniqueList(sections.flatMap(({ health }) => splitTextList(health?.intolerances)));
+  const cookingTimes = sections.flatMap(({ preferences }) => splitTextList(preferences?.cookingTime));
+  const objectives = uniqueList(sections.flatMap(({ profile }) => splitTextList(profile?.objectives)));
 
   // Extraer condiciones médicas de múltiples campos usando el matcher inteligente
-  const rawMedicalInput = [
-    health.diagnostics || '',
-    health.additionalConditions || '',
-    health.digestiveSymptoms || '',
-  ].join(', ');
+  const rawMedicalInput = sections.flatMap(({ health }) => [
+    health?.diagnostics || '',
+    health?.additionalConditions || '',
+    health?.digestiveSymptoms || '',
+  ]).join(', ');
 
   // Usar parseMedicalConditions para manejar texto libre con errores ortográficos
   const parsedConditions = parseMedicalConditions(rawMedicalInput);
   const medicalConditions = parsedConditions.matched;
+  const dietSignals = normalizeText([...favoriteCuisineStyles, ...favoriteFoods, ...objectives].join(' '));
 
   return {
-    favoriteFoods: (prefs.favoriteFoods || '').split(/[,;]/).map((s: string) => s.trim()).filter(Boolean),
-    favoriteCuisineStyles: (prefs.favoriteCuisineStyles || '').split(/[,;]/).map((s: string) => s.trim()).filter(Boolean),
-    dislikedFoods: (prefs.dislikedFoods || '').split(/[,;]/).map((s: string) => s.trim()).filter(Boolean),
-    allergies: (health.allergies || '').split(/[,;]/).map((s: string) => s.trim()).filter(Boolean),
-    intolerances: (health.intolerances || '').split(/[,;]/).map((s: string) => s.trim()).filter(Boolean),
+    favoriteFoods,
+    favoriteCuisineStyles,
+    dislikedFoods,
+    allergies,
+    intolerances,
     medicalConditions,
-    cookingTimeMax: parseInt(prefs.cookingTime, 10) || 0,
+    cookingTimeMax: resolveCookingTimeMax(cookingTimes),
     difficultyMax: undefined,
-    objective: (questionnaire?.profileContext?.objectives?.[0] || 'salud').toLowerCase().includes('perder')
-      ? 'perder'
-      : (questionnaire?.profileContext?.objectives?.[0] || '').toLowerCase().includes('ganar')
-        ? 'ganar'
-        : (questionnaire?.profileContext?.objectives?.[0] || '').toLowerCase().includes('mantener')
-          ? 'mantener'
-          : 'salud',
-    isVegetarian: prefs.favoriteCuisineStyles?.toLowerCase().includes('vegetariana') || false,
-    isVegan: prefs.favoriteCuisineStyles?.toLowerCase().includes('vegan') || false,
+    objective: resolveObjective(objectives),
+    isVegetarian: dietSignals.includes('vegetariana') || dietSignals.includes('vegetariano'),
+    isVegan: dietSignals.includes('vegan'),
   };
 }
 

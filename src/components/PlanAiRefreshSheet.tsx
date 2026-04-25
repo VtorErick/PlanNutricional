@@ -6,10 +6,10 @@ import {
   CheckCircle2,
   Download,
   FileText,
-  Users,
   MessageSquareText,
   RefreshCcw,
   Sparkles,
+  UtensilsCrossed,
   Wand2,
   X,
 } from 'lucide-react';
@@ -19,12 +19,6 @@ import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
 
 type TargetProfile = 'el' | 'ella' | 'ambos';
 type RegeneratePath = 'instruction' | 'questionnaire';
-
-type TargetOption = {
-  id: TargetProfile;
-  label: string;
-  description: string;
-};
 
 function OptionCard({
   active,
@@ -103,6 +97,7 @@ interface PlanAiRefreshSheetProps {
   onClose: () => void;
   onSubmit: (payload: { requestMode: PlanRevisionMode; targetProfile: TargetProfile; instruction: string }) => Promise<void>;
   onOpenQuestionnaire: (targetProfile: TargetProfile) => Promise<void> | void;
+  onOpenMealReplacement?: () => void;
   isDarkMode?: boolean;
   accentClasses: AccentColors;
   loading?: boolean;
@@ -110,23 +105,17 @@ interface PlanAiRefreshSheetProps {
   aiErrorLog?: AiDebugLog | null;
   hasQuestionnaireContext: boolean;
   defaultTarget: TargetProfile;
-  targetOptions: TargetOption[];
   geminiModel: string;
   geminiRecommendedModel: string;
   geminiFallbackModels: string[];
 }
-
-const EXAMPLE_PROMPTS = [
-  'Menos pescado en la cena y mas cenas faciles de preparar.',
-  'No combines atun con lacteos y evita olores fuertes por la noche.',
-  'Mantén el desayuno parecido, pero cambia las colaciones por opciones mas rapidas.',
-];
 
 export default function PlanAiRefreshSheet({
   open,
   onClose,
   onSubmit,
   onOpenQuestionnaire,
+  onOpenMealReplacement,
   isDarkMode = false,
   accentClasses,
   loading = false,
@@ -134,7 +123,6 @@ export default function PlanAiRefreshSheet({
   aiErrorLog,
   hasQuestionnaireContext,
   defaultTarget,
-  targetOptions,
 }: PlanAiRefreshSheetProps) {
   const [mode, setMode] = React.useState<PlanRevisionMode>('adjust');
   const [regeneratePath, setRegeneratePath] = React.useState<RegeneratePath>('instruction');
@@ -275,38 +263,6 @@ export default function PlanAiRefreshSheet({
                     </div>
                   </div>
 
-                  <div>
-                    <div className="mb-2 flex items-center gap-2">
-                      <Users className={`h-4 w-4 ${accentClasses.text}`} />
-                      <p className={`text-[11px] font-black uppercase tracking-[0.16em] ${accentClasses.text}`}>
-                        A quien actualizar
-                      </p>
-                    </div>
-                    <div className={`rounded-[24px] border p-1.5 ${
-                      isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
-                    }`}>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {targetOptions.map((option) => (
-                          <button
-                            key={option.id}
-                            type="button"
-                            data-testid={`plan-ai-target-${option.id}`}
-                            onClick={() => setTargetProfile(option.id)}
-                            className={`flex h-12 items-center justify-center rounded-2xl text-sm font-black transition active:scale-[0.98] ${
-                              targetProfile === option.id
-                                ? `${accentClasses.btnActive} shadow-sm`
-                                : isDarkMode
-                                  ? 'bg-slate-900 text-slate-300'
-                                  : 'bg-white text-slate-600'
-                            }`}
-                          >
-                            {option.id === 'ambos' ? 'Ambos' : option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
                   {mode === 'regenerate' ? (
                     <div>
                       <div className="mb-2 flex items-center gap-2">
@@ -373,27 +329,33 @@ export default function PlanAiRefreshSheet({
                         ? 'Ej. Rehaz el plan con cenas mas ligeras y opciones mas faciles de repetir entre semana.'
                         : 'Ej. Esta vez menos pescado en la noche, no combines atun con lacteos y prioriza cenas mas faciles.'}
                     />
-
-                    <div className="hidden flex-wrap gap-2 sm:flex">
-                      {EXAMPLE_PROMPTS.map((example) => (
-                        <button
-                          key={example}
-                          type="button"
-                          onClick={() => setInstruction(example)}
-                          data-testid={`plan-ai-example-${EXAMPLE_PROMPTS.indexOf(example)}`}
-                          className={`rounded-full px-3 py-2 text-[11px] font-bold transition ${
-                            isDarkMode
-                              ? 'border border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900'
-                              : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                          }`}
-                        >
-                          {example}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 )}
 
+                {!isQuestionnaireRegenerate && onOpenMealReplacement ? (
+                  <button
+                    type="button"
+                    onClick={onOpenMealReplacement}
+                    data-testid="plan-ai-open-meal-replacement"
+                    className={`flex w-full items-center gap-3 rounded-[22px] border px-4 py-3 text-left transition ${
+                      isDarkMode
+                        ? 'border-slate-800 bg-slate-950/70 text-slate-100 hover:border-slate-700'
+                        : 'border-slate-200 bg-slate-50/80 text-slate-800 hover:border-slate-300'
+                    }`}
+                  >
+                    <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${accentClasses.tagBg} ${accentClasses.tagText}`}>
+                      <UtensilsCrossed className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-black">Cambiar un platillo sin IA</span>
+                      <span className={`mt-1 block text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        Abre la lista de comidas y usa opciones calculadas por la app.
+                      </span>
+                    </span>
+                  </button>
+                ) : null}
+
+                {isQuestionnaireRegenerate ? (
                 <div className={`rounded-[22px] border px-4 py-3 ${
                   isQuestionnaireRegenerate
                     ? isDarkMode
@@ -411,26 +373,17 @@ export default function PlanAiRefreshSheet({
                     <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-black">
-                        {isQuestionnaireRegenerate
-                          ? hasQuestionnaireContext
-                            ? 'Vamos a revisar tu perfil guardado'
-                            : 'Vamos a revisar tus datos'
-                          : hasQuestionnaireContext
-                            ? 'Usaremos tu informacion previa'
-                            : 'Usaremos tu plan actual'}
+                        {hasQuestionnaireContext ? 'Vamos a revisar tu perfil guardado' : 'Vamos a revisar tus datos'}
                       </p>
                       <p className="mt-1 text-xs leading-relaxed opacity-90">
-                        {isQuestionnaireRegenerate
-                          ? hasQuestionnaireContext
-                            ? 'Asi podras corregir lo que no quedo bien antes de pedir un nuevo plan.'
-                            : 'Asi podras corregir lo necesario antes de pedir un nuevo plan.'
-                          : hasQuestionnaireContext
-                            ? 'Tambien tomaremos en cuenta lo ultimo que hayas compartido sobre tus objetivos y preferencias.'
-                            : 'Tomaremos en cuenta tu plan actual y los cambios que ya hiciste manualmente.'}
+                        {hasQuestionnaireContext
+                          ? 'Asi podras corregir lo que no quedo bien antes de pedir un nuevo plan.'
+                          : 'Asi podras corregir lo necesario antes de pedir un nuevo plan.'}
                       </p>
                     </div>
                   </div>
                 </div>
+                ) : null}
                 {errorMessage ? (
                   <div className={`space-y-3 rounded-[24px] border px-4 py-3 text-sm ${
                     isDarkMode

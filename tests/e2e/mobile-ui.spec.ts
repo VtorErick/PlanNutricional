@@ -115,6 +115,7 @@ test('single-profile plan flow supports selecting meals, editing, and downloadin
   await selectedMeal.click();
   await page.getByTestId('meal-edit-el-Lunes-desayuno-2').click();
 
+  await page.getByTestId('meal-edit-manual-mode').click();
   await page.getByPlaceholder('Ej. Omelette con fruta').fill('Desayuno de prueba Playwright');
   await expect(page.getByText(/Los cambios se aplicaran solo en esta comida/i)).toBeVisible();
   await page.getByTestId('meal-edit-save').click();
@@ -228,7 +229,6 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await page.getByTestId('plan-ai-open').click();
   await expect(page.getByTestId('plan-ai-mode-adjust')).toBeVisible();
   await page.getByTestId('plan-ai-mode-adjust').click();
-  await page.getByTestId('plan-ai-target-el').click();
   await page.getByTestId('plan-ai-instruction').fill('Menos pescado en la noche y cambia el desayuno del lunes.');
   await page.getByTestId('plan-ai-submit').click();
 

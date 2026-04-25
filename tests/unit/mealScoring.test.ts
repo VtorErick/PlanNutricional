@@ -101,6 +101,52 @@ test('scoreMeal puntúa comidas según estilos de cocina favoritos', () => {
   assert.ok(mexicanScore >= 10, 'Debe tener al menos +10 por coincidir con estilo favorito');
 });
 
+test('buildConfigFromQuestionnaire combina senales anidadas del flujo ambos', () => {
+  const config = buildConfigFromQuestionnaire({
+    el: {
+      preferences: {
+        favoriteFoods: 'pollo, aguacate',
+        favoriteCuisineStyles: 'Mexicana',
+        cookingTime: '20',
+      },
+      profileContext: {
+        objectives: ['Ganar masa muscular'],
+      },
+    },
+    ella: {
+      preferences: {
+        favoriteFoods: 'salmon',
+        dislikedFoods: 'cottage',
+        cookingTime: '15',
+      },
+      healthContext: {
+        diagnostics: 'resistencia a la insulina',
+        intolerances: 'lactosa',
+      },
+    },
+  });
+
+  assert.deepStrictEqual(config.favoriteFoods, ['pollo', 'aguacate', 'salmon']);
+  assert.deepStrictEqual(config.favoriteCuisineStyles, ['Mexicana']);
+  assert.deepStrictEqual(config.dislikedFoods, ['cottage']);
+  assert.deepStrictEqual(config.intolerances, ['lactosa']);
+  assert.ok(config.medicalConditions.length > 0);
+  assert.strictEqual(config.cookingTimeMax, 15);
+  assert.strictEqual(config.objective, 'ganar');
+});
+
+test('scoreMeal penaliza opciones dulces en contexto de glucosa', () => {
+  const config: MealScoreConfig = {
+    ...defaultConfig,
+    medicalConditions: ['resistencia a la insulina'],
+  };
+
+  const sweetScore = scoreMeal(testMeals[4], config);
+  const proteinScore = scoreMeal(testMeals[0], config);
+
+  assert.ok(proteinScore > sweetScore, 'Debe preferir opcion proteica sobre dulce con riesgo de glucosa');
+});
+
 test('scoreMeal puntúa comidas según alimentos favoritos', () => {
   const config: MealScoreConfig = {
     ...defaultConfig,

@@ -144,7 +144,7 @@ test('buildOptimizedMealsCatalog sin rotación mantiene comportamiento original'
 
   assert.ok(result.catalog.length > 0, 'Debe retornar comidas');
   assert.ok(result.meta.finalCount > 0, 'Meta debe indicar comidas finales');
-  assert.ok(['filtered', 'fallback'].includes(result.meta.method), 'Método debe ser filtered o fallback');
+  assert.ok(['filtered-ranked', 'fallback-ranked'].includes(result.meta.method), 'Metodo debe ser ranked filtered o fallback');
   assert.strictEqual(result.meta.warnings.length, 0, 'No debe haber warnings con datos suficientes');
 });
 
@@ -186,7 +186,7 @@ test('buildOptimizedMealsCatalog con rotación y suficientes comidas', async () 
 
   assert.ok(result.catalog.length > 0, 'Debe retornar comidas');
   // Con suficientes comidas, podría usar rotación o fallback según implementación
-  assert.ok(['rotation', 'filtered', 'rotation+filtered'].includes(result.meta.method));
+  assert.ok(['rotation', 'filtered-ranked', 'fallback-ranked', 'rotation+filtered'].includes(result.meta.method));
 });
 
 test('validateCatalogForAI detecta catálogos válidos', () => {
@@ -239,7 +239,7 @@ test('buildOptimizedMealsCatalog incluye metadatos útiles', async () => {
   assert.ok(result.meta.finalCount > 0, 'Debe indicar final count');
   assert.ok(Array.isArray(result.meta.selectedIds), 'Debe incluir IDs seleccionados');
   assert.ok(Array.isArray(result.meta.warnings), 'Debe incluir warnings array');
-  assert.ok(['filtered', 'fallback', 'rotation', 'rotation+filtered'].includes(result.meta.method));
+  assert.ok(['filtered-ranked', 'fallback-ranked', 'rotation', 'rotation+filtered'].includes(result.meta.method));
 });
 
 test('buildOptimizedMealsCatalog formato compacto correcto', async () => {
@@ -297,5 +297,5 @@ test('buildOptimizedMealsCatalog aplica filtros del cuestionario', async () => {
 
   assert.ok(result.catalog.length > 0, 'Debe retornar comidas filtradas');
   // Las comidas deben preferir el estilo indicado
-  assert.ok(result.meta.method === 'filtered' || result.meta.method === 'fallback');
+  assert.ok(result.meta.method === 'filtered-ranked' || result.meta.method === 'fallback-ranked');
 });

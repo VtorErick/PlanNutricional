@@ -105,6 +105,39 @@ function toCompactFormat(meal: CatalogMealItem): CompactMealCatalogItem {
   };
 }
 
+function buildBalancedCatalogFromRanked(meals: CatalogMealItem[]): CompactMealCatalogItem[] {
+  const limitsByMoment: Record<string, number> = {
+    desayuno: 12,
+    colacion_am: 10,
+    comida: 12,
+    colacion_pm: 10,
+    cena: 12,
+  };
+  const selected = new Map<string, CatalogMealItem>();
+
+  Object.entries(limitsByMoment).forEach(([moment, limit]) => {
+    meals
+      .filter((meal) => meal.momentos.includes(moment))
+      .slice(0, limit)
+      .forEach((meal) => {
+        if (!selected.has(meal.id)) {
+          selected.set(meal.id, meal);
+        }
+      });
+  });
+
+  if (selected.size < 35) {
+    meals.slice(0, 56).forEach((meal) => {
+      if (selected.size >= 56) return;
+      if (!selected.has(meal.id)) {
+        selected.set(meal.id, meal);
+      }
+    });
+  }
+
+  return Array.from(selected.values()).slice(0, 56).map(toCompactFormat);
+}
+
 /**
  * Construye catálogo de comidas optimizado para envío a IA.
  *
@@ -160,14 +193,13 @@ export async function buildOptimizedMealsCatalog(
     }
 
     // Usar comportamiento original (56 comidas máximo)
-    const { buildQuestionnaireMealsCatalog } = await import('../data/mealsDB');
-    const catalog = buildQuestionnaireMealsCatalog(allMeals, questionnaire);
+    const catalog = buildBalancedCatalogFromRanked(qualitySource);
 
     result = {
       catalog,
       meta: {
-        method: filtered.length > 0 ? 'filtered' : 'fallback',
-        totalAvailable: allMeals.length,
+        method: filtered.length > 0 ? 'filtered-ranked' : 'fallback-ranked',
+        totalAvailable: qualitySource.length,
         finalCount: catalog.length,
         selectedIds: catalog.map(m => m.id),
         warnings,
@@ -179,7 +211,7 @@ export async function buildOptimizedMealsCatalog(
       const { selectMealsForWeek } = await import('./mealRotation');
 
       const rotationConfig: RotationConfig = {
-        availableMeals: source,
+        availableMeals: qualitySource,
         objectives: {}, // Rotation espera objetivos por momento, no usamos por ahora
         history: recentMealIds,
         varietyWindow,
@@ -194,7 +226,7 @@ export async function buildOptimizedMealsCatalog(
       const EXPECTED_MIN = 30; // 5 momentos × 6 días mínimo
 
       // Crear mapa de comidas por ID para lookup rápido
-      const mealsById = new Map(source.map(m => [m.id, m]));
+      const mealsById = new Map(qualitySource.map(m => [m.id, m]));
       const selectedMeals = selectedIds
         .map(id => mealsById.get(id))
         .filter((m): m is CatalogMealItem => m !== undefined);
@@ -205,7 +237,7 @@ export async function buildOptimizedMealsCatalog(
         // Complementar con comidas adicionales filtradas
         const selectedIdSet = new Set(selectedIds);
 
-        const additional = source
+        const additional = qualitySource
           .filter(m => !selectedIdSet.has(m.id))
           .slice(0, 56 - totalSelected)
           .map(toCompactFormat);
@@ -217,7 +249,7 @@ export async function buildOptimizedMealsCatalog(
           catalog: combined,
           meta: {
             method: 'rotation+filtered',
-            totalAvailable: source.length,
+            totalAvailable: qualitySource.length,
             finalCount: combined.length,
             selectedIds: combined.map(m => m.id),
             warnings,
@@ -231,7 +263,7 @@ export async function buildOptimizedMealsCatalog(
           catalog,
           meta: {
             method: 'rotation',
-            totalAvailable: source.length,
+            totalAvailable: qualitySource.length,
             finalCount: catalog.length,
             selectedIds: catalog.map(m => m.id),
             warnings: rotationResult.warnings.length > 0
@@ -244,14 +276,13 @@ export async function buildOptimizedMealsCatalog(
       // FALLBACK SEGURO: Si rotación falla, usar comportamiento original
       warnings.push(`Error en rotación: ${error instanceof Error ? error.message : 'desconocido'}. Usando filtrado estándar.`);
 
-      const { buildQuestionnaireMealsCatalog } = await import('../data/mealsDB');
-      const catalog = buildQuestionnaireMealsCatalog(allMeals, questionnaire);
+      const catalog = buildBalancedCatalogFromRanked(qualitySource);
 
       result = {
         catalog,
         meta: {
           method: 'filtered',
-          totalAvailable: allMeals.length,
+          totalAvailable: qualitySource.length,
           finalCount: catalog.length,
           selectedIds: catalog.map(m => m.id),
           warnings,
