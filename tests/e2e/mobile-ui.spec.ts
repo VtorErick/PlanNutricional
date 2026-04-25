@@ -242,6 +242,47 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await expect(page.getByText(untouchedTuesdayBreakfast)).toBeVisible();
 });
 
+test('local meal replacement from adjust sheet respects active profile scope', async ({ page }) => {
+  const originalElBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
+  const originalEllaBreakfast = getFirstMealName('ella', 'Lunes', 'desayuno');
+
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes'] });
+  await page.goto('/miplan?profile=el');
+
+  await expect(page.getByText(originalElBreakfast)).toBeVisible();
+  await page.getByTestId('plan-ai-open').click();
+  await page.getByTestId('plan-ai-open-meal-replacement').click();
+  await expect(page.getByTestId('local-replacement-slot-list')).toBeVisible();
+  await expect(page.getByTestId('local-replacement-slot-Lunes-desayuno-0')).toBeVisible();
+  await expect(page.getByTestId('local-replacement-slot-Lunes-desayuno-0')).toContainText(originalElBreakfast);
+  await page.getByTestId('local-replacement-apply').click();
+  await page.getByRole('button', { name: /Confirmar/i }).click();
+  await expect(page.getByText(/Comida reemplazada/i)).toBeVisible();
+  await page.getByRole('button', { name: /Aceptar/i }).click();
+  await expect(page.getByText(originalElBreakfast)).toHaveCount(0);
+
+  await page.goto('/miplan?profile=ella');
+  await expect(page.getByText(originalEllaBreakfast)).toBeVisible();
+});
+
+test('local meal replacement from ambos updates both profiles in the same weekly slot', async ({ page }) => {
+  const originalBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
+
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes'] });
+  await page.goto('/miplan?profile=ambos');
+
+  await expect(page.getByText(originalBreakfast).first()).toBeVisible();
+  await page.getByTestId('plan-ai-open').click();
+  await page.getByTestId('plan-ai-open-meal-replacement').click();
+  await expect(page.getByText(/En vista Ambos se reemplaza el mismo espacio para los dos perfiles/i)).toBeVisible();
+  await expect(page.getByText(originalBreakfast).first()).toBeVisible();
+  await page.getByTestId('local-replacement-apply').click();
+  await page.getByRole('button', { name: /Confirmar/i }).click();
+  await expect(page.getByText(/Comidas reemplazadas/i)).toBeVisible();
+  await page.getByRole('button', { name: /Aceptar/i }).click();
+  await expect(page.getByText(originalBreakfast)).toHaveCount(0);
+});
+
 test('AI regenerate tolerates patch-shaped responses and still refreshes the visible plan', async ({
   page,
 }) => {

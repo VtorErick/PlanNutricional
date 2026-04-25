@@ -15,6 +15,7 @@ import {
 import MealSelector from '../MealSelector';
 import MealEditSheet from '../MealEditSheet';
 import PlanAiRefreshSheet from '../PlanAiRefreshSheet';
+import WeeklyMealReplacementSheet, { type LocalMealReplacementItem } from '../WeeklyMealReplacementSheet';
 import type { QuestionnairePayload } from '../NutritionQuestionnaire';
 import { useDiet } from '../../context/DietContext';
 import { getMomentMacroPortions } from '../../utils/macros';
@@ -129,13 +130,15 @@ export default function PlanView() {
   const [mealEditorDraft, setMealEditorDraft] = React.useState<MealEditorDraft | null>(null);
   const [isSavingMealEdit, setIsSavingMealEdit] = React.useState(false);
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
+  const [isLocalReplacementOpen, setIsLocalReplacementOpen] = React.useState(false);
+  const [isSavingLocalReplacement, setIsSavingLocalReplacement] = React.useState(false);
 
   React.useEffect(() => {
-    window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: isPlanAiSheetOpen }));
+    window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: isPlanAiSheetOpen || isLocalReplacementOpen }));
     return () => {
       window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: false }));
     };
-  }, [isPlanAiSheetOpen]);
+  }, [isLocalReplacementOpen, isPlanAiSheetOpen]);
 
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
@@ -455,33 +458,83 @@ export default function PlanView() {
   ]);
 
   const handleOpenMealReplacementFromAi = React.useCallback(() => {
-    const firstMomentKey = perfilBase.momentos.find((momento) => !momentosColapsados[momento.key])?.key
-      || perfilBase.momentos[0]?.key
-      || 'desayuno';
     setIsPlanAiSheetOpen(false);
-    setMomentosColapsados((prev) => ({
-      ...prev,
-      [firstMomentKey]: false,
-    }));
-    setMomentosEnEdicion((prev) => {
-      if (perfilActivo === 'ambos') {
-        return {
-          ...prev,
-          [`${firstMomentKey}-el`]: true,
-          [`${firstMomentKey}-ella`]: true,
-        };
-      }
+    setIsLocalReplacementOpen(true);
+  }, []);
 
-      return {
-        ...prev,
-        [firstMomentKey]: true,
-      };
-    });
+  const handleApplyLocalMealReplacement = React.useCallback(async (items: LocalMealReplacementItem[]) => {
+    const targetProfile = defaultPlanAiTarget;
+    const allowedProfiles = targetProfile === 'ambos'
+      ? new Set(['el', 'ella'])
+      : new Set([targetProfile]);
+    const invalidItem = items.find((item) => !allowedProfiles.has(item.profileId));
 
-    window.setTimeout(() => {
-      mealSectionRefs.current[firstMomentKey]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
-  }, [mealSectionRefs, momentosColapsados, perfilActivo, perfilBase.momentos, setMomentosColapsados, setMomentosEnEdicion]);
+    if (invalidItem) {
+      console.warn('[meal-replacement] blocked invalid profile scope', {
+        targetProfile,
+        invalidProfile: invalidItem.profileId,
+      });
+      await notify('Reemplazo no aplicado', 'La seleccion no pertenece al perfil activo.');
+      return;
+    }
+
+    if (targetProfile === 'ambos' && items.length !== 2) {
+      console.warn('[meal-replacement] blocked incomplete ambos replacement', {
+        targetProfile,
+        itemCount: items.length,
+      });
+      await notify('Reemplazo no aplicado', 'En vista Ambos se necesita una opcion para El y Ella.');
+      return;
+    }
+
+    const confirmationLines = items.map((item) => (
+      `${item.profileLabel} - ${item.dia} - ${item.momentoLabel} - opcion ${item.optionIndex + 1}: ${item.currentMeal.nombre} -> ${item.replacement.nombre}`
+    ));
+    const accepted = await confirmAction(
+      targetProfile === 'ambos' ? 'Confirmar reemplazos' : 'Confirmar reemplazo',
+      confirmationLines.join('\n')
+    );
+
+    if (!accepted) return;
+
+    setIsSavingLocalReplacement(true);
+
+    try {
+      console.info('[meal-replacement] applying local replacement', {
+        targetProfile,
+        items: items.map((item) => ({
+          profileId: item.profileId,
+          dia: item.dia,
+          momento: item.momentoKey,
+          optionIndex: item.optionIndex,
+          from: item.currentMeal.nombre,
+          to: item.replacement.nombre,
+        })),
+      });
+
+      const results = items.map((item) => editMealRecipe(
+        item.profileId,
+        item.currentMeal,
+        createMealEditorDraftFromRecommendation(item.replacement),
+        [item.occurrenceId]
+      ));
+
+      setIsLocalReplacementOpen(false);
+      setIsSavingLocalReplacement(false);
+
+      const affectedLabels = results.flatMap((result) => result.affectedLabels);
+      await notify(
+        targetProfile === 'ambos' ? 'Comidas reemplazadas' : 'Comida reemplazada',
+        affectedLabels.length > 0
+          ? affectedLabels.join('\n')
+          : 'El cambio se guardo en el plan.'
+      );
+    } catch (error) {
+      console.error('[meal-replacement] failed to apply local replacement', error);
+      setIsSavingLocalReplacement(false);
+      await notify('No se pudo reemplazar', 'Ocurrio un error al guardar el reemplazo local.');
+    }
+  }, [confirmAction, defaultPlanAiTarget, editMealRecipe, notify]);
 
   const renderSelectedMealCard = React.useCallback((
     meal: MealItem,
@@ -979,6 +1032,29 @@ export default function PlanView() {
         geminiModel={geminiModel}
         geminiRecommendedModel={geminiRecommendedModel}
         geminiFallbackModels={geminiFallbackModels}
+      />
+
+      <WeeklyMealReplacementSheet
+        open={isLocalReplacementOpen}
+        targetProfile={defaultPlanAiTarget}
+        profilesData={perfilesData}
+        profileLabels={{
+          el: labelEl,
+          ella: labelElla,
+        }}
+        questionnaireContexts={{
+          el: getQuestionnaireContextForProfile('el'),
+          ella: getQuestionnaireContextForProfile('ella'),
+        }}
+        selecciones={selecciones}
+        onClose={() => {
+          setIsLocalReplacementOpen(false);
+          setIsSavingLocalReplacement(false);
+        }}
+        onApply={handleApplyLocalMealReplacement}
+        isDarkMode={isDarkMode}
+        accentClasses={ac}
+        isSaving={isSavingLocalReplacement}
       />
 
       {mealEditor && mealEditorDraft ? (

@@ -347,9 +347,9 @@ export default function PlanAiRefreshSheet({
                       <UtensilsCrossed className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-black">Cambiar un platillo sin IA</span>
+                      <span className="block text-sm font-black">Elegir comida de la semana</span>
                       <span className={`mt-1 block text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                        Abre la lista de comidas y usa opciones calculadas por la app.
+                        Reemplaza una opcion exacta usando la base local de la app.
                       </span>
                     </span>
                   </button>
