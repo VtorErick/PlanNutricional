@@ -6,6 +6,7 @@ import {
   ClipboardList,
   ChevronDown,
   ChevronUp,
+  Share2,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
@@ -179,6 +180,27 @@ export default function ShoppingView() {
     })).filter((section) => section.items.length > 0);
   }, [shoppingList]);
 
+  const handleShareList = React.useCallback(async () => {
+    const lines: string[] = ['🛒 Lista de compras'];
+    groupedShoppingList.forEach((section) => {
+      lines.push('', `${section.icon} ${section.label}`);
+      section.items.forEach((item) => {
+        const mark = comprasCheck[item.ingrediente] ? '☑' : '☐';
+        lines.push(`${mark} ${item.ingrediente}`);
+      });
+    });
+    const text = lines.join('\n');
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Lista de compras', text });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      }
+    } catch {
+      // user cancelled or unsupported
+    }
+  }, [groupedShoppingList, comprasCheck]);
+
   const getDisplayUsos = React.useCallback((usos: ShoppingUsage[]): ShoppingUsageDisplay[] => {
     if (!isAmbos) {
       return usos
@@ -284,11 +306,23 @@ export default function ShoppingView() {
 
         {shoppingList.length > 0 && (
           <div className={`relative mb-4 flex items-center justify-between rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-emerald-600" />
-              <span className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
-                {pendingCount} pendientes
-              </span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-emerald-600" />
+                <span className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
+                  {pendingCount} pendientes
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleShareList()}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition active:scale-95 ${
+                  isDarkMode ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                Compartir
+              </button>
             </div>
             <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
               {checkedCount}/{shoppingList.length} marcados
@@ -323,9 +357,20 @@ export default function ShoppingView() {
                     <span aria-hidden="true">{section.icon}</span>
                     {section.label}
                   </h3>
-                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
-                    {section.items.length}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {section.items.every((item) => comprasCheck[item.ingrediente]) ? (
+                      <motion.span
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'bg-emerald-900/60 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}
+                      >
+                        ✓ Completo
+                      </motion.span>
+                    ) : null}
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                      {section.items.length}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
@@ -357,7 +402,7 @@ export default function ShoppingView() {
 
                   <div className="p-4 flex-1 min-w-0">
                     <div className="mb-3 flex items-start gap-3">
-                      <button
+                      <motion.button
                         type="button"
                         onClick={() =>
                           setComprasCheck((prev) => ({
@@ -365,6 +410,8 @@ export default function ShoppingView() {
                             [item.ingrediente]: !prev[item.ingrediente],
                           }))
                         }
+                        animate={isChecked ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                        transition={{ duration: 0.3 }}
                         className={`w-7 h-7 mt-0.5 rounded-full border-2 flex-shrink-0 transition-all duration-300 flex items-center justify-center ${
                           isChecked
                             ? 'bg-emerald-500 border-emerald-500 scale-110'
@@ -377,7 +424,7 @@ export default function ShoppingView() {
                         } ingrediente ${item.ingrediente}`}
                       >
                         {isChecked ? <CheckCircle2 className="w-4 h-4 text-white" /> : null}
-                      </button>
+                      </motion.button>
 
                       <div className="min-w-0 flex-1">
                         <h3

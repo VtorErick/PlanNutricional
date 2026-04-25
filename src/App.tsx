@@ -452,10 +452,10 @@ export default function App() {
   }
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
-      data-profile={activeProfile}
-    >
+      <div
+        className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 transition-colors duration-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+        data-profile={activeProfile}
+      >
       {!isPlanAdjustOpen && <Header />}
 
       {activeTab === 'plan' && !isPlanAdjustOpen ? <DailyProgress /> : null}

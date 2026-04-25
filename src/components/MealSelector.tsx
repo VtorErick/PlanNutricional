@@ -59,7 +59,7 @@ export default function MealSelector({
               <div className={`absolute inset-x-0 top-0 h-1 pointer-events-none ${isDarkMode ? 'bg-white/10' : 'bg-white/30'}`} />
             ) : null}
 
-            <div className="relative p-4 sm:p-5 space-y-3">
+            <div className="relative p-3 sm:p-4 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
@@ -104,7 +104,7 @@ export default function MealSelector({
                     </div>
                   </div>
 
-                  <p className={`text-xs sm:text-[13px] mt-1.5 font-medium leading-relaxed break-words ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                  <p className={`text-xs sm:text-[13px] mt-1.5 font-medium leading-relaxed break-words line-clamp-2 ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
                     {comida.detalle}
                   </p>
                   <p className={`text-[11px] sm:text-xs mt-2 font-bold ${accentClasses.text}`}>
@@ -116,7 +116,7 @@ export default function MealSelector({
               </div>
 
               <div className="pt-0.5">
-                {porciones.length > 0 ? (
+                {esSeleccionada && porciones.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {porciones.map((item) => (
                       <span
