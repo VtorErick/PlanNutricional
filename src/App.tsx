@@ -198,40 +198,6 @@ export default function App() {
     }
   }, [activeProfile]);
 
-  const planTabs = ['plan', 'compras', 'equivalencias'] as const;
-  const summaryTabs = ['resumen', 'calorias', 'suplementos'] as const;
-  const isSummaryMode = summaryTabs.some((tab) => tab === activeTab);
-  const visibleTabKeys = isSummaryMode ? summaryTabs : planTabs;
-  const visibleTabs = visibleTabKeys
-    .map((tabKey) => tabItems.find((item) => item.key === tabKey))
-    .filter((item): item is (typeof tabItems)[number] => Boolean(item));
-  const modeAnchors = [
-    {
-      key: 'plan' as const,
-      label: 'Plan diario',
-      shortLabel: 'Plan',
-      icon: Calendar,
-      targetTab: 'plan' as const,
-      helper: isSummaryMode ? 'Ver comidas' : 'Ir a resumen',
-      tint: 'from-sky-500 to-blue-600',
-    },
-    {
-      key: 'resumen' as const,
-      label: 'Analisis',
-      shortLabel: 'Resumen',
-      icon: Lightbulb,
-      targetTab: 'resumen' as const,
-      helper: isSummaryMode ? 'Volver al plan' : 'Kcal y sups',
-      tint: 'from-violet-500 to-fuchsia-600',
-    },
-  ];
-  const activeModeKey = isSummaryMode ? 'resumen' : 'plan';
-  const activeMode = modeAnchors.find((mode) => mode.key === activeModeKey) ?? modeAnchors[0];
-
-  const handleModeAnchorClick = () => {
-    setActiveTab(isSummaryMode ? 'plan' : 'resumen');
-  };
-
   const getMobileTabLabel = (tabKey: (typeof tabItems)[number]['key']) => {
     if (tabKey === 'plan') return 'Mi plan';
     if (tabKey === 'equivalencias') return 'Equivalencias';
@@ -508,37 +474,21 @@ export default function App() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="grid grid-cols-[184px_1fr] gap-2 rounded-[26px] border border-white/70 bg-white/88 p-2 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/88"
+            className="grid grid-cols-6 gap-1.5 rounded-[26px] border border-white/70 bg-white/88 p-2 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/88"
           >
-            <button
-              type="button"
-              onClick={handleModeAnchorClick}
-              className={`flex min-h-[64px] items-center gap-3 rounded-[20px] bg-gradient-to-br ${activeMode.tint} px-4 py-3 text-left text-white shadow-sm transition-all duration-300 active:scale-[0.98]`}
-            >
-              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-white/18">
-                <activeMode.icon className="h-5 w-5" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-extrabold leading-tight">{activeMode.label}</span>
-                <span className="block truncate text-[11px] font-bold text-white/78">{activeMode.helper}</span>
-              </span>
-            </button>
-
-            <div className="grid grid-cols-3 gap-1.5">
-              {visibleTabs.map((tabItem) => (
-                <button
-                  key={tabItem.key}
-                  onClick={() => setActiveTab(tabItem.key)}
-                  className={`flex min-h-[64px] items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] ${activeTab === tabItem.key
-                    ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950'
-                    : 'bg-slate-100/72 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:bg-slate-800/70 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'
-                    }`}
-                >
-                  <tabItem.icon className={`w-4 h-4 flex-shrink-0 ${activeTab === tabItem.key ? 'text-white dark:text-slate-950' : tabIconColors[tabItem.key]}`} />
-                  <span>{tabItem.label}</span>
-                </button>
-              ))}
-            </div>
+            {tabItems.map((tabItem) => (
+              <button
+                key={tabItem.key}
+                onClick={() => setActiveTab(tabItem.key)}
+                className={`flex min-h-[64px] items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] ${activeTab === tabItem.key
+                  ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950'
+                  : 'bg-slate-100/72 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:bg-slate-800/70 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'
+                  }`}
+              >
+                <tabItem.icon className={`w-4 h-4 flex-shrink-0 ${activeTab === tabItem.key ? 'text-white dark:text-slate-950' : tabIconColors[tabItem.key]}`} />
+                <span>{tabItem.label}</span>
+              </button>
+            ))}
           </motion.div>
         </div>
 
