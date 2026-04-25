@@ -118,6 +118,7 @@ export default function DailyProgress() {
         <div className="absolute inset-0 bg-gradient-to-b from-white/18 via-white/90 to-white/96 dark:from-slate-950/16 dark:via-slate-950/86 dark:to-slate-950/96" />
       </div>
 
+      {/* Mobile compact strip */}
       <div className="relative z-10 mx-auto max-w-md px-3 pb-3 pt-3 sm:hidden">
         <div
           role="button"
@@ -129,106 +130,58 @@ export default function DailyProgress() {
               setProgressExpanded((expanded) => !expanded);
             }
           }}
-          className={`w-full rounded-[24px] border p-3.5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.06)] ${
+          className={`w-full flex items-center gap-3 rounded-[20px] border px-3 py-2.5 text-left shadow-[0_8px_20px_rgba(15,23,42,0.06)] ${
             isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-white'
           }`}
         >
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setShowDayPicker((value) => !value);
-              }}
-              className={`inline-flex items-center gap-2 rounded-2xl px-3.5 py-2 text-sm font-black transition active:scale-[0.98] bg-gradient-to-br ${accentColors.bgGradient} text-white shadow-sm`}
-            >
-              {activeDay}
-              <ChevronDown className={`h-4 w-4 transition-transform ${showDayPicker ? 'rotate-180' : ''}`} />
-            </button>
-            <span className={`text-xs font-black uppercase tracking-[0.14em] ${accentColors.text}`}>
-              Meta diaria
-            </span>
+          {/* Day pills */}
+          <div className="flex-1 overflow-x-auto scrollbar-none snap-x" ref={dayScrollerRef}>
+            <div className="inline-flex items-center gap-1.5 min-w-max">
+              {availableDays.map((day) => {
+                const active = activeDay === day;
+                return (
+                  <button
+                    key={day}
+                    ref={(element) => { dayButtonRefs.current[day] = element; }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setActiveDay(day);
+                    }}
+                    className={`h-[32px] min-w-[44px] rounded-xl px-2 text-[11px] font-extrabold transition-all active:scale-95 snap-start ${
+                      active
+                        ? `${accentColors.btnActive} shadow-sm`
+                        : isDarkMode
+                          ? 'bg-slate-900 text-slate-400'
+                          : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {day.slice(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {showDayPicker ? (
-            <div className="mb-3 overflow-x-auto scrollbar-none" ref={dayScrollerRef}>
-              <div className="inline-flex min-w-max items-center gap-2">
-                {availableDays.map((day) => {
-                  const active = activeDay === day;
-
-                  return (
-                    <button
-                      key={day}
-                      ref={(element) => {
-                        dayButtonRefs.current[day] = element;
-                      }}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setActiveDay(day);
-                        setShowDayPicker(false);
-                      }}
-                      className={`h-10 rounded-2xl px-4 text-sm font-extrabold transition-all active:scale-95 ${
-                        active
-                          ? 'bg-white text-blue-600 shadow-sm ring-1 ring-blue-100 dark:bg-slate-900 dark:text-sky-200 dark:ring-slate-700'
-                          : isDarkMode
-                            ? 'bg-slate-900 text-slate-300'
-                            : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {day.slice(0, 3)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${accentColors.bgLight}`}>
-                <CheckCircle2 className={`h-5 w-5 ${accentColors.text}`} />
-              </div>
-              <div>
-                {isAmbos ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['el', 'ella'] as const).map((profileId) => (
-                      <div key={`progress-${profileId}`} className="min-w-[92px]">
-                        <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${profileId === 'el' ? 'text-blue-600 dark:text-sky-300' : 'text-rose-600 dark:text-rose-300'}`}>
-                          {profileId === 'el' ? labelEl : labelElla}
-                        </p>
-                        <p className={`text-lg font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
-                          {profileDayStats[profileId].kcal}
-                          <span className={`text-xs font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            /{profileDayStats[profileId].target}
-                          </span>
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
-                    {activeStats.kcal}
-                    <span className={`text-base font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      /{activeStats.target} kcal
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
-              <p className={`text-2xl font-black ${accentColors.text}`}>{dailyProgressPercent}%</p>
-              <p className={`text-xs font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                objetivo
+          {/* Kcal + mini bar + percent */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="min-w-[120px]">
+              <p className={`text-[11px] font-bold tabular-nums ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+                {isAmbos
+                  ? `${profileDayStats.el.kcal}/${profileDayStats.el.target} · ${profileDayStats.ella.kcal}/${profileDayStats.ella.target}`
+                  : `${activeStats.kcal}/${activeStats.target} kcal`
+                }
               </p>
+              <div className={`mt-1 h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                <motion.div
+                  className={`h-full rounded-full bg-gradient-to-r ${accentColors.progressFill}`}
+                  animate={{ width: `${dailyProgressPercent}%` }}
+                  transition={{ type: 'spring', stiffness: 80, damping: 15 }}
+                />
+              </div>
             </div>
-          </div>
-
-          <div className={`mt-3 h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
-            <motion.div
-              className={`h-full rounded-full bg-gradient-to-r ${accentColors.progressFill}`}
-              animate={{ width: `${dailyProgressPercent}%` }}
-              transition={{ type: 'spring', stiffness: 80, damping: 15 }}
-            />
+            <span className={`text-sm font-black tabular-nums ${accentColors.text}`}>
+              {dailyProgressPercent}%
+            </span>
           </div>
         </div>
       </div>
