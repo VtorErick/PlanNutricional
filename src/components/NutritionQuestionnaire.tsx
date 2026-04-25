@@ -811,6 +811,16 @@ export default function NutritionQuestionnaire({
   const labelAmbos = getCombinedProfileLabel(profileLabels);
   const targetLabel =
     targetProfile === 'ambos' ? labelAmbos : targetProfile === 'el' ? labelEl : labelElla;
+  const [profileLabelDrafts, setProfileLabelDrafts] = useState<ProfileLabels>(() => ({
+    el: labelEl,
+    ella: labelElla,
+  }));
+  const [editingProfileLabel, setEditingProfileLabel] = useState<'el' | 'ella' | null>(null);
+
+  useEffect(() => {
+    if (editingProfileLabel) return;
+    setProfileLabelDrafts({ el: labelEl, ella: labelElla });
+  }, [editingProfileLabel, labelEl, labelElla]);
 
   const person = (p: 'el' | 'ella') => (p === 'el' ? el : ella);
 
@@ -846,10 +856,36 @@ export default function NutritionQuestionnaire({
   };
 
   const updateProfileLabel = (profileId: 'el' | 'ella', value: string) => {
+    setProfileLabelDrafts((prev) => ({
+      ...prev,
+      [profileId]: value.slice(0, 24),
+    }));
+  };
+
+  const commitProfileLabel = (profileId: 'el' | 'ella') => {
+    const fallback = profileId === 'el' ? 'El' : 'Ella';
+    const cleanedLabel = cleanProfileLabel(profileLabelDrafts[profileId], fallback);
+
     setProfileLabels((prev) => ({
       ...prev,
-      [profileId]: cleanProfileLabel(value, profileId === 'el' ? 'El' : 'Ella'),
+      [profileId]: cleanedLabel,
     }));
+    setProfileLabelDrafts((prev) => ({
+      ...prev,
+      [profileId]: cleanedLabel,
+    }));
+    setEditingProfileLabel(null);
+  };
+
+  const handleProfileLabelKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+    profileId: 'el' | 'ella'
+  ) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      commitProfileLabel(profileId);
+      event.currentTarget.blur();
+    }
   };
 
   const canContinue = () => {
@@ -1190,8 +1226,11 @@ export default function NutritionQuestionnaire({
                 Nombre visual de El
               </span>
               <input
-                value={labelEl}
+                value={profileLabelDrafts.el}
+                onFocus={() => setEditingProfileLabel('el')}
                 onChange={(event) => updateProfileLabel('el', event.target.value)}
+                onBlur={() => commitProfileLabel('el')}
+                onKeyDown={(event) => handleProfileLabelKeyDown(event, 'el')}
                 maxLength={24}
                 data-testid="questionnaire-label-el"
                 className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:ring-indigo-950"
@@ -1204,8 +1243,11 @@ export default function NutritionQuestionnaire({
                 Nombre visual de Ella
               </span>
               <input
-                value={labelElla}
+                value={profileLabelDrafts.ella}
+                onFocus={() => setEditingProfileLabel('ella')}
                 onChange={(event) => updateProfileLabel('ella', event.target.value)}
+                onBlur={() => commitProfileLabel('ella')}
+                onKeyDown={(event) => handleProfileLabelKeyDown(event, 'ella')}
                 maxLength={24}
                 data-testid="questionnaire-label-ella"
                 className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:ring-indigo-950"
