@@ -2,7 +2,6 @@ import { applyCorsHeaders, enforceRateLimit } from './_requestGuard.js';
 import { FOOD_GROUP_KEYS, remapFoodGroupRow, resolveFoodGroupKey } from './_foodGroupKeys.js';
 import {
   DEFAULT_GEMINI_MODEL,
-  MAX_MODEL_CANDIDATES,
   getOrderedGeminiModels,
   isSupportedGeminiTextModel,
   normalizeModelName,
@@ -312,7 +311,7 @@ function getGeminiRequestTimeoutMs(debugContext) {
     return 55_000;
   }
 
-  return 45_000;
+  return 55_000;
 }
 
 function buildMealItemSchema() {
@@ -1952,6 +1951,10 @@ function shouldRetrySameModel(error) {
     return false;
   }
 
+  if (Number(statusCode) === 429 || normalizedMessage.includes('tiempo limite') || normalizedMessage.includes('timed out')) {
+    return false;
+  }
+
   return (
     [429, 500, 502, 503, 504].includes(Number(statusCode)) ||
     normalizedMessage.includes('high demand') ||
@@ -1968,6 +1971,10 @@ function shouldRetrySameModel(error) {
 
 function shouldRetryWithDifferentModel(error) {
   const { statusCode, normalizedMessage, modelUnavailable } = getRetryErrorMeta(error);
+
+  if (Number(statusCode) === 429 || normalizedMessage.includes('tiempo limite') || normalizedMessage.includes('timed out')) {
+    return false;
+  }
 
   return (
     shouldRetryStatusCode(statusCode) ||
@@ -2004,7 +2011,7 @@ async function generateWithGeminiWithFallback(
 ) {
   let lastError;
   const attempts = [];
-  const maxAttemptsPerModel = debugContext?.targetProfile === 'ambos' ? 2 : 1;
+  const maxAttemptsPerModel = 1;
 
   for (let index = 0; index < modelCandidates.length; index += 1) {
     const modelName = modelCandidates[index];
@@ -2422,7 +2429,7 @@ export default async function handler(req, res) {
     ];
     const orderedModels = getOrderedGeminiModels(hardcodedModelNames, preferredModel);
     const selectedModel = orderedModels[0];
-    const modelCandidates = orderedModels.slice(0, MAX_MODEL_CANDIDATES);
+    const modelCandidates = selectedModel ? [selectedModel] : orderedModels.slice(0, 1);
 
     let elData = null;
     let ellaData = null;

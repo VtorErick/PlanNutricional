@@ -3,7 +3,7 @@ import { readStorageValue, removeStorageValue, writeStorageValue } from './safeS
 const LEGACY_GEMINI_API_KEY_STORAGE_KEY = 'geminiApiKey';
 const GEMINI_MODEL_STORAGE_KEY = 'geminiModel';
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-pro-preview';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
 const MAX_MODEL_CANDIDATES = 4;
 
 export interface GeminiModelOption {
