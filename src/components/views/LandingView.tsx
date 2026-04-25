@@ -1,24 +1,16 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings,
   Sparkles,
-  Scale,
-  Ruler,
-  Calendar,
   ChefHat,
-  ShoppingBasket,
   Moon,
   Sun,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
-import { buildProfileInspectionText, extractProfileMetrics } from '../../utils/profileSummary';
 import { getProfileLabel } from '../../utils/profileLabels';
 
 /* ─── constants ──────────────────────────────────────────────────── */
-const IMC_MIN = 16;
-const IMC_MAX = 45;
-
 const createDefaultQuestionnairePerson = (weight: string, height: string, age = '', targetWeightKg = '') => ({
   age,
   currentWeightKg: weight,
@@ -50,54 +42,6 @@ const createDefaultQuestionnairePerson = (weight: string, height: string, age = 
   assessmentReportPdf: null,
 });
 
-/* ─── IMC bar ────────────────────────────────────────────────────── */
-function ImcBar({ imc, label }: { imc: number; label: string }) {
-  const pct = Math.min(100, Math.max(0, ((imc - IMC_MIN) / (IMC_MAX - IMC_MIN)) * 100));
-  const barColor = imc < 18.5 ? '#38bdf8' : imc < 25 ? '#34d399' : imc < 30 ? '#fbbf24' : '#fb7185';
-  const badgeCls =
-    imc < 18.5
-      ? 'bg-sky-400/20 text-sky-50 border border-sky-200/20'
-      : imc < 25
-        ? 'bg-emerald-400/20 text-emerald-50 border border-emerald-200/20'
-        : imc < 30
-          ? 'bg-amber-400/20 text-amber-50 border border-amber-200/20'
-          : 'bg-rose-400/20 text-rose-50 border border-rose-200/20';
-
-  return (
-    <div className="w-full space-y-1">
-      <div className="flex items-center justify-between gap-1">
-        <span className="text-[9px] font-bold uppercase tracking-widest text-white/80">IMC</span>
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs font-bold text-white tabular-nums">{imc.toFixed(1)}</span>
-          <span className={`text-[9px] font-semibold px-1.5 py-px rounded-full whitespace-nowrap ${badgeCls}`}>{label}</span>
-        </div>
-      </div>
-      <div className="relative h-2 w-full rounded-full overflow-hidden bg-white/15 ring-1 ring-white/10">
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, #38bdf8 0% 8.6%, #34d399 8.6% 31%, #fbbf24 31% 48.3%, #fb7185 48.3% 100%)', opacity: 0.2 }} />
-        <motion.div className="absolute inset-y-0 left-0 rounded-full" style={{ backgroundColor: barColor }} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }} />
-      </div>
-      <div className="flex justify-between">
-        {['16', '18.5', '25', '30', '45'].map((v) => (
-          <span key={v} className="text-[8px] text-white/60 tabular-nums">{v}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Bio chip ───────────────────────────────────────────────────── */
-function BioChip({ icon: Icon, value, unit }: { icon: React.ElementType; value: string | null; unit: string }) {
-  if (!value) return null;
-  return (
-    <div className="inline-flex items-center gap-1 bg-white/10 border border-white/10 rounded-lg px-1.5 py-0.5 backdrop-blur-sm">
-      <Icon className="w-2.5 h-2.5 text-white/80 shrink-0" />
-      <span className="text-[10px] font-semibold text-white tabular-nums">
-        {value}<span className="font-normal text-white/70 ml-0.5">{unit}</span>
-      </span>
-    </div>
-  );
-}
-
 /* ─── CTA button ─────────────────────────────────────────────────── */
 function CtaButton({ label, onClick, dataTestId }: { label: string; onClick: (e: React.MouseEvent) => void; dataTestId?: string }) {
   return (
@@ -111,19 +55,6 @@ function CtaButton({ label, onClick, dataTestId }: { label: string; onClick: (e:
       <span>{label}</span>
     </button>
   );
-}
-
-/* ─── helpers ────────────────────────────────────────────────────── */
-function getImcData(text: string) {
-  const { imc } = extractProfileMetrics(text);
-  if (!imc || isNaN(imc)) return null;
-  const label = imc < 18.5 ? 'Bajo peso' : imc < 25 ? 'Saludable' : imc < 30 ? 'Sobrepeso' : 'Obesidad';
-  return { imc, label };
-}
-
-function getBio(text: string) {
-  const m = extractProfileMetrics(text);
-  return { weight: m.weightKg, height: m.heightM, age: m.age };
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -154,37 +85,6 @@ export default function LandingView() {
   const labelEl = getProfileLabel(profileLabels, 'el');
   const labelElla = getProfileLabel(profileLabels, 'ella');
 
-  const sharedPlanStats = useMemo(() => {
-    const norm = (v: string) => v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    const parse = (plan: Record<string, any>) => {
-      const meals = new Set<string>();
-      const ing = new Set<string>();
-      Object.values(plan || {}).forEach((day: any) =>
-        Object.values(day || {}).forEach((ms: any) => {
-          if (!Array.isArray(ms)) return;
-          ms.forEach((m: any) => {
-            if (m?.nombre) meals.add(norm(String(m.nombre)));
-            if (Array.isArray(m?.super)) m.super.forEach((i: string) => ing.add(norm(String(i))));
-          });
-        })
-      );
-      return { meals, ing };
-    };
-    const el = parse(profilesData.el.plan);
-    const ella = parse(profilesData.ella.plan);
-    const shared = [...el.meals].filter((n) => ella.meals.has(n)).length;
-    const common = [...el.ing].filter((i) => ella.ing.has(i)).length;
-    const union = new Set([...el.ing, ...ella.ing]).size;
-    return { shared, pct: union > 0 ? Math.round((common / union) * 100) : 0 };
-  }, [profilesData.el.plan, profilesData.ella.plan]);
-
-  const elText = buildProfileInspectionText(profilesData.el.perfil, profilesData.el.detallesPerfil);
-  const ellaText = buildProfileInspectionText(profilesData.ella.perfil, profilesData.ella.detallesPerfil);
-  const elImc = getImcData(elText);
-  const ellaImc = getImcData(ellaText);
-  const elBio = getBio(elText);
-  const ellaBio = getBio(ellaText);
-
   const onKey = (fn: () => void) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
   };
@@ -209,7 +109,7 @@ export default function LandingView() {
       id: 'el' as const, label: labelEl, emoji: '🧍‍♂️', ready: elReady,
       grad: isDarkMode ? 'from-[#1e3a5f] via-[#1e40af] to-[#312e81]' : 'from-[#6366f1] via-[#3b82f6] to-[#38bdf8]',
       shadow: isDarkMode ? 'shadow-[0_16px_40px_rgba(30,58,138,0.35)]' : 'shadow-[0_16px_40px_rgba(99,102,241,0.22)]',
-      imc: elImc, bio: elBio, meta: profilesData.el.meta,
+      meta: profilesData.el.meta,
       onCard: () => { setActiveProfile('el'); setActiveDay('Lunes'); setActiveTab('plan'); },
       onIA: () => openQuestionnaire('el'),
     },
@@ -217,7 +117,7 @@ export default function LandingView() {
       id: 'ella' as const, label: labelElla, emoji: '🧍‍♀️', ready: ellaReady,
       grad: isDarkMode ? 'from-[#5b1a3a] via-[#9d174d] to-[#be185d]' : 'from-[#ec4899] via-[#f472b6] to-[#fb923c]',
       shadow: isDarkMode ? 'shadow-[0_16px_40px_rgba(157,23,77,0.35)]' : 'shadow-[0_16px_40px_rgba(236,72,153,0.22)]',
-      imc: ellaImc, bio: ellaBio, meta: profilesData.ella.meta,
+      meta: profilesData.ella.meta,
       onCard: () => { setActiveProfile('ella'); setActiveDay('Lunes'); setActiveTab('plan'); },
       onIA: () => openQuestionnaire('ella'),
     },
@@ -276,17 +176,6 @@ export default function LandingView() {
             Elige tu plan individual o armen su lista de compras juntos de forma automática.
           </p>
 
-          {/* Feature badges */}
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/50 dark:bg-white/8 border border-slate-300/40 dark:border-white/10 shadow-sm">
-              <ChefHat className="w-3 h-3 text-violet-500 dark:text-violet-400" />
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Plan editable</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/50 dark:bg-white/8 border border-slate-300/40 dark:border-white/10 shadow-sm">
-              <ShoppingBasket className="w-3 h-3 text-violet-500 dark:text-violet-400" />
-              <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">Lista de compras</span>
-            </div>
-          </div>
         </motion.div>
 
         {/* ── STATUS ───────────────────────────────────────────────── */}
@@ -338,18 +227,6 @@ export default function LandingView() {
                     <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight drop-shadow-sm">{c.label}</h3>
                   </div>
 
-                  {/* bio chips */}
-                  {(c.bio.weight || c.bio.height || c.bio.age) && (
-                    <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-1.5">
-                      <BioChip icon={Scale} value={c.bio.weight} unit="kg" />
-                      <BioChip icon={Ruler} value={c.bio.height} unit="m" />
-                      <BioChip icon={Calendar} value={c.bio.age} unit="años" />
-                    </div>
-                  )}
-
-                  {/* IMC */}
-                  {c.imc && <ImcBar imc={c.imc.imc} label={c.imc.label} />}
-
                   {/* meta */}
                   <p className="text-[10px] sm:text-xs font-medium leading-snug text-white/85 line-clamp-3">{c.meta}</p>
 
@@ -395,28 +272,11 @@ export default function LandingView() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <CtaButton
-                    label={elReady && ellaReady ? 'Actualizar plan conjunto' : 'Personalizar plan conjunto'}
-                    dataTestId="landing-customize-ambos"
-                    onClick={(e) => { e.stopPropagation(); openQuestionnaire('ambos'); }}
-                  />
-                </div>
-
-                {/* stats (desktop) */}
-                <div className="hidden sm:flex gap-2">
-                  {[
-                    { val: String(sharedPlanStats.shared), label: 'Compartidas' },
-                    { val: `${sharedPlanStats.pct}%`, label: 'Sinergia' },
-                  ].map(({ val, label }) => (
-                    <div key={label} className="flex flex-col items-center bg-white/10 rounded-xl px-3 py-2 min-w-[72px] backdrop-blur-sm border border-white/8">
-                      <span className="text-[8px] text-white/60 font-bold uppercase tracking-widest">{label}</span>
-                      <span className="text-lg font-bold text-white tabular-nums leading-none">{val}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <CtaButton
+                label={elReady && ellaReady ? 'Actualizar plan conjunto' : 'Personalizar plan conjunto'}
+                dataTestId="landing-customize-ambos"
+                onClick={(e) => { e.stopPropagation(); openQuestionnaire('ambos'); }}
+              />
             </div>
           </motion.div>
         </div>
