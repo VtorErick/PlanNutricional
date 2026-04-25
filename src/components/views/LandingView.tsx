@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  ChefHat,
   Clock,
-  Moon,
-  Settings,
   Sparkles,
-  Sun,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import type { MealItem, MealTime } from '../../types';
-import { getCombinedProfileLabel, getProfileLabel } from '../../utils/profileLabels';
+import {
+  getCombinedProfileLabel,
+  getProfileLabel,
+} from '../../utils/profileLabels';
 
 const MEAL_WINDOW_MINUTES = 75;
 const PROFILE_IDS = ['el', 'ella'] as const;
@@ -96,10 +95,10 @@ export default function LandingView() {
   const {
     dataVersions,
     diaActivo: activeDay,
+    perfilActivo,
     perfilesData: profilesData,
     selecciones: selections,
     profileLabels,
-    setShowAdmin: setIsAdminOpen,
     setShowQuestionnaire: setIsQuestionnaireOpen,
     setQuestionnaireTargetProfile,
     setQuestionnaireStepIdx,
@@ -108,15 +107,16 @@ export default function LandingView() {
     setQuestionnairePortionMode,
     setQuestionnaireManualPortions,
     setQuestionnaireAdditionalNotes,
-    isDarkMode,
-    setIsDarkMode,
   } = useDiet();
 
   const elReady = dataVersions.el === 'custom';
   const ellaReady = dataVersions.ella === 'custom';
   const hasPlan = elReady || ellaReady;
   const planStatusLabel = hasPlan ? 'Plan personalizado activo' : 'Plan base listo';
-  const profileLabel = getCombinedProfileLabel(profileLabels);
+  const profileLabel =
+    perfilActivo === 'ambos' || !perfilActivo
+      ? getCombinedProfileLabel(profileLabels)
+      : getProfileLabel(profileLabels, perfilActivo);
   const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes);
 
   useEffect(() => {
@@ -130,11 +130,16 @@ export default function LandingView() {
   const todayStatus = useMemo(() => {
     const moments = profilesData.el?.momentos || [];
     const targetMoment = getRelevantMoment(moments, currentMinutes);
+    const activeProfileIds: Array<'el' | 'ella'> =
+      perfilActivo === 'el' ? ['el'] :
+      perfilActivo === 'ella' ? ['ella'] :
+      [...PROFILE_IDS];
+
     let completed = 0;
     let total = 0;
 
     for (const moment of moments) {
-      for (const profileId of PROFILE_IDS) {
+      for (const profileId of activeProfileIds) {
         total += 1;
         const meals = profilesData[profileId]?.plan?.[activeDay]?.[moment.key] || [];
         const isDone = meals.some((meal: any) =>
@@ -147,7 +152,7 @@ export default function LandingView() {
       }
     }
 
-    const selectedMeals = PROFILE_IDS.map((profileId) => {
+    const selectedMeals = activeProfileIds.map((profileId) => {
       if (!targetMoment) return null;
       const meals = profilesData[profileId]?.plan?.[activeDay]?.[targetMoment.key] || [];
       const selectedMeal = meals.find((meal: MealItem) =>
@@ -201,7 +206,7 @@ export default function LandingView() {
       preparationMessage,
       percent: total > 0 ? Math.round((completed / total) * 100) : 0,
     };
-  }, [activeDay, currentMinutes, profileLabels, profilesData, selections]);
+  }, [activeDay, currentMinutes, perfilActivo, profileLabels, profilesData, selections]);
 
   const openQuestionnaire = () => {
     setQuestionnaireTargetProfile('ambos');
@@ -225,42 +230,6 @@ export default function LandingView() {
   return (
     <div className="min-h-[100dvh] bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col px-4 pb-24 pt-4 sm:px-6 sm:pb-10 sm:pt-6">
-        <header className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 text-white shadow-sm">
-              <ChefHat className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-base font-black leading-tight">Plan Nutricional</p>
-              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
-                Tu plan diario
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsDarkMode((prev) => !prev)}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-              title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAdminOpen(true)}
-              data-testid="landing-admin-button"
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 active:scale-95 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-              aria-label="Configuracion"
-              title="Configuracion"
-            >
-              <Settings className="h-4 w-4" />
-            </button>
-          </div>
-        </header>
-
         <main className="flex flex-1 flex-col justify-center gap-4 py-7 sm:py-12">
           <motion.section
             initial={{ opacity: 0, y: 14 }}

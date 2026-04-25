@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChefHat, ChevronDown, FileText, Moon, Sun } from 'lucide-react';
+import { Check, ChefHat, ChevronDown, FileText, Moon, Settings, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import {
   getCombinedProfileLabel,
@@ -16,6 +16,7 @@ export default function Header() {
   const {
     setPerfilActivo: setActiveProfile,
     perfilActivo: activeProfile,
+    tab: activeTab,
     perfilesData: profilesData,
     profileLabels,
     diaActivo: activeDay,
@@ -24,6 +25,7 @@ export default function Header() {
     isDarkMode,
     setIsDarkMode,
     notify,
+    setShowAdmin: setIsAdminOpen,
   } = useDiet();
 
   const menuProfileLabel = (profileId: 'el' | 'ella' | 'ambos') =>
@@ -121,17 +123,15 @@ export default function Header() {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Logo */}
           <div className="flex min-w-0 items-center gap-2 sm:gap-3 flex-shrink-0">
-            <div
-              className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${accentColors.bgGradient} shadow-sm`}
-            >
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-sm">
               <ChefHat className="w-4 h-4 text-white" />
             </div>
-            <div className="hidden sm:block min-w-0">
+            <div className="min-w-0">
               <p className="truncate text-base font-black leading-tight text-slate-950 dark:text-white">
                 Plan Nutricional
               </p>
-              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
-                Plan de alimentacion personalizado
+              <p className="hidden sm:block text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                Tu plan diario
               </p>
             </div>
           </div>
@@ -255,6 +255,24 @@ export default function Header() {
               </div>
             )}
           </div>
+
+          {/* Settings button (solo en Inicio) */}
+          {activeTab === 'inicio' && (
+            <button
+              type="button"
+              onClick={() => setIsAdminOpen(true)}
+              data-testid="header-settings-button"
+              className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border transition active:scale-95 ${
+                isDarkMode
+                  ? 'border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800'
+                  : 'border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50'
+              }`}
+              aria-label="Configuracion"
+              title="Configuracion"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
     </motion.header>

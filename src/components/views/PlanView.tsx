@@ -6,6 +6,7 @@ import {
   ChevronUp,
   Coffee,
   FileText,
+  Pill,
   Plus,
   SlidersHorizontal,
   Moon,
@@ -96,6 +97,7 @@ export default function PlanView() {
     setQuestionnaireAdditionalNotes,
     notify,
     confirmAction,
+    setTab,
   } = useDiet();
 
   const [isEquivalenciasSheetOpen, setIsEquivalenciasSheetOpen] = React.useState(false);
@@ -370,6 +372,19 @@ export default function PlanView() {
               </h2>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setTab('suplementos')}
+                data-testid="plan-suplementos-nav"
+                className={`inline-flex h-11 flex-shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black transition active:scale-[0.99] ${
+                  isDarkMode
+                    ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                    : 'border-slate-200 bg-white text-fuchsia-600 shadow-sm hover:bg-slate-50'
+                }`}
+              >
+                <Pill className="h-4 w-4" />
+                <span className="hidden min-[370px]:inline">Suplementos</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsEquivalenciasSheetOpen(true)}

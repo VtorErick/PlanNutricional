@@ -6,9 +6,7 @@ import {
   Flame,
   Home,
   Lightbulb,
-  MoreHorizontal,
   Moon,
-  Pill,
   ShoppingCart,
   Sun,
   X,
@@ -38,14 +36,13 @@ function ViewFallback() {
 function getStoredProfileFromLocalStorage(): import('./context/DietContext').PerfilActivo {
   try {
     const raw = window.localStorage.getItem('perfilActivo');
-    return raw === 'el' || raw === 'ella' || raw === 'ambos' ? raw : null;
+    return raw === 'el' || raw === 'ella' || raw === 'ambos' ? raw : 'ambos';
   } catch {
-    return null;
+    return 'ambos';
   }
 }
 
 export default function App() {
-  const [showMobileMore, setShowMobileMore] = useState(false);
   const [isPlanAdjustOpen, setIsPlanAdjustOpen] = useState(false);
   const mobileNavRef = useRef<HTMLElement | null>(null);
   const lastProfileRef = useRef(getStoredProfileFromLocalStorage());
@@ -90,33 +87,20 @@ export default function App() {
 
   // 🔹 ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS (React rules of hooks)
   useEffect(() => {
-    if (activeProfile) {
-      lastProfileRef.current = activeProfile;
-    }
+    lastProfileRef.current = activeProfile;
   }, [activeProfile]);
 
   useEffect(() => {
-    if (!activeTab && activeProfile) {
-      setActiveTab('plan');
+    if (!activeTab) {
+      setActiveTab('inicio');
     }
-  }, [activeTab, activeProfile, setActiveTab]);
+  }, [activeTab, setActiveTab]);
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
-    setShowMobileMore(false);
   }, [activeTab]);
 
-  // Close "Más" menu when clicking outside the mobile nav
-  useEffect(() => {
-    if (!showMobileMore) return;
-    const handlePointerDown = (e: PointerEvent) => {
-      if (!(e.target instanceof Node)) return;
-      if (mobileNavRef.current?.contains(e.target)) return;
-      setShowMobileMore(false);
-    };
-    document.addEventListener('pointerdown', handlePointerDown);
-    return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [showMobileMore]);
+
 
   useEffect(() => {
     const handlePlanAdjustState = (event: Event) => {
@@ -135,12 +119,6 @@ export default function App() {
           imagePosition: 'center 22%',
           overlay: 'from-sky-200/45 via-white/40 to-transparent',
         };
-      case 'suplementos':
-        return {
-          imageSrc: '/images/meal-prep.png',
-          imagePosition: 'center 24%',
-          overlay: 'from-fuchsia-200/35 via-white/35 to-transparent',
-        };
       case 'compras':
         return {
           imageSrc: '/images/meal-prep.png',
@@ -158,18 +136,18 @@ export default function App() {
     }
   }, [activeTab]);
 
-  // 🔹 ORDEN DE TABS: 'plan' es el primero (principal) por defecto
+  // 🔹 ORDEN DE TABS
   const tabItems = [
+    { key: 'inicio' as const, label: 'Inicio', shortLabel: 'Inicio', icon: Home },
     { key: 'plan' as const, label: 'Mi Plan', shortLabel: 'Plan', icon: Calendar },
-    { key: 'suplementos' as const, label: 'Suplementos', shortLabel: 'Sups', icon: Pill },
     { key: 'calorias' as const, label: 'Calorías', shortLabel: 'Kcal', icon: Flame },
     { key: 'compras' as const, label: 'Compras', shortLabel: 'Compras', icon: ShoppingCart },
     { key: 'resumen' as const, label: 'Resumen', shortLabel: 'Resumen', icon: Lightbulb },
   ];
 
   const tabIconColors: Record<(typeof tabItems)[number]['key'], string> = {
+    inicio: 'text-slate-500 dark:text-slate-400',
     plan: 'text-blue-500 dark:text-sky-300',
-    suplementos: 'text-fuchsia-500 dark:text-pink-300',
     calorias: 'text-orange-500 dark:text-amber-300',
     compras: 'text-teal-500 dark:text-teal-300',
     resumen: 'text-violet-500 dark:text-violet-300',
@@ -183,22 +161,9 @@ export default function App() {
       case 'ella':
         return 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-[0_8px_20px_rgba(236,72,153,0.30)]';
       case 'ambos':
-      default:
         return 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(99,102,241,0.30)]';
     }
   }, [activeProfile]);
-
-  const getMobileTabLabel = (tabKey: (typeof tabItems)[number]['key']) => {
-    if (tabKey === 'plan') return 'Mi plan';
-    if (tabKey === 'suplementos') return 'Suplementos';
-    if (tabKey === 'calorias') return 'Calorías';
-    return tabItems.find((item) => item.key === tabKey)?.shortLabel ?? '';
-  };
-  const moreTabKeys = ['resumen', 'suplementos'] as const;
-  const moreTabs = moreTabKeys
-    .map((tabKey) => tabItems.find((item) => item.key === tabKey))
-    .filter((item): item is (typeof tabItems)[number] => Boolean(item));
-  const moreTabActive = moreTabs.some((item) => item.key === activeTab);
 
   const mobileNavigationBar = (
     <nav
@@ -207,126 +172,24 @@ export default function App() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navegación principal móvil"
     >
-      {showMobileMore ? (
-        <div className="mx-auto max-w-md px-3 pt-2">
-          <div className={`grid grid-cols-2 gap-2 rounded-[24px] border p-2 shadow-[0_14px_34px_rgba(15,23,42,0.14)] ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
-            {moreTabs.map((tabItem) => (
-              <button
-                key={tabItem.key}
-                type="button"
-                onClick={() => {
-                  if (!activeProfile) {
-                    setActiveProfile(lastProfileRef.current || 'ambos');
-                    setActiveDay('Lunes');
-                  }
-                  setActiveTab(tabItem.key);
-                  setShowMobileMore(false);
-                }}
-                data-testid={`mobile-tab-${tabItem.key}`}
-                className={`flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-black transition active:scale-95 ${
-                  activeTab === tabItem.key
-                    ? navActiveTint
-                    : isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                <tabItem.icon className="h-4 w-4" />
-                <span>{getMobileTabLabel(tabItem.key)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
       <div className="mx-auto max-w-md px-3 py-2">
         <div className="grid grid-cols-5 gap-0.5 rounded-[24px] border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-[0_12px_34px_rgba(15,23,42,0.13)]">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveProfile(null);
-              setShowMobileMore(false);
-            }}
-            data-testid="mobile-tab-inicio"
-            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
-              !activeProfile
-                ? navActiveTint
-                : 'text-slate-400 dark:text-slate-500'
-            }`}
-          >
-            <Home className={`h-[17px] w-[17px] ${!activeProfile ? 'text-white' : ''}`} strokeWidth={!activeProfile ? 2.5 : 1.8} />
-            <span className="text-[9px] font-bold tracking-wide">Inicio</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!activeProfile) {
-                setActiveProfile(lastProfileRef.current || 'ambos');
-                setActiveDay('Lunes');
-              }
-              setActiveTab('plan');
-              setShowMobileMore(false);
-            }}
-            data-testid="mobile-tab-plan"
-            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
-              activeProfile && activeTab === 'plan'
-                ? navActiveTint
-                : 'text-slate-400 dark:text-slate-500'
-            }`}
-          >
-            <Calendar className={`h-[17px] w-[17px] ${activeProfile && activeTab === 'plan' ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeProfile && activeTab === 'plan' ? 2.5 : 1.8} />
-            <span className="text-[9px] font-bold tracking-wide">Plan</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!activeProfile) {
-                setActiveProfile(lastProfileRef.current || 'ambos');
-                setActiveDay('Lunes');
-              }
-              setActiveTab('calorias');
-              setShowMobileMore(false);
-            }}
-            data-testid="mobile-tab-calorias"
-            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
-              activeProfile && activeTab === 'calorias'
-                ? navActiveTint
-                : 'text-slate-400 dark:text-slate-500'
-            }`}
-          >
-            <Flame className={`h-[17px] w-[17px] ${activeProfile && activeTab === 'calorias' ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeProfile && activeTab === 'calorias' ? 2.5 : 1.8} />
-            <span className="text-[9px] font-bold tracking-wide">Progreso</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (!activeProfile) {
-                setActiveProfile(lastProfileRef.current || 'ambos');
-                setActiveDay('Lunes');
-              }
-              setActiveTab('compras');
-              setShowMobileMore(false);
-            }}
-            data-testid="mobile-tab-compras"
-            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
-              activeProfile && activeTab === 'compras'
-                ? navActiveTint
-                : 'text-slate-400 dark:text-slate-500'
-            }`}
-          >
-            <ShoppingCart className={`h-[17px] w-[17px] ${activeProfile && activeTab === 'compras' ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeProfile && activeTab === 'compras' ? 2.5 : 1.8} />
-            <span className="text-[9px] font-bold tracking-wide">Compras</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowMobileMore((value) => !value)}
-            data-testid="mobile-more-button"
-            className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
-              activeProfile && (moreTabActive || showMobileMore)
-                ? navActiveTint
-                : 'text-slate-400 dark:text-slate-500'
-            }`}
-          >
-            <MoreHorizontal className="h-[17px] w-[17px]" strokeWidth={activeProfile && (moreTabActive || showMobileMore) ? 2.5 : 1.8} />
-            <span className="text-[9px] font-bold tracking-wide">Más</span>
-          </button>
+          {tabItems.map((tabItem) => (
+            <button
+              key={tabItem.key}
+              type="button"
+              onClick={() => setActiveTab(tabItem.key)}
+              data-testid={`mobile-tab-${tabItem.key}`}
+              className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
+                activeTab === tabItem.key
+                  ? navActiveTint
+                  : 'text-slate-400 dark:text-slate-500'
+              }`}
+            >
+              <tabItem.icon className={`h-[17px] w-[17px] ${activeTab === tabItem.key ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeTab === tabItem.key ? 2.5 : 1.8} />
+              <span className="text-[9px] font-bold tracking-wide">{tabItem.shortLabel}</span>
+            </button>
+          ))}
         </div>
       </div>
     </nav>
@@ -421,9 +284,10 @@ export default function App() {
     );
   }
 
-  if (!activeProfile) {
+  if (activeTab === 'inicio') {
     return (
       <>
+        {!isPlanAdjustOpen && <Header />}
         <LandingView />
         {mobileNavigationBar}
       </>

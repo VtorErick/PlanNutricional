@@ -54,10 +54,9 @@ import {
 } from '../utils/profileLabels';
 
 export type PerfilActivo = 'el' | 'ella' | 'ambos' | null;
-export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias' | 'suplementos';
+export type TabState = 'plan' | 'equivalencias' | 'compras' | 'resumen' | 'calorias' | 'suplementos' | 'inicio';
 
 type RouteState =
-  | { view: 'home' }
   | { view: 'admin' }
   | { view: 'questionnaire'; target: TargetProfile }
   | { view: 'app'; tab: TabState; profile: Exclude<PerfilActivo, null> };
@@ -69,6 +68,7 @@ const TAB_PATHS: Record<TabState, string> = {
   compras: 'compras',
   resumen: 'resumen',
   suplementos: 'suplementos',
+  inicio: 'home',
 };
 
 const PATH_TO_TAB: Record<string, TabState> = {
@@ -79,6 +79,7 @@ const PATH_TO_TAB: Record<string, TabState> = {
   compras: 'compras',
   resumen: 'resumen',
   suplementos: 'suplementos',
+  home: 'inicio',
 };
 
 const AVAILABLE_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'] as const;
@@ -561,7 +562,7 @@ function isSelectionKeyValid(
 
 function parseRoute(): RouteState {
   if (typeof window === 'undefined') {
-    return { view: 'home' };
+    return { view: 'app', tab: 'inicio', profile: 'ambos' };
   }
 
   try {
@@ -569,7 +570,11 @@ function parseRoute(): RouteState {
     const params = new URLSearchParams(window.location.search);
 
     if (!path || path === 'home') {
-      return { view: 'home' };
+      return {
+        view: 'app',
+        tab: 'inicio',
+        profile: normalizeProfile(params.get('profile')) || 'ambos',
+      };
     }
 
     if (path === 'admin') {
@@ -593,7 +598,7 @@ function parseRoute(): RouteState {
     console.warn('Failed to parse route state:', error);
   }
 
-  return { view: 'home' };
+  return { view: 'app', tab: 'inicio', profile: 'ambos' };
 }
 
 function buildRoutePath({
@@ -617,11 +622,11 @@ function buildRoutePath({
     return '/admin';
   }
 
-  if (!perfilActivo) {
+  if (tab === 'inicio') {
     return '/home';
   }
 
-  return `/${TAB_PATHS[tab]}?profile=${encodeURIComponent(perfilActivo)}`;
+  return `/${TAB_PATHS[tab]}?profile=${encodeURIComponent(perfilActivo || 'ambos')}`;
 }
 
 // ─── Context Interface ───────────────────────────────────────────────
@@ -775,10 +780,10 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
   // 1. Navigation
   const [perfilActivo, setPerfilActivo] = useState<PerfilActivo>(
-    initialRoute.view === 'app' ? initialRoute.profile : null
+    initialRoute.view === 'app' ? initialRoute.profile : 'ambos'
   );
   const [tab, setTab] = useState<TabState>(
-    initialRoute.view === 'app' ? initialRoute.tab : 'plan'
+    initialRoute.view === 'app' ? initialRoute.tab : 'inicio'
   );
   const [showAdmin, setShowAdmin] = useState(initialRoute.view === 'admin');
   const [showQuestionnaire, setShowQuestionnaire] = useState(
@@ -1905,12 +1910,6 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       const route = parseRoute();
 
       switch (route.view) {
-        case 'home':
-          setShowAdmin(false);
-          setShowQuestionnaire(false);
-          setPerfilActivo(null);
-          setTab('plan');
-          return;
         case 'admin':
           setShowQuestionnaire(false);
           setShowAdmin(true);
@@ -2017,11 +2016,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   }, [geminiModel]);
   useEffect(() => {
     try {
-      if (perfilActivo) {
-        writeStorageValue(window.localStorage, 'perfilActivo', perfilActivo);
-        return;
-      }
-      removeStorageValue(window.localStorage, 'perfilActivo');
+      writeStorageValue(window.localStorage, 'perfilActivo', perfilActivo || 'ambos');
     } catch (error) {
       console.warn('Failed to persist active profile:', error);
     }
