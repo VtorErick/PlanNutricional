@@ -203,11 +203,14 @@ test('handler pre-computa perfil localmente y solo pide planSemanal a la IA', as
     assert.equal(capturedBodies.length, 1);
     const userPromptJson = JSON.parse(capturedBodies[0].contents[0].parts[0].text);
     assert.ok(userPromptJson.precomputedProfile, 'Should include precomputedProfile in prompt');
-    assert.ok(userPromptJson.precomputedProfile.perfil, 'Precomputed profile should have perfil');
+    assert.match(userPromptJson.precomputedProfile.perfil, /81 kg \| 1\.60 m \| 32/);
     assert.ok(userPromptJson.precomputedProfile.metaCaloricaKcalDia, 'Precomputed profile should have calories');
+    assert.equal(userPromptJson.supplementsCatalog, undefined, 'Supplement catalog is not needed for plan-only generation');
 
     // Verify response contains merged data
     assert.ok(res.body?.ellaData?.perfilELLA, 'Response should include precomputed perfilELLA');
+    assert.equal(res.body.ellaData.perfilELLA.edad, 32);
+    assert.match(res.body.ellaData.perfilELLA.perfil, /81 kg \| 1\.60 m \| 32/);
     assert.ok(res.body?.ellaData?.suplementosELLA, 'Response should include precomputed suplementosELLA');
     assert.ok(res.body?.ellaData?.planELLA, 'Response should include AI planELLA');
 
@@ -283,14 +286,13 @@ test('handler genera y la app rehidrata correctamente un plan de cuestionario de
 
     assert.equal(res.statusCode, 200);
     assert.ok(res.body?.ellaData);
-    assert.equal(res.body?.modelUsed, 'gemini-3.1-pro-preview');
+    assert.equal(res.body?.modelUsed, 'gemini-3-flash-preview');
 
     assert.equal(capturedBodies.length, 1);
     const userPromptJson = JSON.parse(capturedBodies[0].contents[0].parts[0].text);
     assert.ok(Array.isArray(userPromptJson.mealsCatalog));
     assert.ok(userPromptJson.mealsCatalog.length < 60);
-    assert.ok(Array.isArray(userPromptJson.supplementsCatalog));
-    assert.ok(userPromptJson.supplementsCatalog.length > 0);
+    assert.equal(userPromptJson.supplementsCatalog, undefined);
 
     const exported = buildExportData(res.body.ellaData, 'ELLA');
     const breakfast = exported.planELLA.Lunes.desayuno[0];

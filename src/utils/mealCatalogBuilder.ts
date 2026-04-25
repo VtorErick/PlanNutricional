@@ -142,14 +142,20 @@ export async function buildOptimizedMealsCatalog(
   // PASO 2: Filtrar por restricciones del usuario (siempre se hace)
   const filtered = filterCatalogForQuestionnaire(allMeals, questionnaire);
   const source = filtered.length > 0 ? filtered : allMeals;
+  const { buildConfigFromQuestionnaire, getRankedMealsForUser } = await import('./mealScoring');
+  const rankedSource = getRankedMealsForUser(
+    source,
+    buildConfigFromQuestionnaire(questionnaire)
+  ).map(({ meal }) => meal);
+  const qualitySource = rankedSource.length > 0 ? rankedSource : source;
 
   // PASO 3: Si no hay suficientes comidas, usar comportamiento original
   const MIN_MEALS_FOR_ROTATION = 40; // Necesitamos variedad suficiente
 
   let result: MealCatalogResult;
 
-  if (!useRotation || source.length < MIN_MEALS_FOR_ROTATION) {
-    if (useRotation && source.length < MIN_MEALS_FOR_ROTATION) {
+  if (!useRotation || qualitySource.length < MIN_MEALS_FOR_ROTATION) {
+    if (useRotation && qualitySource.length < MIN_MEALS_FOR_ROTATION) {
       warnings.push(`Catálogo insuficiente para rotación (${source.length} < ${MIN_MEALS_FOR_ROTATION}). Usando filtrado estándar.`);
     }
 

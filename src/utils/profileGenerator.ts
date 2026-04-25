@@ -24,7 +24,25 @@ export interface QuestionnaireInput {
   medications?: string;
   intolerances?: string;
   digestiveSymptoms?: string;
+  favoriteFoods?: string;
+  dislikedFoods?: string;
+  favoriteCuisineStyles?: string;
+  cookingTime?: string;
+  trainingFrequency?: string;
   bodyMeasurements?: BodyMeasurements;
+  profileContext?: Partial<QuestionnaireInput> & {
+    objectiveTimelineWeeks?: string;
+    clinicalPortionsGrid?: Record<string, Record<string, number>>;
+  };
+  healthContext?: Partial<QuestionnaireInput>;
+  preferences?: {
+    favoriteFoods?: string;
+    dislikedFoods?: string;
+    favoriteCuisineStyles?: string;
+    cookingTime?: string;
+  };
+  routine?: Partial<QuestionnaireInput>;
+  clinicalPortionsGrid?: Record<string, Record<string, number>>;
 }
 
 export interface GeneratedProfile {
@@ -62,6 +80,51 @@ const MOMENT_LABELS: Record<string, string> = {
   colacion_pm: 'Colación tarde',
   cena: 'Cena',
 };
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function pickFirstDefined<T>(...values: T[]): T | undefined {
+  return values.find((value) => value !== undefined && value !== null && value !== '');
+}
+
+export function normalizeQuestionnaireInput(input: QuestionnaireInput = {}): QuestionnaireInput {
+  const source = isPlainObject(input) ? input : {};
+  const profileContext = isPlainObject(source.profileContext) ? source.profileContext : {};
+  const healthContext = isPlainObject(source.healthContext) ? source.healthContext : {};
+  const preferences = isPlainObject(source.preferences) ? source.preferences : {};
+  const routine = isPlainObject(source.routine) ? source.routine : {};
+
+  return {
+    ...source,
+    age: pickFirstDefined(source.age, profileContext.age),
+    currentWeightKg: pickFirstDefined(source.currentWeightKg, profileContext.currentWeightKg),
+    heightCm: pickFirstDefined(source.heightCm, profileContext.heightCm),
+    targetWeightKg: pickFirstDefined(source.targetWeightKg, profileContext.targetWeightKg),
+    objectives: pickFirstDefined(source.objectives, profileContext.objectives) || [],
+    objectiveTimeline: pickFirstDefined(
+      source.objectiveTimeline,
+      profileContext.objectiveTimeline,
+      profileContext.objectiveTimelineWeeks
+    ),
+    clinicalPortionsGrid: pickFirstDefined(source.clinicalPortionsGrid, profileContext.clinicalPortionsGrid),
+    diagnostics: pickFirstDefined(source.diagnostics, healthContext.diagnostics),
+    allergies: pickFirstDefined(source.allergies, healthContext.allergies),
+    medications: pickFirstDefined(source.medications, healthContext.medications),
+    intolerances: pickFirstDefined(source.intolerances, healthContext.intolerances),
+    digestiveSymptoms: pickFirstDefined(source.digestiveSymptoms, healthContext.digestiveSymptoms),
+    favoriteFoods: pickFirstDefined(source.favoriteFoods, preferences.favoriteFoods),
+    dislikedFoods: pickFirstDefined(source.dislikedFoods, preferences.dislikedFoods),
+    favoriteCuisineStyles: pickFirstDefined(source.favoriteCuisineStyles, preferences.favoriteCuisineStyles),
+    cookingTime: pickFirstDefined(source.cookingTime, preferences.cookingTime),
+    activityLevel: pickFirstDefined(source.activityLevel, routine.activityLevel),
+    wakeTime: pickFirstDefined(source.wakeTime, routine.wakeTime),
+    sleepTime: pickFirstDefined(source.sleepTime, routine.sleepTime),
+    trainingFrequency: pickFirstDefined(source.trainingFrequency, routine.trainingFrequency),
+    bodyMeasurements: pickFirstDefined(source.bodyMeasurements, profileContext.bodyMeasurements),
+  };
+}
 
 function parseNumber(value: string | undefined): number {
   const n = Number(value);
@@ -371,6 +434,7 @@ export function generateProfile(
   input: QuestionnaireInput,
   profileId: 'el' | 'ella'
 ): GeneratedProfile {
+  input = normalizeQuestionnaireInput(input);
   const isMale = profileId === 'el';
   const weightKg = parseNumber(input.currentWeightKg);
   const heightCm = parseNumber(input.heightCm);
@@ -420,6 +484,7 @@ export function generateSupplements(
   input: QuestionnaireInput,
   supplementsDb: SupplementCatalogItem[]
 ): string[] {
+  input = normalizeQuestionnaireInput(input);
   const ids = computeSupplements(input.objectives || [], input.diagnostics || '');
   // Validate against DB
   const validIds = new Set(supplementsDb.map((s) => s.id));

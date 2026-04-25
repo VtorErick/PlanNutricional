@@ -11,6 +11,51 @@ const MOMENT_LABELS = {
   cena: 'Cena',
 };
 
+function isPlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function pickFirstDefined(...values) {
+  return values.find((value) => value !== undefined && value !== null && value !== '');
+}
+
+function normalizeQuestionnaireInput(input = {}) {
+  const source = isPlainObject(input) ? input : {};
+  const profileContext = isPlainObject(source.profileContext) ? source.profileContext : {};
+  const healthContext = isPlainObject(source.healthContext) ? source.healthContext : {};
+  const preferences = isPlainObject(source.preferences) ? source.preferences : {};
+  const routine = isPlainObject(source.routine) ? source.routine : {};
+
+  return {
+    ...source,
+    age: pickFirstDefined(source.age, profileContext.age),
+    currentWeightKg: pickFirstDefined(source.currentWeightKg, profileContext.currentWeightKg),
+    heightCm: pickFirstDefined(source.heightCm, profileContext.heightCm),
+    targetWeightKg: pickFirstDefined(source.targetWeightKg, profileContext.targetWeightKg),
+    objectives: pickFirstDefined(source.objectives, profileContext.objectives) || [],
+    objectiveTimeline: pickFirstDefined(
+      source.objectiveTimeline,
+      profileContext.objectiveTimeline,
+      profileContext.objectiveTimelineWeeks
+    ),
+    clinicalPortionsGrid: pickFirstDefined(source.clinicalPortionsGrid, profileContext.clinicalPortionsGrid),
+    diagnostics: pickFirstDefined(source.diagnostics, healthContext.diagnostics),
+    allergies: pickFirstDefined(source.allergies, healthContext.allergies),
+    medications: pickFirstDefined(source.medications, healthContext.medications),
+    intolerances: pickFirstDefined(source.intolerances, healthContext.intolerances),
+    digestiveSymptoms: pickFirstDefined(source.digestiveSymptoms, healthContext.digestiveSymptoms),
+    favoriteFoods: pickFirstDefined(source.favoriteFoods, preferences.favoriteFoods),
+    dislikedFoods: pickFirstDefined(source.dislikedFoods, preferences.dislikedFoods),
+    favoriteCuisineStyles: pickFirstDefined(source.favoriteCuisineStyles, preferences.favoriteCuisineStyles),
+    cookingTime: pickFirstDefined(source.cookingTime, preferences.cookingTime),
+    activityLevel: pickFirstDefined(source.activityLevel, routine.activityLevel),
+    wakeTime: pickFirstDefined(source.wakeTime, routine.wakeTime),
+    sleepTime: pickFirstDefined(source.sleepTime, routine.sleepTime),
+    trainingFrequency: pickFirstDefined(source.trainingFrequency, routine.trainingFrequency),
+    bodyMeasurements: pickFirstDefined(source.bodyMeasurements, profileContext.bodyMeasurements),
+  };
+}
+
 function parseNumber(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -176,6 +221,7 @@ function buildDistribucionDetalle(distribution, momentos) {
 }
 
 export function generateProfile(input, profileId) {
+  input = normalizeQuestionnaireInput(input);
   const isMale = profileId === 'el';
   const weightKg = parseNumber(input.currentWeightKg);
   const heightCm = parseNumber(input.heightCm);
@@ -209,9 +255,10 @@ export function generateProfile(input, profileId) {
 }
 
 export function generateSupplements(input, supplementsDb) {
+  input = normalizeQuestionnaireInput(input);
   const ids = computeSupplements(input.objectives || [], input.diagnostics || '');
   const validIds = new Set((supplementsDb || []).map((s) => s.id));
   return ids.filter((id) => validIds.has(id));
 }
 
-export { FOOD_GROUP_KEYS, MOMENT_KEYS };
+export { FOOD_GROUP_KEYS, MOMENT_KEYS, normalizeQuestionnaireInput };

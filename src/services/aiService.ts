@@ -3,6 +3,7 @@ import { parseObjectToData } from '../dataManager';
 import { equivalenciasEL } from '../data/perfil-el';
 import { equivalenciasELLA } from '../data/perfil-ella';
 import {
+  buildCanonicalMealDetail,
   findCatalogMealByIdRef,
   hasRecognizablePortions,
   shouldReplaceMealDetail,
@@ -764,13 +765,7 @@ function validateMealItemStructure(
       !String(item.idRef).includes('|MOD:') &&
       shouldReplaceMealDetail(item.detalle, catalogMeal.nombre, catalogMeal.super)
     ) {
-      throw createInvalidStructureError(
-        debugContext,
-        `Respuesta de IA incompleta: ${location}.detalle no coincide con la receta base indicada por idRef.`,
-        geminiRequest,
-        geminiResponseBody,
-        modelName
-      );
+      item.detalle = buildCanonicalMealDetail(catalogMeal.nombre, catalogMeal.super);
     }
     return;
   }

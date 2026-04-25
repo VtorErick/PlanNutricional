@@ -83,13 +83,8 @@ function getUniqueModelNames(modelNames, preferredModelRaw) {
 }
 
 export function getOrderedGeminiModels(modelNames, preferredModelRaw) {
-  const preferredModel = normalizeModelName(preferredModelRaw || '');
   const remaining = getUniqueModelNames(modelNames, preferredModelRaw);
   const ordered = [];
-
-  if (preferredModel && remaining.includes(preferredModel)) {
-    ordered.push(preferredModel);
-  }
 
   MODEL_PRIORITY_MATCHERS.forEach((matcher) => {
     const match = remaining.find((name) => matcher.test(name) && !ordered.includes(name));

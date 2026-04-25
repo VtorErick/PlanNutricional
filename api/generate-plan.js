@@ -57,6 +57,7 @@ const PROFILE_REQUIRED_KEYS = [
 ];
 const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
+const GEMINI_SEQUENTIAL_REQUEST_DELAY_MS = 1500;
 const AI_GENERIC_ERROR_MESSAGE =
   'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
 
@@ -1772,7 +1773,6 @@ function buildUserPrompt(payload, prefix) {
     profilePrefix: prefix,
     questionnaire: sanitizePromptPayload(payload),
     mealsCatalog: payload.mealsCatalog || [],
-    supplementsCatalog: payload.supplementsCatalog || [],
     precomputedProfile: precomputed ? {
       perfil: precomputed.perfil,
       metaCaloricaKcalDia: precomputed.metaCaloricaKcalDia,
@@ -2390,7 +2390,7 @@ export default async function handler(req, res) {
     ];
     const orderedModels = getOrderedGeminiModels(hardcodedModelNames, preferredModel);
     const selectedModel = orderedModels[0];
-    const modelCandidates = selectedModel ? [selectedModel] : orderedModels.slice(0, 1);
+    const modelCandidates = orderedModels.slice(0, 3);
 
     let elData = null;
     let ellaData = null;
@@ -2416,34 +2416,35 @@ export default async function handler(req, res) {
         revisionPayloadElla.precomputedSupplements = precomputedSupplementsElla;
         const requestPartsElla = buildRevisionRequestParts('ELLA', payload, revisionPayloadElla);
 
-        const [elResult, ellaResult] = await Promise.all([
-          generateWithGeminiWithFallback(
-            requestPartsEl,
-            apiKey,
-            modelCandidates,
-            buildRevisionSystemPrompt('EL', payload.requestMode),
-            buildPlanOnlyResponseSchema('EL'),
-            {
-              ...debugBase,
-              stage: 'generate-content',
-              selectedModel,
-              profilePrefix: 'EL',
-            }
-          ),
-          generateWithGeminiWithFallback(
-            requestPartsElla,
-            apiKey,
-            modelCandidates,
-            buildRevisionSystemPrompt('ELLA', payload.requestMode),
-            buildPlanOnlyResponseSchema('ELLA'),
-            {
-              ...debugBase,
-              stage: 'generate-content',
-              selectedModel,
-              profilePrefix: 'ELLA',
-            }
-          ),
-        ]);
+        const elResult = await generateWithGeminiWithFallback(
+          requestPartsEl,
+          apiKey,
+          modelCandidates,
+          buildRevisionSystemPrompt('EL', payload.requestMode),
+          buildPlanOnlyResponseSchema('EL'),
+          {
+            ...debugBase,
+            stage: 'generate-content',
+            selectedModel,
+            profilePrefix: 'EL',
+          }
+        );
+
+        await delay(GEMINI_SEQUENTIAL_REQUEST_DELAY_MS);
+
+        const ellaResult = await generateWithGeminiWithFallback(
+          requestPartsElla,
+          apiKey,
+          modelCandidates,
+          buildRevisionSystemPrompt('ELLA', payload.requestMode),
+          buildPlanOnlyResponseSchema('ELLA'),
+          {
+            ...debugBase,
+            stage: 'generate-content',
+            selectedModel,
+            profilePrefix: 'ELLA',
+          }
+        );
 
         elData = {
           perfilEL: precomputedProfileEl,
@@ -2559,34 +2560,35 @@ export default async function handler(req, res) {
       payloadElla.precomputedProfile = precomputedProfileElla;
       payloadElla.precomputedSupplements = precomputedSupplementsElla;
 
-      const [elResult, ellaResult] = await Promise.all([
-        generateWithGeminiWithFallback(
-          buildRequestParts('EL', payloadEl),
-          apiKey,
-          modelCandidates,
-          buildSystemPrompt('EL'),
-          buildPlanOnlyResponseSchema('EL'),
-          {
-            ...debugBase,
-            stage: 'generate-content',
-            selectedModel,
-            profilePrefix: 'EL',
-          }
-        ),
-        generateWithGeminiWithFallback(
-          buildRequestParts('ELLA', payloadElla),
-          apiKey,
-          modelCandidates,
-          buildSystemPrompt('ELLA'),
-          buildPlanOnlyResponseSchema('ELLA'),
-          {
-            ...debugBase,
-            stage: 'generate-content',
-            selectedModel,
-            profilePrefix: 'ELLA',
-          }
-        ),
-      ]);
+      const elResult = await generateWithGeminiWithFallback(
+        buildRequestParts('EL', payloadEl),
+        apiKey,
+        modelCandidates,
+        buildSystemPrompt('EL'),
+        buildPlanOnlyResponseSchema('EL'),
+        {
+          ...debugBase,
+          stage: 'generate-content',
+          selectedModel,
+          profilePrefix: 'EL',
+        }
+      );
+
+      await delay(GEMINI_SEQUENTIAL_REQUEST_DELAY_MS);
+
+      const ellaResult = await generateWithGeminiWithFallback(
+        buildRequestParts('ELLA', payloadElla),
+        apiKey,
+        modelCandidates,
+        buildSystemPrompt('ELLA'),
+        buildPlanOnlyResponseSchema('ELLA'),
+        {
+          ...debugBase,
+          stage: 'generate-content',
+          selectedModel,
+          profilePrefix: 'ELLA',
+        }
+      );
 
       elData = {
         perfilEL: precomputedProfileEl,
