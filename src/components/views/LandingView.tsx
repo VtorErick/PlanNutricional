@@ -1,11 +1,9 @@
 import { motion } from 'framer-motion';
 import {
   ChefHat,
-  ClipboardList,
-  ListChecks,
+  Clock,
   Moon,
   Settings,
-  ShoppingCart,
   Sparkles,
   Sun,
   UtensilsCrossed,
@@ -51,9 +49,6 @@ const createDefaultQuestionnairePerson = (
 
 export default function LandingView() {
   const {
-    setPerfilActivo: setActiveProfile,
-    setDiaActivo: setActiveDay,
-    setTab: setActiveTab,
     dataVersions,
     diaActivo: activeDay,
     perfilesData: profilesData,
@@ -75,6 +70,7 @@ export default function LandingView() {
   const elReady = dataVersions.el === 'custom';
   const ellaReady = dataVersions.ella === 'custom';
   const hasPlan = elReady || ellaReady;
+  const planStatusLabel = hasPlan ? 'Plan personalizado activo' : 'Plan base listo';
   const profileLabel = getCombinedProfileLabel(profileLabels);
 
   const todayStatus = (() => {
@@ -133,19 +129,6 @@ export default function LandingView() {
     setIsQuestionnaireOpen(true);
   };
 
-  const openPlan = () => {
-    const nextProfile = elReady || ellaReady ? (elReady && ellaReady ? 'ambos' : elReady ? 'el' : 'ella') : 'ambos';
-    setActiveProfile(nextProfile);
-    setActiveDay(activeDay);
-    setActiveTab('plan');
-  };
-
-  const openShopping = () => {
-    setActiveProfile('ambos');
-    setActiveDay(activeDay);
-    setActiveTab('compras');
-  };
-
   return (
     <div className="min-h-[100dvh] bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col px-4 pb-24 pt-4 sm:px-6 sm:pb-10 sm:pt-6">
@@ -185,7 +168,7 @@ export default function LandingView() {
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col justify-center gap-5 py-8 sm:py-12">
+        <main className="flex flex-1 flex-col justify-center gap-4 py-7 sm:py-12">
           <motion.section
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -202,19 +185,19 @@ export default function LandingView() {
                   {activeDay} - {profileLabel}
                 </p>
                 <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-4xl">
-                  Que toca hoy
+                  Tu dia de comida
                 </h1>
                 <p className="mt-2 max-w-xl text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
-                  Usa el inicio para seguir tu dia: elige platillos, marca lo que ya comiste y revisa compras sin meterte a ajustes.
+                  Una vista tranquila para saber donde vas y si necesitas ajustar el plan.
                 </p>
               </div>
             </div>
 
-            <div className="mb-4 rounded-3xl bg-slate-50 p-4 dark:bg-slate-950/70">
+            <div className="rounded-3xl bg-slate-50 p-4 dark:bg-slate-950/70">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-                    Siguiente paso
+                    Siguiente tiempo
                   </p>
                   <p className="mt-1 text-lg font-black text-slate-900 dark:text-slate-50">
                     {todayStatus.nextMoment
@@ -244,38 +227,37 @@ export default function LandingView() {
               </p>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-3">
-              <button
-                type="button"
-                onClick={openPlan}
-                className="flex min-h-[54px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black text-slate-800 transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900"
-              >
-                <ClipboardList className="h-4 w-4 text-blue-500" />
-                <span>{hasPlan ? 'Ver mi plan' : 'Ver plan base'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={openShopping}
-                className="flex min-h-[54px] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-black text-slate-800 transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900"
-              >
-                <ShoppingCart className="h-4 w-4 text-emerald-500" />
-                <span>Compras</span>
-              </button>
+            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950">
+                  <p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">
+                    Plan
+                  </p>
+                  <p className="mt-1 truncate text-sm font-black text-slate-800 dark:text-slate-100">
+                    {planStatusLabel}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-800 dark:bg-slate-950">
+                  <p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">
+                    Ritmo
+                  </p>
+                  <p className="mt-1 flex items-center gap-1.5 text-sm font-black text-slate-800 dark:text-slate-100">
+                    <Clock className="h-3.5 w-3.5 text-blue-500" />
+                    Hoy
+                  </p>
+                </div>
+              </div>
+
               <button
                 type="button"
                 onClick={openQuestionnaire}
                 data-testid="landing-customize-ambos"
-                className="flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 px-4 py-3 text-sm font-black text-white shadow-[0_12px_28px_rgba(37,99,235,0.24)] transition hover:brightness-105 active:scale-[0.98]"
+                className="flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 px-4 py-3 text-sm font-black text-white shadow-[0_12px_28px_rgba(37,99,235,0.24)] transition hover:brightness-105 active:scale-[0.98] sm:min-w-[210px]"
               >
                 <Sparkles className="h-4 w-4 text-blue-100" />
                 <span>Personalizar mi plan</span>
               </button>
             </div>
-
-            <p className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500">
-              <ListChecks className="h-3.5 w-3.5" />
-              Personalizar vuelve a generar el plan con IA; lo demas es para usar tu plan actual.
-            </p>
           </motion.section>
         </main>
       </div>
