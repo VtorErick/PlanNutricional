@@ -136,8 +136,8 @@ const TEXT_GENERATION_MODEL_PATTERNS = [
   /^gemini-pro-latest$/i,
 ];
 const PRIMARY_MODEL_PRIORITY_MATCHERS = [
-  /^gemini-2\.5-flash$/i,
   /^gemini-3-flash-preview$/i,
+  /^gemini-2\.5-flash$/i,
   /^gemini-2\.5-flash-lite$/i,
   /^gemini-3\.1-flash-lite-preview$/i,
   /^gemini-2\.0-flash(?:-001)?$/i,
@@ -149,8 +149,8 @@ const PRIMARY_MODEL_PRIORITY_MATCHERS = [
   /^gemini-pro-latest$/i,
 ];
 const AUTO_FALLBACK_PRIORITY_MATCHERS = [
-  /^gemini-2\.5-flash$/i,
   /^gemini-3-flash-preview$/i,
+  /^gemini-2\.5-flash$/i,
   /^gemini-2\.5-flash-lite$/i,
   /^gemini-3\.1-flash-lite-preview$/i,
   /^gemini-2\.0-flash(?:-001)?$/i,

@@ -2,19 +2,19 @@ export const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
 export const MAX_MODEL_CANDIDATES = 4;
 
 export const GEMINI_MODEL_OPTIONS = [
-  'gemini-3.1-pro-preview',
   'gemini-3-flash-preview',
   'gemini-2.5-flash',
-  'gemini-2.5-pro',
   'gemini-2.5-flash-lite',
-  'gemini-3-pro-preview',
-  'gemini-3.1-pro-preview-customtools',
   'gemini-3.1-flash-lite-preview',
   'gemini-flash-latest',
   'gemini-flash-lite-latest',
-  'gemini-pro-latest',
   'gemini-2.0-flash',
   'gemini-2.0-flash-lite',
+  'gemini-3.1-pro-preview',
+  'gemini-2.5-pro',
+  'gemini-3-pro-preview',
+  'gemini-3.1-pro-preview-customtools',
+  'gemini-pro-latest',
 ];
 
 const GEMINI_TEXT_MODEL_PATTERNS = [

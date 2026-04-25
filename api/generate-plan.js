@@ -298,22 +298,6 @@ function getThinkingConfig(modelName, debugContext) {
   return undefined;
 }
 
-function getGeminiRequestTimeoutMs(debugContext) {
-  if (debugContext.requestMode === 'adjust') {
-    return 35_000;
-  }
-
-  if (debugContext.targetProfile === 'ambos') {
-    return 55_000;
-  }
-
-  if (debugContext.requestMode === 'regenerate') {
-    return 55_000;
-  }
-
-  return 55_000;
-}
-
 function buildMealItemSchema() {
   return {
     type: 'object',
@@ -2097,7 +2081,6 @@ async function generateWithGemini(
   responseSchema,
   debugContext
 ) {
-  const timeoutMs = getGeminiRequestTimeoutMs(debugContext);
   const body = {
     system_instruction: {
       parts: [{ text: systemInstruction }],
@@ -2120,8 +2103,6 @@ async function generateWithGemini(
   };
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   let response;
 
   try {
@@ -2132,26 +2113,8 @@ async function generateWithGemini(
         'x-goog-api-key': apiKey,
       },
       body: JSON.stringify(body),
-      signal: controller.signal,
     });
   } catch (error) {
-    clearTimeout(timeoutId);
-
-    if (error?.name === 'AbortError') {
-      throw createLoggedAiError(
-        {
-          ...debugContext,
-          stage: 'generate-content',
-          selectedModel: modelName,
-        },
-        {
-          rawMessage: `El modelo ${modelName} supero el tiempo limite de ${Math.round(timeoutMs / 1000)}s antes de responder.`,
-          statusCode: 504,
-          geminiRequest: body,
-        }
-      );
-    }
-
     throw createLoggedAiError(
       {
         ...debugContext,
@@ -2164,8 +2127,6 @@ async function generateWithGemini(
         geminiRequest: body,
       }
     );
-  } finally {
-    clearTimeout(timeoutId);
   }
 
   const responseText = await response.text();
@@ -2705,4 +2666,3 @@ export default async function handler(req, res) {
     });
   }
 }
-
