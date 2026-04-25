@@ -17,20 +17,20 @@ export interface GeminiModelOption {
 
 export const GEMINI_MODEL_OPTIONS: GeminiModelOption[] = [
   {
+    id: 'gemini-3-flash-preview',
+    label: 'Por defecto',
+    technicalLabel: 'Gemini 3 Flash Preview',
+    description: 'Modelo por defecto para generar planes con mejor latencia.',
+    badge: 'Default',
+    badgeClassName: 'bg-emerald-100 text-emerald-700',
+  },
+  {
     id: 'gemini-3.1-pro-preview',
     label: 'Maxima calidad',
     technicalLabel: 'Gemini 3.1 Pro Preview',
     description: 'Modelo principal para planes y ediciones cuando priorizas calidad sobre velocidad.',
-    badge: 'Default',
+    badge: 'Pro',
     badgeClassName: 'bg-amber-100 text-amber-700',
-  },
-  {
-    id: 'gemini-3-flash-preview',
-    label: 'Fallback rapido',
-    technicalLabel: 'Gemini 3 Flash Preview',
-    description: 'Respaldo principal cuando el Pro no esta disponible o conviene bajar latencia.',
-    badge: 'Fallback',
-    badgeClassName: 'bg-emerald-100 text-emerald-700',
   },
   {
     id: 'gemini-2.5-flash',
