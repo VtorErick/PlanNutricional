@@ -220,7 +220,7 @@ export default function App() {
     >
       {showMobileMore ? (
         <div className="mx-auto max-w-md px-3 pt-2">
-          <div className={`grid grid-cols-3 gap-2 rounded-[24px] border p-2 shadow-[0_14px_34px_rgba(15,23,42,0.14)] ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
+          <div className={`grid grid-cols-2 gap-2 rounded-[24px] border p-2 shadow-[0_14px_34px_rgba(15,23,42,0.14)] ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
             {moreTabs.map((tabItem) => (
               <button
                 key={tabItem.key}
@@ -244,6 +244,16 @@ export default function App() {
                 <span>{getMobileTabLabel(tabItem.key)}</span>
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setIsDarkMode((prev) => !prev)}
+              className={`flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-black transition active:scale-95 ${
+                isDarkMode ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span>{isDarkMode ? 'Claro' : 'Oscuro'}</span>
+            </button>
           </div>
         </div>
       ) : null}
