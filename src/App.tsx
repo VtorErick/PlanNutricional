@@ -168,11 +168,11 @@ export default function App() {
   const mobileNavigationBar = (
     <nav
       ref={mobileNavRef}
-      className="sm:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/60 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 backdrop-blur-xl shadow-[0_-8px_24px_rgba(15,23,42,0.08)]"
+      className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-x-clip border-t border-slate-200/60 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 sm:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navegación principal móvil"
     >
-      <div className="mx-auto max-w-md px-3 py-2">
+      <div className="mx-auto w-full max-w-md px-3 py-2">
         <div className="grid grid-cols-5 gap-0.5 rounded-[24px] border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-[0_12px_34px_rgba(15,23,42,0.13)]">
           {tabItems.map((tabItem) => (
             <button
@@ -286,24 +286,27 @@ export default function App() {
 
   if (activeTab === 'inicio') {
     return (
-      <>
+      <div
+        className="flex min-h-[100dvh] w-full flex-col overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50"
+        data-profile={activeProfile}
+      >
         {!isPlanAdjustOpen && <Header />}
         <LandingView />
         {mobileNavigationBar}
-      </>
+      </div>
     );
   }
 
   return (
       <div
-        className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 transition-colors duration-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+        className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-slate-50 transition-colors duration-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
         data-profile={activeProfile}
       >
       {!isPlanAdjustOpen && <Header />}
 
       {activeTab === 'plan' && !isPlanAdjustOpen ? <DailyProgress /> : null}
 
-      <main className="relative z-0 max-w-5xl mx-auto px-4 sm:px-6 py-4 pb-28 sm:pb-8 space-y-4">
+      <main className="relative z-0 mx-auto w-full max-w-5xl min-w-0 px-4 py-4 pb-28 sm:px-6 sm:pb-8 space-y-4">
         {desktopTabBackdrop ? (
           <div
             aria-hidden="true"
@@ -358,7 +361,7 @@ export default function App() {
 
       {mobileNavigationBar}
 
-      <footer className="bg-white/40 mt-10 dark:bg-slate-950/60">
+      <footer className="hidden bg-white/40 mt-10 dark:bg-slate-950/60 sm:block">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 text-center text-slate-500 text-xs sm:text-sm dark:text-slate-400">
           <p className="flex items-center justify-center gap-2">
             <ChefHat className="w-3.5 h-3.5" />
