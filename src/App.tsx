@@ -303,7 +303,7 @@ export default function App() {
   if (activeTab === 'inicio') {
     return (
       <div
-        className="flex min-h-[100dvh] w-full flex-col overflow-x-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50"
+        className="flex h-[100svh] w-full flex-col overflow-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50 sm:min-h-[100dvh] sm:overflow-x-hidden"
         data-profile={activeProfile}
       >
         {!isPlanAdjustOpen && <Header />}

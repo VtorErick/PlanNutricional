@@ -253,6 +253,15 @@ export default function LandingView() {
     touchStartYRef.current = event.touches[0]?.clientY ?? null;
   };
 
+  const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
+    const startY = touchStartYRef.current;
+    const currentY = event.touches[0]?.clientY ?? startY;
+    if (startY === null || currentY === null) return;
+    if (Math.abs(startY - currentY) > 8) {
+      event.preventDefault();
+    }
+  };
+
   const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
     const startY = touchStartYRef.current;
     touchStartYRef.current = null;
@@ -355,7 +364,7 @@ export default function LandingView() {
   );
 
   return (
-    <div className={`relative flex min-h-0 flex-1 overflow-hidden bg-gradient-to-br ${accent.bgGradientLight} text-slate-950 dark:text-slate-50`}>
+    <div className={`relative flex min-h-0 flex-1 overflow-hidden overscroll-none bg-gradient-to-br ${accent.bgGradientLight} text-slate-950 dark:text-slate-50`}>
       <img
         src="/images/home-food-bg.png"
         alt=""
@@ -364,14 +373,14 @@ export default function LandingView() {
       />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/22 via-white/0 to-white/24 dark:from-slate-950/74 dark:via-slate-950/38 dark:to-slate-950/78" />
       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent.bgGradientLight} opacity-[0.06] dark:opacity-12`} />
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-24 pt-4 max-[340px]:px-3 max-[340px]:pb-20 max-[340px]:pt-2 sm:px-6 sm:pb-10 sm:pt-6">
-        <main className="flex min-h-0 flex-1 flex-col justify-center gap-4 py-3 max-[340px]:py-1.5 sm:py-12">
+      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-[88px] pt-3 max-[340px]:px-3 max-[340px]:pb-[78px] max-[340px]:pt-2 sm:px-6 sm:pb-10 sm:pt-6">
+        <main className="flex min-h-0 flex-1 flex-col justify-center gap-3 py-2 max-[340px]:py-1 sm:gap-4 sm:py-12">
           <motion.section
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 32 }}
             data-testid="landing-profile-ambos-card"
-            className={`relative rounded-[30px] border p-4 shadow-[0_16px_42px_rgba(15,23,42,0.10)] max-[340px]:rounded-[24px] max-[340px]:p-3 sm:p-6 ${
+            className={`relative rounded-[30px] border p-3.5 shadow-[0_16px_42px_rgba(15,23,42,0.10)] max-[340px]:rounded-[24px] max-[340px]:p-3 sm:p-6 ${
               isDarkMode
                 ? `border-slate-800 bg-slate-950/90`
                 : `${accent.borderLight} bg-white/88`
@@ -393,12 +402,14 @@ export default function LandingView() {
             </div>
 
             <div
-              className="relative z-10 h-[360px] touch-pan-y overflow-hidden [perspective:1000px] max-[340px]:h-[360px] [@media(max-height:680px)]:h-[295px] sm:h-[450px]"
+              className="relative z-10 h-[clamp(255px,43svh,340px)] touch-none overflow-hidden overscroll-contain [perspective:1000px] max-[340px]:h-[clamp(235px,41svh,315px)] [@media(max-height:680px)]:h-[260px] [@media(max-height:610px)]:h-[225px] sm:h-[450px]"
+              style={{ touchAction: 'none' }}
               aria-label="Carrete de tiempos de comida"
               role="listbox"
               tabIndex={0}
               onWheel={handleReelWheel}
               onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               onKeyDown={handleReelKeyDown}
             >
