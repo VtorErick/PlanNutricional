@@ -4,6 +4,24 @@ import App from './App';
 import './index.css';
 import { DietProvider } from './context/DietContext';
 import AppErrorBoundary from './components/AppErrorBoundary';
+import {
+  isRecoverableAppLoadError,
+  reloadAppOnceForRecoverableError,
+} from './utils/recoverableAppError';
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('unhandledrejection', (event) => {
+    if (isRecoverableAppLoadError(event.reason) && reloadAppOnceForRecoverableError()) {
+      event.preventDefault();
+    }
+  });
+
+  window.addEventListener('error', (event) => {
+    if (isRecoverableAppLoadError(event.error || event.message)) {
+      reloadAppOnceForRecoverableError();
+    }
+  });
+}
 
 const rootElement = document.getElementById('root');
 

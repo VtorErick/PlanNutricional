@@ -1,5 +1,9 @@
 import React from 'react';
 import { clearAppStorage } from '../utils/appStorage';
+import {
+  isRecoverableAppLoadError,
+  reloadAppOnceForRecoverableError,
+} from '../utils/recoverableAppError';
 
 type Props = {
   children: React.ReactNode;
@@ -7,19 +11,25 @@ type Props = {
 
 type State = {
   hasError: boolean;
+  isRecovering: boolean;
 };
 
 export default class AppErrorBoundary extends React.Component<Props, State> {
   state: State = {
     hasError: false,
+    isRecovering: false,
   };
 
   static getDerivedStateFromError(): State {
-    return { hasError: true };
+    return { hasError: true, isRecovering: false };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('AppErrorBoundary caught an error:', error, errorInfo);
+
+    if (isRecoverableAppLoadError(error) && reloadAppOnceForRecoverableError()) {
+      this.setState({ isRecovering: true });
+    }
   }
 
   private handleReload = () => {
@@ -48,6 +58,11 @@ export default class AppErrorBoundary extends React.Component<Props, State> {
             Intentamos evitar una pantalla en blanco. Puedes recargar o limpiar
             los datos guardados del navegador si el problema vino de almacenamiento local.
           </p>
+          {this.state.isRecovering ? (
+            <p className="mt-3 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+              Detectamos una actualizacion pendiente. Recargando...
+            </p>
+          ) : null}
 
           <div className="mt-5 flex flex-col gap-3">
             <button
