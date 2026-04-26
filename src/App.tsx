@@ -315,14 +315,14 @@ export default function App() {
 
   return (
       <div
-        className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-slate-50 transition-colors duration-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+        className="min-h-[100svh] w-full overflow-x-hidden overscroll-x-none bg-gradient-to-br from-slate-50 via-white to-slate-50 transition-colors duration-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
         data-profile={activeProfile}
       >
       {!isPlanAdjustOpen && <Header />}
 
       {activeTab === 'plan' && !isPlanAdjustOpen ? <DailyProgress /> : null}
 
-      <main className="relative z-0 mx-auto w-full max-w-5xl min-w-0 px-4 py-4 pb-28 sm:px-6 sm:pb-8 space-y-4">
+      <main className="relative z-0 mx-auto w-full max-w-5xl min-w-0 px-4 py-4 pb-[calc(88px+env(safe-area-inset-bottom))] sm:px-6 sm:pb-8 space-y-4">
         {desktopTabBackdrop ? (
           <div
             aria-hidden="true"
