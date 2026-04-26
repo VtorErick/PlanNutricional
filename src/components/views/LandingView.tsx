@@ -267,8 +267,16 @@ export default function LandingView() {
   );
 
   return (
-    <div className={`flex min-h-0 flex-1 bg-gradient-to-br ${accent.bgGradientLight} text-slate-950 dark:text-slate-50`}>
-      <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-24 pt-4 max-[340px]:px-3 max-[340px]:pb-20 max-[340px]:pt-2 sm:px-6 sm:pb-10 sm:pt-6">
+    <div className={`relative flex min-h-0 flex-1 overflow-hidden bg-gradient-to-br ${accent.bgGradientLight} text-slate-950 dark:text-slate-50`}>
+      <img
+        src="/images/home-food-bg.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-100 saturate-[0.96] dark:opacity-34"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/30 via-white/5 to-white/30 dark:from-slate-950/78 dark:via-slate-950/46 dark:to-slate-950/80" />
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent.bgGradientLight} opacity-10 dark:opacity-16`} />
+      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-24 pt-4 max-[340px]:px-3 max-[340px]:pb-20 max-[340px]:pt-2 sm:px-6 sm:pb-10 sm:pt-6">
         <main className="flex min-h-0 flex-1 flex-col justify-center gap-4 py-3 max-[340px]:py-1.5 sm:py-12">
           <motion.section
             initial={{ opacity: 0, y: 14 }}
@@ -277,8 +285,8 @@ export default function LandingView() {
             data-testid="landing-profile-ambos-card"
             className={`relative overflow-hidden rounded-[30px] border p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] max-[340px]:rounded-[24px] max-[340px]:p-3 sm:p-6 ${
               isDarkMode
-                ? `border-slate-800 bg-slate-950`
-                : `${accent.borderLight} bg-white/88`
+                ? `border-slate-800 bg-slate-950/86 backdrop-blur-md`
+                : `${accent.borderLight} bg-white/72 backdrop-blur-md`
             }`}
           >
             <div className="relative z-10 mb-4 flex items-start justify-between gap-3 max-[340px]:mb-2.5 max-[340px]:gap-2.5">
@@ -287,14 +295,14 @@ export default function LandingView() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className={`text-xs font-black uppercase tracking-[0.16em] max-[340px]:text-[10px] ${accent.text}`}>
-                  {activeDay} - {profileLabel}
+                  {activeDay}
                 </p>
-                <h1 className={`mt-1 text-2xl font-black tracking-tight max-[340px]:text-xl sm:text-4xl ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.16em] max-[340px]:text-[10px] ${accent.text}`}>
+                  {profileLabel}
+                </p>
+                <h1 className={`mt-1 text-2xl font-black tracking-tight max-[340px]:text-xl sm:text-3xl whitespace-nowrap ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
                   Tu dia de comida
                 </h1>
-                <p className={`mt-2 max-w-xl text-sm font-medium leading-relaxed max-[380px]:hidden ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Una vista tranquila para saber donde vas y si necesitas ajustar el plan.
-                </p>
               </div>
               <div className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-black max-[340px]:px-2.5 max-[340px]:py-1.5 ${isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-200' : `${accent.borderLight} bg-white/55 ${accent.text}`}`}>
                 <Clock className="h-3.5 w-3.5" />

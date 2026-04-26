@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChefHat, ChevronDown, FileText, Moon, Settings, Sun } from 'lucide-react';
+import { ChefHat, ChevronDown, FileText, Moon, Settings, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getProfileLabel } from '../../utils/profileLabels';
 
@@ -117,43 +117,42 @@ export default function Header() {
       }`}
     >
       <div className="max-w-5xl mx-auto px-2.5 min-[380px]:px-3 sm:px-6 py-2.5 sm:py-3">
-        <div className="flex min-w-0 items-center gap-1.5 min-[380px]:gap-2 sm:gap-3">
-          {/* Logo */}
-          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            <div className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl border shadow-sm ${accentColors.bgLight} ${accentColors.borderLight} ${accentColors.text}`}>
-              <ChefHat className="w-4 h-4" />
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          {/* Left: Logo and Profile */}
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            {/* Logo */}
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <div className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl border shadow-sm ${accentColors.bgLight} ${accentColors.borderLight} ${accentColors.text}`}>
+                <ChefHat className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="hidden sm:block text-[11px] font-bold text-slate-400 dark:text-slate-500">
+                  Tu plan diario
+                </p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-black leading-tight text-slate-950 dark:text-white min-[380px]:text-base">
-                Plan Nutricional
-              </p>
-              <p className="hidden sm:block text-[11px] font-bold text-slate-400 dark:text-slate-500">
-                Tu plan diario
-              </p>
-            </div>
-          </div>
 
-          {/* Profile dropdown */}
-          <div className="relative ml-auto w-[86px] flex-shrink-0 min-[380px]:w-[96px] sm:w-[112px]" ref={profileMenuRef}>
-            <button
-              type="button"
-              onClick={() => {
-                setShowProfileMenu((value) => !value);
-                setShowPdfMenu(false);
-              }}
-              data-testid="header-profile-menu-button"
-              aria-expanded={showProfileMenu}
-              className={`flex h-9 w-full min-w-0 items-center justify-between gap-1 rounded-xl border px-2 text-left text-xs font-black transition active:scale-[0.98] min-[380px]:h-10 min-[380px]:gap-1.5 min-[380px]:rounded-2xl min-[380px]:px-2.5 sm:text-sm ${
-                isDarkMode
-                  ? 'border-slate-800 bg-slate-900 text-slate-100 hover:bg-slate-800'
-                  : `border-slate-200 bg-slate-50 ${accentColors.text} shadow-sm hover:bg-white`
-              }`}
-            >
-              <span className="min-w-0 truncate">{activeProfileLabel}</span>
-              <ChevronDown
-                className={`h-3.5 w-3.5 flex-shrink-0 transition-transform min-[380px]:h-4 min-[380px]:w-4 ${showProfileMenu ? 'rotate-180' : ''}`}
-              />
-            </button>
+            {/* Profile dropdown */}
+            <div className="relative w-[110px] flex-shrink-0 min-[380px]:w-[125px] sm:w-[145px]" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileMenu((value) => !value);
+                  setShowPdfMenu(false);
+                }}
+                data-testid="header-profile-menu-button"
+                aria-expanded={showProfileMenu}
+                className={`flex h-9 w-full min-w-0 items-center justify-between gap-1 rounded-xl border px-2 text-left text-xs font-black transition active:scale-[0.98] min-[380px]:h-10 min-[380px]:gap-1.5 min-[380px]:rounded-2xl min-[380px]:px-2.5 sm:text-sm ${
+                  isDarkMode
+                    ? 'border-slate-800 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                    : `border-slate-200 bg-slate-50 ${accentColors.text} shadow-sm hover:bg-white`
+                }`}
+              >
+                <span className="min-w-0 truncate">{activeProfileLabel}</span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 flex-shrink-0 transition-transform min-[380px]:h-4 min-[380px]:w-4 ${showProfileMenu ? 'rotate-180' : ''}`}
+                />
+              </button>
 
             {showProfileMenu ? (
               <div
@@ -183,101 +182,104 @@ export default function Header() {
                       }`}
                     >
                       <span className="truncate">{profile.label}</span>
-                      {isActive ? <Check className="h-4 w-4 flex-shrink-0" /> : null}
                     </button>
                   );
                 })}
               </div>
             ) : null}
           </div>
-
-          <button
-            type="button"
-            onClick={() => setIsDarkMode((prev) => !prev)}
-            className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
-              isDarkMode
-                ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
-                : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
-            }`}
-            aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-            title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
-          >
-            {isDarkMode ? <Sun className="h-4 w-4 fill-current text-violet-200" /> : <Moon className="h-4 w-4 fill-sky-200 text-sky-500" />}
-          </button>
-
-          {/* PDF button */}
-          <div className="relative flex flex-shrink-0 items-center" ref={pdfMenuRef}>
-            <button
-              onClick={() => {
-                setShowPdfMenu((value) => !value);
-                setShowProfileMenu(false);
-              }}
-              data-testid="header-pdf-button"
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
-                isDarkMode
-                  ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
-                  : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
-              }`}
-              title="Descargar plan"
-            >
-              <FileText className="w-4 h-4" />
-            </button>
-
-            {showPdfMenu && (
-              <div
-                className={`absolute top-11 right-0 z-50 w-48 rounded-2xl shadow-xl p-1.5 ${
-                  isDarkMode
-                    ? 'bg-slate-950'
-                    : 'bg-white'
-                }`}
-              >
-                <button
-                  onClick={() => {
-                    void handleDownloadDayPdf();
-                    setShowPdfMenu(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
-                    isDarkMode
-                      ? 'text-slate-100 hover:bg-slate-800'
-                      : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  Menu de hoy
-                </button>
-                <button
-                  onClick={() => {
-                    void handleDownloadFullPlanPdf();
-                    setShowPdfMenu(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
-                    isDarkMode
-                      ? 'text-slate-100 hover:bg-slate-800'
-                      : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  Plan completo
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Settings button (solo en Inicio) */}
-          {activeTab === 'inicio' && (
+          {/* Right: Theme, PDF, Settings buttons */}
+          <div className="flex items-center gap-1.5 min-[380px]:gap-2 sm:gap-3 flex-shrink-0">
             <button
               type="button"
-              onClick={() => setIsAdminOpen(true)}
-              data-testid="header-settings-button"
+              onClick={() => setIsDarkMode((prev) => !prev)}
               className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
                 isDarkMode
                   ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
                   : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
               }`}
-              aria-label="Configuracion"
-              title="Configuracion"
+              aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+              title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
             >
-              <Settings className="h-4 w-4" />
+              {isDarkMode ? <Sun className="h-4 w-4 fill-current text-violet-200" /> : <Moon className="h-4 w-4 fill-sky-200 text-sky-400" />}
             </button>
-          )}
+
+            {/* PDF button */}
+            <div className="relative flex flex-shrink-0 items-center" ref={pdfMenuRef}>
+              <button
+                onClick={() => {
+                  setShowPdfMenu((value) => !value);
+                  setShowProfileMenu(false);
+                }}
+                data-testid="header-pdf-button"
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
+                  isDarkMode
+                    ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
+                    : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
+                }`}
+                title="Descargar plan"
+              >
+                <FileText className="w-4 h-4" />
+              </button>
+
+              {showPdfMenu && (
+                <div
+                  className={`absolute top-11 right-0 z-50 w-48 rounded-2xl shadow-xl p-1.5 ${
+                    isDarkMode
+                      ? 'bg-slate-950'
+                      : 'bg-white'
+                  }`}
+                >
+                  <button
+                    onClick={() => {
+                      void handleDownloadDayPdf();
+                      setShowPdfMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
+                      isDarkMode
+                        ? 'text-slate-100 hover:bg-slate-800'
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Menu de hoy
+                  </button>
+                  <button
+                    onClick={() => {
+                      void handleDownloadFullPlanPdf();
+                      setShowPdfMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold ${
+                      isDarkMode
+                        ? 'text-slate-100 hover:bg-slate-800'
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Plan completo
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Settings button (solo en Inicio) */}
+            {activeTab === 'inicio' && (
+              <button
+                type="button"
+                onClick={() => setIsAdminOpen(true)}
+                data-testid="header-settings-button"
+                className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
+                  isDarkMode
+                    ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
+                    : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
+                }`}
+                aria-label="Configuracion"
+                title="Configuracion"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </motion.header>
