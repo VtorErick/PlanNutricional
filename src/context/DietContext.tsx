@@ -84,6 +84,11 @@ const PATH_TO_TAB: Record<string, TabState> = {
 
 const AVAILABLE_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'] as const;
 
+function getTodayPlanDay(): typeof AVAILABLE_DAYS[number] {
+  const dayIndex = new Date().getDay();
+  return AVAILABLE_DAYS[dayIndex === 0 ? 6 : dayIndex - 1];
+}
+
 function isPlainObject(value: unknown): value is Record<string, any> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -91,7 +96,7 @@ function isPlainObject(value: unknown): value is Record<string, any> {
 function sanitizeActiveDay(value: unknown): string {
   return typeof value === 'string' && AVAILABLE_DAYS.includes(value as typeof AVAILABLE_DAYS[number])
     ? value
-    : 'Lunes';
+    : getTodayPlanDay();
 }
 
 function sanitizeBooleanRecord(value: unknown): Record<string, boolean> {
@@ -802,7 +807,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const diasDisponibles = useMemo(() => [...AVAILABLE_DAYS], []);
   const [diaActivo, setDiaActivo] = useLocalStorage<string>(
     'diaActivo',
-    'Lunes',
+    getTodayPlanDay(),
     sanitizeActiveDay
   );
 

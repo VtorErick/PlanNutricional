@@ -42,6 +42,12 @@ function getStoredProfileFromLocalStorage(): import('./context/DietContext').Per
   }
 }
 
+function getTodayPlanDay() {
+  const days = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+  const dayIndex = new Date().getDay();
+  return days[dayIndex === 0 ? 6 : dayIndex - 1];
+}
+
 export default function App() {
   const [isPlanAdjustOpen, setIsPlanAdjustOpen] = useState(false);
   const mobileNavRef = useRef<HTMLElement | null>(null);
@@ -252,7 +258,7 @@ export default function App() {
                 onViewPlan={(profile) => {
                   setIsQuestionnaireOpen(false);
                   setActiveProfile(profile);
-                  setActiveDay('Lunes');
+                  setActiveDay(getTodayPlanDay());
                   setActiveTab('plan');
                 }}
                 loading={generationLoading}

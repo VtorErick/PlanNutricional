@@ -305,28 +305,23 @@ export default function ShoppingView() {
         </div>
 
         {shoppingList.length > 0 && (
-          <div className={`relative mb-4 flex items-center justify-between rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-emerald-600" />
-                <span className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
-                  {pendingCount} pendientes
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleShareList()}
-                className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition active:scale-95 ${
-                  isDarkMode ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <Share2 className="h-3.5 w-3.5" />
-                Compartir
-              </button>
+          <div className={`relative mb-4 flex items-center justify-between gap-3 rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+            <div className="flex min-w-0 items-center gap-2">
+              <ClipboardList className="h-4 w-4 flex-shrink-0 text-emerald-600" />
+              <span className={`truncate text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
+                {pendingCount} pendientes
+              </span>
             </div>
-            <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              {checkedCount}/{shoppingList.length} marcados
-            </span>
+            <button
+              type="button"
+              onClick={() => void handleShareList()}
+              className={`ml-auto inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition active:scale-95 ${
+                isDarkMode ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Compartir
+            </button>
           </div>
         )}
 

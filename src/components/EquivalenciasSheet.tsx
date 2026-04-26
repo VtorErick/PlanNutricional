@@ -20,7 +20,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 bg-slate-950/55 backdrop-blur-sm"
+        className="fixed inset-0 z-[70] bg-slate-950/55 backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -145,7 +145,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-slate-950/55 backdrop-blur-[2px]"
+              className="fixed inset-0 z-[80] bg-slate-950/55 backdrop-blur-[2px]"
             />
 
             <motion.section
@@ -156,7 +156,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-              className={`fixed inset-x-0 bottom-0 z-[70] mx-auto max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-t-[28px] border ${
+              className={`fixed inset-x-0 bottom-0 z-[90] mx-auto max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-t-[28px] border ${
                 isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'
               }`}
               style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}

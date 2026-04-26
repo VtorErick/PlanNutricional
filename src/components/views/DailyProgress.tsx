@@ -49,8 +49,10 @@ export default function DailyProgress() {
   const labelEl = getProfileLabel(profileLabels, 'el');
   const labelElla = getProfileLabel(profileLabels, 'ella');
   const [showDayPicker, setShowDayPicker] = React.useState(false);
-  const dayScrollerRef = React.useRef<HTMLDivElement | null>(null);
-  const dayButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const mobileDayScrollerRef = React.useRef<HTMLDivElement | null>(null);
+  const desktopDayScrollerRef = React.useRef<HTMLDivElement | null>(null);
+  const mobileDayButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const desktopDayButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
 
   const profileDayStats = React.useMemo(() => {
     const sumForProfile = (profileId: 'el' | 'ella') => {
@@ -77,26 +79,28 @@ export default function DailyProgress() {
   const isAmbos = isCombinedProfile || activeProfile === 'ambos';
 
   React.useEffect(() => {
-    const container = dayScrollerRef.current;
-    const activeButton = dayButtonRefs.current[activeDay];
+    const centerActiveDay = (
+      container: HTMLDivElement | null,
+      activeButton: HTMLButtonElement | null
+    ) => {
+      if (!container || !activeButton) return;
 
-    if (!container || !activeButton) return;
+      const nextScrollLeft =
+        activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;
 
-    const containerRect = container.getBoundingClientRect();
-    const buttonRect = activeButton.getBoundingClientRect();
-    const isFullyVisible =
-      buttonRect.left >= containerRect.left && buttonRect.right <= containerRect.right;
+      container.scrollTo({
+        left: Math.max(0, nextScrollLeft),
+        behavior: 'smooth',
+      });
+    };
 
-    if (isFullyVisible) return;
-
-    const nextScrollLeft =
-      activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;
-
-    container.scrollTo({
-      left: Math.max(0, nextScrollLeft),
-      behavior: 'smooth',
+    const frame = window.requestAnimationFrame(() => {
+      centerActiveDay(mobileDayScrollerRef.current, mobileDayButtonRefs.current[activeDay]);
+      centerActiveDay(desktopDayScrollerRef.current, desktopDayButtonRefs.current[activeDay]);
     });
-  }, [activeDay]);
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeDay, availableDays]);
 
   return (
     <motion.div
@@ -135,14 +139,14 @@ export default function DailyProgress() {
           }`}
         >
           {/* Day pills */}
-          <div className="flex-1 overflow-x-auto scrollbar-none snap-x" ref={dayScrollerRef}>
+          <div className="flex-1 overflow-x-auto scrollbar-none snap-x" ref={mobileDayScrollerRef}>
             <div className="inline-flex items-center gap-1.5 min-w-max">
               {availableDays.map((day) => {
                 const active = activeDay === day;
                 return (
                   <button
                     key={day}
-                    ref={(element) => { dayButtonRefs.current[day] = element; }}
+                    ref={(element) => { mobileDayButtonRefs.current[day] = element; }}
                     onClick={(event) => {
                       event.stopPropagation();
                       setActiveDay(day);
@@ -189,7 +193,7 @@ export default function DailyProgress() {
       <div className="relative z-10 hidden max-w-5xl mx-auto px-3 sm:block sm:px-6 pt-3 pb-2">
         <div className="flex items-center gap-2">
           <div
-            ref={dayScrollerRef}
+            ref={desktopDayScrollerRef}
             className="flex-1 overflow-x-auto snap-x scrollbar-none"
           >
             <div className="inline-flex gap-2 items-center min-w-max">
@@ -200,7 +204,7 @@ export default function DailyProgress() {
                   <button
                     key={day}
                     ref={(element) => {
-                      dayButtonRefs.current[day] = element;
+                      desktopDayButtonRefs.current[day] = element;
                     }}
                     onClick={(event) => {
                       event.stopPropagation();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type TouchEvent, type WheelEvent } from 'react';
 import { motion } from 'framer-motion';
 import {
   Clock,
@@ -16,6 +16,8 @@ import { getAccentColors } from '../../utils/theme';
 const MEAL_WINDOW_MINUTES = 75;
 const PROFILE_IDS = ['el', 'ella'] as const;
 const AVAILABLE_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'] as const;
+const CYLINDER_RADIUS = 135;
+const CYLINDER_ANGLE = 58;
 
 function parseTimeToMinutes(value: string) {
   const [rawHour, rawMinute] = value.split(':').map((part) => Number.parseInt(part, 10));
@@ -62,6 +64,19 @@ function truncateText(value: string, maxLength: number) {
   return `${value.slice(0, maxLength - 1).trim()}...`;
 }
 
+function getLoopOffset(index: number, activeIndex: number, total: number) {
+  if (total <= 0) return 0;
+  const raw = index - activeIndex;
+  const half = total / 2;
+  if (raw > half) return raw - total;
+  if (raw < -half) return raw + total;
+  return raw;
+}
+
+function getMomentActionName(label: string) {
+  return label.replace(/\s+(AM|PM)$/i, '').trim().toLowerCase();
+}
+
 const createDefaultQuestionnairePerson = (
   weight: string,
   height: string,
@@ -100,11 +115,14 @@ const createDefaultQuestionnairePerson = (
 
 export default function LandingView() {
   const {
-    diaActivo: activeDay,
     perfilActivo,
     perfilesData: profilesData,
     selecciones: selections,
     profileLabels,
+    dataVersions,
+    setTab,
+    setDiaActivo,
+    scrollToMomento,
     setShowQuestionnaire: setIsQuestionnaireOpen,
     setQuestionnaireTargetProfile,
     setQuestionnaireStepIdx,
@@ -180,9 +198,10 @@ export default function LandingView() {
           .values()
       );
 
-      let preparationMessage = 'Aun no hay platillo elegido para este tiempo.';
+      const actionName = getMomentActionName(moment.label);
+      let preparationMessage = `No has elegido tu ${actionName}.`;
       if (selectedCount === selectedMeals.length && selectedCount > 0) {
-        preparationMessage = 'Ya elegiste platillo para este tiempo.';
+        preparationMessage = 'Sugerencia actual.';
       } else if (selectedCount > 0) {
         preparationMessage = `Falta elegir para ${missingLabels.join(' y ')}.`;
       }
@@ -199,28 +218,87 @@ export default function LandingView() {
 
     return {
       currentKey: targetMoment?.key || null,
+      initialIndex: targetIndex >= 0 ? targetIndex : 0,
       cards: moments
         .map((moment, index) => buildMomentCard(moment, index))
         .filter((card): card is NonNullable<typeof card> => Boolean(card)),
     };
   }, [currentDayOfWeek, currentMinutes, perfilActivo, profileLabels, profilesData, selections]);
 
-  const reelScrollRef = useRef<HTMLDivElement | null>(null);
-  const currentCardRef = useRef<HTMLElement | null>(null);
+  const [activeReelIndex, setActiveReelIndex] = useState(0);
+  const touchStartYRef = useRef<number | null>(null);
+  const wheelLockRef = useRef(false);
 
   useEffect(() => {
-    const container = reelScrollRef.current;
-    const currentCard = currentCardRef.current;
-    if (!container || !currentCard) return;
+    setActiveReelIndex(homeReel.initialIndex);
+  }, [homeReel.initialIndex]);
 
-    const nextScrollTop =
-      currentCard.offsetTop - container.clientHeight / 2 + currentCard.clientHeight / 2;
+  const moveReel = (direction: 1 | -1) => {
+    const total = homeReel.cards.length;
+    if (total <= 1) return;
+    setActiveReelIndex((current) => (current + direction + total) % total);
+  };
 
-    container.scrollTo({
-      top: Math.max(0, nextScrollTop),
-      behavior: 'smooth',
-    });
-  }, [homeReel.currentKey]);
+  const handleReelWheel = (event: WheelEvent<HTMLDivElement>) => {
+    if (Math.abs(event.deltaY) < 12 || wheelLockRef.current) return;
+    event.preventDefault();
+    wheelLockRef.current = true;
+    moveReel(event.deltaY > 0 ? 1 : -1);
+    window.setTimeout(() => {
+      wheelLockRef.current = false;
+    }, 260);
+  };
+
+  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
+    touchStartYRef.current = event.touches[0]?.clientY ?? null;
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
+    const startY = touchStartYRef.current;
+    touchStartYRef.current = null;
+    if (startY === null) return;
+    const endY = event.changedTouches[0]?.clientY ?? startY;
+    const delta = startY - endY;
+    if (Math.abs(delta) < 28) return;
+    moveReel(delta > 0 ? 1 : -1);
+  };
+
+  const handleReelKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      moveReel(1);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      moveReel(-1);
+    }
+  };
+
+  const activeCard = homeReel.cards[activeReelIndex] || homeReel.cards[0] || null;
+  const activeMomentName = activeCard ? getMomentActionName(activeCard.moment.label) : 'comida';
+  const hasPersonalizedPlan =
+    perfilActivo === 'el'
+      ? dataVersions.el === 'custom'
+      : perfilActivo === 'ella'
+        ? dataVersions.ella === 'custom'
+        : dataVersions.el === 'custom' && dataVersions.ella === 'custom';
+  const primaryActionLabel = !hasPersonalizedPlan
+    ? 'Crear mi plan con IA'
+    : activeCard?.selectedCount
+      ? `Ver ${activeMomentName}`
+      : `Elegir ${activeMomentName}`;
+
+  const handlePrimaryAction = () => {
+    if (!hasPersonalizedPlan) {
+      openQuestionnaire();
+      return;
+    }
+    if (!activeCard) return;
+    setDiaActivo(currentDayOfWeek);
+    setTab('plan');
+    window.setTimeout(() => {
+      scrollToMomento(activeCard.moment.key, false);
+    }, 120);
+  };
 
   const openQuestionnaire = () => {
     setQuestionnaireTargetProfile('ambos');
@@ -262,11 +340,13 @@ export default function LandingView() {
         </div>
       ))}
       {card.selectedMealGroups.length === 0 ? (
-        <p className={`rounded-2xl border px-3 py-3 text-sm font-bold ${isDarkMode ? 'border-slate-800 bg-slate-950/55 text-slate-300' : `${accent.borderLight} bg-white/55 text-slate-600`}`}>
-          {card.preparationMessage}
-        </p>
+        compact ? (
+          <p className={`px-1 text-xs font-bold ${isDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+            Sin platillo elegido.
+          </p>
+        ) : null
       ) : null}
-      {card.missingLabels.length > 0 && !compact ? (
+      {card.missingLabels.length > 0 && !compact && card.selectedMealGroups.length > 0 ? (
         <p className={`px-1 text-xs font-bold ${isDarkMode ? 'text-slate-500' : accent.text}`}>
           Falta elegir para {card.missingLabels.join(' y ')}.
         </p>
@@ -282,8 +362,8 @@ export default function LandingView() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-100 saturate-[0.96] dark:opacity-34"
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/30 via-white/5 to-white/30 dark:from-slate-950/78 dark:via-slate-950/46 dark:to-slate-950/80" />
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent.bgGradientLight} opacity-10 dark:opacity-16`} />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/22 via-white/0 to-white/24 dark:from-slate-950/74 dark:via-slate-950/38 dark:to-slate-950/78" />
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent.bgGradientLight} opacity-[0.06] dark:opacity-12`} />
       <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-24 pt-4 max-[340px]:px-3 max-[340px]:pb-20 max-[340px]:pt-2 sm:px-6 sm:pb-10 sm:pt-6">
         <main className="flex min-h-0 flex-1 flex-col justify-center gap-4 py-3 max-[340px]:py-1.5 sm:py-12">
           <motion.section
@@ -291,82 +371,87 @@ export default function LandingView() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 32 }}
             data-testid="landing-profile-ambos-card"
-            className={`relative overflow-hidden rounded-[30px] border p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)] max-[340px]:rounded-[24px] max-[340px]:p-3 sm:p-6 ${
+            className={`relative rounded-[30px] border p-4 shadow-[0_16px_42px_rgba(15,23,42,0.10)] max-[340px]:rounded-[24px] max-[340px]:p-3 sm:p-6 ${
               isDarkMode
-                ? `border-slate-800 bg-slate-950/86 backdrop-blur-md`
-                : `${accent.borderLight} bg-white/72 backdrop-blur-md`
+                ? `border-slate-800 bg-slate-950/90`
+                : `${accent.borderLight} bg-white/88`
             }`}
           >
-            <div className="relative z-10 mb-4 flex items-start justify-between gap-3 max-[340px]:mb-2.5 max-[340px]:gap-2.5">
-              <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl max-[340px]:h-10 max-[340px]:w-10 ${accent.bgLight} ${accent.text}`}>
-                <UtensilsCrossed className="h-5 w-5 max-[340px]:h-4 max-[340px]:w-4" />
-              </div>
+            <div className="relative z-10 mb-2.5 flex items-start justify-between gap-3 max-[340px]:mb-1.5 max-[340px]:gap-2.5">
               <div className="min-w-0 flex-1">
-                <p className={`text-xs font-black uppercase tracking-[0.16em] max-[340px]:text-[10px] ${accent.text}`}>
-                  Hoy:{currentDayOfWeek}
+                <p className={`text-[11px] font-black uppercase tracking-[0.18em] max-[340px]:text-[10px] ${accent.text}`}>
+                  Hoy · {currentDayOfWeek}
                 </p>
-                <p className={`text-xs font-black uppercase tracking-[0.16em] max-[340px]:text-[10px] ${accent.text}`}>
+                <p className={`mt-0.5 truncate text-xs font-black uppercase tracking-[0.14em] max-[340px]:text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   {profileLabel}
                 </p>
-                <h1 className={`mt-1 text-2xl font-black tracking-tight max-[340px]:text-xl sm:text-3xl whitespace-nowrap ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
-                  Tu dia de comida
-                </h1>
               </div>
-              <div className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-black max-[340px]:px-2.5 max-[340px]:py-1.5 ${isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-200' : `${accent.borderLight} bg-white/55 ${accent.text}`}`}>
+              <div className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-black max-[340px]:px-2.5 max-[340px]:py-1.5 ${isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-200' : `${accent.borderLight} bg-white ${accent.text}`}`}>
                 <Clock className="h-3.5 w-3.5" />
                 {formatMinutesAsTime(currentMinutes)}
               </div>
             </div>
 
             <div
-              ref={reelScrollRef}
-              className={`relative z-10 h-[360px] overflow-y-auto overscroll-contain rounded-[26px] border px-1 py-14 [perspective:900px] snap-y snap-mandatory scrollbar-none max-[340px]:h-[360px] max-[340px]:py-14 [@media(max-height:680px)]:h-[295px] [@media(max-height:680px)]:py-12 sm:h-[450px] sm:py-16 ${
-                isDarkMode
-                  ? 'border-slate-800 bg-slate-900/45'
-                  : `${accent.borderLight} bg-slate-100/46`
-              }`}
+              className="relative z-10 h-[360px] touch-pan-y overflow-hidden [perspective:1000px] max-[340px]:h-[360px] [@media(max-height:680px)]:h-[295px] sm:h-[450px]"
               aria-label="Carrete de tiempos de comida"
+              role="listbox"
+              tabIndex={0}
+              onWheel={handleReelWheel}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              onKeyDown={handleReelKeyDown}
             >
-              <div className="space-y-3">
-              {homeReel.cards.map((card) => {
-                const isCurrent = card.moment.key === homeReel.currentKey;
-                const isBeforeCurrent = card.offset < 0;
+              <div className="absolute inset-0 [transform-style:preserve-3d]">
+              {homeReel.cards.map((card, index) => {
+                const total = homeReel.cards.length;
+                const relativeOffset = getLoopOffset(index, activeReelIndex, total);
+                const isCurrent = relativeOffset === 0;
+                const theta = relativeOffset * CYLINDER_ANGLE;
+                const rotateX = -theta;
+                const y = Math.sin((theta * Math.PI) / 180) * CYLINDER_RADIUS;
+                const z = (Math.cos((theta * Math.PI) / 180) - 1) * CYLINDER_RADIUS;
+                const depth = Math.abs(relativeOffset);
+                const isVisible = depth <= 2;
+                const opacity = !isVisible ? 0 : isCurrent ? 1 : depth === 1 ? 0.72 : 0;
+                const scale = isCurrent ? 1 : depth === 1 ? 0.9 : 0.82;
                 return (
                   <motion.article
                     key={card.moment.key}
-                    ref={(element) => {
-                      if (isCurrent) currentCardRef.current = element;
-                    }}
-                    initial={{ opacity: 0, y: 14 }}
+                    role="option"
+                    aria-selected={isCurrent}
+                    initial={false}
                     animate={{
-                      opacity: isCurrent ? 1 : 0.62,
-                      scale: isCurrent ? 1 : 0.92,
-                      rotateX: isCurrent ? 0 : isBeforeCurrent ? 16 : -16,
+                      opacity,
+                      scale,
+                      filter: isCurrent ? 'blur(0px) saturate(1)' : 'blur(0.35px) saturate(0.82)',
+                      transform: `translate3d(-50%, calc(-50% + ${y}px), ${z}px) rotateX(${rotateX}deg) scale(${scale})`,
                     }}
-                    transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-                    className={`snap-center rounded-[26px] border transition-shadow max-[340px]:rounded-[22px] ${
+                    transition={{ type: 'spring', stiffness: 220, damping: 28 }}
+                    className={`absolute left-1/2 top-1/2 w-[calc(100%-0.35rem)] rounded-[26px] border transition-shadow max-[340px]:rounded-[22px] ${
                       isCurrent
                         ? isDarkMode
                           ? 'border-slate-700 bg-slate-900 p-4 shadow-[0_16px_34px_rgba(2,6,23,0.4)] max-[340px]:p-3 sm:p-5'
-                          : `${accent.border} bg-white/74 p-4 shadow-[0_16px_34px_rgba(15,23,42,0.10)] max-[340px]:p-3 sm:p-5`
+                          : `${accent.border} bg-white p-4 shadow-[0_16px_34px_rgba(15,23,42,0.12)] max-[340px]:p-3 sm:p-5`
                         : isDarkMode
-                          ? 'border-slate-800 bg-slate-900/72 p-3 shadow-[0_10px_24px_rgba(2,6,23,0.24)]'
-                          : `${accent.borderLight} bg-white/42 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.06)]`
+                          ? 'pointer-events-none border-slate-800 bg-slate-900/60 p-3 shadow-[0_10px_24px_rgba(2,6,23,0.18)]'
+                          : `pointer-events-none ${accent.borderLight} bg-white/64 p-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)]`
                     }`}
                     style={{
                       transformStyle: 'preserve-3d',
-                      transformOrigin: isCurrent ? 'center center' : isBeforeCurrent ? 'bottom center' : 'top center',
+                      zIndex: isCurrent ? 30 : 20 - depth,
+                      pointerEvents: isCurrent ? 'auto' : 'none',
                     }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className={`text-[10px] font-black uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : accent.text}`}>
-                          {isCurrent ? 'Para preparar' : card.offset < 0 ? 'Anterior' : 'Siguiente'}
+                        <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : accent.text}`}>
+                          {isCurrent ? 'Tiempo actual' : relativeOffset < 0 ? 'Anterior' : 'Siguiente'}
                         </p>
-                        <h2 className={`${isCurrent ? 'text-xl max-[340px]:text-lg sm:text-3xl' : 'text-lg'} mt-1 font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
+                        <h2 className={`${isCurrent ? 'text-2xl max-[340px]:text-[22px] sm:text-4xl' : 'text-lg'} mt-1 font-black tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
                           {card.moment.label}
                         </h2>
-                        <p className={`${isCurrent ? 'text-xs sm:text-sm' : 'text-xs'} mt-1 font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <p className={`${isCurrent ? 'text-sm' : 'text-xs'} mt-1.5 font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                           {card.preparationMessage}
                         </p>
                       </div>
@@ -382,22 +467,29 @@ export default function LandingView() {
               </div>
             </div>
 
-          </motion.section>
-          <div className="flex justify-center">
             <button
               type="button"
-              onClick={openQuestionnaire}
+              onClick={handlePrimaryAction}
               data-testid="landing-customize-ambos"
-              className={`inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-4 py-2 text-xs font-black shadow-sm transition hover:brightness-105 active:scale-[0.98] max-[340px]:min-h-[38px] max-[340px]:px-3 ${
-                isDarkMode
-                  ? 'border-slate-800 bg-slate-950/80 text-slate-100'
-                  : `${accent.borderLight} bg-white/70 ${accent.text}`
-              }`}
+              className={`relative z-10 mt-2 inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br ${accent.bgGradient} px-4 py-3 text-sm font-black text-white shadow-[0_12px_26px_rgba(15,23,42,0.16)] transition hover:brightness-105 active:scale-[0.98] max-[340px]:min-h-[42px] max-[340px]:py-2.5`}
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Personalizar mi plan</span>
+              {!hasPersonalizedPlan ? <Sparkles className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}
+              <span>{primaryActionLabel}</span>
             </button>
-          </div>
+            {hasPersonalizedPlan ? (
+              <button
+                type="button"
+                onClick={openQuestionnaire}
+                data-testid="landing-ai-adjust"
+                className={`relative z-10 mx-auto mt-3 flex min-h-[34px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-opacity hover:opacity-75 active:scale-[0.98] ${
+                  isDarkMode ? 'text-violet-200' : 'text-[#7C5CFF]'
+                }`}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Ajustar plan con IA</span>
+              </button>
+            ) : null}
+          </motion.section>
         </main>
       </div>
     </div>

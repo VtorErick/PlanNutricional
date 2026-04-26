@@ -32,14 +32,6 @@ import {
 import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
 import { getProfileLabel } from '../../utils/profileLabels';
 
-function cloneQuestionnaireValue<T>(value: T): T {
-  if (value === null || value === undefined) {
-    return value;
-  }
-
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
 const momentoIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
   colacion_am: Apple,
@@ -87,15 +79,6 @@ export default function PlanView() {
     geminiModel,
     geminiFallbackModels,
     geminiRecommendedModel,
-    refreshGeminiAvailability,
-    setShowQuestionnaire,
-    setQuestionnaireTargetProfile,
-    setQuestionnaireStepIdx,
-    setQuestionnaireEl,
-    setQuestionnaireElla,
-    setQuestionnairePortionMode,
-    setQuestionnaireManualPortions,
-    setQuestionnaireAdditionalNotes,
     notify,
     confirmAction,
   } = useDiet();
@@ -158,58 +141,6 @@ export default function PlanView() {
       (lastQuestionnaireContexts?.[targetProfile] as Partial<QuestionnairePayload> | null) || null,
     [lastQuestionnaireContexts]
   );
-
-  const handleOpenQuestionnaireFromPlanAi = React.useCallback(async (
-    targetProfile: PlanRevisionRequest['targetProfile']
-  ) => {
-    const status = await refreshGeminiAvailability({
-      preferredModel: geminiModel,
-      checkGeneration: true,
-      syncModel: true,
-      force: true,
-    });
-
-    if (!status?.ok) {
-      await notify(
-        'IA no disponible',
-        status?.error || 'No fue posible validar la IA en este momento.'
-      );
-      return;
-    }
-
-    const questionnaireContext = getQuestionnaireContextForTarget(targetProfile);
-    setQuestionnaireTargetProfile(targetProfile);
-    setQuestionnaireStepIdx(1, targetProfile);
-    setQuestionnairePortionMode(questionnaireContext?.portionMode === 'manual' ? 'manual' : 'auto');
-    setQuestionnaireManualPortions(cloneQuestionnaireValue(
-      questionnaireContext?.planConfig?.manualPortions || {}
-    ));
-    setQuestionnaireAdditionalNotes(questionnaireContext?.planConfig?.additionalNotes || '');
-
-    if (questionnaireContext?.el) {
-      setQuestionnaireEl(cloneQuestionnaireValue(questionnaireContext.el));
-    }
-
-    if (questionnaireContext?.ella) {
-      setQuestionnaireElla(cloneQuestionnaireValue(questionnaireContext.ella));
-    }
-
-    setIsPlanAiSheetOpen(false);
-    setShowQuestionnaire(true);
-  }, [
-    geminiModel,
-    getQuestionnaireContextForTarget,
-    notify,
-    refreshGeminiAvailability,
-    setQuestionnaireAdditionalNotes,
-    setQuestionnaireEl,
-    setQuestionnaireElla,
-    setQuestionnaireManualPortions,
-    setQuestionnairePortionMode,
-    setQuestionnaireStepIdx,
-    setQuestionnaireTargetProfile,
-    setShowQuestionnaire,
-  ]);
 
   const handlePlanAiSubmit = React.useCallback(async ({
     requestMode,
@@ -712,13 +643,11 @@ export default function PlanView() {
         open={isPlanAiSheetOpen}
         onClose={() => setIsPlanAiSheetOpen(false)}
         onSubmit={(payload) => handlePlanAiSubmit(payload)}
-        onOpenQuestionnaire={(targetProfile) => handleOpenQuestionnaireFromPlanAi(targetProfile)}
         isDarkMode={isDarkMode}
         accentClasses={ac}
         loading={planRevisionLoading}
         errorMessage={planRevisionError}
         aiErrorLog={planRevisionErrorLog}
-        hasQuestionnaireContext={Boolean(lastQuestionnaireContexts?.el || lastQuestionnaireContexts?.ella || lastQuestionnaireContexts?.ambos)}
         defaultTarget={defaultPlanAiTarget}
         geminiModel={geminiModel}
         geminiRecommendedModel={geminiRecommendedModel}
