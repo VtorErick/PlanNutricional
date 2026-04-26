@@ -15,6 +15,7 @@ import { getAccentColors } from '../../utils/theme';
 
 const MEAL_WINDOW_MINUTES = 75;
 const PROFILE_IDS = ['el', 'ella'] as const;
+const AVAILABLE_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'] as const;
 
 function parseTimeToMinutes(value: string) {
   const [rawHour, rawMinute] = value.split(':').map((part) => Number.parseInt(part, 10));
@@ -26,6 +27,11 @@ function parseTimeToMinutes(value: string) {
 function getCurrentMinutes() {
   const now = new Date();
   return now.getHours() * 60 + now.getMinutes();
+}
+
+function getCurrentDayOfWeek(): typeof AVAILABLE_DAYS[number] {
+  const dayIndex = (new Date().getDay() + 6) % 7;
+  return AVAILABLE_DAYS[dayIndex];
 }
 
 function formatMinutesAsTime(value: number) {
@@ -116,10 +122,12 @@ export default function LandingView() {
       ? getCombinedProfileLabel(profileLabels)
       : getProfileLabel(profileLabels, perfilActivo);
   const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes);
+  const [currentDayOfWeek, setCurrentDayOfWeek] = useState(getCurrentDayOfWeek);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
       setCurrentMinutes(getCurrentMinutes());
+      setCurrentDayOfWeek(getCurrentDayOfWeek());
     }, 60_000);
 
     return () => window.clearInterval(interval);
@@ -142,9 +150,9 @@ export default function LandingView() {
       const offset = targetIndex >= 0 ? index - targetIndex : 0;
 
       const selectedMeals = activeProfileIds.map((profileId) => {
-        const meals = profilesData[profileId]?.plan?.[activeDay]?.[moment.key] || [];
+        const meals = profilesData[profileId]?.plan?.[currentDayOfWeek]?.[moment.key] || [];
         const selectedMeal = meals.find((meal: MealItem) =>
-          selections[`${profileId}-${activeDay}-${moment.key}-${meal.nombre}`]
+          selections[`${profileId}-${currentDayOfWeek}-${moment.key}-${meal.nombre}`]
         );
         const label = getProfileLabel(profileLabels, profileId);
 
@@ -195,7 +203,7 @@ export default function LandingView() {
         .map((moment, index) => buildMomentCard(moment, index))
         .filter((card): card is NonNullable<typeof card> => Boolean(card)),
     };
-  }, [activeDay, currentMinutes, perfilActivo, profileLabels, profilesData, selections]);
+  }, [currentDayOfWeek, currentMinutes, perfilActivo, profileLabels, profilesData, selections]);
 
   const reelScrollRef = useRef<HTMLDivElement | null>(null);
   const currentCardRef = useRef<HTMLElement | null>(null);
@@ -295,7 +303,7 @@ export default function LandingView() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className={`text-xs font-black uppercase tracking-[0.16em] max-[340px]:text-[10px] ${accent.text}`}>
-                  {activeDay}
+                  Hoy:{currentDayOfWeek}
                 </p>
                 <p className={`text-xs font-black uppercase tracking-[0.16em] max-[340px]:text-[10px] ${accent.text}`}>
                   {profileLabel}
