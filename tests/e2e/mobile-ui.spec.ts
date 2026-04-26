@@ -40,11 +40,11 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
   await expect(page.getByTestId('landing-customize-ambos')).toBeVisible();
   await saveDocScreenshot(page, 'landing-mobile.png');
 
-  await page.getByTestId('landing-admin-button').click();
+  await page.getByTestId('header-settings-button').click();
   await expect(page.getByTestId('admin-tab-settings')).toBeVisible();
   await page.getByTestId('admin-tab-settings').click();
   await expect(
-    page.getByRole('heading', { name: /Gemini solo por servidor/i })
+    page.getByRole('heading', { name: /AI Gemini/i })
   ).toBeVisible();
   await saveDocScreenshot(page, 'admin-settings-mobile.png');
   await page.getByTestId('admin-close-button').click();
@@ -72,10 +72,6 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
 });
 
 async function openDayPickerAndSelectDay(page: Page, day: string) {
-  // On mobile, the day picker is inside the DailyProgress card.
-  // First click the current day toggle to open the picker, then select the target day.
-  const dayPickerToggle = page.locator('button').filter({ hasText: /^Lunes$|^Martes$|^Miercoles$|^Jueves$|^Viernes$|^Sabado$|^Domingo$/ }).first();
-  await dayPickerToggle.click();
   const dayButton = page.locator('button').filter({ hasText: new RegExp(`^${day.slice(0, 3)}$`, 'i') }).first();
   await dayButton.click();
 }
@@ -211,47 +207,6 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await expect(page.getByText(untouchedTuesdayBreakfast)).toBeVisible();
 });
 
-test('local meal replacement from adjust sheet respects active profile scope', async ({ page }) => {
-  const originalElBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
-  const originalEllaBreakfast = getFirstMealName('ella', 'Lunes', 'desayuno');
-
-  await seedGeneratedPlans(page, { selectedDays: ['Lunes'] });
-  await page.goto('/miplan?profile=el');
-
-  await expect(page.getByText(originalElBreakfast)).toBeVisible();
-  await page.getByTestId('plan-ai-open').click();
-  await page.getByTestId('plan-ai-open-meal-replacement').click();
-  await expect(page.getByTestId('local-replacement-slot-list')).toBeVisible();
-  await expect(page.getByTestId('local-replacement-slot-Lunes-desayuno-0')).toBeVisible();
-  await expect(page.getByTestId('local-replacement-slot-Lunes-desayuno-0')).toContainText(originalElBreakfast);
-  await page.getByTestId('local-replacement-apply').click();
-  await page.getByRole('button', { name: /Confirmar/i }).click();
-  await expect(page.getByText(/Comida reemplazada/i)).toBeVisible();
-  await page.getByRole('button', { name: /Aceptar/i }).click();
-  await expect(page.getByText(originalElBreakfast)).toHaveCount(0);
-
-  await page.goto('/miplan?profile=ella');
-  await expect(page.getByText(originalEllaBreakfast)).toBeVisible();
-});
-
-test('local meal replacement from ambos updates both profiles in the same weekly slot', async ({ page }) => {
-  const originalBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
-
-  await seedGeneratedPlans(page, { selectedDays: ['Lunes'] });
-  await page.goto('/miplan?profile=ambos');
-
-  await expect(page.getByText(originalBreakfast).first()).toBeVisible();
-  await page.getByTestId('plan-ai-open').click();
-  await page.getByTestId('plan-ai-open-meal-replacement').click();
-  await expect(page.getByText(/En vista Ambos se reemplaza el mismo espacio para los dos perfiles/i)).toBeVisible();
-  await expect(page.getByText(originalBreakfast).first()).toBeVisible();
-  await page.getByTestId('local-replacement-apply').click();
-  await page.getByRole('button', { name: /Confirmar/i }).click();
-  await expect(page.getByText(/Comidas reemplazadas/i)).toBeVisible();
-  await page.getByRole('button', { name: /Aceptar/i }).click();
-  await expect(page.getByText(originalBreakfast)).toHaveCount(0);
-});
-
 test('AI regenerate tolerates patch-shaped responses and still refreshes the visible plan', async ({
   page,
 }) => {
@@ -321,42 +276,6 @@ test('AI regenerate tolerates patch-shaped responses and still refreshes the vis
   await expect(page.getByText(updatedBreakfast)).toBeVisible();
 });
 
-test('recreate from zero can reopen the questionnaire with saved answers', async ({ page }) => {
-  await seedGeneratedPlans(page, {
-    selectedDays: ['Lunes'],
-    lastQuestionnaireContext: {
-      targetProfile: 'el',
-      profileToUpdate: 'el',
-      portionMode: 'manual',
-      planConfig: {
-        mealsPerDay: '5',
-        selectedMoments: [],
-        manualPortions: {
-          desayuno: {
-            proteina: 2,
-          },
-        },
-        additionalNotes: 'Sin lactosa y con desayunos sencillos.',
-      },
-      el: {
-        age: '41',
-        currentWeightKg: '82',
-        heightCm: '178',
-      },
-    },
-  });
-  await mockGeminiStatusApi(page);
-  await page.goto('/miplan?profile=el');
-
-  await page.getByTestId('plan-ai-open').click();
-  await page.getByTestId('plan-ai-mode-regenerate').click();
-  await page.getByTestId('plan-ai-regenerate-path-questionnaire').click();
-  await page.getByTestId('plan-ai-submit').click();
-
-  await expect(page.getByTestId('questionnaire-step-fisica-el')).toBeVisible();
-  await expect(page.getByRole('spinbutton').first()).toHaveValue('41');
-});
-
 test('combined mobile navigation renders every major view with populated data', async ({ page }) => {
   await seedGeneratedPlans(page, { selectedDays: ['Lunes', 'Martes'] });
   await page.goto('/miplan?profile=ambos');
@@ -371,11 +290,12 @@ test('combined mobile navigation renders every major view with populated data', 
   await page.getByTestId('plan-equivalencias-open').click();
   await expect(page.getByRole('heading', { name: /Equivalencias/i })).toBeVisible();
   await saveDocScreenshot(page, 'equivalencias-mobile.png');
-  await page.getByLabel('Cerrar guía de equivalencias').click();
+  await page.getByLabel(/Cerrar gu.a de equivalencias/i).click();
 
-  await selectMobileTab(page, 'suplementos');
+  await page.getByTestId('plan-suplementos-nav').click();
   await expect(page.getByRole('heading', { name: 'Suplementos', exact: true })).toBeVisible();
   await saveDocScreenshot(page, 'supplements-mobile.png');
+  await page.getByLabel('Cerrar suplementos').click();
 
   await selectMobileTab(page, 'calorias');
   await expect(page.getByRole('heading', { name: /Kcal por/i })).toBeVisible();

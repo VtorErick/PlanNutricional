@@ -1,136 +1,117 @@
-# Guía de Uso
+# Guia de Uso
 
-Esta guía describe el flujo real actual de la aplicación.
+Esta guia describe los flujos actuales de Plan Nutricional.
 
-## 1. Entrar a la app
+## 1. Inicio
 
-1. Abre la landing.
-2. Elige una de estas rutas:
-   `El`
-   `Ella`
-   `Ambos`
-3. Si todavía no quieres entrar al plan, usa `Personalizar mi plan` para abrir el cuestionario IA.
+La app abre en `Inicio` con el perfil activo (`El`, `Ella` o `Ambos`). La tarjeta principal muestra el dia, la hora y el tiempo de comida relevante.
 
-Referencia:
+El carrusel vertical deja al centro el tiempo de comida actual y muestra parcialmente el anterior y el siguiente con profundidad 3D. Se puede mover con swipe o scroll dentro del carrusel.
 
-![Landing móvil](docs/screenshots/mobile/landing-mobile.png)
+El boton principal cambia segun el estado:
 
-## 2. Configurar la generación con IA
+- `Crear mi plan con IA` si no hay plan personalizado.
+- `Elegir {tiempo}` si falta elegir comida para ese momento.
+- `Ver {tiempo}` si ya hay comida elegida.
 
-Desde `Ajustes avanzados` puedes:
+Si ya existe un plan, debajo aparece la accion secundaria `Ajustar plan con IA`.
 
-- Usar la configuración recomendada de Gemini.
-- Elegir el modelo disponible.
-- Guardar una API key personalizada.
-- Restaurar la configuración predeterminada.
-- Exportar o restaurar planes desde JSON en la pestaña de respaldo.
+![Inicio movil](docs/screenshots/mobile/landing-mobile.png)
 
-Referencia:
+## 2. Crear un plan con IA
 
-![Ajustes avanzados en móvil](docs/screenshots/mobile/admin-settings-mobile.png)
+Desde `Inicio`, usa `Crear mi plan con IA` para abrir el cuestionario.
 
-## 3. Generar o actualizar un plan
+1. Elige `El`, `Ella` o `Ambos`.
+2. Completa datos fisicos y objetivo.
+3. Ajusta salud, preferencias, horarios, porciones y cocina si aplica.
+4. Revisa la confirmacion.
+5. Pulsa `Generar plan con IA`.
 
-1. En la landing, pulsa `Personalizar mi plan`.
-2. Selecciona si el plan será para `El`, `Ella` o `Ambos`.
-3. Completa medidas y objetivos.
-4. Los pasos de salud, preferencias, horarios, porciones y cocina pueden afinar la generación.
-5. En la pantalla final revisa el resumen y pulsa `Generar plan con IA`.
+![Confirmacion del cuestionario](docs/screenshots/mobile/questionnaire-confirm-mobile.png)
 
-Referencia:
+## 3. Mi Plan
 
-![Confirmación del cuestionario en móvil](docs/screenshots/mobile/questionnaire-confirm-mobile.png)
+`Mi Plan` muestra los dias de la semana, calorias del dia y cada tiempo de comida.
 
-## 4. Trabajar con Mi Plan
+Puedes:
 
-En `Mi Plan` puedes:
+- Cambiar de dia desde la barra superior.
+- Elegir un platillo cuando un momento esta vacio.
+- Tocar un platillo para cambiarlo por otra opcion del mismo tiempo.
+- Editar una receta o restaurar su version original.
+- Exportar PDF desde el boton de imprimir del encabezado.
 
-- Elegir una comida por cada momento del día.
-- Abrir el selector cuando un momento está vacío.
-- Editar un platillo existente.
-- Restaurar la versión original del platillo.
-- Descargar PDF del día o del plan completo desde el encabezado.
+En `Ambos`, un tiempo cuenta como completo cuando los dos perfiles tienen comida elegida.
 
-Referencia:
+![Mi Plan movil](docs/screenshots/mobile/plan-mobile.png)
 
-![Vista de plan en móvil](docs/screenshots/mobile/plan-mobile.png)
+## 4. Hojas dentro de Mi Plan
 
-## 5. Navegar las pestañas móviles
+En la parte superior de `Mi Plan` hay tres acciones con iconos:
 
-La barra inferior móvil permite cambiar entre estas vistas:
+- `Suplementos`: abre recomendaciones, notas y precauciones.
+- `Guia`: abre equivalencias de alimentos.
+- `Ajustar`: abre la hoja de cambios con IA.
 
-- `Plan`
-- `Extras` para equivalencias
-- `Sups` para suplementos
-- `Kcal` para monitoreo de calorías
-- `Compras`
-- `Resumen`
+Estas acciones se muestran como hojas modales para no sacar al usuario de Mi Plan.
 
-## 6. Usar Equivalencias
+![Equivalencias movil](docs/screenshots/mobile/equivalencias-mobile.png)
 
-Aquí ves sustituciones y referencias por grupo de alimentos. En modo `Ambos`, puedes alternar entre los dos perfiles.
+![Suplementos movil](docs/screenshots/mobile/supplements-mobile.png)
 
-Referencia:
+## 5. Ajustar o recrear con IA
 
-![Equivalencias en móvil](docs/screenshots/mobile/equivalencias-mobile.png)
+Desde `Ajustar` puedes:
 
-## 7. Revisar Suplementos
+- Usar `Ajustar` para pedir cambios puntuales al plan actual.
+- Usar `Recrear` para regenerar el plan con el perfil actual.
 
-La vista de suplementos explica:
+En `Recrear`, las indicaciones son opcionales. Si no escribes nada, la app recrea usando el perfil guardado.
 
-- Para qué podría servir cada opción.
-- Cómo usarla.
-- En qué momento tomarla.
-- Notas y precauciones.
+## 6. Kcal
 
-Referencia:
+`Kcal` calcula calorias, proteina y grasa con base en las comidas seleccionadas. La barra de dias se comporta como la de Mi Plan y permite comparar el avance diario.
 
-![Suplementos en móvil](docs/screenshots/mobile/supplements-mobile.png)
+![Kcal movil](docs/screenshots/mobile/calories-mobile.png)
 
-## 8. Monitorear calorías
+## 7. Supermercado
 
-La vista `Kcal` muestra:
+`Compras` toma ingredientes de las comidas seleccionadas y los agrupa por secciones.
 
-- Tarjetas semanales por día.
-- Meta diaria total.
-- Desviación respecto a la meta.
-- Proteína y grasas acumuladas con base en las comidas seleccionadas.
+Puedes:
 
-Referencia:
+- Ver cuantos ingredientes quedan pendientes.
+- Expandir un ingrediente para ver en que comidas aparece.
+- Marcar ingredientes como comprados.
+- Compartir la lista desde el boton `Compartir`.
 
-![Calorías en móvil](docs/screenshots/mobile/calories-mobile.png)
+![Compras movil](docs/screenshots/mobile/shopping-mobile.png)
 
-## 9. Preparar la lista de compras
+## 8. Resumen
 
-La vista `Compras` se alimenta de las comidas seleccionadas. Puedes:
+`Resumen` concentra los puntos clave del plan, metas, notas y distribucion por perfil. En `Ambos` muestra informacion de los dos perfiles.
 
-- Ver ingredientes agrupados.
-- Expandir en qué recetas se usa cada ingrediente.
-- Marcar lo ya comprado.
+![Resumen movil](docs/screenshots/mobile/summary-mobile.png)
 
-Referencia:
+## 9. Administracion y Gemini
 
-![Compras en móvil](docs/screenshots/mobile/shopping-mobile.png)
+Desde el icono de ajustes en el encabezado de Inicio se abre `Administracion`.
 
-## 10. Leer el resumen del plan
+La pestaña `Gemini` muestra:
 
-`Resumen` concentra:
+- Modelo actual.
+- Fallback validado.
+- Fuente de API key.
+- Accion para reemplazar la API key.
+- Accion para restaurar la key default.
 
-- Puntos clave del plan.
-- Meta y perfil.
-- Tabla de porciones/macros por momento.
-- Alternancia por perfil cuando usas `Ambos`.
+La pestaña de respaldo permite exportar o restaurar JSON/PDF por perfil.
 
-Referencia:
+![Ajustes Gemini movil](docs/screenshots/mobile/admin-settings-mobile.png)
 
-![Resumen en móvil](docs/screenshots/mobile/summary-mobile.png)
+## 10. Persistencia
 
-## 11. Persistencia y respaldo
+La app guarda el progreso en el navegador. Si limpias `localStorage`, se pierden selecciones, planes personalizados y cambios no exportados.
 
-- La app guarda el estado en `localStorage`.
-- Si limpias almacenamiento local, perderás cambios no exportados.
-- Usa la pestaña de respaldo para exportar JSON y restaurarlo después.
-
-## 12. Validación visual
-
-Las imágenes de esta guía fueron generadas automáticamente por la suite móvil de Playwright ubicada en `tests/e2e/`.
+Para conservar una copia, usa `Administracion` y exporta los JSON de cada perfil.

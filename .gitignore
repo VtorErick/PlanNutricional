@@ -18,6 +18,9 @@ test-*.json
 
 .vercel-dev.*
 .claude/
+design-captures/
+PLAN_*.md
+*_PLAN.md
 perfil-el (1).json
 mobile-app/node_modules/
 mobile-app/android/
