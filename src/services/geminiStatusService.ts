@@ -4,7 +4,7 @@ export interface GeminiStatusResponse {
   ok: boolean;
   error?: string;
   message?: string;
-  keySource?: 'env';
+  keySource?: 'env' | 'custom';
   envModel?: string;
   preferredModel?: string;
   selectedModel: string;
@@ -17,6 +17,7 @@ export interface GeminiStatusResponse {
 interface FetchGeminiStatusOptions {
   preferredModel?: string;
   checkGeneration?: boolean;
+  customApiKey?: string;
 }
 
 function buildFallbackError(error: string): GeminiStatusResponse {
@@ -41,6 +42,7 @@ export async function fetchGeminiStatus(
       body: JSON.stringify({
         preferredModel: normalizeModelName(options.preferredModel || '') || undefined,
         checkGeneration: Boolean(options.checkGeneration),
+        customApiKey: options.customApiKey?.trim() || undefined,
       }),
     });
 
@@ -51,7 +53,7 @@ export async function fetchGeminiStatus(
         ok: Boolean(json?.ok),
         error: json?.error,
         message: json?.message,
-        keySource: json?.keySource === 'env' ? 'env' : undefined,
+        keySource: json?.keySource === 'custom' ? 'custom' : json?.keySource === 'env' ? 'env' : undefined,
         envModel: normalizeModelName(json?.envModel || DEFAULT_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL,
         preferredModel: normalizeModelName(json?.preferredModel || options.preferredModel || ''),
         selectedModel: normalizeModelName(json?.selectedModel || ''),

@@ -1,16 +1,13 @@
 import { useMemo, useState } from 'react';
 import {
-  ChevronDown,
+  KeyRound,
   Moon,
   RefreshCcw,
   RotateCcw,
-  Server,
   Settings,
   ShieldCheck,
-  Sparkles,
   Sun,
   X,
-  Zap,
 } from 'lucide-react';
 import AdminPanel from '../AdminPanel';
 import { useDiet } from '../../context/DietContext';
@@ -18,10 +15,7 @@ import { getRawDataText, perfilesData as origPerfilesData } from '../../data';
 import { clearAppStorage } from '../../utils/appStorage';
 import {
   DEFAULT_GEMINI_MODEL,
-  GEMINI_MODEL_OPTIONS,
-  getGeminiFallbackModels,
   getGeminiModelLabel,
-  getOrderedGeminiModels,
 } from '../../utils/geminiModels';
 
 export default function AdminLayout() {
@@ -32,11 +26,12 @@ export default function AdminLayout() {
     setTab,
     geminiModel,
     setGeminiModel,
-    geminiAvailableModels,
     geminiFallbackModels,
     geminiRecommendedModel,
     geminiAvailabilityLoading,
     geminiAvailabilityMessage,
+    geminiCustomApiKey,
+    setGeminiCustomApiKey,
     refreshGeminiAvailability,
     customData,
     setCustomData,
@@ -58,56 +53,71 @@ export default function AdminLayout() {
   } = useDiet();
 
   const [adminTab, setAdminTab] = useState<'manual' | 'settings'>('manual');
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const defaultElJson = useMemo(() => getRawDataText('el'), []);
   const defaultEllaJson = useMemo(() => getRawDataText('ella'), []);
 
   const currentModel = geminiModel || geminiRecommendedModel || DEFAULT_GEMINI_MODEL;
   const currentModelLabel = getGeminiModelLabel(currentModel);
-  const recommendedModel = geminiRecommendedModel || DEFAULT_GEMINI_MODEL;
-  const recommendedModelLabel = getGeminiModelLabel(recommendedModel);
-  const orderedModels = geminiAvailableModels.length
-    ? getOrderedGeminiModels(geminiAvailableModels, currentModel)
-    : [currentModel, ...getGeminiFallbackModels(GEMINI_MODEL_OPTIONS.map((option) => option.id), currentModel)];
   const fallbackPreview = (geminiFallbackModels.length
     ? geminiFallbackModels
-    : orderedModels.slice(1)
+    : []
   ).slice(0, 3);
 
-  const visibleModelOptions = GEMINI_MODEL_OPTIONS.map((option) => ({
-    ...option,
-    available: geminiAvailableModels.includes(option.id),
-  }));
+  const handleReplaceApiKey = async () => {
+    const nextKey = window.prompt('Pega tu API key de Gemini');
+    if (nextKey === null) return;
 
-  const applyRecommendedConfig = async () => {
-    setGeminiModel(DEFAULT_GEMINI_MODEL);
+    const customApiKey = nextKey.trim();
+    if (!customApiKey) {
+      await notify('API key vacia', 'Pega una API key valida o usa Restaurar default.');
+      return;
+    }
 
+    setGeminiCustomApiKey(customApiKey);
     const status = await refreshGeminiAvailability({
-      preferredModel: DEFAULT_GEMINI_MODEL,
+      preferredModel: currentModel,
       checkGeneration: true,
       syncModel: true,
+      force: true,
+      customApiKey,
     });
 
     if (!status?.ok) {
       await notify(
-        'Gemini no disponible',
-        status?.error || 'No fue posible validar Gemini desde el servidor.'
+        'API key guardada',
+        status?.error || 'Se guardo la API key personalizada, pero no fue posible validarla ahora.'
       );
       return;
     }
 
-    const usedModel = getGeminiModelLabel(status.selectedModel || DEFAULT_GEMINI_MODEL);
-    const fallbackLabel = (status.fallbackModels || [])
-      .slice(0, 2)
-      .map((model) => getGeminiModelLabel(model))
-      .join(', ');
+    await notify(
+      'API key actualizada',
+      `Modelo activo: ${getGeminiModelLabel(status.selectedModel || currentModel)}.`
+    );
+  };
+
+  const restoreDefaultApiKey = async () => {
+    setGeminiCustomApiKey('');
+    const status = await refreshGeminiAvailability({
+      preferredModel: currentModel,
+      checkGeneration: true,
+      syncModel: true,
+      force: true,
+      customApiKey: '',
+    });
+
+    if (!status?.ok) {
+      await notify(
+        'Default restaurada',
+        status?.error || 'Se restauro la API key default, pero no fue posible validarla ahora.'
+      );
+      return;
+    }
 
     await notify(
-      'Configuracion recomendada aplicada',
-      fallbackLabel
-        ? `Modelo por defecto: ${usedModel}.\nFallback: ${fallbackLabel}.`
-        : `Modelo por defecto: ${usedModel}.`
+      'Default restaurada',
+      `Modelo activo: ${getGeminiModelLabel(status.selectedModel || currentModel)}.`
     );
   };
 
@@ -116,12 +126,13 @@ export default function AdminLayout() {
       preferredModel: currentModel,
       checkGeneration: true,
       syncModel: true,
+      force: true,
     });
 
     if (!status?.ok) {
       await notify(
         'Validacion fallida',
-        status?.error || 'No fue posible validar el modelo seleccionado.'
+        status?.error || 'No fue posible validar Gemini.'
       );
       return;
     }
@@ -129,37 +140,6 @@ export default function AdminLayout() {
     await notify(
       'Validacion completada',
       `Modelo activo: ${getGeminiModelLabel(status.selectedModel || currentModel)}.`
-    );
-  };
-
-  const handleModelSelection = async (nextModel: string) => {
-    setGeminiModel(nextModel);
-
-    const status = await refreshGeminiAvailability({
-      preferredModel: nextModel,
-      checkGeneration: true,
-      syncModel: true,
-    });
-
-    if (!status?.ok) {
-      await notify(
-        'Modelo no validado',
-        status?.error || 'No fue posible validar el modelo seleccionado.'
-      );
-      return;
-    }
-
-    const selectedLabel = getGeminiModelLabel(status.selectedModel || nextModel);
-    const fallbackLabel = (status.fallbackModels || [])
-      .slice(0, 2)
-      .map((model) => getGeminiModelLabel(model))
-      .join(', ');
-
-    await notify(
-      'Modelo actualizado',
-      fallbackLabel
-        ? `La app usara ${selectedLabel} por defecto.\nFallback: ${fallbackLabel}.`
-        : `La app usara ${selectedLabel} por defecto.`
     );
   };
 
@@ -181,6 +161,7 @@ export default function AdminLayout() {
     setSelecciones({});
     setComprasCheck({});
     setGeminiModel(DEFAULT_GEMINI_MODEL);
+    setGeminiCustomApiKey('');
     setPerfilActivo(null);
     setDiaActivo('Lunes');
     setTab('plan');
@@ -265,12 +246,12 @@ export default function AdminLayout() {
             onClick={() => setIsDarkMode((prev) => !prev)}
             className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-bold transition-colors ${
               isDarkMode
-                ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                ? 'border-amber-300/40 bg-amber-400/15 text-amber-200 hover:bg-amber-400/20'
+                : 'border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
             }`}
             title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           >
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDarkMode ? <Sun className="w-4 h-4 fill-current" /> : <Moon className="w-4 h-4 fill-current" />}
             <span className="hidden sm:inline">{isDarkMode ? 'Claro' : 'Oscuro'}</span>
           </button>
 
@@ -312,9 +293,9 @@ export default function AdminLayout() {
         {adminTab === 'settings' && (
           <div className="space-y-5 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="text-center pb-1">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Gemini solo por servidor</h2>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">AI Gemini</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                La app usa unicamente `GEMINI_API_KEY` del servidor. No se guarda ni se pide una API key en el navegador.
+                Modelo activo, fallback y llave usada por la app.
               </p>
             </div>
 
@@ -324,221 +305,60 @@ export default function AdminLayout() {
                   <ShieldCheck className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Modo recomendado</h3>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Estado actual</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                    Prioriza calidad. Primero intenta Gemini 3.1 Pro Preview y usa fallback automatico si hace falta.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Modelo actual</p>
-                  <p className="mt-2 text-sm font-bold text-emerald-900">{currentModelLabel}</p>
-                  <p className="mt-1 text-xs text-emerald-800/80">
-                    Recomendado del sistema: {recommendedModelLabel}.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                    Estado servidor
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     {geminiAvailabilityLoading
-                      ? 'Validando modelos disponibles...'
+                      ? 'Validando Gemini...'
                       : geminiAvailabilityMessage || 'Pendiente de validacion.'}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-col sm:flex-row gap-3">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">Modelo actual</p>
+                  <p className="mt-2 text-sm font-bold text-emerald-950 dark:text-emerald-100">{currentModelLabel}</p>
+                  <p className="mt-1 text-xs text-emerald-800/80 dark:text-emerald-200/80">
+                    {geminiCustomApiKey ? 'Usando API key personalizada.' : 'Usando API key default.'}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-700 dark:text-indigo-300">Fallback</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    {fallbackPreview.length
+                      ? fallbackPreview.map((model) => getGeminiModelLabel(model)).join(', ')
+                      : 'Sin fallback validado todavia.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <button
                   type="button"
-                  onClick={applyRecommendedConfig}
-                  className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-bold py-3 px-4 rounded-2xl transition-all active:scale-[0.98] shadow-md"
+                  onClick={handleReplaceApiKey}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all active:scale-[0.98]"
                 >
-                  Usar configuracion recomendada
+                  <KeyRound className="w-4 h-4" />
+                  Reemplazar API key
+                </button>
+                <button
+                  type="button"
+                  onClick={restoreDefaultApiKey}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Restaurar default
                 </button>
                 <button
                   type="button"
                   onClick={validateCurrentModel}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-100"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
                 >
                   <RefreshCcw className="w-4 h-4" />
-                  Validar ahora
+                  Validar
                 </button>
               </div>
-            </section>
-
-            <section className="bg-white dark:bg-slate-950 rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200 dark:border-slate-800">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                  <Zap className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Fallback automatico</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Si el modelo principal falla por disponibilidad o cuota, la app prueba el siguiente sin exponer la API key.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                {orderedModels.slice(0, 5).map((model, index) => (
-                  <div
-                    key={model}
-                    className={`flex items-start gap-3 rounded-2xl border p-3 ${
-                      index === 0
-                        ? 'border-indigo-300 bg-indigo-50/70 dark:border-indigo-700 dark:bg-indigo-950/30'
-                        : 'border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900'
-                    }`}
-                  >
-                    <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
-                      index === 0
-                        ? 'bg-indigo-600 text-white'
-                        : 'border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
-                    }`}>
-                      {index + 1}
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                        {getGeminiModelLabel(model)}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {index === 0 ? 'Modelo principal para plan y edicion.' : 'Fallback automatico.'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                  Fallback visible
-                </p>
-                <p className="mt-2 text-sm text-slate-700 dark:text-slate-200">
-                  {fallbackPreview.length
-                    ? fallbackPreview.map((model) => getGeminiModelLabel(model)).join(', ')
-                    : 'Sin fallback validado todavia.'}
-                </p>
-              </div>
-            </section>
-
-            <section className="bg-white dark:bg-slate-950 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setShowAdvanced((prev) => !prev)}
-                className="w-full flex items-center justify-between p-5 md:p-6 text-left hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-              >
-                <div className="min-w-0 pr-4">
-                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Ajustes avanzados</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Aqui puedes cambiar el modelo por defecto sin tocar ninguna API key.
-                  </p>
-                </div>
-                <ChevronDown
-                  className={`w-5 h-5 text-slate-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {showAdvanced && (
-                <div className="px-5 md:px-6 pb-6 border-t border-slate-100 dark:border-slate-800 space-y-5">
-                  <div className="pt-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-4">
-                    <div className="flex items-start gap-3">
-                      <Server className="w-5 h-5 text-slate-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                          Entorno esperado
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                          Local: `.env.local` con `GEMINI_API_KEY` y `GEMINI_MODEL`. Vercel: mismas variables en Environment Variables.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="admin-default-model"
-                      className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2"
-                    >
-                      Modelo por defecto
-                    </label>
-                    <select
-                      id="admin-default-model"
-                      value={currentModel}
-                      onChange={(event) => void handleModelSelection(event.target.value)}
-                      className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-3 text-sm text-slate-800 dark:text-slate-100 outline-none"
-                    >
-                      {visibleModelOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.technicalLabel}{option.available ? '' : ' (sin validar)'}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                      El selector define la prioridad inicial. Si falla, la API usa la cadena de fallback automaticamente.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3">
-                    {visibleModelOptions.slice(0, 6).map((option) => {
-                      const isCurrent = currentModel === option.id;
-                      return (
-                        <div
-                          key={option.id}
-                          className={`rounded-2xl border p-4 ${
-                            isCurrent
-                              ? 'border-indigo-300 bg-indigo-50/70 dark:border-indigo-700 dark:bg-indigo-950/30'
-                              : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                              {option.technicalLabel}
-                            </p>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${option.badgeClassName}`}>
-                              {option.badge}
-                            </span>
-                            {isCurrent ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200">
-                                Actual
-                              </span>
-                            ) : null}
-                            {option.available ? (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                                Validado
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{option.description}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      type="button"
-                      onClick={applyRecommendedConfig}
-                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-100 font-bold py-3 px-4"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      Volver al recomendado
-                    </button>
-                    <button
-                      type="button"
-                      onClick={validateCurrentModel}
-                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold py-3 px-4 shadow-md"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Probar modelo seleccionado
-                    </button>
-                  </div>
-                </div>
-              )}
             </section>
           </div>
         )}

@@ -2,10 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, ChefHat, ChevronDown, FileText, Moon, Settings, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
-import {
-  getCombinedProfileLabel,
-  getProfileLabel,
-} from '../../utils/profileLabels';
+import { getProfileLabel } from '../../utils/profileLabels';
 
 export default function Header() {
   const [showPdfMenu, setShowPdfMenu] = React.useState(false);
@@ -29,7 +26,7 @@ export default function Header() {
   } = useDiet();
 
   const menuProfileLabel = (profileId: 'el' | 'ella' | 'ambos') =>
-    profileId === 'ambos' ? getCombinedProfileLabel(profileLabels) : getProfileLabel(profileLabels, profileId);
+    profileId === 'ambos' ? 'Ambos' : getProfileLabel(profileLabels, profileId);
   const activeProfileLabel = activeProfile ? menuProfileLabel(activeProfile) : 'Perfil';
   const profileOptions = (['el', 'ella', 'ambos'] as const).map((profileId) => ({
     id: profileId,
@@ -113,18 +110,18 @@ export default function Header() {
     <motion.header
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`sticky top-0 z-50 w-full overflow-x-clip backdrop-blur-xl shadow-[0_10px_30px_rgba(15,23,42,0.08)] ${
+      className={`sticky top-0 z-50 w-full overflow-x-clip border-b backdrop-blur-xl shadow-[0_8px_24px_rgba(15,23,42,0.06)] ${
         isDarkMode
-          ? 'bg-slate-950/92'
-          : 'bg-white/92'
+          ? 'border-slate-800 bg-slate-950/94'
+          : 'border-slate-200/70 bg-white/96'
       }`}
     >
       <div className="max-w-5xl mx-auto px-2.5 min-[380px]:px-3 sm:px-6 py-2.5 sm:py-3">
         <div className="flex min-w-0 items-center gap-1.5 min-[380px]:gap-2 sm:gap-3">
           {/* Logo */}
           <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-sm">
-              <ChefHat className="w-4 h-4 text-white" />
+            <div className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl border shadow-sm ${accentColors.bgLight} ${accentColors.borderLight} ${accentColors.text}`}>
+              <ChefHat className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-black leading-tight text-slate-950 dark:text-white min-[380px]:text-base">
@@ -137,7 +134,7 @@ export default function Header() {
           </div>
 
           {/* Profile dropdown */}
-          <div className="relative ml-auto w-[96px] flex-shrink-0 min-[380px]:w-[116px] sm:w-[144px]" ref={profileMenuRef}>
+          <div className="relative ml-auto w-[86px] flex-shrink-0 min-[380px]:w-[96px] sm:w-[112px]" ref={profileMenuRef}>
             <button
               type="button"
               onClick={() => {
@@ -146,7 +143,11 @@ export default function Header() {
               }}
               data-testid="header-profile-menu-button"
               aria-expanded={showProfileMenu}
-              className={`flex h-9 w-full min-w-0 items-center justify-between gap-1.5 rounded-xl px-2.5 text-left text-xs font-black transition active:scale-[0.98] min-[380px]:h-10 min-[380px]:gap-2 min-[380px]:rounded-2xl min-[380px]:px-3 sm:text-sm ${accentColors.bgLight} ${accentColors.text} shadow-sm hover:opacity-95`}
+              className={`flex h-9 w-full min-w-0 items-center justify-between gap-1 rounded-xl border px-2 text-left text-xs font-black transition active:scale-[0.98] min-[380px]:h-10 min-[380px]:gap-1.5 min-[380px]:rounded-2xl min-[380px]:px-2.5 sm:text-sm ${
+                isDarkMode
+                  ? 'border-slate-800 bg-slate-900 text-slate-100 hover:bg-slate-800'
+                  : `border-slate-200 bg-slate-50 ${accentColors.text} shadow-sm hover:bg-white`
+              }`}
             >
               <span className="min-w-0 truncate">{activeProfileLabel}</span>
               <ChevronDown
@@ -195,13 +196,13 @@ export default function Header() {
             onClick={() => setIsDarkMode((prev) => !prev)}
             className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
               isDarkMode
-                ? 'border-slate-800 bg-slate-900 text-amber-200 hover:bg-slate-800'
-                : 'border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50'
+                ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
+                : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
             }`}
             aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
             title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
           >
-            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {isDarkMode ? <Sun className="h-4 w-4 fill-current text-violet-200" /> : <Moon className="h-4 w-4 fill-sky-200 text-sky-500" />}
           </button>
 
           {/* PDF button */}
@@ -212,7 +213,11 @@ export default function Header() {
                 setShowProfileMenu(false);
               }}
               data-testid="header-pdf-button"
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${accentColors.bgLight} ${accentColors.text} shadow-sm hover:opacity-95`}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
+                isDarkMode
+                  ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
+                  : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
+              }`}
               title="Descargar plan"
             >
               <FileText className="w-4 h-4" />
@@ -264,8 +269,8 @@ export default function Header() {
               data-testid="header-settings-button"
               className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
                 isDarkMode
-                  ? 'border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800'
-                  : 'border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50'
+                  ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
+                  : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
               }`}
               aria-label="Configuracion"
               title="Configuracion"

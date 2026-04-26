@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import MealSwapSheet from '../MealSwapSheet';
 import EquivalenciasSheet from '../EquivalenciasSheet';
+import SupplementsSheet from '../SupplementsSheet';
 import PlanAiRefreshSheet from '../PlanAiRefreshSheet';
 import type { QuestionnairePayload } from '../NutritionQuestionnaire';
 import { useDiet } from '../../context/DietContext';
@@ -97,9 +98,9 @@ export default function PlanView() {
     setQuestionnaireAdditionalNotes,
     notify,
     confirmAction,
-    setTab,
   } = useDiet();
 
+  const [isSupplementsSheetOpen, setIsSupplementsSheetOpen] = React.useState(false);
   const [isEquivalenciasSheetOpen, setIsEquivalenciasSheetOpen] = React.useState(false);
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
   const [swapSheet, setSwapSheet] = React.useState<SwapSheetState | null>(null);
@@ -371,28 +372,31 @@ export default function PlanView() {
                 Mi plan
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pr-1">
               <button
                 type="button"
-                onClick={() => setTab('suplementos')}
+                onClick={() => setIsSupplementsSheetOpen(true)}
                 data-testid="plan-suplementos-nav"
-                className={`inline-flex h-11 flex-shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black transition active:scale-[0.99] ${
+                aria-label="Suplementos"
+                title="Suplementos"
+                className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border transition active:scale-[0.99] [&>span]:hidden ${
                   isDarkMode
-                    ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
-                    : 'border-slate-200 bg-white text-fuchsia-600 shadow-sm hover:bg-slate-50'
+                    ? 'border-fuchsia-900/60 bg-fuchsia-950/60 text-fuchsia-200 hover:bg-fuchsia-950'
+                    : 'border-fuchsia-100 bg-fuchsia-50 text-fuchsia-600 shadow-sm hover:bg-fuchsia-100'
                 }`}
               >
                 <Pill className="h-4 w-4" />
-                <span className="hidden min-[370px]:inline">Suplementos</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsEquivalenciasSheetOpen(true)}
                 data-testid="plan-equivalencias-open"
-                className={`inline-flex h-11 flex-shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black transition active:scale-[0.99] ${
+                aria-label="Guia"
+                title="Guia"
+                className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border transition active:scale-[0.99] [&>span]:hidden ${
                   isDarkMode
-                    ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
-                    : 'border-slate-200 bg-white text-emerald-600 shadow-sm hover:bg-slate-50'
+                    ? 'border-emerald-900/60 bg-emerald-950/60 text-emerald-200 hover:bg-emerald-950'
+                    : 'border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm hover:bg-emerald-100'
                 }`}
               >
                 <BookOpen className="h-4 w-4" />
@@ -402,14 +406,15 @@ export default function PlanView() {
                 type="button"
                 onClick={() => setIsPlanAiSheetOpen(true)}
                 data-testid="plan-ai-open"
-                className={`inline-flex h-11 flex-shrink-0 items-center justify-center gap-2 rounded-2xl border px-3 text-sm font-black transition active:scale-[0.99] ${
+                aria-label="Ajustar"
+                title="Ajustar"
+                className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border transition active:scale-[0.99] ${
                   isDarkMode
-                    ? 'border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800'
-                    : 'border-slate-200 bg-white text-blue-600 shadow-sm hover:bg-slate-50'
+                    ? 'border-blue-900/60 bg-blue-950/60 text-blue-200 hover:bg-blue-950'
+                    : 'border-blue-100 bg-blue-50 text-blue-600 shadow-sm hover:bg-blue-100'
                 }`}
               >
                 <SlidersHorizontal className="h-4 w-4" />
-                <span className="hidden min-[370px]:inline">Ajustar</span>
               </button>
             </div>
           </div>
@@ -696,6 +701,11 @@ export default function PlanView() {
       <EquivalenciasSheet
         open={isEquivalenciasSheetOpen}
         onClose={() => setIsEquivalenciasSheetOpen(false)}
+      />
+
+      <SupplementsSheet
+        open={isSupplementsSheetOpen}
+        onClose={() => setIsSupplementsSheetOpen(false)}
       />
 
       <PlanAiRefreshSheet

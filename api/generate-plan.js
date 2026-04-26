@@ -2346,12 +2346,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Body vacio o invalido' });
     }
 
+    const customApiKey = typeof payload.customApiKey === 'string' ? payload.customApiKey.trim() : '';
+    delete payload.customApiKey;
+
     const pdfValidation = validatePayloadAssessmentPdfs(payload);
     if (!pdfValidation.ok) {
       return res.status(pdfValidation.status).json({ error: pdfValidation.error });
     }
 
-    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+    const apiKey = customApiKey || (process.env.GEMINI_API_KEY || '').trim();
     const preferredModel =
       normalizeModelName(payload.preferredModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) ||
       DEFAULT_GEMINI_MODEL;
@@ -2360,7 +2363,7 @@ export default async function handler(req, res) {
 
     if (!apiKey) {
       return res.status(500).json({
-        error: 'Falta configurar GEMINI_API_KEY en el entorno del servidor.',
+        error: 'Falta configurar GEMINI_API_KEY en el entorno del servidor o una clave personalizada.',
       });
     }
 
@@ -2379,7 +2382,7 @@ export default async function handler(req, res) {
       targetProfile: target,
       requestMode,
       requestedModel: preferredModel,
-      apiKeySource: 'server-env',
+      apiKeySource: customApiKey ? 'custom-server' : 'server-env',
     };
 
     const hardcodedModelNames = [

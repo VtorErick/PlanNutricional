@@ -693,11 +693,14 @@ interface DietContextType {
   geminiRecommendedModel: string;
   geminiAvailabilityLoading: boolean;
   geminiAvailabilityMessage: string;
+  geminiCustomApiKey: string;
+  setGeminiCustomApiKey: React.Dispatch<React.SetStateAction<string>>;
   refreshGeminiAvailability: (options?: {
     preferredModel?: string;
     checkGeneration?: boolean;
     syncModel?: boolean;
     force?: boolean;
+    customApiKey?: string;
   }) => Promise<GeminiStatusResponse | null>;
   generationLoading: boolean;
   generationError: string;
@@ -841,6 +844,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [geminiRecommendedModel, setGeminiRecommendedModel] = useState('');
   const [geminiAvailabilityLoading, setGeminiAvailabilityLoading] = useState(false);
   const [geminiAvailabilityMessage, setGeminiAvailabilityMessage] = useState('');
+  const [geminiCustomApiKey, setGeminiCustomApiKey] = useLocalStorage<string>(
+    'geminiCustomApiKey',
+    '',
+    (value) => (typeof value === 'string' ? value.trim() : '')
+  );
   const [generationLoading, setGenerationLoading] = useState(false);
   const [generationError, setGenerationError] = useState('');
   const [generationErrorLog, setGenerationErrorLog] = useState<AiDebugLog | null>(null);
@@ -973,7 +981,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     stripPdfPayload(clone.ella);
 
     return clone;
-  }, []);
+  }, [geminiCustomApiKey]);
 
   const buildCurrentProfileSnapshot = useCallback((perfilId: 'el' | 'ella') => (
     buildSerializableProfileSnapshot(
@@ -1386,8 +1394,13 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     const payloadWithKey = {
       ...payload,
       preferredModel: geminiModel,
+      ...(geminiCustomApiKey ? { customApiKey: geminiCustomApiKey } : {}),
       mealsCatalog: catalogResult.catalog,
       supplementsCatalog: buildQuestionnaireSupplementsCatalog(questionnaireContext),
+    };
+    const debugPayload = {
+      ...payloadWithKey,
+      ...(geminiCustomApiKey ? { customApiKey: '[redacted]' } : {}),
     };
     let json: any;
     try {
@@ -1410,7 +1423,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
             targetProfile: payload?.targetProfile,
             requestMode: payload?.requestMode || 'generate',
             requestedModel: geminiModel,
-            apiKeySource: 'server-env',
+            apiKeySource: geminiCustomApiKey ? 'custom-server' : 'server-env',
             requestPayload: payloadWithKey,
             rawMessage:
               res.status === 504
@@ -1452,8 +1465,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
           targetProfile: payload?.targetProfile,
           requestMode: payload?.requestMode || 'generate',
           requestedModel: geminiModel,
-          apiKeySource: 'server-env',
-          requestPayload: payloadWithKey,
+          apiKeySource: geminiCustomApiKey ? 'custom-server' : 'server-env',
+          requestPayload: debugPayload,
           rawMessage:
             'No fue posible contactar la API del servidor. La respuesta estuvo vacia, fue HTML o fallo la red antes de obtener JSON.',
         }),
@@ -1461,8 +1474,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       );
     }
 
-    return { json, payloadWithKey };
-  }, [geminiModel, perfilesData]);
+    return { json, payloadWithKey: debugPayload };
+  }, [geminiCustomApiKey, geminiModel, perfilesData]);
 
   const handleGenerateWithAi = useCallback(async (payload: QuestionnairePayload) => {
     setGenerationError('');
@@ -1484,7 +1497,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
             requestMode: 'generate',
             requestedModel: geminiModel,
             selectedModel: json?.modelUsed || geminiModel,
-            apiKeySource: 'server-env',
+            apiKeySource: geminiCustomApiKey ? 'custom-server' : 'server-env',
             requestPayload: payloadWithKey,
             geminiResponse: {
               status: 200,
@@ -1517,7 +1530,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
                 payload: payloadWithKey,
                 requestedModel: geminiModel,
                 selectedModel: json.modelUsed || geminiModel,
-                apiKeySource: 'server-env',
+                apiKeySource: (payloadWithKey as any)?.customApiKey ? 'custom-server' : 'server-env',
               },
               payloadWithKey,
               json.elData,
@@ -1537,7 +1550,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
               payload: payloadWithKey,
               requestedModel: geminiModel,
               selectedModel: json.modelUsed || geminiModel,
-              apiKeySource: 'server-env',
+              apiKeySource: (payloadWithKey as any)?.customApiKey ? 'custom-server' : 'server-env',
             },
             payloadWithKey,
             json.ellaData,
@@ -1555,7 +1568,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
             requestMode: 'generate',
             requestedModel: geminiModel,
             selectedModel: json?.modelUsed || geminiModel,
-            apiKeySource: 'server-env',
+            apiKeySource: geminiCustomApiKey ? 'custom-server' : 'server-env',
             requestPayload: payloadWithKey,
             geminiResponse: {
               status: 200,
@@ -1638,7 +1651,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
             requestMode: payload.requestMode,
             requestedModel: geminiModel,
             selectedModel: json?.modelUsed || geminiModel,
-            apiKeySource: 'server-env',
+            apiKeySource: (payloadWithKey as any)?.customApiKey ? 'custom-server' : 'server-env',
             requestPayload: payloadWithKey,
             geminiResponse: {
               status: 200,
@@ -1744,7 +1757,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
             payload: payloadWithKey,
             requestedModel: geminiModel,
             selectedModel: json.modelUsed || geminiModel,
-            apiKeySource: 'server-env',
+            apiKeySource: (payloadWithKey as any)?.customApiKey ? 'custom-server' : 'server-env',
           },
           payloadWithKey,
           responseData,
@@ -1815,6 +1828,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     checkGeneration?: boolean;
     syncModel?: boolean;
     force?: boolean;
+    customApiKey?: string;
   }) => {
     // Throttle duplicate background checks (5 minute threshold for non-forced calls)
     const now = Date.now();
@@ -1831,6 +1845,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       const status = await fetchGeminiStatus({
         preferredModel: currentModel,
         checkGeneration: options?.checkGeneration,
+        customApiKey: options?.customApiKey ?? geminiCustomApiKey,
       });
 
       lastGeminiStatusCheckTime.current = Date.now();
@@ -1870,7 +1885,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setGeminiAvailabilityLoading(false);
     }
-  }, []);
+  }, [geminiCustomApiKey]);
 
   // ─── Side Effects ──────────────────────────────────────────────────
 
@@ -2075,6 +2090,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     geminiRecommendedModel,
     geminiAvailabilityLoading,
     geminiAvailabilityMessage,
+    geminiCustomApiKey,
+    setGeminiCustomApiKey,
     refreshGeminiAvailability,
     generationLoading, generationError, generationErrorLog, lastGeneratedData,
     planRevisionLoading, planRevisionError, planRevisionErrorLog, lastQuestionnaireContexts,

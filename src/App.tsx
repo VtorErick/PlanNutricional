@@ -157,11 +157,21 @@ export default function App() {
   const navActiveTint = useMemo(() => {
     switch (activeProfile) {
       case 'el':
-        return 'bg-gradient-to-br from-blue-600 to-sky-500 text-white shadow-[0_8px_20px_rgba(37,99,235,0.30)]';
+        return 'text-blue-600 dark:text-sky-300';
       case 'ella':
-        return 'bg-gradient-to-br from-pink-500 to-rose-500 text-white shadow-[0_8px_20px_rgba(236,72,153,0.30)]';
+        return 'text-rose-600 dark:text-pink-300';
       case 'ambos':
-        return 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_8px_20px_rgba(99,102,241,0.30)]';
+        return 'text-violet-600 dark:text-violet-300';
+    }
+  }, [activeProfile]);
+  const navActiveSurface = useMemo(() => {
+    switch (activeProfile) {
+      case 'el':
+        return 'bg-blue-50 text-blue-700 shadow-[0_8px_18px_rgba(37,99,235,0.16)] dark:bg-blue-500/12 dark:text-sky-200 dark:shadow-none';
+      case 'ella':
+        return 'bg-rose-50 text-rose-700 shadow-[0_8px_18px_rgba(225,29,72,0.16)] dark:bg-rose-500/12 dark:text-pink-200 dark:shadow-none';
+      case 'ambos':
+        return 'bg-violet-50 text-violet-700 shadow-[0_8px_18px_rgba(124,58,237,0.18)] dark:bg-violet-500/12 dark:text-violet-200 dark:shadow-none';
     }
   }, [activeProfile]);
 
@@ -182,11 +192,11 @@ export default function App() {
               data-testid={`mobile-tab-${tabItem.key}`}
               className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
                 activeTab === tabItem.key
-                  ? navActiveTint
+                  ? navActiveSurface
                   : 'text-slate-400 dark:text-slate-500'
               }`}
             >
-              <tabItem.icon className={`h-[17px] w-[17px] ${activeTab === tabItem.key ? 'text-white dark:text-slate-950' : ''}`} strokeWidth={activeTab === tabItem.key ? 2.5 : 1.8} />
+              <tabItem.icon className={`h-[17px] w-[17px] ${activeTab === tabItem.key ? navActiveTint : ''}`} strokeWidth={activeTab === tabItem.key ? 2.5 : 1.8} />
               <span className="text-[9px] font-bold tracking-wide">{tabItem.shortLabel}</span>
             </button>
           ))}

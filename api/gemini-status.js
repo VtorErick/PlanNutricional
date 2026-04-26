@@ -137,8 +137,9 @@ export default async function handler(req, res) {
 
     payload = payload && typeof payload === 'object' ? payload : {};
 
-    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const keySource = 'env';
+    const customApiKey = typeof payload.customApiKey === 'string' ? payload.customApiKey.trim() : '';
+    const apiKey = customApiKey || (process.env.GEMINI_API_KEY || '').trim();
+    const keySource = customApiKey ? 'custom' : 'env';
     const envModel = normalizeModelName(process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
     const preferredModel =
       normalizeModelName(typeof payload.preferredModel === 'string' ? payload.preferredModel.trim() : '') ||
@@ -148,7 +149,7 @@ export default async function handler(req, res) {
     if (!apiKey) {
       return res.status(400).json({
         ok: false,
-        error: 'No hay una API key configurada. Define GEMINI_API_KEY en el entorno del servidor.',
+        error: 'No hay una API key configurada. Define GEMINI_API_KEY en el entorno del servidor o usa una clave personalizada.',
         keySource,
         envModel,
         availableModels: [],
@@ -204,7 +205,9 @@ export default async function handler(req, res) {
       orderedModels,
       fallbackModels,
       generationChecked,
-      message: buildEnvModelMessage({ selectedModel, envModel, generationChecked }),
+      message: customApiKey
+        ? buildUserMessage({ keySource, selectedModel, envModel, generationChecked })
+        : buildEnvModelMessage({ selectedModel, envModel, generationChecked }),
     });
   } catch (error) {
     return res.status(500).json({
