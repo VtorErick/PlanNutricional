@@ -7,6 +7,7 @@ import {
   MessageSquareText,
   RefreshCcw,
   Sparkles,
+  UserRound,
   Wand2,
   X,
 } from 'lucide-react';
@@ -67,6 +68,12 @@ export default function PlanAiRefreshSheet({
     : mode === 'regenerate'
       ? true
       : instruction.trim().length >= 8;
+  const targetOptions: Array<{ id: TargetProfile; title: string; helper: string }> = [
+    { id: 'el', title: 'El', helper: 'Solo su plan' },
+    { id: 'ella', title: 'Ella', helper: 'Solo su plan' },
+    { id: 'ambos', title: 'Ambos', helper: 'Plan compartido' },
+  ];
+
   return (
     <AnimatePresence>
       <motion.div
@@ -82,29 +89,29 @@ export default function PlanAiRefreshSheet({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-[28px] border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-[28px] ${
+            className={`flex max-h-[min(88dvh,720px)] w-full flex-col overflow-hidden rounded-t-[26px] border sm:max-w-2xl sm:rounded-[26px] ${
               isDarkMode
                 ? 'border-slate-700 bg-slate-900 shadow-[0_20px_60px_rgba(2,6,23,0.55)]'
                 : 'border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]'
             }`}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className={`border-b px-4 py-4 sm:px-6 ${
+            <div className={`border-b px-4 py-3 sm:px-6 ${
               isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'
             }`}>
               <div className="flex items-start gap-3">
-                <div className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl ${accentClasses.bgLight}`}>
+                <div className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${accentClasses.bgLight}`}>
                   <Bot className={`h-4 w-4 ${accentClasses.text}`} />
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${accentClasses.text}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${accentClasses.text}`}>
                     Cambios con IA
                   </p>
-                  <h3 className={`text-lg font-black tracking-tight leading-tight sm:text-xl ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                  <h3 className={`text-lg font-black tracking-tight leading-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                     Ajustar plan
                   </h3>
-                  <p className={`mt-1 text-xs leading-relaxed sm:text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                  <p className={`mt-1 text-xs leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
                     Pide cambios puntuales o recrea el plan con nuevas indicaciones.
                   </p>
                 </div>
@@ -113,7 +120,7 @@ export default function PlanAiRefreshSheet({
                   type="button"
                   onClick={onClose}
                   data-testid="plan-ai-close"
-                  className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition ${
+                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl border transition ${
                     isDarkMode
                       ? 'border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800'
                       : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
@@ -125,17 +132,17 @@ export default function PlanAiRefreshSheet({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-              <div className="space-y-4">
-                <div className="space-y-4">
+            <div className="min-h-0 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+              <div className="space-y-3">
+                <div className="space-y-3">
                   <div>
                     <div className="mb-2 flex items-center gap-2">
-                      <CheckCircle2 className={`h-4 w-4 ${accentClasses.text}`} />
-                      <p className={`text-[11px] font-black uppercase tracking-[0.16em] ${accentClasses.text}`}>
+                      <CheckCircle2 className={`h-3.5 w-3.5 ${accentClasses.text}`} />
+                      <p className={`text-[10px] font-black uppercase tracking-[0.16em] ${accentClasses.text}`}>
                         Tipo de cambio
                       </p>
                     </div>
-                    <div className={`grid grid-cols-2 gap-1.5 rounded-[24px] border p-1.5 ${
+                    <div className={`grid grid-cols-2 gap-1.5 rounded-[20px] border p-1 ${
                       isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-200 bg-slate-50/80'
                     }`}>
                       {([
@@ -153,7 +160,7 @@ export default function PlanAiRefreshSheet({
                           type="button"
                           data-testid={`plan-ai-mode-${item.id}`}
                           onClick={() => setMode(item.id)}
-                          className={`flex h-12 items-center justify-center gap-2 rounded-2xl text-sm font-black transition active:scale-[0.98] ${
+                          className={`flex h-10 items-center justify-center gap-2 rounded-2xl text-sm font-black transition active:scale-[0.98] ${
                             mode === item.id
                               ? `${accentClasses.btnActive} shadow-sm`
                               : isDarkMode
@@ -184,7 +191,46 @@ export default function PlanAiRefreshSheet({
                   ) : null}
                 </div>
 
-                <div className="space-y-3">
+                <div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <UserRound className={`h-3.5 w-3.5 ${accentClasses.text}`} />
+                    <p className={`text-[10px] font-black uppercase tracking-[0.16em] ${accentClasses.text}`}>
+                      A quien aplica
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {targetOptions.map((item) => {
+                      const active = targetProfile === item.id;
+
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          data-testid={`plan-ai-target-${item.id}`}
+                          onClick={() => setTargetProfile(item.id)}
+                          className={`min-w-0 rounded-[18px] border px-2.5 py-2 text-left transition active:scale-[0.98] ${
+                            active
+                              ? `${accentClasses.tagBg} ${accentClasses.borderAccent} ${accentClasses.tagText}`
+                              : isDarkMode
+                                ? 'border-slate-800 bg-slate-950/70 text-slate-300'
+                                : 'border-slate-200 bg-white text-slate-600'
+                          }`}
+                        >
+                          <span className="block truncate text-sm font-black">{item.title}</span>
+                          <span className={`mt-0.5 block truncate text-[10px] font-bold ${
+                            active
+                              ? accentClasses.tagText
+                              : isDarkMode ? 'text-slate-500' : 'text-slate-400'
+                          }`}>
+                            {item.helper}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
@@ -204,7 +250,7 @@ export default function PlanAiRefreshSheet({
                     onChange={(event) => setInstruction(event.target.value)}
                     rows={4}
                     data-testid="plan-ai-instruction"
-                    className={`${inputClasses} min-h-[116px] resize-y`}
+                    className={`${inputClasses} min-h-[104px] resize-y`}
                     placeholder={mode === 'regenerate'
                       ? 'Ej. Rehaz el plan con cenas mas ligeras y opciones mas faciles de repetir entre semana.'
                       : 'Ej. Esta vez menos pescado en la noche, no combines atun con lacteos y prioriza cenas mas faciles.'}
@@ -237,15 +283,15 @@ export default function PlanAiRefreshSheet({
               </div>
             </div>
 
-            <div className={`border-t px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-4 ${
+            <div className={`border-t px-4 pb-[calc(0.9rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:pb-4 ${
               isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'
             }`}>
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
                   onClick={onClose}
                   data-testid="plan-ai-cancel"
-                  className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${
+                  className={`rounded-2xl px-4 py-2.5 text-sm font-bold transition ${
                     isDarkMode
                       ? 'border border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800'
                       : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -265,7 +311,7 @@ export default function PlanAiRefreshSheet({
                   }}
                   data-testid="plan-ai-submit"
                   disabled={!canSubmit}
-                  className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black text-white bg-gradient-to-r ${accentClasses.bgGradient} disabled:cursor-not-allowed disabled:opacity-50`}
+                  className={`inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-black text-white bg-gradient-to-r ${accentClasses.bgGradient} disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   <Sparkles className="h-4 w-4" />
                   {loading ? 'Consultando IA...' : submitLabel}
