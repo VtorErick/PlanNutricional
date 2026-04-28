@@ -9,10 +9,7 @@ import {
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import type { MealItem, MealTime } from '../../types';
-import {
-  getCombinedProfileLabel,
-  getProfileLabel,
-} from '../../utils/profileLabels';
+import { getProfileLabel } from '../../utils/profileLabels';
 import { getAccentColors } from '../../utils/theme';
 
 const MEAL_WINDOW_MINUTES = 75;
@@ -57,11 +54,6 @@ function getRelevantMoment(moments: MealTime[], currentMinutes: number) {
   }
 
   return next?.moment || previous?.moment || moments[0];
-}
-
-function truncateText(value: string, maxLength: number) {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength - 1).trim()}...`;
 }
 
 function getMomentActionName(label: string) {
@@ -126,10 +118,6 @@ export default function LandingView() {
   } = useDiet();
 
   const accent = getAccentColors(perfilActivo || 'ambos', isDarkMode);
-  const profileLabel =
-    perfilActivo === 'ambos' || !perfilActivo
-      ? getCombinedProfileLabel(profileLabels)
-      : getProfileLabel(profileLabels, perfilActivo);
   const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState(getCurrentDayOfWeek);
 
@@ -324,22 +312,26 @@ export default function LandingView() {
 
   const renderMealSummary = (card: (typeof homeReel.cards)[number]) => (
     <div className="mt-4 space-y-3 max-[340px]:mt-3">
-      {card.selectedMealGroups.slice(0, 2).map(({ labels, meal }) => (
-        <div
-          key={`${card.moment.key}-${labels.join('-')}-${meal.nombre}`}
-          className={`border-l-2 pl-3 ${isDarkMode ? 'border-slate-700' : accent.border}`}
-        >
-          <p className={`text-[10px] font-black uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-500' : accent.text}`}>
-            {labels.join(' + ')}
-          </p>
-          <p className={`mt-1 text-sm font-black leading-snug ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
-            {meal.nombre}
-          </p>
-          <p className={`mt-1 text-xs font-semibold leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-            {truncateText(meal.detalle || meal.porciones, 78)}
-          </p>
-        </div>
-      ))}
+      {card.selectedMealGroups.slice(0, 2).map(({ labels, meal }) => {
+        const groupLabel = labels.length > 1 ? 'Para ambos' : labels[0];
+
+        return (
+          <div
+            key={`${card.moment.key}-${labels.join('-')}-${meal.nombre}`}
+            className={`border-l-2 pl-3 ${isDarkMode ? 'border-slate-700' : accent.border}`}
+          >
+            <p className={`text-[10px] font-black uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-500' : accent.text}`}>
+              {groupLabel}
+            </p>
+            <p className={`mt-1 text-[15px] font-black leading-snug ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
+              {meal.nombre}
+            </p>
+            <p className={`mt-1 text-xs font-semibold leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+              {meal.detalle || meal.porciones}
+            </p>
+          </div>
+        );
+      })}
       {card.missingLabels.length > 0 && card.selectedMealGroups.length > 0 ? (
         <p className={`px-1 text-xs font-bold ${isDarkMode ? 'text-slate-500' : accent.text}`}>
           Falta elegir para {card.missingLabels.join(' y ')}.
@@ -375,10 +367,10 @@ export default function LandingView() {
             <div className="relative z-10 mb-2.5 flex items-start justify-between gap-3 max-[340px]:mb-1.5 max-[340px]:gap-2.5">
               <div className="min-w-0 flex-1">
                 <p className={`text-[11px] font-black uppercase tracking-[0.18em] max-[340px]:text-[10px] ${accent.text}`}>
-                  Hoy · {currentDayOfWeek}
+                  Hoy - {currentDayOfWeek}
                 </p>
                 <p className={`mt-0.5 truncate text-xs font-black uppercase tracking-[0.14em] max-[340px]:text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {profileLabel}
+                  Plan diario
                 </p>
               </div>
               <div className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-black max-[340px]:px-2.5 max-[340px]:py-1.5 ${isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-200' : `${accent.borderLight} bg-white ${accent.text}`}`}>
