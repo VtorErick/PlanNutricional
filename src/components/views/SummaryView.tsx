@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, BarChart3, ChevronDown, Heart, Shield, TrendingDown, User } from 'lucide-react';
+import { AlertTriangle, BarChart3, ChevronDown, Heart, Shield, TrendingDown } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
 import { getProfileLabel } from '../../utils/profileLabels';
@@ -39,20 +39,20 @@ export default function SummaryView() {
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="w-full flex flex-col"
     >
-      <section className={`mb-4 rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
+      <section className={`mb-3 rounded-[22px] p-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-11 h-11 rounded-[18px] bg-gradient-to-br ${ac.bgGradient} flex items-center justify-center shadow-sm`}>
+            <div className={`flex h-10 w-10 items-center justify-center rounded-[16px] bg-gradient-to-br ${ac.bgGradient} shadow-sm`}>
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
-            <h2 className={`text-xl font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+            <h2 className={`text-lg font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
               Resumen
             </h2>
           </div>
         </div>
       </section>
 
-      <div className={isAmbos ? 'grid lg:grid-cols-2 gap-6' : 'space-y-8'}>
+      <div className={isAmbos ? 'grid gap-4 lg:grid-cols-2' : 'space-y-6'}>
         {(isAmbos ? [perfilesData.el, perfilesData.ella] : [perfil]).map((p, pIdx) => {
           if (!p) return null;
           const profileLabel = getProfileLabel(profileLabels, p.id === 'ella' ? 'ella' : 'el');
@@ -94,11 +94,14 @@ export default function SummaryView() {
             ? (isAmbos ? (isFirst ? elAccent.text : ellaAccent.text) : dynamicAc.text)
             : (isAmbos ? (isFirst ? elAccent.textDark : ellaAccent.textDark) : dynamicAc.textDark);
 
+          const restrictionsText = p.notaSalud || p.detallesPerfil || 'Sin restricciones criticas registradas.';
+          const momentsText = p.horariosTexto || '5 momentos del dia definidos.';
+
           return (
-            <div key={p.perfil} className={`space-y-4 ${hiddenClass}`}>
+            <div key={p.perfil} className={`space-y-3 ${hiddenClass}`}>
               {isAmbos && (
                 <h3
-                  className={`text-base font-bold ${
+                  className={`text-sm font-black ${
                     isFirst
                       ? `${elAccent.textDark}`
                       : `${ellaAccent.textDark}`
@@ -108,15 +111,61 @@ export default function SummaryView() {
                 </h3>
               )}
 
-              <div className={`rounded-2xl p-4 sm:p-6 shadow-[0_10px_24px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className={`font-bold flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+              <div className={`rounded-[20px] p-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className={`rounded-2xl p-3 ${dynamicAc.bgGradientLight}`}>
+                    <p className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] ${dynamicAc.textDark}`}>
+                      <TrendingDown className="h-3.5 w-3.5" />
+                      Objetivo
+                    </p>
+                    <p className={`mt-1 line-clamp-2 text-xs font-semibold leading-snug ${isDarkMode ? dynamicAc.text : dynamicAc.textDark}`}>
+                      {p.meta}
+                    </p>
+                  </div>
+
+                  <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                    <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Kcal / perfil
+                    </p>
+                    <p className={`mt-1 text-xl font-black leading-none ${dynamicAc.text}`}>
+                      {p.metaCaloricaKcalDia || '-'}
+                      <span className={`ml-1 text-[11px] font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>día</span>
+                    </p>
+                    <p className={`mt-1 line-clamp-1 text-[11px] font-semibold ${profileTextTone}`}>
+                      {p.perfil}
+                    </p>
+                  </div>
+
+                  <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                    <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Horarios
+                    </p>
+                    <p className={`mt-1 line-clamp-2 text-xs font-semibold leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                      {momentsText}
+                    </p>
+                  </div>
+
+                  <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-amber-950/30' : 'bg-amber-50'}`}>
+                    <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                      <Shield className="h-3.5 w-3.5" />
+                      Restricciones
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs font-semibold leading-snug text-amber-900 dark:text-amber-100">
+                      {restrictionsText}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className={`rounded-[20px] p-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <h3 className={`flex items-center gap-2 text-sm font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                     <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
                     {isAmbos ? `Puntos clave de ${profileLabel}` : 'Puntos clave de tu plan'}
                   </h3>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-1.5">
                   {summaryPoints.map((linea, idx) => (
                     <motion.button
                       key={idx}
@@ -128,24 +177,24 @@ export default function SummaryView() {
                         const pointKey = `${p.perfil}-${idx}`;
                         setExpandedSummaryPoint((current) => current === pointKey ? null : pointKey);
                       }}
-                      className={`flex w-full items-start gap-3 rounded-2xl p-3 text-left transition-all active:scale-[0.99] ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-50 hover:bg-slate-100'}`}
+                      className={`flex w-full items-start gap-2.5 rounded-2xl p-2.5 text-left transition-all active:scale-[0.99] ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-50 hover:bg-slate-100'}`}
                       style={{ borderLeft: `3px solid ${dynamicAc.color500}` }}
                     >
-                      <span className={`inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-black ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
+                      <span className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-black ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
                         {idx + 1}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className={`block text-sm font-semibold leading-relaxed ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
+                        <span className={`block text-xs font-semibold leading-snug ${expandedSummaryPoint === `${p.perfil}-${idx}` ? '' : 'line-clamp-2'} ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
                           {expandedSummaryPoint === `${p.perfil}-${idx}` ? linea : compactSummaryPoints[idx]}
                         </span>
                         {linea !== compactSummaryPoints[idx] ? (
-                          <span className={`mt-1 block text-[11px] font-bold ${dynamicAc.text}`}>
+                          <span className={`mt-0.5 block text-[10px] font-bold ${dynamicAc.text}`}>
                             {expandedSummaryPoint === `${p.perfil}-${idx}` ? 'Ocultar detalle' : 'Ver detalle'}
                           </span>
                         ) : null}
                       </span>
                       <ChevronDown
-                        className={`mt-1 h-4 w-4 flex-shrink-0 transition-transform ${expandedSummaryPoint === `${p.perfil}-${idx}` ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                        className={`mt-0.5 h-4 w-4 flex-shrink-0 transition-transform ${expandedSummaryPoint === `${p.perfil}-${idx}` ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                       />
                     </motion.button>
                   ))}
@@ -153,62 +202,19 @@ export default function SummaryView() {
               </div>
 
               {p.objetivosPorMomento && (
-                <div className={`rounded-2xl p-4 sm:p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] overflow-hidden relative w-full ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
+                <div className={`relative w-full overflow-hidden rounded-[20px] p-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)] sm:p-5 ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
                   <div className={`absolute top-0 right-0 w-28 h-28 rounded-full blur-3xl -z-10 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`} />
-
-                  {/* Goal and profile summary */}
-                  <div className="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-2">
-                    <div
-                      className={`bg-gradient-to-br ${dynamicAc.bgGradientLight} rounded-2xl p-4`}
-                    >
-                      <h3
-                        className={`font-bold ${dynamicAc.textDark} mb-1.5 flex items-center gap-2 text-xs sm:text-sm`}
-                      >
-                        <TrendingDown className="w-3.5 h-3.5" />
-                        Meta
-                      </h3>
-                      <p className={`${isDarkMode ? dynamicAc.text : dynamicAc.textDark} text-xs sm:text-sm leading-relaxed`}>
-                        {p.meta}
-                      </p>
-                    </div>
-
-                    <div
-                      className={`rounded-2xl p-4 ${
-                        isAmbos
-                          ? isFirst
-                            ? `${elAccent.bgGradientLight}`
-                            : `${ellaAccent.bgGradientLight}`
-                          : `${dynamicAc.bgGradientLight}`
-                      }`}
-                    >
-                      <h3
-                        className={`font-bold mb-1.5 flex items-center gap-2 text-xs sm:text-sm ${
-                          isAmbos
-                            ? isFirst
-                              ? elAccent.textDark
-                              : ellaAccent.textDark
-                            : dynamicAc.textDark
-                        }`}
-                      >
-                        <User className="w-3.5 h-3.5" />
-                        Perfil
-                      </h3>
-                      <p className={`text-xs sm:text-sm leading-relaxed ${profileTextTone}`}>
-                        {p.perfil}
-                      </p>
-                    </div>
-                  </div>
 
                   {p.detallesPerfil && (
                     <div
-                      className={`mb-4 rounded-2xl p-4 ${
+                      className={`mb-3 rounded-2xl p-3 ${
                         isDarkMode
                           ? 'bg-slate-900/80'
                           : 'bg-slate-50/80'
                       }`}
                     >
                       <h3
-                        className={`mb-2 flex items-center gap-2 text-xs sm:text-sm font-bold ${
+                        className={`mb-1.5 flex items-center gap-2 text-xs font-bold sm:text-sm ${
                           isDarkMode ? 'text-slate-100' : 'text-slate-800'
                         }`}
                       >
@@ -225,7 +231,7 @@ export default function SummaryView() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mb-4 flex items-start gap-3 rounded-2xl bg-amber-50 p-3.5 dark:bg-amber-950/40"
+                      className="mb-3 flex items-start gap-3 rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/40"
                     >
                       <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
                       <p className="text-xs font-medium leading-relaxed text-amber-800 dark:text-amber-100 sm:text-sm">
@@ -234,7 +240,7 @@ export default function SummaryView() {
                     </motion.div>
                   )}
 
-                  <h3 className={`font-bold mb-3 flex items-center gap-2 text-sm sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                  <h3 className={`mb-2.5 flex items-center gap-2 text-sm font-bold sm:text-base ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                     <BarChart3 className={`w-4 h-4 ${dynamicAc.text}`} />
                     Tabla de macros y porciones
                   </h3>
