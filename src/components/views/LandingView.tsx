@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type TouchEvent, type WheelEvent } from 'react';
 import { motion } from 'framer-motion';
 import {
+  ChevronDown,
+  ChevronUp,
   Clock,
   Sparkles,
   UtensilsCrossed,
@@ -16,8 +18,6 @@ import { getAccentColors } from '../../utils/theme';
 const MEAL_WINDOW_MINUTES = 75;
 const PROFILE_IDS = ['el', 'ella'] as const;
 const AVAILABLE_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'] as const;
-const CYLINDER_RADIUS = 135;
-const CYLINDER_ANGLE = 58;
 
 function parseTimeToMinutes(value: string) {
   const [rawHour, rawMinute] = value.split(':').map((part) => Number.parseInt(part, 10));
@@ -62,15 +62,6 @@ function getRelevantMoment(moments: MealTime[], currentMinutes: number) {
 function truncateText(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, maxLength - 1).trim()}...`;
-}
-
-function getLoopOffset(index: number, activeIndex: number, total: number) {
-  if (total <= 0) return 0;
-  const raw = index - activeIndex;
-  const half = total / 2;
-  if (raw > half) return raw - total;
-  if (raw < -half) return raw + total;
-  return raw;
 }
 
 function getMomentActionName(label: string) {
@@ -283,6 +274,9 @@ export default function LandingView() {
   };
 
   const activeCard = homeReel.cards[activeReelIndex] || homeReel.cards[0] || null;
+  const reelCount = homeReel.cards.length;
+  const previousCard = reelCount > 1 ? homeReel.cards[(activeReelIndex - 1 + reelCount) % reelCount] : null;
+  const nextCard = reelCount > 1 ? homeReel.cards[(activeReelIndex + 1) % reelCount] : null;
   const activeMomentName = activeCard ? getMomentActionName(activeCard.moment.label) : 'comida';
   const hasPersonalizedPlan =
     perfilActivo === 'el'
@@ -360,10 +354,10 @@ export default function LandingView() {
         src="/images/home-food-bg.png"
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-45 saturate-[0.9] dark:opacity-24"
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-90 saturate-[1.05] dark:opacity-34"
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/78 via-white/54 to-white/82 dark:from-slate-950/82 dark:via-slate-950/56 dark:to-slate-950/86" />
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent.bgGradientLight} opacity-[0.04] dark:opacity-10`} />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/18 via-white/46 to-white/72 dark:from-slate-950/78 dark:via-slate-950/50 dark:to-slate-950/82" />
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent.bgGradientLight} opacity-[0.12] dark:opacity-12`} />
       <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-[88px] pt-3 max-[340px]:px-3 max-[340px]:pb-[78px] max-[340px]:pt-2 sm:px-6 sm:pb-10 sm:pt-6">
         <main className="flex min-h-0 flex-1 flex-col justify-center gap-3 py-2 max-[340px]:py-1 sm:gap-4 sm:py-12">
           <motion.section
@@ -371,12 +365,13 @@ export default function LandingView() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 32 }}
             data-testid="landing-profile-ambos-card"
-            className={`relative rounded-[30px] border p-3.5 shadow-[0_12px_32px_rgba(15,23,42,0.08)] max-[340px]:rounded-[24px] max-[340px]:p-3 sm:p-6 ${
+            className={`relative overflow-hidden rounded-[30px] border p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.14)] backdrop-blur-[3px] max-[340px]:rounded-[24px] max-[340px]:p-3 sm:p-6 ${
               isDarkMode
                 ? `border-slate-800 bg-slate-950/90`
-                : `${accent.borderLight} bg-white/94`
+                : `${accent.borderLight} bg-white/78`
             }`}
           >
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/40 to-transparent dark:from-slate-900/40" />
             <div className="relative z-10 mb-2.5 flex items-start justify-between gap-3 max-[340px]:mb-1.5 max-[340px]:gap-2.5">
               <div className="min-w-0 flex-1">
                 <p className={`text-[11px] font-black uppercase tracking-[0.18em] max-[340px]:text-[10px] ${accent.text}`}>
@@ -393,9 +388,9 @@ export default function LandingView() {
             </div>
 
             <div
-              className="relative z-10 h-[clamp(225px,36svh,300px)] touch-none overflow-hidden overscroll-contain [perspective:1000px] max-[340px]:h-[clamp(210px,34svh,280px)] [@media(max-height:680px)]:h-[240px] [@media(max-height:610px)]:h-[215px] sm:h-[420px]"
+              className="relative z-10 touch-none overscroll-contain"
               style={{ touchAction: 'none' }}
-              aria-label="Carrete de tiempos de comida"
+              aria-label="Momentos de comida del dia"
               role="listbox"
               tabIndex={0}
               onWheel={handleReelWheel}
@@ -404,84 +399,85 @@ export default function LandingView() {
               onTouchEnd={handleTouchEnd}
               onKeyDown={handleReelKeyDown}
             >
-              <div className="absolute inset-0 [transform-style:preserve-3d]">
-              {homeReel.cards.map((card, index) => {
-                const total = homeReel.cards.length;
-                const relativeOffset = getLoopOffset(index, activeReelIndex, total);
-                const isCurrent = relativeOffset === 0;
-                const theta = relativeOffset * CYLINDER_ANGLE;
-                const rotateX = -theta;
-                const y = Math.sin((theta * Math.PI) / 180) * CYLINDER_RADIUS;
-                const z = (Math.cos((theta * Math.PI) / 180) - 1) * CYLINDER_RADIUS;
-                const depth = Math.abs(relativeOffset);
-                const isVisible = depth <= 2;
-                const opacity = !isVisible ? 0 : isCurrent ? 1 : depth === 1 ? 0.58 : 0;
-                const scale = isCurrent ? 1 : depth === 1 ? 0.86 : 0.82;
-                return (
-                  <motion.article
-                    key={card.moment.key}
-                    role="option"
-                    aria-selected={isCurrent}
-                    initial={false}
-                    animate={{
-                      opacity,
-                      scale,
-                      filter: isCurrent ? 'blur(0px) saturate(1)' : 'blur(0.2px) saturate(0.85)',
-                      transform: `translate3d(-50%, calc(-50% + ${y}px), ${z}px) rotateX(${rotateX}deg) scale(${scale})`,
-                    }}
-                    transition={{ type: 'spring', stiffness: 220, damping: 28 }}
-                    className={`absolute left-1/2 top-1/2 w-[calc(100%-0.35rem)] rounded-[26px] border transition-shadow max-[340px]:rounded-[22px] ${
-                      isCurrent
-                        ? isDarkMode
-                          ? 'border-slate-700 bg-slate-900 p-4 shadow-[0_12px_26px_rgba(2,6,23,0.34)] max-[340px]:p-3 sm:p-5'
-                          : `${accent.border} bg-white p-4 shadow-[0_12px_26px_rgba(15,23,42,0.10)] max-[340px]:p-3 sm:p-5`
-                        : isDarkMode
-                          ? 'pointer-events-none border-slate-800 bg-slate-900/52 p-3 shadow-[0_6px_14px_rgba(2,6,23,0.12)]'
-                          : `pointer-events-none ${accent.borderLight} bg-white/66 p-3 shadow-[0_6px_14px_rgba(15,23,42,0.05)]`
-                    }`}
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      zIndex: isCurrent ? 30 : 20 - depth,
-                      pointerEvents: isCurrent ? 'auto' : 'none',
-                    }}
-                  >
-                    {isCurrent ? (
-                      <>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : accent.text}`}>
-                              Tiempo actual
-                            </p>
-                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 max-[340px]:text-[22px] dark:text-slate-50 sm:text-4xl">
-                              {card.moment.label}
-                            </h2>
-                            <p className={`mt-1.5 text-sm font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                              {card.preparationMessage}
-                            </p>
-                          </div>
-                          <div className={`flex flex-shrink-0 items-center gap-1 rounded-2xl border px-2.5 py-1.5 text-xs font-black ${isDarkMode ? 'border-slate-800 bg-slate-950/70 text-slate-300' : `${accent.borderLight} bg-white/70 ${accent.text}`}`}>
-                            {card.moment.hora}
-                          </div>
-                        </div>
+              {activeCard ? (
+                <motion.article
+                  key={activeCard.moment.key}
+                  role="option"
+                  aria-selected="true"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+                  className={`rounded-[26px] border p-4 shadow-[0_16px_32px_rgba(15,23,42,0.13)] max-[340px]:rounded-[22px] max-[340px]:p-3 sm:p-5 ${
+                    isDarkMode
+                      ? 'border-slate-700 bg-slate-900/94'
+                      : `${accent.border} bg-white/94`
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : accent.text}`}>
+                        Tiempo actual
+                      </p>
+                      <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-950 max-[340px]:text-[26px] dark:text-slate-50 sm:text-4xl">
+                        {activeCard.moment.label}
+                      </h2>
+                      <p className={`mt-1.5 text-sm font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        {activeCard.preparationMessage}
+                      </p>
+                    </div>
+                    <div className={`flex flex-shrink-0 items-center gap-1 rounded-2xl border px-3 py-2 text-xs font-black ${isDarkMode ? 'border-slate-800 bg-slate-950/70 text-slate-300' : `${accent.borderLight} bg-white ${accent.text}`}`}>
+                      {activeCard.moment.hora}
+                    </div>
+                  </div>
 
-                        {renderMealSummary(card)}
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>
-                            {relativeOffset < 0 ? 'Anterior' : 'Siguiente'}
-                          </p>
-                          <p className={`mt-1 truncate text-sm font-black ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {card.moment.label}
-                          </p>
-                        </div>
-                        <span className={`text-xs font-black ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`}>{card.moment.hora}</span>
-                      </div>
-                    )}
-                  </motion.article>
-                );
-              })}
+                  {activeCard.selectedMealGroups.length > 0 ? (
+                    renderMealSummary(activeCard)
+                  ) : (
+                    <div className={`mt-4 rounded-2xl border px-3 py-3 ${isDarkMode ? 'border-slate-800 bg-slate-950/50 text-slate-300' : `${accent.borderLight} bg-slate-50/80 text-slate-600`}`}>
+                      <p className="text-xs font-bold leading-relaxed">
+                        Elige una opcion para dejar listo este momento del dia.
+                      </p>
+                    </div>
+                  )}
+                </motion.article>
+              ) : null}
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {previousCard ? (
+                  <button
+                    type="button"
+                    onClick={() => moveReel(-1)}
+                    className={`min-w-0 rounded-2xl border px-3 py-2.5 text-left transition active:scale-[0.98] ${isDarkMode ? 'border-slate-800 bg-slate-900/72 text-slate-300 hover:bg-slate-900' : 'border-white/70 bg-white/68 text-slate-600 shadow-[0_6px_16px_rgba(15,23,42,0.07)] hover:bg-white/82'}`}
+                    aria-label={`Ver momento anterior: ${previousCard.moment.label}`}
+                  >
+                    <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.14em]">
+                      <ChevronUp className="h-3 w-3" />
+                      Anterior
+                    </span>
+                    <span className="mt-1 flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-black">{previousCard.moment.label}</span>
+                      <span className="text-[11px] font-black opacity-70">{previousCard.moment.hora}</span>
+                    </span>
+                  </button>
+                ) : null}
+
+                {nextCard ? (
+                  <button
+                    type="button"
+                    onClick={() => moveReel(1)}
+                    className={`min-w-0 rounded-2xl border px-3 py-2.5 text-left transition active:scale-[0.98] ${isDarkMode ? 'border-slate-800 bg-slate-900/72 text-slate-300 hover:bg-slate-900' : 'border-white/70 bg-white/68 text-slate-600 shadow-[0_6px_16px_rgba(15,23,42,0.07)] hover:bg-white/82'}`}
+                    aria-label={`Ver siguiente momento: ${nextCard.moment.label}`}
+                  >
+                    <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.14em]">
+                      <ChevronDown className="h-3 w-3" />
+                      Siguiente
+                    </span>
+                    <span className="mt-1 flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-black">{nextCard.moment.label}</span>
+                      <span className="text-[11px] font-black opacity-70">{nextCard.moment.hora}</span>
+                    </span>
+                  </button>
+                ) : null}
               </div>
             </div>
 
