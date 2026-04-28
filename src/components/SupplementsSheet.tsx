@@ -43,22 +43,22 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
             }`}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className={`border-b px-4 py-4 sm:px-6 ${
+            <div className={`border-b px-4 py-3 sm:px-6 ${
               isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'
             }`}>
               <div className="flex items-start gap-3">
-                <div className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl ${ac.bgLight}`}>
+                <div className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${ac.bgLight}`}>
                   <Pill className={`h-4 w-4 ${ac.text}`} />
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${ac.text}`}>
+                  <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${ac.text}`}>
                     Opcional
                   </p>
-                  <h3 className={`text-lg font-black leading-tight tracking-tight sm:text-xl ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                  <h3 className={`text-lg font-black leading-tight tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                     Suplementos
                   </h3>
-                  <p className={`mt-1 text-xs leading-relaxed sm:text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                  <p className={`mt-1 text-xs leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
                     Revisa dosis sugeridas, notas y precauciones.
                   </p>
                 </div>
@@ -66,7 +66,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition ${
+                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl border transition ${
                     isDarkMode
                       ? 'border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800'
                       : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
@@ -78,26 +78,26 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:py-5">
-              <div className={isAmbos ? 'grid gap-4 sm:grid-cols-2' : 'space-y-4'}>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:py-5">
+              <div className={isAmbos ? 'grid gap-3 sm:grid-cols-2' : 'space-y-3'}>
                 {profilesToRender.map((profileId) => {
                   const items = supplementsData[profileId] || [];
                   const profileAccent = profileId === 'el' ? elAccent : ellaAccent;
 
                   return (
-                    <section key={profileId} className="space-y-3">
+                    <section key={profileId} className="space-y-2.5">
                       {isAmbos ? (
-                        <div className={`rounded-2xl border p-3 ${isDarkMode ? 'border-slate-800 bg-slate-950/70' : 'border-slate-100 bg-slate-50'}`}>
+                        <div className="flex items-center justify-between px-1">
                           <p className={`text-[11px] font-black uppercase tracking-[0.16em] ${profileAccent.text}`}>
-                            {getProfileLabel(profileLabels, profileId)}
+                            {getProfileLabel(profileLabels, profileId)} · Opcional
                           </p>
-                          <p className={`mt-1 text-sm font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                          <p className={`text-[11px] font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                             {items.length} opciones
                           </p>
                         </div>
                       ) : null}
 
-                      <div className="space-y-3">
+                      <div className="space-y-2.5">
                         {items.map((supplement) => {
                           const key = `${profileId}-${supplement.name}`;
                           const expanded = expandedSupplement === key;
@@ -105,7 +105,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                           return (
                             <article
                               key={key}
-                              className={`rounded-[24px] border p-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)] ${
+                              className={`rounded-[18px] border px-3 py-2.5 shadow-[0_6px_16px_rgba(15,23,42,0.04)] ${
                                 isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-100 bg-white'
                               }`}
                             >
@@ -114,27 +114,28 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                                 onClick={() => setExpandedSupplement((current) => current === key ? null : key)}
                                 className="flex w-full items-start gap-3 text-left"
                               >
-                                <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${profileAccent.bgGradientLight}`}>
-                                  <Pill className={`h-5 w-5 ${profileAccent.text}`} />
+                                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${profileAccent.bgGradientLight}`}>
+                                  <Pill className={`h-4.5 w-4.5 ${profileAccent.text}`} />
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                  <h4 className={`text-base font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                                  <h4 className={`line-clamp-2 text-[15px] font-black leading-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
                                     {supplement.name}
                                   </h4>
-                                  <p className={`mt-1 text-sm font-semibold leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                                  <p className={`mt-1 line-clamp-2 text-[13px] font-semibold leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                                     {supplement.goalSupport}
                                   </p>
-                                  <span className={`mt-2 inline-flex items-center rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${profileAccent.tagBg} ${profileAccent.tagText}`}>
-                                    {supplement.timing}
-                                  </span>
+                                  <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold leading-snug ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                    <Clock3 className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 ${profileAccent.text}`} />
+                                    <span className="min-w-0">{supplement.timing}</span>
+                                  </p>
                                 </div>
 
-                                <ChevronDown className={`mt-2 h-5 w-5 flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                                <ChevronDown className={`mt-2 h-4.5 w-4.5 flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
                               </button>
 
                               {expanded ? (
-                                <div className="mt-4 space-y-3 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
+                                <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
                                   <div>
                                     <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                                       Por que podria ayudar
