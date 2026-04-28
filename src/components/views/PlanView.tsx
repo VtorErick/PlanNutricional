@@ -251,10 +251,10 @@ export default function PlanView() {
           Cambiar
         </span>
       </div>
-      <h4 className={`line-clamp-2 text-sm font-black leading-snug ${accent.text}`}>
+      <h4 className={`text-sm font-black leading-snug ${accent.text}`}>
         {meal.nombre}
       </h4>
-      <p className={`mt-1 line-clamp-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+      <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
         {meal.detalle}
       </p>
       <div className="mt-2 grid grid-cols-3 gap-1.5 text-[11px]">
