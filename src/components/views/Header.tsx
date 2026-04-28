@@ -110,7 +110,7 @@ export default function Header() {
     <motion.header
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`sticky top-0 z-50 w-full overflow-x-clip border-b backdrop-blur-xl shadow-[0_8px_24px_rgba(15,23,42,0.06)] ${
+      className={`sticky top-0 z-50 w-full overflow-x-clip border-b backdrop-blur-xl shadow-[0_6px_18px_rgba(15,23,42,0.04)] ${
         isDarkMode
           ? 'border-slate-800 bg-slate-950/94'
           : 'border-slate-200/70 bg-white/96'
@@ -122,7 +122,7 @@ export default function Header() {
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             {/* Logo */}
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-              <div className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl border shadow-sm ${accentColors.bgLight} ${accentColors.borderLight} ${accentColors.text}`}>
+              <div className={`flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl border ${accentColors.bgLight} ${accentColors.borderLight} ${accentColors.text}`}>
                 <ChefHat className="w-4 h-4" />
               </div>
               <div className="min-w-0 flex-1">
@@ -133,7 +133,7 @@ export default function Header() {
             </div>
 
             {/* Profile dropdown */}
-            <div className="relative w-[110px] flex-shrink-0 min-[380px]:w-[125px] sm:w-[145px]" ref={profileMenuRef}>
+            <div className="relative w-[118px] flex-shrink-0 min-[380px]:w-[136px] sm:w-[150px]" ref={profileMenuRef}>
               <button
                 type="button"
                 onClick={() => {
@@ -142,10 +142,10 @@ export default function Header() {
                 }}
                 data-testid="header-profile-menu-button"
                 aria-expanded={showProfileMenu}
-                className={`flex h-9 w-full min-w-0 items-center justify-between gap-1 rounded-xl border px-2 text-left text-xs font-black transition active:scale-[0.98] min-[380px]:h-10 min-[380px]:gap-1.5 min-[380px]:rounded-2xl min-[380px]:px-2.5 sm:text-sm ${
+                className={`flex h-10 w-full min-w-0 items-center justify-between gap-1 rounded-xl border px-2.5 text-left text-xs font-black transition active:scale-[0.98] min-[380px]:h-11 min-[380px]:gap-1.5 min-[380px]:rounded-2xl min-[380px]:px-3 sm:text-sm ${
                   isDarkMode
                     ? 'border-slate-800 bg-slate-900 text-slate-100 hover:bg-slate-800'
-                    : `border-slate-200 bg-slate-50 ${accentColors.text} shadow-sm hover:bg-white`
+                    : `border-slate-200 bg-slate-50 ${accentColors.text} hover:bg-white`
                 }`}
               >
                 <span className="min-w-0 truncate">{activeProfileLabel}</span>
@@ -195,15 +195,15 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setIsDarkMode((prev) => !prev)}
-              className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
+              className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-11 min-[380px]:w-11 min-[380px]:rounded-2xl ${
                 isDarkMode
-                  ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
-                  : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
+                  ? 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800'
+                  : 'border-slate-200 bg-slate-50 text-sky-500 hover:bg-white'
               }`}
               aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               title={isDarkMode ? 'Modo claro' : 'Modo oscuro'}
             >
-              {isDarkMode ? <Sun className="h-4 w-4 fill-current text-violet-200" /> : <Moon className="h-4 w-4 fill-sky-200 text-sky-400" />}
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
             {/* PDF button */}
@@ -214,10 +214,10 @@ export default function Header() {
                   setShowProfileMenu(false);
                 }}
                 data-testid="header-pdf-button"
-                className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition-all active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-all active:scale-95 min-[380px]:h-11 min-[380px]:w-11 min-[380px]:rounded-2xl ${
                   isDarkMode
-                    ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
-                    : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
+                    ? 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'
                 }`}
                 title="Descargar plan"
               >
@@ -268,10 +268,10 @@ export default function Header() {
                 type="button"
                 onClick={() => setIsAdminOpen(true)}
                 data-testid="header-settings-button"
-                className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-10 min-[380px]:w-10 min-[380px]:rounded-2xl ${
+                className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border transition active:scale-95 min-[380px]:h-11 min-[380px]:w-11 min-[380px]:rounded-2xl ${
                   isDarkMode
-                    ? 'border-violet-300/30 bg-violet-400/15 text-violet-200 hover:bg-violet-400/20'
-                    : 'border-violet-100 bg-violet-50 text-violet-600 shadow-sm hover:bg-violet-100'
+                    ? 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800'
+                    : 'border-slate-200 bg-slate-50 text-violet-600 hover:bg-white'
                 }`}
                 aria-label="Configuracion"
                 title="Configuracion"

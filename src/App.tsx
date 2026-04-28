@@ -184,23 +184,23 @@ export default function App() {
   const navActiveSurface = useMemo(() => {
     switch (activeProfile) {
       case 'el':
-        return 'bg-blue-50 text-blue-700 shadow-[0_8px_18px_rgba(37,99,235,0.16)] dark:bg-blue-500/12 dark:text-sky-200 dark:shadow-none';
+        return 'bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-500/12 dark:text-sky-200 dark:shadow-none';
       case 'ella':
-        return 'bg-rose-50 text-rose-700 shadow-[0_8px_18px_rgba(225,29,72,0.16)] dark:bg-rose-500/12 dark:text-pink-200 dark:shadow-none';
+        return 'bg-rose-50 text-rose-700 shadow-sm dark:bg-rose-500/12 dark:text-pink-200 dark:shadow-none';
       case 'ambos':
-        return 'bg-violet-50 text-violet-700 shadow-[0_8px_18px_rgba(124,58,237,0.18)] dark:bg-violet-500/12 dark:text-violet-200 dark:shadow-none';
+        return 'bg-violet-50 text-violet-700 shadow-sm dark:bg-violet-500/12 dark:text-violet-200 dark:shadow-none';
     }
   }, [activeProfile]);
 
   const mobileNavigationBar = (
     <nav
       ref={mobileNavRef}
-      className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-x-clip border-t border-slate-200/60 bg-white/95 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-x-clip border-t border-slate-200/60 bg-white/95 shadow-[0_-6px_18px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 sm:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Navegación principal móvil"
     >
       <div className="mx-auto w-full max-w-md px-3 py-2">
-        <div className="grid grid-cols-5 gap-0.5 rounded-[24px] border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-[0_12px_34px_rgba(15,23,42,0.13)]">
+        <div className="grid grid-cols-5 gap-0.5 rounded-[24px] border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-[0_8px_22px_rgba(15,23,42,0.09)]">
           {tabItems.map((tabItem) => (
             <button
               key={tabItem.key}
@@ -214,7 +214,7 @@ export default function App() {
               }`}
             >
               <tabItem.icon className={`h-[17px] w-[17px] ${activeTab === tabItem.key ? navActiveTint : ''}`} strokeWidth={activeTab === tabItem.key ? 2.5 : 1.8} />
-              <span className="text-[9px] font-bold tracking-wide">{tabItem.shortLabel}</span>
+              <span className="text-[10px] font-bold tracking-wide">{tabItem.shortLabel}</span>
             </button>
           ))}
         </div>
