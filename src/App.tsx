@@ -50,6 +50,7 @@ function getTodayPlanDay() {
 
 export default function App() {
   const [isPlanAdjustOpen, setIsPlanAdjustOpen] = useState(false);
+  const [isAppOverlayOpen, setIsAppOverlayOpen] = useState(false);
   const mobileNavRef = useRef<HTMLElement | null>(null);
   const lastProfileRef = useRef(getStoredProfileFromLocalStorage());
   const {
@@ -113,9 +114,19 @@ export default function App() {
       setIsPlanAdjustOpen(Boolean((event as CustomEvent<boolean>).detail));
     };
 
+    const handleAppOverlayState = (event: Event) => {
+      setIsAppOverlayOpen(Boolean((event as CustomEvent<boolean>).detail));
+    };
+
     window.addEventListener('plan-adjust-open', handlePlanAdjustState);
-    return () => window.removeEventListener('plan-adjust-open', handlePlanAdjustState);
+    window.addEventListener('app-overlay-open', handleAppOverlayState);
+    return () => {
+      window.removeEventListener('plan-adjust-open', handlePlanAdjustState);
+      window.removeEventListener('app-overlay-open', handleAppOverlayState);
+    };
   }, []);
+
+  const isChromeHidden = isPlanAdjustOpen || isAppOverlayOpen;
 
   const desktopTabBackdrop = useMemo(() => {
     switch (activeTab) {
@@ -306,9 +317,9 @@ export default function App() {
         className="flex h-[100svh] w-full flex-col overflow-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50 sm:min-h-[100dvh] sm:overflow-x-hidden"
         data-profile={activeProfile}
       >
-        {!isPlanAdjustOpen && <Header />}
+        {!isChromeHidden && <Header />}
         <LandingView />
-        {mobileNavigationBar}
+        {!isChromeHidden && mobileNavigationBar}
       </div>
     );
   }
@@ -318,9 +329,9 @@ export default function App() {
         className="min-h-[100svh] w-full overflow-x-hidden overscroll-x-none bg-gradient-to-br from-slate-50 via-white to-slate-50 transition-colors duration-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
         data-profile={activeProfile}
       >
-      {!isPlanAdjustOpen && <Header />}
+      {!isChromeHidden && <Header />}
 
-      {activeTab === 'plan' && !isPlanAdjustOpen ? <DailyProgress /> : null}
+      {activeTab === 'plan' && !isChromeHidden ? <DailyProgress /> : null}
 
       <main className="relative z-0 mx-auto w-full max-w-5xl min-w-0 px-4 py-4 pb-[calc(88px+env(safe-area-inset-bottom))] sm:px-6 sm:pb-8 space-y-4">
         {desktopTabBackdrop ? (
@@ -375,7 +386,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {mobileNavigationBar}
+      {!isChromeHidden && mobileNavigationBar}
 
       <footer className="hidden bg-white/40 mt-10 dark:bg-slate-950/60 sm:block">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 text-center text-slate-500 text-xs sm:text-sm dark:text-slate-400">

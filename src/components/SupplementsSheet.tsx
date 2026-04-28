@@ -24,7 +24,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[70] bg-slate-950/55 backdrop-blur-sm"
+        className="fixed inset-0 z-[80] bg-slate-950/50 backdrop-blur-[2px]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -36,7 +36,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex h-[92dvh] w-full flex-col overflow-hidden rounded-none border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-[32px] ${
+            className={`flex h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-[28px] border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-[28px] ${
               isDarkMode
                 ? 'border-slate-700 bg-slate-900 shadow-[0_20px_60px_rgba(2,6,23,0.55)]'
                 : 'border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]'
@@ -78,7 +78,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:py-5">
               <div className={isAmbos ? 'grid gap-4 sm:grid-cols-2' : 'space-y-4'}>
                 {profilesToRender.map((profileId) => {
                   const items = supplementsData[profileId] || [];

@@ -87,6 +87,11 @@ export default function PlanView() {
   const [isEquivalenciasSheetOpen, setIsEquivalenciasSheetOpen] = React.useState(false);
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
   const [swapSheet, setSwapSheet] = React.useState<SwapSheetState | null>(null);
+  const isAnySheetOpen = Boolean(swapSheet) || isSupplementsSheetOpen || isEquivalenciasSheetOpen || isPlanAiSheetOpen;
+
+  const notifyOverlayClosed = React.useCallback(() => {
+    window.dispatchEvent(new CustomEvent('app-overlay-open', { detail: false }));
+  }, []);
 
   React.useEffect(() => {
     window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: isPlanAiSheetOpen }));
@@ -94,6 +99,13 @@ export default function PlanView() {
       window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: false }));
     };
   }, [isPlanAiSheetOpen]);
+
+  React.useEffect(() => {
+    window.dispatchEvent(new CustomEvent('app-overlay-open', { detail: isAnySheetOpen }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('app-overlay-open', { detail: false }));
+    };
+  }, [isAnySheetOpen]);
 
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
@@ -180,10 +192,13 @@ export default function PlanView() {
 
     await handleRevisePlanWithAi(revisionPayload);
     setIsPlanAiSheetOpen(false);
+    window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: false }));
+    notifyOverlayClosed();
   }, [
     equivalenciasData,
     handleRevisePlanWithAi,
     getQuestionnaireContextForTarget,
+    notifyOverlayClosed,
     perfilesData,
     supplementsData,
   ]);
@@ -204,12 +219,14 @@ export default function PlanView() {
 
   const closeSwapSheet = React.useCallback(() => {
     setSwapSheet(null);
-  }, []);
+    notifyOverlayClosed();
+  }, [notifyOverlayClosed]);
 
   const handleSwapToggle = React.useCallback((perfil: string, dia: string, momento: string, nombre: string) => {
     toggleSeleccion(perfil, dia, momento, nombre);
     setSwapSheet(null);
-  }, [toggleSeleccion]);
+    notifyOverlayClosed();
+  }, [notifyOverlayClosed, toggleSeleccion]);
 
   const renderSelectedMealCard = React.useCallback((
     meal: MealItem,
@@ -631,17 +648,27 @@ export default function PlanView() {
 
       <EquivalenciasSheet
         open={isEquivalenciasSheetOpen}
-        onClose={() => setIsEquivalenciasSheetOpen(false)}
+        onClose={() => {
+          setIsEquivalenciasSheetOpen(false);
+          notifyOverlayClosed();
+        }}
       />
 
       <SupplementsSheet
         open={isSupplementsSheetOpen}
-        onClose={() => setIsSupplementsSheetOpen(false)}
+        onClose={() => {
+          setIsSupplementsSheetOpen(false);
+          notifyOverlayClosed();
+        }}
       />
 
       <PlanAiRefreshSheet
         open={isPlanAiSheetOpen}
-        onClose={() => setIsPlanAiSheetOpen(false)}
+        onClose={() => {
+          setIsPlanAiSheetOpen(false);
+          window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: false }));
+          notifyOverlayClosed();
+        }}
         onSubmit={(payload) => handlePlanAiSubmit(payload)}
         isDarkMode={isDarkMode}
         accentClasses={ac}

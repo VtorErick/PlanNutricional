@@ -22,6 +22,9 @@ design-captures/
 PLAN_*.md
 *_PLAN.md
 perfil-el (1).json
+docs/capturas-flujo-negocio-*/**
+!docs/capturas-flujo-negocio-*/
+!docs/capturas-flujo-negocio-*/PLAN-MEJORAS-VISUALES.md
 mobile-app/node_modules/
 mobile-app/android/
 mobile-app/ios/
