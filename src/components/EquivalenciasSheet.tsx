@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BookOpen, X } from 'lucide-react';
+import { BookOpen, ChevronRight, X } from 'lucide-react';
 import EquivalenciasCard from './EquivalenciasCard';
 import { useDiet } from '../context/DietContext';
 import { equivalencesDB } from '../data/equivalencesDB';
@@ -74,8 +74,8 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:py-5">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:py-5">
+              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
                 {equivalencesDB.map((eq, idx) => {
                   const Icon = eq.icon;
 
@@ -87,47 +87,31 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.03 }}
-                      className={`aspect-square rounded-2xl p-3 text-left transition-all active:scale-[0.98] sm:aspect-[1.18] sm:p-4 ${
+                      className={`grid min-h-[68px] grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] px-3 py-2.5 text-left transition-all active:scale-[0.98] ${
                         isDarkMode
                           ? 'bg-slate-950/92 border border-slate-800 hover:border-slate-700'
                           : 'bg-white border border-slate-100 hover:border-slate-200 shadow-[0_6px_18px_rgba(15,23,42,0.06)]'
                       }`}
                     >
-                      <div className="flex h-full flex-col justify-between">
-                        <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${ac.bgGradient}`}>
-                          {typeof Icon === 'string' ? (
-                            <span className="text-lg">{Icon}</span>
-                          ) : (() => {
-                            const LucideIcon = Icon as React.ComponentType<{ className?: string }>;
-                            return <LucideIcon className="h-5 w-5 text-white" />;
-                          })()}
-                        </div>
-
-                        <ul className="mt-4 hidden space-y-1.5 sm:block">
-                          {eq.items.slice(0, 3).map((item) => (
-                            <li
-                              key={item}
-                              className={`line-clamp-1 text-xs font-semibold leading-relaxed ${
-                                isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                              }`}
-                            >
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-
-                        <div>
-                          <h3 className={`line-clamp-2 text-sm font-black leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                            {eq.titulo}
-                          </h3>
-                          <p className={`mt-1 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {eq.items.length} opciones
-                          </p>
-                          <p className={`mt-2 text-[11px] font-bold ${ac.text}`}>
-                            Toca para ver detalle
-                          </p>
-                        </div>
+                      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${ac.bgGradient}`}>
+                        {typeof Icon === 'string' ? (
+                          <span className="text-lg">{Icon}</span>
+                        ) : (() => {
+                          const LucideIcon = Icon as React.ComponentType<{ className?: string }>;
+                          return <LucideIcon className="h-5 w-5 text-white" />;
+                        })()}
                       </div>
+
+                      <div className="min-w-0">
+                        <h3 className={`line-clamp-2 text-[13px] font-black leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                          {eq.titulo}
+                        </h3>
+                        <p className={`mt-1 text-[11px] font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {eq.items.length} opciones
+                        </p>
+                      </div>
+
+                      <ChevronRight className={`h-4 w-4 flex-shrink-0 ${ac.text}`} />
                     </motion.button>
                   );
                 })}
@@ -172,7 +156,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
                 </button>
               </div>
 
-              <div className="overflow-y-auto p-4">
+              <div className="overflow-y-auto p-3 sm:p-4">
                 <EquivalenciasCard
                   equivalencia={selectedEq}
                   accentClasses={ac}
