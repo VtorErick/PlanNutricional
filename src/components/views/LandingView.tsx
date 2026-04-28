@@ -415,7 +415,7 @@ export default function LandingView() {
                 const z = (Math.cos((theta * Math.PI) / 180) - 1) * CYLINDER_RADIUS;
                 const depth = Math.abs(relativeOffset);
                 const isVisible = depth <= 2;
-                const opacity = !isVisible ? 0 : isCurrent ? 1 : depth === 1 ? 0.22 : 0;
+                const opacity = !isVisible ? 0 : isCurrent ? 1 : depth === 1 ? 0.58 : 0;
                 const scale = isCurrent ? 1 : depth === 1 ? 0.86 : 0.82;
                 return (
                   <motion.article
@@ -426,7 +426,7 @@ export default function LandingView() {
                     animate={{
                       opacity,
                       scale,
-                      filter: isCurrent ? 'blur(0px) saturate(1)' : 'blur(1px) saturate(0.65)',
+                      filter: isCurrent ? 'blur(0px) saturate(1)' : 'blur(0.2px) saturate(0.85)',
                       transform: `translate3d(-50%, calc(-50% + ${y}px), ${z}px) rotateX(${rotateX}deg) scale(${scale})`,
                     }}
                     transition={{ type: 'spring', stiffness: 220, damping: 28 }}
@@ -436,8 +436,8 @@ export default function LandingView() {
                           ? 'border-slate-700 bg-slate-900 p-4 shadow-[0_12px_26px_rgba(2,6,23,0.34)] max-[340px]:p-3 sm:p-5'
                           : `${accent.border} bg-white p-4 shadow-[0_12px_26px_rgba(15,23,42,0.10)] max-[340px]:p-3 sm:p-5`
                         : isDarkMode
-                          ? 'pointer-events-none border-slate-800 bg-slate-900/30 p-3 shadow-none'
-                          : `pointer-events-none ${accent.borderLight} bg-white/42 p-3 shadow-none`
+                          ? 'pointer-events-none border-slate-800 bg-slate-900/52 p-3 shadow-[0_6px_14px_rgba(2,6,23,0.12)]'
+                          : `pointer-events-none ${accent.borderLight} bg-white/66 p-3 shadow-[0_6px_14px_rgba(15,23,42,0.05)]`
                     }`}
                     style={{
                       transformStyle: 'preserve-3d',
