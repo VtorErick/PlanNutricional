@@ -239,39 +239,51 @@ export default function PlanView() {
       role="button"
       tabIndex={0}
       data-testid={dataTestId}
-      className={`rounded-2xl p-4 ${
+      className={`rounded-2xl border p-3.5 ${
         isDarkMode
-          ? `bg-slate-900/70`
-          : `bg-white`
+          ? `border-slate-800 bg-slate-900/58`
+          : `border-slate-100 bg-white`
       } cursor-pointer transition-all hover:opacity-95 active:scale-[0.99]`}
     >
-      <h4 className={`font-black text-sm leading-snug ${accent.text}`}>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className={`h-1 w-10 rounded-full bg-gradient-to-r ${accent.bgGradient}`} />
+        <span className={`text-[10px] font-black uppercase tracking-wide ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+          Cambiar
+        </span>
+      </div>
+      <h4 className={`line-clamp-2 text-sm font-black leading-snug ${accent.text}`}>
         {meal.nombre}
       </h4>
-      <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+      <p className={`mt-1 line-clamp-2 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
         {meal.detalle}
       </p>
-      <p className={`mt-2 text-[11px] font-black ${accent.text}`}>
-        {meal.caloriasKcal || 0} kcal
-        {typeof meal.proteinaG === 'number' ? ` - ${meal.proteinaG}g proteina` : ''}
-        {typeof meal.grasasG === 'number' ? ` - ${meal.grasasG}g grasas` : ''}
-      </p>
+      <div className="mt-2 grid grid-cols-3 gap-1.5 text-[11px]">
+        <span className={`rounded-xl px-2 py-1 font-black ${isDarkMode ? 'bg-slate-950 text-slate-200' : 'bg-slate-50 text-slate-700'}`}>
+          {meal.caloriasKcal || 0} kcal
+        </span>
+        <span className={`rounded-xl px-2 py-1 font-bold ${isDarkMode ? 'bg-slate-950 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+          {typeof meal.proteinaG === 'number' ? `${meal.proteinaG}g prot` : '-'}
+        </span>
+        <span className={`rounded-xl px-2 py-1 font-bold ${isDarkMode ? 'bg-slate-950 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+          {typeof meal.grasasG === 'number' ? `${meal.grasasG}g grasa` : '-'}
+        </span>
+      </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {portions.slice(0, 3).map((item) => (
           <span
             key={`${meal.nombre}-${item.key}-${item.cantidad}`}
             title={`${item.label} ${item.cantidad}`}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold ${accent.tagBg} ${accent.tagText}`}
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${isDarkMode ? 'bg-slate-950 text-slate-400' : 'bg-slate-50 text-slate-500'}`}
           >
-            <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${isDarkMode ? 'bg-slate-900 text-slate-100' : 'bg-white/70'}`}>
+            <span className="text-[10px]">
               {item.icon}
             </span>
             <span>x{item.cantidad}</span>
           </span>
         ))}
         {portions.length > 3 ? (
-          <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${isDarkMode ? 'bg-slate-950 text-slate-400' : 'bg-white text-slate-500'}`}>
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isDarkMode ? 'bg-slate-950 text-slate-500' : 'bg-slate-50 text-slate-500'}`}>
             +{portions.length - 3}
           </span>
         ) : null}
@@ -282,23 +294,24 @@ export default function PlanView() {
   const renderEmptyMealState = React.useCallback((
     accent: AccentColors,
     _hora: string,
-    dataTestId?: string
+    dataTestId?: string,
+    label?: string
   ) => (
     <div
       role="button"
       tabIndex={0}
       data-testid={dataTestId}
-      className={`flex items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-5 text-center transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] ${
+      className={`flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-all cursor-pointer hover:opacity-95 active:scale-[0.99] ${
         isDarkMode
-          ? `border-slate-700 bg-slate-900/70 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]`
-          : `border-blue-200 bg-slate-50/70 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.10)]`
+          ? `border-slate-800 bg-slate-900/58`
+          : `border-slate-200 bg-slate-50/75`
       }`}
     >
-      <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${accent.bgGradient} text-white shadow-sm`}>
-        <Plus className="h-4 w-4" />
+      <span className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ${accent.tagBg} ${accent.text}`}>
+        <Plus className="h-3.5 w-3.5" />
       </span>
       <span className={`text-sm font-bold ${accent.text}`}>
-        Elegir platillo
+        Elegir{label ? ` para ${label}` : ' platillo'}
       </span>
     </div>
   ), [isDarkMode]);
@@ -329,8 +342,8 @@ export default function PlanView() {
                 title="Suplementos"
                 className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border transition active:scale-[0.99] [&>span]:hidden ${
                   isDarkMode
-                    ? 'border-fuchsia-900/60 bg-fuchsia-950/60 text-fuchsia-200 hover:bg-fuchsia-950'
-                    : 'border-fuchsia-100 bg-fuchsia-50 text-fuchsia-600 shadow-sm hover:bg-fuchsia-100'
+                    ? 'border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800'
+                    : 'border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50'
                 }`}
               >
                 <Pill className="h-4 w-4" />
@@ -343,8 +356,8 @@ export default function PlanView() {
                 title="Guia"
                 className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl border transition active:scale-[0.99] [&>span]:hidden ${
                   isDarkMode
-                    ? 'border-emerald-900/60 bg-emerald-950/60 text-emerald-200 hover:bg-emerald-950'
-                    : 'border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm hover:bg-emerald-100'
+                    ? 'border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800'
+                    : 'border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50'
                 }`}
               >
                 <BookOpen className="h-4 w-4" />
@@ -408,15 +421,15 @@ export default function PlanView() {
                 }}
                 id={`momento-${momento.key}`}
                 data-testid={`moment-section-${momento.key}`}
-                className={`rounded-[24px] sm:rounded-[28px] overflow-hidden transition-all duration-300 ${
+                className={`rounded-[20px] overflow-hidden border transition-all duration-300 ${
                   isDarkMode
-                    ? 'bg-slate-950/92 shadow-[0_12px_32px_rgba(2,6,23,0.42)] hover:shadow-[0_16px_40px_rgba(2,6,23,0.5)]'
-                    : 'bg-white shadow-[0_10px_28px_rgba(15,23,42,0.05)] hover:shadow-[0_14px_32px_rgba(15,23,42,0.07)]'
+                    ? 'border-slate-800 bg-slate-950/92 shadow-sm'
+                    : 'border-slate-100 bg-white shadow-sm'
                 } ${
                   done
                     ? isDarkMode
-                      ? 'shadow-[0_14px_36px_rgba(14,165,233,0.14)]'
-                      : 'shadow-[0_14px_34px_rgba(59,130,246,0.10)]'
+                      ? 'border-slate-700'
+                      : 'border-slate-200'
                     : ''
                 }`}
               >
@@ -427,7 +440,7 @@ export default function PlanView() {
                       [momento.key]: !prev[momento.key],
                     }));
                   }}
-                  className={`w-full flex items-center justify-between text-left p-4 sm:p-5 transition-colors focus:outline-none ${
+                  className={`w-full flex items-center justify-between text-left px-4 py-3.5 transition-colors focus:outline-none ${
                     done
                       ? isDarkMode
                         ? ac.bgLight
@@ -439,21 +452,21 @@ export default function PlanView() {
                 >
                   <div className="min-w-0 flex items-center gap-3">
                     <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
                         done
-                          ? `bg-gradient-to-br ${ac.bgGradient} text-white shadow-[0_10px_24px_rgba(37,99,235,0.22)]`
+                          ? `bg-gradient-to-br ${ac.bgGradient} text-white shadow-sm`
                           : ac.momentoIconBgPending
                       }`}
                     >
                       <Icon
-                        className={`w-5 h-5 ${
+                        className={`h-[18px] w-[18px] ${
                           done ? 'text-white' : ac.momentoIconColorPending
                         }`}
                       />
                     </div>
 
                     <div className="min-w-0 flex items-center gap-2">
-                      <h3 className={`text-[1.15rem] sm:text-[1.2rem] font-black truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                      <h3 className={`text-[1.08rem] font-black truncate ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                         {momento.label}
                       </h3>
                       <p className={`text-sm ml-auto whitespace-nowrap font-semibold ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -467,7 +480,7 @@ export default function PlanView() {
                     transition={{ type: 'spring', damping: 20 }}
                     className="flex-shrink-0"
                   >
-                    <ChevronUp className={`w-5 h-5 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                    <ChevronUp className={`w-4 h-4 ${isDarkMode ? 'text-slate-600' : 'text-slate-400'}`} />
                   </motion.div>
                 </button>
 
@@ -480,7 +493,7 @@ export default function PlanView() {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ type: 'spring', damping: 26, stiffness: 200 }}
                     >
-                      <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0">
+                      <div className="px-4 pb-4 pt-0">
                         {!isAmbos ? (
                           <div
                             onClick={() => openSwapSheet(
@@ -498,7 +511,8 @@ export default function PlanView() {
                               renderEmptyMealState(
                                 singleEmptyAccent,
                                 momento.hora,
-                                `moment-empty-${momento.key}-single`
+                                `moment-empty-${momento.key}-single`,
+                                perfilActivo === 'ella' ? labelElla : labelEl
                               )
                             ) : (
                               <div className="space-y-3">
@@ -512,7 +526,7 @@ export default function PlanView() {
                             )}
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                             <div
                               onClick={() => openSwapSheet(
                                 'el',
@@ -533,16 +547,12 @@ export default function PlanView() {
                                   `selected-meal-el-${diaActivo}-${momento.key}-${meal.nombre}`
                                 ))
                               ) : (
-                                <>
-                                  <div className={`text-[10px] font-bold uppercase tracking-wider px-1 ${elAccent.text}`}>
-                                    Para {labelEl}
-                                  </div>
-                                  {renderEmptyMealState(
-                                    elAccent,
-                                    momento.hora,
-                                    `moment-empty-${momento.key}-el`
-                                  )}
-                                </>
+                                renderEmptyMealState(
+                                  elAccent,
+                                  momento.hora,
+                                  `moment-empty-${momento.key}-el`,
+                                  labelEl
+                                )
                               )}
                             </div>
 
@@ -566,16 +576,12 @@ export default function PlanView() {
                                   `selected-meal-ella-${diaActivo}-${momento.key}-${meal.nombre}`
                                 ))
                               ) : (
-                                <>
-                                  <div className={`text-[10px] font-bold uppercase tracking-wider px-1 ${ellaAccent.text}`}>
-                                    Para {labelElla}
-                                  </div>
-                                  {renderEmptyMealState(
-                                    ellaAccent,
-                                    momento.hora,
-                                    `moment-empty-${momento.key}-ella`
-                                  )}
-                                </>
+                                renderEmptyMealState(
+                                  ellaAccent,
+                                  momento.hora,
+                                  `moment-empty-${momento.key}-ella`,
+                                  labelElla
+                                )
                               )}
                             </div>
                           </div>
