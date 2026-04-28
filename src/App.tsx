@@ -225,14 +225,14 @@ export default function App() {
   // ── EARLY RETURNS (after all hooks) ──────────────────────────────────
   if (isQuestionnaireOpen) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm dark:bg-slate-950/95 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
-              <span className="text-white text-base">🪄</span>
+      <div className="min-h-screen bg-gradient-to-br from-violet-50/70 via-white to-indigo-50/70 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200/70 bg-white/92 px-4 py-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/92 sm:px-6">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-violet-100 bg-violet-50 text-violet-600 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
+              <Lightbulb className="h-4 w-4" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-slate-800 leading-tight dark:text-slate-50">
+              <h1 className="text-sm font-black leading-tight text-slate-800 dark:text-slate-50">
                 Generar plan con IA
               </h1>
               <p className="text-[11px] text-slate-400 hidden sm:block dark:text-slate-500">
@@ -245,15 +245,16 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsDarkMode((prev) => !prev)}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
             >
               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              {isDarkMode ? 'Claro' : 'Oscuro'}
             </button>
 
             <button
               onClick={() => setIsQuestionnaireOpen(false)}
-              className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              aria-label="Cerrar cuestionario"
             >
               <X className="w-5 h-5" />
             </button>

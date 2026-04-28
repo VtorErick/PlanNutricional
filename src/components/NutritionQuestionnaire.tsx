@@ -360,8 +360,8 @@ function ChipButton({
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-all active:scale-[.98] ${
-        active ? activeClassName : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
+      className={`min-h-11 rounded-xl border px-3 py-2 text-sm font-bold transition-all active:scale-[.98] ${
+        active ? activeClassName : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900'
       }`}
     >
       {children}
@@ -379,7 +379,7 @@ function CheckList({
   onToggle: (tag: string) => void;
 }) {
   return (
-    <div className="max-h-56 overflow-y-auto pr-2 space-y-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+    <div className="max-h-56 space-y-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
       {options.map((option) => {
         const isActive = currentValueString.includes(option);
         return (
@@ -387,7 +387,7 @@ function CheckList({
             type="button"
             key={option}
             onClick={() => onToggle(option)}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all active:scale-[.98] ${
+            className={`flex min-h-11 w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-all active:scale-[.98] ${
               isActive 
                 ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-bold dark:border-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-200' 
                 : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900'
@@ -435,8 +435,6 @@ function NumField({
   step = 1,
   onChange,
   required,
-  minIcon,
-  maxIcon,
 }: {
   label: string;
   unit: string;
@@ -459,7 +457,7 @@ function NumField({
   };
 
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950 transition-colors focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:border-indigo-600 dark:focus-within:ring-indigo-900/50">
+    <div className="flex flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-3 transition-colors focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:focus-within:border-indigo-600 dark:focus-within:ring-indigo-900/50">
       <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase dark:text-slate-400">
         <label>
           {label} {required && <span className="text-rose-400 ml-0.5">*</span>}
@@ -467,7 +465,6 @@ function NumField({
         <span className="opacity-70 font-black">{unit}</span>
       </div>
       <div className="flex items-center justify-between gap-1">
-        {(minIcon || maxIcon) && <span className="text-[13px] text-slate-400 dark:text-slate-500">{minIcon}</span>}
         <input
           type="number"
           inputMode="decimal"
@@ -479,7 +476,6 @@ function NumField({
           onChange={(e) => onChange(e.target.value)}
           className="w-full text-base font-black text-slate-800 bg-transparent outline-none dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 text-center"
         />
-        {(minIcon || maxIcon) && <span className="text-[13px] text-slate-400 dark:text-slate-500">{maxIcon}</span>}
       </div>
     </div>
   );
@@ -1963,62 +1959,44 @@ export default function NutritionQuestionnaire({
               .join(', ')
           : null;
 
-      return (
-        <div className="space-y-4">
-          <p className="text-center text-sm text-slate-500 dark:text-slate-400">Revisa y confirma tu plan</p>
+      const compactValue = (value: unknown, fallback = 'Sin dato') => {
+        const text = typeof value === 'string' ? value.trim() : '';
+        return text || fallback;
+      };
 
-          <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3 dark:border-slate-700 dark:bg-slate-900">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              Configuración del plan
+      const joinCompact = (items: Array<string | null | undefined>) =>
+        items.filter((item): item is string => Boolean(item && item.trim())).join(' · ');
+
+      return (
+        <div className="space-y-3">
+          <p className="text-center text-sm font-semibold text-slate-500 dark:text-slate-400">Revisa los puntos clave antes de generar.</p>
+
+          <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
+              Configuración
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-200">
-              <span className="flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-slate-400" />
-                Perfil:
+            <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-200">
+              <div>
+                <span className="block text-[10px] font-black uppercase tracking-wide text-slate-400">Perfil</span>
                 <strong>{targetLabel}</strong>
-              </span>
-
-              <span className="flex items-center gap-1.5">
-                <Settings2 className="w-3.5 h-3.5 text-slate-400" />
-                Porciones:
-                <strong>{portionMode === 'auto' ? 'IA decide 🤖' : 'Manual 📋'}</strong>
-              </span>
-
-              {portionSummary && (
-                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5 dark:text-slate-400">
-                  <Activity className="w-3.5 h-3.5" />
-                  Resumen: {portionSummary}
-                </span>
-              )}
-
-              {el.favoriteCuisineStyles && (
-                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5 dark:text-slate-400">
-                  <ChefHat className="w-3.5 h-3.5" />
-                  Cocina: {el.favoriteCuisineStyles}
-                </span>
-              )}
-
-              {el.cookingTime && (
-                <span className="sm:col-span-2 text-slate-500 flex items-center gap-1.5 dark:text-slate-400">
-                  <Clock className="w-3.5 h-3.5" />
-                  Tiempo cocina: {el.cookingTime}
-                </span>
-              )}
-
-              {additionalNotes && (
-                <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">
-                  Notas: {additionalNotes}
-                </span>
-              )}
+              </div>
+              <div>
+                <span className="block text-[10px] font-black uppercase tracking-wide text-slate-400">Porciones</span>
+                <strong>{portionMode === 'auto' ? 'IA decide' : 'Manual'}</strong>
+              </div>
+              {portionSummary ? <p className="col-span-2 text-slate-500 dark:text-slate-400">Porciones: {portionSummary}</p> : null}
+              {el.favoriteCuisineStyles ? <p className="col-span-2 text-slate-500 dark:text-slate-400">Cocina: {el.favoriteCuisineStyles}</p> : null}
+              {el.cookingTime ? <p className="col-span-2 text-slate-500 dark:text-slate-400">Tiempo cocina: {el.cookingTime}</p> : null}
+              {additionalNotes ? <p className="col-span-2 text-slate-500 dark:text-slate-400">Notas: {additionalNotes}</p> : null}
             </div>
           </div>
 
           <div
             data-testid="questionnaire-model-preview"
-            className="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100"
+            className="rounded-2xl border border-indigo-100 bg-indigo-50/70 px-3 py-2.5 text-xs text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100"
           >
-            <p className="font-bold">Modelo previsto para esta llamada: {plannedModelLabel}</p>
+            <p className="font-bold">Modelo previsto: {plannedModelLabel}</p>
             <p className="mt-1 opacity-90">
               {fallbackPreviewLabel
                 ? `Fallback automatico: ${fallbackPreviewLabel}.`
@@ -2029,81 +2007,43 @@ export default function NutritionQuestionnaire({
           {profiles.map((p) => {
             const data = person(p);
             const t = THEME[p];
+            const profileStats = joinCompact([
+              data.age ? `${data.age} años` : null,
+              data.currentWeightKg ? `${data.currentWeightKg} kg` : null,
+              data.heightCm ? `${data.heightCm} cm` : null,
+              data.targetWeightKg ? `meta ${data.targetWeightKg} kg` : null,
+            ]);
+            const healthSummary = joinCompact([
+              data.diagnostics ? `Salud: ${data.diagnostics}` : null,
+              data.medications ? `Medicamentos: ${data.medications}` : null,
+              data.allergies ? `Alergias: ${data.allergies}` : null,
+              data.intolerances ? `Intolerancias: ${data.intolerances}` : null,
+              data.digestiveSymptoms ? `Digestivo: ${data.digestiveSymptoms}` : null,
+            ]);
+            const lifestyleSummary = joinCompact([
+              data.activityLevel ? `Actividad: ${data.activityLevel}` : null,
+              data.objectiveTimeline ? `Meta: ${data.objectiveTimeline}` : null,
+              data.wakeTime ? `Despierta: ${data.wakeTime}` : null,
+              data.trainingFrequency ? `Entreno: ${data.trainingFrequency}` : null,
+            ]);
+            const foodSummary = joinCompact([
+              data.favoriteFoods ? `Favoritos: ${data.favoriteFoods}` : null,
+              data.dislikedFoods ? `No incluir: ${data.dislikedFoods}` : null,
+              data.assessmentReportPdf?.name ? `PDF: ${data.assessmentReportPdf.name}` : null,
+            ]);
 
             return (
-              <div key={p} className={`p-4 rounded-2xl border ${t.border} ${t.light}`}>
-                <p className={`text-xs font-bold uppercase tracking-wider mb-2.5 ${t.text}`}>
+              <div key={p} className={`space-y-2 rounded-2xl border p-3 ${t.border} ${t.light}`}>
+                <p className={`text-[11px] font-black uppercase tracking-wider ${t.text}`}>
                   {p === 'el' ? `Perfil ${labelEl}` : `Perfil ${labelElla}`}
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600">
-                  {data.age && (
-                    <span className="flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      Edad: <strong>{data.age} años</strong>
-                    </span>
-                  )}
-
-                  <span className="flex items-center gap-1.5">
-                    <Scale className="w-3.5 h-3.5 text-slate-400" />
-                    Peso: <strong>{data.currentWeightKg} kg</strong>
-                  </span>
-
-                  <span className="flex items-center gap-1.5">
-                    <Ruler className="w-3.5 h-3.5 text-slate-400" />
-                    Estatura: <strong>{data.heightCm} cm</strong>
-                  </span>
-
-                  {data.targetWeightKg && (
-                    <span className="flex items-center gap-1.5">
-                      <Target className="w-3.5 h-3.5 text-slate-400" />
-                      Peso meta: <strong>{data.targetWeightKg} kg</strong>
-                    </span>
-                  )}
-
-                  <span className="sm:col-span-2 flex items-center gap-1.5">
-                    <Target className="w-3.5 h-3.5 text-slate-400" />
-                    Objetivos: <strong>{data.objectives.join(', ') || 'Ninguno'}</strong>
-                  </span>
-
-                  <span className="sm:col-span-2 flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5 text-slate-400" />
-                    Actividad: <strong>{data.activityLevel}</strong>
-                  </span>
-
-                  {data.objectiveTimeline && <span className="sm:col-span-2">Tiempo: <strong>{data.objectiveTimeline}</strong></span>}
-                  {data.wakeTime && <span className="sm:col-span-2">Despierta: <strong>{data.wakeTime}</strong></span>}
-                  {data.trainingFrequency && <span className="sm:col-span-2">Entreno: <strong>{data.trainingFrequency}</strong></span>}
-                  {data.diagnostics && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Salud: {data.diagnostics}</span>}
-                  {data.medications && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Medicamentos: {data.medications}</span>}
-                  {data.allergies && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Alergias: {data.allergies}</span>}
-                  {data.intolerances && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Intolerancias: {data.intolerances}</span>}
-                  {data.digestiveSymptoms && <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">Digestivo: {data.digestiveSymptoms}</span>}
-                  {data.favoriteFoods && <span className="sm:col-span-2 text-emerald-600">Favoritos: {data.favoriteFoods}</span>}
-                  {data.dislikedFoods && <span className="sm:col-span-2 text-rose-500">No incluir: {data.dislikedFoods}</span>}
-                  {data.assessmentReportPdf?.name && (
-                    <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">
-                      PDF adjunto: <strong>{data.assessmentReportPdf.name}</strong>
-                    </span>
-                  )}
-                  {Object.values(data.bodyMeasurements || {}).some(Boolean) && (
-                    <span className="sm:col-span-2 text-slate-500 dark:text-slate-400">
-                      Medidas:
-                      <strong>
-                        {' '}
-                        {[
-                          data.bodyMeasurements?.waistCm ? `Cintura ${data.bodyMeasurements.waistCm} cm` : null,
-                          data.bodyMeasurements?.hipCm ? `Cadera ${data.bodyMeasurements.hipCm} cm` : null,
-                          data.bodyMeasurements?.neckCm ? `Cuello ${data.bodyMeasurements.neckCm} cm` : null,
-                          data.bodyMeasurements?.chestCm ? `Pecho ${data.bodyMeasurements.chestCm} cm` : null,
-                          data.bodyMeasurements?.armCm ? `Brazo ${data.bodyMeasurements.armCm} cm` : null,
-                          data.bodyMeasurements?.thighCm ? `Muslo ${data.bodyMeasurements.thighCm} cm` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </strong>
-                    </span>
-                  )}
+                <div className="space-y-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                  <p><strong>Perfil:</strong> {compactValue(profileStats)}</p>
+                  <p><strong>Objetivos:</strong> {data.objectives.join(', ') || 'Ninguno'}</p>
+                  {healthSummary ? <p><strong>Salud/restricciones:</strong> {healthSummary}</p> : null}
+                  {lifestyleSummary ? <p><strong>Cocina/horarios:</strong> {lifestyleSummary}</p> : null}
+                  {foodSummary ? <p><strong>Preferencias:</strong> {foodSummary}</p> : null}
                 </div>
               </div>
             );
@@ -2237,8 +2177,8 @@ export default function NutritionQuestionnaire({
 
   return (
     <>
-      <div className="mt-4 rounded-[28px] bg-white border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-950 dark:border-slate-800">
-        <div className="h-2 bg-slate-100 dark:bg-slate-900">
+      <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div className="h-1.5 bg-slate-100 dark:bg-slate-900">
           <motion.div
             className={`h-full bg-gradient-to-r ${tc.grad}`}
             animate={{ width: `${progress * 100}%` }}
@@ -2246,10 +2186,11 @@ export default function NutritionQuestionnaire({
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-9 h-9 rounded-2xl flex-shrink-0 flex items-center justify-center bg-gradient-to-br ${tc.grad}`}>
-              <StepIcon className="w-4 h-4 text-white" />
+            <div className={`h-8 w-1.5 flex-shrink-0 rounded-full bg-gradient-to-b ${tc.grad}`} aria-hidden="true" />
+            <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl ${tc.light} ${tc.text}`}>
+              <StepIcon className="h-4 w-4" />
             </div>
 
             <div className="min-w-0">
@@ -2257,7 +2198,7 @@ export default function NutritionQuestionnaire({
                 {stepLabel}
                 {visualProfileSuffix}
               </p>
-              <p className="text-xs text-slate-500 font-medium dark:text-slate-400">
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 Paso {stepIdx + 1} de {steps.length} · {stepsLeft <= 3 ? 'Ya casi terminamos' : `Solo ${stepsLeft} pasos más`}
               </p>
             </div>
@@ -2265,7 +2206,7 @@ export default function NutritionQuestionnaire({
 
           <button
             onClick={onCancel}
-            className="flex-shrink-0 text-xs px-3 py-2 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition font-medium dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="flex-shrink-0 rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Cerrar
           </button>
@@ -2289,7 +2230,7 @@ export default function NutritionQuestionnaire({
         </div>
 
         {(showBack || showNext) && (
-          <div className="flex items-center gap-2 px-4 pb-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2 border-t border-slate-100 px-4 pb-4 pt-3 dark:border-slate-800">
             {showBack && (
               <button
                 onClick={goBack}
