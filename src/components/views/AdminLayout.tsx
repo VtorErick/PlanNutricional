@@ -226,16 +226,16 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col">
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 dark:bg-slate-950/95 dark:border-slate-800 px-4 sm:px-6 py-4 flex items-center justify-between shadow-sm">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200 dark:bg-slate-950/95 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md">
-            <Settings className="w-4 h-4 text-white" />
+          <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-slate-100 flex items-center justify-center shadow-sm">
+            <Settings className="w-4 h-4 text-white dark:text-slate-950" />
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">Configuracion</h1>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">
-              Respaldo local y control avanzado del modelo Gemini
+              Respaldo local y control del modelo Gemini
             </p>
           </div>
         </div>
@@ -244,10 +244,10 @@ export default function AdminLayout() {
           <button
             type="button"
             onClick={() => setIsDarkMode((prev) => !prev)}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl border text-xs font-bold transition-colors ${
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-colors ${
               isDarkMode
                 ? 'border-amber-300/40 bg-amber-400/15 text-amber-200 hover:bg-amber-400/20'
-                : 'border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
             }`}
             title={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
           >
@@ -265,8 +265,8 @@ export default function AdminLayout() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
-        <div className="flex gap-2 p-1.5 bg-slate-100/80 dark:bg-slate-900/90 rounded-2xl">
+      <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-3">
+        <div className="flex gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           {([
             { key: 'manual', label: 'Respaldo', shortLabel: 'Respaldo', emoji: 'JSON' },
             { key: 'settings', label: 'Gemini', shortLabel: 'Gemini', emoji: 'AI' },
@@ -275,10 +275,10 @@ export default function AdminLayout() {
               key={tabItem.key}
               onClick={() => setAdminTab(tabItem.key)}
               data-testid={`admin-tab-${tabItem.key}`}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl font-bold text-sm transition-all duration-300 active:scale-95 ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95 ${
                 adminTab === tabItem.key
-                  ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-950 dark:text-slate-100 dark:border dark:border-slate-800'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-white/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'
+                  ? 'bg-slate-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-950'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'
               }`}
             >
               <span className="block text-xs font-black">{tabItem.emoji}</span>
@@ -289,19 +289,19 @@ export default function AdminLayout() {
         </div>
       </div>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 pb-24">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-4 pb-24">
         {adminTab === 'settings' && (
-          <div className="space-y-5 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="text-center pb-1">
-              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">AI Gemini</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <div className="space-y-4 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">AI Gemini</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Modelo activo, fallback y llave usada por la app.
               </p>
             </div>
 
-            <section className="bg-white dark:bg-slate-950 rounded-3xl p-5 md:p-6 shadow-sm border border-slate-200 dark:border-slate-800">
-              <div className="flex items-start gap-3 mb-5">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <section className="bg-white dark:bg-slate-950 rounded-2xl p-4 md:p-5 shadow-sm border border-slate-200 dark:border-slate-800">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center flex-shrink-0 dark:bg-emerald-950/30 dark:border-emerald-900/50">
                   <ShieldCheck className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
@@ -314,18 +314,18 @@ export default function AdminLayout() {
                 </div>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">Modelo actual</p>
-                  <p className="mt-2 text-sm font-bold text-emerald-950 dark:text-emerald-100">{currentModelLabel}</p>
-                  <p className="mt-1 text-xs text-emerald-800/80 dark:text-emerald-200/80">
+              <div className="grid gap-2.5 md:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Modelo actual</p>
+                  <p className="mt-1.5 text-sm font-bold text-slate-900 dark:text-slate-100">{currentModelLabel}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {geminiCustomApiKey ? 'Usando API key personalizada.' : 'Usando API key default.'}
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 dark:border-indigo-900/50 dark:bg-indigo-950/30">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-700 dark:text-indigo-300">Fallback</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Fallback</p>
+                  <p className="mt-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     {fallbackPreview.length
                       ? fallbackPreview.map((model) => getGeminiModelLabel(model)).join(', ')
                       : 'Sin fallback validado todavia.'}
@@ -333,11 +333,11 @@ export default function AdminLayout() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
                 <button
                   type="button"
                   onClick={handleReplaceApiKey}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all active:scale-[0.98]"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all active:scale-[0.98] dark:bg-slate-100 dark:text-slate-950"
                 >
                   <KeyRound className="w-4 h-4" />
                   Reemplazar API key
@@ -345,7 +345,7 @@ export default function AdminLayout() {
                 <button
                   type="button"
                   onClick={restoreDefaultApiKey}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <RotateCcw className="w-4 h-4" />
                   Restaurar default
@@ -353,7 +353,7 @@ export default function AdminLayout() {
                 <button
                   type="button"
                   onClick={validateCurrentModel}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
                 >
                   <RefreshCcw className="w-4 h-4" />
                   Validar
@@ -365,7 +365,7 @@ export default function AdminLayout() {
 
         {adminTab === 'manual' && (
           <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="text-center mb-6">
+            <div className="mb-4">
               <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Respaldo y restauracion</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Guarda una copia de tus planes o recupera una version anterior desde un archivo JSON.
@@ -401,7 +401,10 @@ export default function AdminLayout() {
               />
             </div>
 
-            <div className="mt-5 bg-white dark:bg-slate-950 rounded-3xl p-4 border border-rose-200 dark:border-rose-900/60 shadow-sm">
+            <div className="mt-5 bg-white dark:bg-slate-950 rounded-2xl p-4 border border-rose-200 dark:border-rose-900/60 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-rose-600 dark:text-rose-300 mb-1">
+                Zona de riesgo
+              </p>
               <p className="text-xs text-slate-500 dark:text-slate-300 mb-3">
                 Si encuentras un error o quieres empezar desde cero en este dispositivo, puedes limpiar el almacenamiento local de esta app.
                 <br />
