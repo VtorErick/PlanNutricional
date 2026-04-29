@@ -18,6 +18,23 @@ const categories = [
   { key: 'leguminosas', label: 'Leguminosas', icon: '🫘', color: 'text-amber-700', bg: 'bg-amber-100' },
 ] as const;
 
+function firstSentence(value: string | null | undefined, fallback: string) {
+  const text = String(value || '').trim();
+  if (!text) return fallback;
+  const [sentence] = text.split(/(?<=\.)\s+/);
+  return sentence || text;
+}
+
+function compactSchedule(value: string | null | undefined) {
+  return String(value || '5 momentos definidos')
+    .replace('Desayuno:', 'Des')
+    .replace('Colación mañana:', 'C.AM')
+    .replace('Comida:', 'Com')
+    .replace('Colación tarde:', 'C.PM')
+    .replace('Cena:', 'Cena')
+    .replace(/, /g, ' · ');
+}
+
 export default function SummaryView() {
   const { perfilActivo, perfilesData, profileLabels, ac, isDarkMode } = useDiet();
   const [expandedSummaryPoint, setExpandedSummaryPoint] = useState<string | null>(null);
@@ -95,7 +112,9 @@ export default function SummaryView() {
             : (isAmbos ? (isFirst ? elAccent.textDark : ellaAccent.textDark) : dynamicAc.textDark);
 
           const restrictionsText = p.notaSalud || p.detallesPerfil || 'Sin restricciones criticas registradas.';
-          const momentsText = p.horariosTexto || '5 momentos del dia definidos.';
+          const goalSummary = firstSentence(p.meta, 'Objetivo nutricional definido.');
+          const restrictionsSummary = firstSentence(p.detallesPerfil || p.notaSalud, restrictionsText);
+          const momentsText = compactSchedule(p.horariosTexto);
 
           return (
             <div key={p.perfil} className={`space-y-3 ${hiddenClass}`}>
@@ -112,26 +131,32 @@ export default function SummaryView() {
               )}
 
               <div className={`rounded-[20px] p-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
                   <div className={`rounded-2xl p-3 ${dynamicAc.bgGradientLight}`}>
-                    <p className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] ${dynamicAc.textDark}`}>
-                      <TrendingDown className="h-3.5 w-3.5" />
-                      Objetivo
-                    </p>
-                    <p className={`mt-1 line-clamp-2 text-xs font-semibold leading-snug ${isDarkMode ? dynamicAc.text : dynamicAc.textDark}`}>
-                      {p.meta}
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] ${dynamicAc.textDark}`}>
+                          <TrendingDown className="h-3.5 w-3.5" />
+                          Objetivo
+                        </p>
+                        <p className={`mt-1 text-xs font-semibold leading-snug ${isDarkMode ? dynamicAc.text : dynamicAc.textDark}`}>
+                          {goalSummary}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <p className={`text-xl font-black leading-none ${dynamicAc.text}`}>
+                          {p.metaCaloricaKcalDia || '-'}
+                        </p>
+                        <p className={`mt-0.5 text-[10px] font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>kcal/día</p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className={`rounded-2xl p-3 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
                     <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                      Kcal / perfil
+                      Perfil
                     </p>
-                    <p className={`mt-1 text-xl font-black leading-none ${dynamicAc.text}`}>
-                      {p.metaCaloricaKcalDia || '-'}
-                      <span className={`ml-1 text-[11px] font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>día</span>
-                    </p>
-                    <p className={`mt-1 line-clamp-1 text-[11px] font-semibold ${profileTextTone}`}>
+                    <p className={`mt-1 text-xs font-semibold leading-snug ${profileTextTone}`}>
                       {p.perfil}
                     </p>
                   </div>
@@ -140,7 +165,7 @@ export default function SummaryView() {
                     <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                       Horarios
                     </p>
-                    <p className={`mt-1 line-clamp-2 text-xs font-semibold leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <p className={`mt-1 text-xs font-semibold leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                       {momentsText}
                     </p>
                   </div>
@@ -150,8 +175,8 @@ export default function SummaryView() {
                       <Shield className="h-3.5 w-3.5" />
                       Restricciones
                     </p>
-                    <p className="mt-1 line-clamp-2 text-xs font-semibold leading-snug text-amber-900 dark:text-amber-100">
-                      {restrictionsText}
+                    <p className="mt-1 text-xs font-semibold leading-snug text-amber-900 dark:text-amber-100">
+                      {restrictionsSummary}
                     </p>
                   </div>
                 </div>
@@ -166,38 +191,48 @@ export default function SummaryView() {
                 </div>
 
                 <div className="space-y-1.5">
-                  {summaryPoints.map((linea, idx) => (
-                    <motion.button
-                      key={idx}
-                      type="button"
-                      initial={{ opacity: 0, x: -12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.06 }}
-                      onClick={() => {
-                        const pointKey = `${p.perfil}-${idx}`;
-                        setExpandedSummaryPoint((current) => current === pointKey ? null : pointKey);
-                      }}
-                      className={`flex w-full items-start gap-2.5 rounded-2xl p-2.5 text-left transition-all active:scale-[0.99] ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-50 hover:bg-slate-100'}`}
-                      style={{ borderLeft: `3px solid ${dynamicAc.color500}` }}
-                    >
-                      <span className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-black ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
-                        {idx + 1}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className={`block text-xs font-semibold leading-snug ${expandedSummaryPoint === `${p.perfil}-${idx}` ? '' : 'line-clamp-2'} ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
-                          {expandedSummaryPoint === `${p.perfil}-${idx}` ? linea : compactSummaryPoints[idx]}
+                  {summaryPoints.map((linea, idx) => {
+                    const pointKey = `${p.perfil}-${idx}`;
+                    const compactText = compactSummaryPoints[idx];
+                    const canExpand = linea !== compactText && linea.length > compactText.length + 45;
+                    const isExpanded = expandedSummaryPoint === pointKey;
+                    const content = canExpand && isExpanded ? linea : compactText;
+                    const Component = canExpand ? motion.button : motion.div;
+
+                    return (
+                      <Component
+                        key={idx}
+                        {...(canExpand ? { type: 'button' } : {})}
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.06 }}
+                        onClick={canExpand ? () => {
+                          setExpandedSummaryPoint((current) => current === pointKey ? null : pointKey);
+                        } : undefined}
+                        className={`flex w-full items-start gap-2.5 rounded-2xl p-2.5 text-left transition-all ${canExpand ? 'active:scale-[0.99]' : ''} ${isDarkMode ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-50 hover:bg-slate-100'}`}
+                        style={{ borderLeft: `3px solid ${dynamicAc.color500}` }}
+                      >
+                        <span className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-black ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
+                          {idx + 1}
                         </span>
-                        {linea !== compactSummaryPoints[idx] ? (
-                          <span className={`mt-0.5 block text-[10px] font-bold ${dynamicAc.text}`}>
-                            {expandedSummaryPoint === `${p.perfil}-${idx}` ? 'Ocultar detalle' : 'Ver detalle'}
+                        <span className="min-w-0 flex-1">
+                          <span className={`block text-xs font-semibold leading-snug ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
+                            {content}
                           </span>
+                          {canExpand ? (
+                            <span className={`mt-0.5 block text-[10px] font-bold ${dynamicAc.text}`}>
+                              {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
+                            </span>
+                          ) : null}
+                        </span>
+                        {canExpand ? (
+                          <ChevronDown
+                            className={`mt-0.5 h-4 w-4 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                          />
                         ) : null}
-                      </span>
-                      <ChevronDown
-                        className={`mt-0.5 h-4 w-4 flex-shrink-0 transition-transform ${expandedSummaryPoint === `${p.perfil}-${idx}` ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
-                      />
-                    </motion.button>
-                  ))}
+                      </Component>
+                    );
+                  })}
                 </div>
               </div>
 
