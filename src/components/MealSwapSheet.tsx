@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Clock3, Utensils, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import type { MealItem } from '../types';
+import { sanitizeMealPortionsText } from '../utils/mealPortions';
 
 interface MealSwapSheetProps {
   open: boolean;
@@ -169,7 +170,7 @@ export default function MealSwapSheet({
 
                             <p className={`mt-1 flex items-start gap-1.5 text-[10px] font-semibold leading-[1.35] ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                               <Utensils className={`mt-0.5 h-3 w-3 flex-shrink-0 ${accentClasses.text}`} />
-                              <span className="min-w-0 break-words">{comida.porciones}</span>
+                              <span className="min-w-0 break-words">{sanitizeMealPortionsText(comida.porciones)}</span>
                             </p>
                           </div>
                         </div>

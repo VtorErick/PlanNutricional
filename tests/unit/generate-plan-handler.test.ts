@@ -311,7 +311,10 @@ test('handler genera y la app rehidrata correctamente un plan de cuestionario de
       'El detalle debe contener ingredientes base o el nombre de la receta (rehidratado)'
     );
     assert.ok(breakfast.caloriasKcal > 0);
+    assert.doesNotMatch(breakfast.porciones, /ajustad|kcal para este perfil/i);
     assert.ok(dinner.caloriasKcal > 0);
+    assert.doesNotMatch(dinner.porciones, /ajustad|kcal para este perfil/i);
+    assert.equal(typeof dinner.aiMeta?.normalizedTargetKcal, 'number');
     assert.ok(dinner.proteinaG > 0);
     const mondayCalories = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena']
       .reduce((sum, moment) => sum + exported.planELLA.Lunes[moment][0].caloriasKcal, 0);

@@ -1,14 +1,10 @@
 import { Profile } from '../types';
+import { SMAE_GROUP_ORDER, SMAE_GROUPS } from '../data/smae';
 
-export const macroPortionCategories = [
-  { key: 'frutas', label: 'Frutas', icon: '🍎' },
-  { key: 'verduras', label: 'Verduras', icon: '🥦' },
-  { key: 'cereales', label: 'Cereales', icon: '🌾' },
-  { key: 'proteina', label: 'Proteina', icon: '🥩' },
-  { key: 'grasas', label: 'Grasas', icon: '🥑' },
-  { key: 'lacteos', label: 'Lacteos', icon: '🥛' },
-  { key: 'leguminosas', label: 'Leguminosas', icon: '🫘' },
-] as const;
+export const macroPortionCategories = SMAE_GROUP_ORDER.map((key) => {
+  const group = SMAE_GROUPS[key];
+  return { key: group.key, label: group.label, icon: group.icon };
+});
 
 export const getMomentMacroPortions = (profile: Profile, momentoKey: string) => {
   const objetivoMomento = (profile.objetivosPorMomento?.[momentoKey] || {}) as Record<string, number>;

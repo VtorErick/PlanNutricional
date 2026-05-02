@@ -1,6 +1,7 @@
 import type { MealItem } from '../types';
 import { ensureMealNutrition, enrichPlanWithNutrition } from '../utils/nutrition';
 import { buildCanonicalMealDetail, shouldReplaceMealDetail } from '../utils/nutritionValidation';
+import { sanitizeMealPortionsText } from '../utils/mealPortions';
 import { repairBrokenText } from '../utils/text';
 
 export interface CatalogMealItem {
@@ -1265,13 +1266,14 @@ export function rehydratePlanRecord(plan: Record<string, Record<string, any[]>>,
                 nombre: repairedName,
                 tags: repairedTags,
                 super: repairedSuper,
-                porciones: repairBrokenText(String(op.porciones || '')),
+                porciones: sanitizeMealPortionsText(repairBrokenText(String(op.porciones || ''))),
                 detalle: shouldReplaceMealDetail(repairedDetail, repairedName, repairedSuper)
                   ? buildCanonicalMealDetail(repairedName, repairedSuper)
                   : repairedDetail,
                 caloriasKcal: Number(op.caloriasKcal) || 0,
                 proteinaG: Number(op.proteinaG) || 0,
-                grasasG: Number(op.grasasG) || 0
+                grasasG: Number(op.grasasG) || 0,
+                ...(op.aiMeta && typeof op.aiMeta === 'object' ? { aiMeta: { ...op.aiMeta } } : {})
               };
 
               if (modifier) {
@@ -1296,6 +1298,12 @@ export function rehydratePlanRecord(plan: Record<string, Record<string, any[]>>,
                   detalle: buildCanonicalMealDetail(repairedName, repairedSuper),
                 });
              }
+          }
+          if (op && typeof op === 'object') {
+            return ensureMealNutrition({
+              ...op,
+              porciones: sanitizeMealPortionsText(repairBrokenText(String(op.porciones || ''))),
+            });
           }
           return ensureMealNutrition(op);
         });

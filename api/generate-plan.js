@@ -84,6 +84,23 @@ function resolvePreferredDeepSeekModel(envModel, payloadPreferredModel) {
   return isSupportedDeepSeekModel(requestedModel) ? requestedModel : DEFAULT_DEEPSEEK_MODEL;
 }
 
+function stripProfileCalorieAdjustmentNote(value) {
+  if (!isNonEmptyString(value)) return '';
+  const source = String(value);
+  const normalizedSource = source.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  if (/^\s*porcion\s+ajustada\s+segun\s+objetivo,\s+horario\s+y\s+restricciones\s+del\s+perfil\.?\s*$/i.test(normalizedSource)) {
+    return '';
+  }
+
+  return source
+    .replace(/\s*\(\s*porci[oó]n\s+ajustad[ao]\s+a\s+~?\d+(?:[.,]\d+)?\s*kcal\s+para\s+este\s+perfil\s*\)\s*/gi, ' ')
+    .replace(/\s*\(\s*porcion\s+ajustada\s+segun\s+objetivo,\s+horario\s+y\s+restricciones\s+del\s+perfil\.?\s*\)\s*/gi, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([,.;:])/g, '$1')
+    .trim();
+}
+
 const CLINICAL_PROTOCOLS = [
   {
     regex: /(diabetes|insulina|sop|poliquistico|azucar)/i,
@@ -658,6 +675,8 @@ function normalizeMealOptionAgainstCatalog(meal, catalogMeal) {
   if (!isNonEmptyString(normalizedMeal.nombre) && fallbackName) {
     normalizedMeal.nombre = fallbackName;
   }
+
+  normalizedMeal.porciones = stripProfileCalorieAdjustmentNote(normalizedMeal.porciones);
 
   if (!isNonEmptyString(normalizedMeal.porciones)) {
     normalizedMeal.porciones = 'Porcion ajustada segun objetivo, horario y restricciones del perfil.';
@@ -1423,6 +1442,8 @@ function roundToStep(value, step = 5) {
 function normalizeMealNutritionToTargets(meal, momentKey, profile) {
   if (!meal || typeof meal !== 'object') return meal;
 
+  meal.porciones = stripProfileCalorieAdjustmentNote(meal.porciones);
+
   const caloriesTarget = getProfileCalorieTarget(profile);
   if (!caloriesTarget) return meal;
 
@@ -1437,13 +1458,12 @@ function normalizeMealNutritionToTargets(meal, momentKey, profile) {
 
   if (shouldAdjustCalories) {
     meal.caloriasKcal = targetCalories;
-    if (
-      isNonEmptyString(meal.porciones) &&
-      !/ajustad[ao] a/i.test(meal.porciones) &&
-      !/~?\d+\s*kcal/i.test(meal.porciones)
-    ) {
-      meal.porciones = `${meal.porciones} (porcion ajustada a ~${targetCalories} kcal para este perfil)`;
-    }
+    meal.aiMeta = {
+      ...(meal.aiMeta || {}),
+      normalizedByProfile: true,
+      normalizedTargetKcal: targetCalories,
+      profileId: profile?.id === 'ella' ? 'ella' : profile?.id === 'el' ? 'el' : meal.aiMeta?.profileId,
+    };
   } else {
     meal.caloriasKcal = Math.round(currentCalories);
   }

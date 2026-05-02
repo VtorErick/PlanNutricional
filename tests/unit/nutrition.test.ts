@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { buildExportData } from '../../src/dataManager.ts';
 import { ensureMealNutrition, estimateMealNutritionFromPortions } from '../../src/utils/nutrition.ts';
+import { sanitizeMealPortionsText } from '../../src/utils/mealPortions.ts';
 
 function buildMinimalEllaPayload() {
   return {
@@ -149,6 +150,30 @@ test('ensureMealNutrition conserva macros validos ya calculados', () => {
   assert.equal(result.grasasG, 11);
 });
 
+test('sanitizeMealPortionsText remueve notas tecnicas de ajuste calórico', () => {
+  const result = sanitizeMealPortionsText(
+    '2 huevos, 2 tortillas de maiz (porcion ajustada a ~430 kcal para este perfil)'
+  );
+
+  assert.equal(result, '2 huevos, 2 tortillas de maiz');
+});
+
+test('ensureMealNutrition sanea porciones legacy sin mezclar kcal objetivo', () => {
+  const result = ensureMealNutrition({
+    nombre: 'Demo',
+    porciones: '1 prot, 1 gras (porcion ajustada a ~480 kcal para este perfil)',
+    detalle: 'Demo',
+    tags: [],
+    super: [],
+    caloriasKcal: 480,
+    proteinaG: 7,
+    grasasG: 8,
+  });
+
+  assert.equal(result.porciones, '1 prot, 1 gras');
+  assert.equal(result.caloriasKcal, 480);
+});
+
 test('buildExportData enriquece macros y sanea suplementos y detalle incoherente', () => {
   const exported = buildExportData(buildMinimalEllaPayload(), 'ELLA');
   const breakfast = exported.planELLA.Lunes.desayuno[0];
@@ -161,4 +186,16 @@ test('buildExportData enriquece macros y sanea suplementos y detalle incoherente
   assert.match(snack.detalle, /Ingredientes base/i);
   assert.equal(supplements.length, 2);
   assert.ok(supplements.every((item: any) => item.notes && item.name));
+});
+
+test('buildExportData no conserva notas de ajuste calorico en porciones rehidratadas', () => {
+  const payload = buildMinimalEllaPayload();
+  payload.planELLA.Lunes.desayuno[0].porciones =
+    '8 prot, 1 verd, 1 frut, 1 lact, 1 gras, 1 cer (porcion ajustada a ~430 kcal para este perfil)';
+
+  const exported = buildExportData(payload, 'ELLA');
+  const breakfast = exported.planELLA.Lunes.desayuno[0];
+
+  assert.equal(breakfast.porciones, '8 prot, 1 verd, 1 frut, 1 lact, 1 gras, 1 cer');
+  assert.doesNotMatch(breakfast.porciones, /ajustad|kcal para este perfil/i);
 });

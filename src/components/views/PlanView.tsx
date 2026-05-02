@@ -31,6 +31,7 @@ import {
 } from '../../data';
 import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
 import { getProfileLabel } from '../../utils/profileLabels';
+import { sanitizeMealPortionsText } from '../../utils/mealPortions';
 
 const momentoIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
@@ -231,7 +232,6 @@ export default function PlanView() {
   const renderSelectedMealCard = React.useCallback((
     meal: MealItem,
     accent: AccentColors,
-    portions: { key: string; label: string; icon: string; cantidad: number }[],
     dataTestId?: string
   ) => (
     <div
@@ -269,24 +269,11 @@ export default function PlanView() {
         </span>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {portions.slice(0, 3).map((item) => (
-          <span
-            key={`${meal.nombre}-${item.key}-${item.cantidad}`}
-            title={`${item.label} ${item.cantidad}`}
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${isDarkMode ? 'bg-slate-950 text-slate-400' : 'bg-slate-50 text-slate-500'}`}
-          >
-            <span className="text-[10px]">
-              {item.icon}
-            </span>
-            <span>x{item.cantidad}</span>
-          </span>
-        ))}
-        {portions.length > 3 ? (
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isDarkMode ? 'bg-slate-950 text-slate-500' : 'bg-slate-50 text-slate-500'}`}>
-            +{portions.length - 3}
-          </span>
-        ) : null}
+      <div className={`mt-2 flex items-start gap-1.5 rounded-xl px-2 py-1.5 text-[11px] font-semibold leading-snug ${isDarkMode ? 'bg-slate-950 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+        <UtensilsCrossed className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 ${accent.text}`} />
+        <span className="min-w-0 break-words">
+          {sanitizeMealPortionsText(meal.porciones)}
+        </span>
       </div>
     </div>
   ), [isDarkMode]);
@@ -519,7 +506,6 @@ export default function PlanView() {
                                 {mealsSingleSeleccionadas.map((meal) => renderSelectedMealCard(
                                   meal,
                                   singleEmptyAccent,
-                                  porcionesSingleMomento,
                                   `selected-meal-${perfilActivo}-${diaActivo}-${momento.key}-${meal.nombre}`
                                 ))}
                               </div>
@@ -543,7 +529,6 @@ export default function PlanView() {
                                 mealsElSeleccionadas.map((meal) => renderSelectedMealCard(
                                   meal,
                                   elAccent,
-                                  porcionesElMomento,
                                   `selected-meal-el-${diaActivo}-${momento.key}-${meal.nombre}`
                                 ))
                               ) : (
@@ -572,7 +557,6 @@ export default function PlanView() {
                                 mealsEllaSeleccionadas.map((meal) => renderSelectedMealCard(
                                   meal,
                                   ellaAccent,
-                                  porcionesEllaMomento,
                                   `selected-meal-ella-${diaActivo}-${momento.key}-${meal.nombre}`
                                 ))
                               ) : (

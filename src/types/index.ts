@@ -14,6 +14,12 @@ export interface MealEditMeta {
   original: MealOriginalSnapshot;
 }
 
+export interface MealAiMeta {
+  normalizedByProfile?: boolean;
+  normalizedTargetKcal?: number;
+  profileId?: 'el' | 'ella';
+}
+
 export interface MealItem {
   id?: string; // Preserved idRef from AI response for rotation tracking
   nombre: string;
@@ -25,6 +31,7 @@ export interface MealItem {
   proteinaG?: number;
   grasasG?: number;
   editMeta?: MealEditMeta;
+  aiMeta?: MealAiMeta;
   notaPersonalizada?: string;
 }
 

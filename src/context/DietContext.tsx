@@ -46,6 +46,7 @@ import {
   hasPlanRevisionPatchChanges,
 } from '../utils/planAiUtils';
 import { repairBrokenText } from '../utils/text';
+import { sanitizeMealPortionsText } from '../utils/mealPortions';
 import { remapFoodGroupRow, resolveFoodGroupKey } from '../utils/foodGroupKeys';
 import {
   DEFAULT_PROFILE_LABELS,
@@ -292,7 +293,9 @@ function normalizeMealItem(value: unknown, fallback?: MealItem): MealItem | null
 
   return {
     nombre,
-    porciones: sanitizeStringValue(value.porciones, fallback?.porciones ?? ''),
+    porciones: sanitizeMealPortionsText(
+      sanitizeStringValue(value.porciones, fallback?.porciones ?? '')
+    ),
     detalle: sanitizeStringValue(value.detalle, fallback?.detalle ?? ''),
     tags: sanitizeStringArray(value.tags, fallback?.tags ?? []),
     super: sanitizeStringArray(value.super, fallback?.super ?? []),
@@ -309,6 +312,7 @@ function normalizeMealItem(value: unknown, fallback?: MealItem): MealItem | null
         ? Math.round(value.grasasG)
         : fallback?.grasasG,
     editMeta: normalizeMealEditMeta(value.editMeta, fallback?.editMeta),
+    aiMeta: isPlainObject(value.aiMeta) ? { ...fallback?.aiMeta, ...value.aiMeta } : fallback?.aiMeta,
   };
 }
 
@@ -325,7 +329,9 @@ function normalizeMealOriginalSnapshot(
 
   return {
     nombre,
-    porciones: sanitizeStringValue(value.porciones, fallback?.porciones ?? ''),
+    porciones: sanitizeMealPortionsText(
+      sanitizeStringValue(value.porciones, fallback?.porciones ?? '')
+    ),
     detalle: sanitizeStringValue(value.detalle, fallback?.detalle ?? ''),
     tags: sanitizeStringArray(value.tags, fallback?.tags ?? []),
     super: sanitizeStringArray(value.super, fallback?.super ?? []),

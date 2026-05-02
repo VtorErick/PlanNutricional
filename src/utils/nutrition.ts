@@ -1,47 +1,7 @@
 import type { MealItem, Profile } from '../types';
+import { resolveSmaeGroup } from '../data/smae';
+import { sanitizeMealPortionsText } from './mealPortions';
 import { hasRecognizablePortions, shouldTreatMacroAsMissing } from './nutritionValidation';
-
-const EXCHANGE_VALUES: Record<string, { kcal: number; protein: number; fat: number }> = {
-  frutas: { kcal: 60, protein: 0.5, fat: 0 },
-  verduras: { kcal: 25, protein: 1, fat: 0 },
-  cereales: { kcal: 70, protein: 2, fat: 1 },
-  leguminosas: { kcal: 120, protein: 8, fat: 1 },
-  lacteos: { kcal: 95, protein: 7, fat: 3 },
-  proteina: { kcal: 75, protein: 7, fat: 3 },
-  grasas: { kcal: 45, protein: 0, fat: 5 },
-};
-
-const PORTION_KEY_ALIASES: Record<string, string> = {
-  fruta: 'frutas',
-  frutas: 'frutas',
-  frut: 'frutas',
-  verdura: 'verduras',
-  verduras: 'verduras',
-  verd: 'verduras',
-  cereal: 'cereales',
-  cereales: 'cereales',
-  cer: 'cereales',
-  leguminosa: 'leguminosas',
-  leguminosas: 'leguminosas',
-  leg: 'leguminosas',
-  lacteo: 'lacteos',
-  lacteos: 'lacteos',
-  lact: 'lacteos',
-  proteina: 'proteina',
-  proteinas: 'proteina',
-  prot: 'proteina',
-  grasas: 'grasas',
-  grasa: 'grasas',
-  gras: 'grasas',
-};
-
-function normalizePortionKeyToken(value: string) {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-}
 
 export function estimateMealNutritionFromPortions(
   portionsText: string
@@ -54,16 +14,16 @@ export function estimateMealNutritionFromPortions(
   let protein = 0;
   let fat = 0;
 
-  for (const match of portionsText.matchAll(/(?:(\d+(?:[.,]\d+)?)\s*([\p{L}_]+)|([\p{L}_]+)\s*(\d+(?:[.,]\d+)?))/gu)) {
+  const sanitizedPortionsText = sanitizeMealPortionsText(portionsText);
+
+  for (const match of sanitizedPortionsText.matchAll(/(?:(\d+(?:[.,]\d+)?)\s*([\p{L}_]+)|([\p{L}_]+)\s*(\d+(?:[.,]\d+)?))/gu)) {
     const rawAmount = match[1] || match[4];
     const rawKey = match[2] || match[3];
     if (!rawAmount || !rawKey) continue;
 
-    const key = PORTION_KEY_ALIASES[normalizePortionKeyToken(rawKey)];
+    const exchange = resolveSmaeGroup(rawKey);
     const amount = Number(String(rawAmount).replace(',', '.'));
-    if (!key || Number.isNaN(amount)) continue;
-
-    const exchange = EXCHANGE_VALUES[key];
+    if (!exchange || Number.isNaN(amount)) continue;
     kcal += exchange.kcal * amount;
     protein += exchange.protein * amount;
     fat += exchange.fat * amount;
@@ -100,6 +60,7 @@ export function ensureMealNutrition(meal: MealItem): MealItem {
 
   return {
     ...meal,
+    porciones: sanitizeMealPortionsText(meal.porciones),
     caloriasKcal: currentCalories,
     proteinaG: currentProtein,
     grasasG: currentFat,
@@ -133,8 +94,7 @@ export function estimateDailyMacroTargetsFromObjectives(
 
   for (const grupos of Object.values(objetivos)) {
     for (const [groupKey, amount] of Object.entries(grupos || {})) {
-      const normalized = PORTION_KEY_ALIASES[normalizePortionKeyToken(groupKey)];
-      const exchange = normalized ? EXCHANGE_VALUES[normalized] : null;
+      const exchange = resolveSmaeGroup(groupKey);
       if (!exchange) continue;
       const n = Number(amount) || 0;
       kcal += exchange.kcal * n;
