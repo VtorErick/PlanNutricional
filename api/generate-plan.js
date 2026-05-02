@@ -58,6 +58,7 @@ const PROFILE_REQUIRED_KEYS = [
 const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
 const GEMINI_SEQUENTIAL_REQUEST_DELAY_MS = 1500;
+const DEFAULT_DEEPSEEK_MODEL = 'deepseek-v4-flash';
 const AI_GENERIC_ERROR_MESSAGE =
   'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
 
@@ -1985,6 +1986,39 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+
+async function generateWithAiProviderWithFallback(
+  provider,
+  parts,
+  apiKey,
+  modelCandidates,
+  systemInstruction,
+  responseSchema,
+  debugContext
+) {
+  if (provider === 'deepseek') {
+    const selectedModel = modelCandidates[0] || DEFAULT_DEEPSEEK_MODEL;
+    const data = await generateWithDeepSeek(
+      parts,
+      apiKey,
+      selectedModel,
+      systemInstruction,
+      responseSchema,
+      debugContext
+    );
+    return { data, modelUsed: selectedModel };
+  }
+
+  return generateWithGeminiWithFallback(
+    parts,
+    apiKey,
+    modelCandidates,
+    systemInstruction,
+    responseSchema,
+    debugContext
+  );
+}
+
 async function generateWithGeminiWithFallback(
   parts,
   apiKey,
@@ -2297,6 +2331,89 @@ async function generateWithGemini(
   }
 }
 
+
+async function generateWithDeepSeek(parts, apiKey, modelName, systemInstruction, responseSchema, debugContext) {
+  const userText = parts
+    .map((part) => {
+      if (typeof part?.text === 'string') return part.text;
+      if (typeof part?.inlineData?.data === 'string') return '[adjunto_base64]';
+      return '';
+    })
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+
+  const body = {
+    model: modelName || DEFAULT_DEEPSEEK_MODEL,
+    temperature: 0.1,
+    response_format: {
+      type: 'json_schema',
+      json_schema: {
+        name: 'plan_nutricional',
+        schema: responseSchema,
+      },
+    },
+    messages: [
+      { role: 'system', content: systemInstruction },
+      { role: 'user', content: userText },
+    ],
+  };
+
+  const url = 'https://api.deepseek.com/chat/completions';
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const responseText = await response.text();
+  let responseJson;
+  try { responseJson = JSON.parse(responseText); } catch { responseJson = responseText; }
+
+  if (!response.ok) {
+    throw createLoggedAiError(
+      { ...debugContext, stage: 'generate-content', selectedModel: modelName },
+      {
+        rawMessage: responseJson?.error?.message || `Error ${response.status} llamando a DeepSeek`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: { status: response.status, body: responseJson },
+      }
+    );
+  }
+
+  const content = responseJson?.choices?.[0]?.message?.content;
+  if (!content || typeof content !== 'string') {
+    throw createLoggedAiError(
+      { ...debugContext, stage: 'response-parse', selectedModel: modelName },
+      {
+        rawMessage: 'DeepSeek devolvió una respuesta vacía o inválida.',
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: { status: response.status, body: responseJson },
+      }
+    );
+  }
+
+  try {
+    const parsedData = JSON.parse(sanitizeAiJson(content));
+    return validateAndNormalizeAiData(parsedData, debugContext, body, responseJson, modelName);
+  } catch (error) {
+    throw createLoggedAiError(
+      { ...debugContext, stage: 'response-parse', selectedModel: modelName },
+      {
+        rawMessage: `DeepSeek devolvió JSON no parseable: ${error?.message || String(error)}`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: { status: response.status, body: responseJson },
+      }
+    );
+  }
+}
+
 export default async function handler(req, res) {
   const requestMeta = applyCorsHeaders(req, res);
   res.setHeader('Content-Type', 'application/json');
@@ -2354,16 +2471,19 @@ export default async function handler(req, res) {
       return res.status(pdfValidation.status).json({ error: pdfValidation.error });
     }
 
-    const apiKey = customApiKey || (process.env.GEMINI_API_KEY || '').trim();
+    const aiProvider = ((process.env.AI_PROVIDER || 'gemini').trim().toLowerCase() === 'deepseek' ? 'deepseek' : 'gemini');
+    const apiKey = customApiKey || (aiProvider === 'deepseek' ? (process.env.DEEPSEEK_API_KEY || '').trim() : (process.env.GEMINI_API_KEY || '').trim());
     const preferredModel =
-      normalizeModelName(payload.preferredModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) ||
-      DEFAULT_GEMINI_MODEL;
+      normalizeModelName(
+        payload.preferredModel || (aiProvider === 'deepseek' ? process.env.DEEPSEEK_MODEL : process.env.GEMINI_MODEL) || (aiProvider === 'deepseek' ? DEFAULT_DEEPSEEK_MODEL : DEFAULT_GEMINI_MODEL)
+      ) ||
+      (aiProvider === 'deepseek' ? DEFAULT_DEEPSEEK_MODEL : DEFAULT_GEMINI_MODEL);
     const requestMode = isPlanRevisionRequest(payload) ? payload.requestMode : 'generate';
     const flow = isPlanRevisionRequest(payload) ? 'plan-revision' : 'questionnaire-submit';
 
     if (!apiKey) {
       return res.status(500).json({
-        error: 'Falta configurar GEMINI_API_KEY en el entorno del servidor o una clave personalizada.',
+        error: aiProvider === 'deepseek' ? 'Falta configurar DEEPSEEK_API_KEY en el entorno del servidor o una clave personalizada.' : 'Falta configurar GEMINI_API_KEY en el entorno del servidor o una clave personalizada.',
       });
     }
 
@@ -2385,15 +2505,14 @@ export default async function handler(req, res) {
       apiKeySource: customApiKey ? 'custom-server' : 'server-env',
     };
 
-    const hardcodedModelNames = [
-      'gemini-3-flash-preview',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-      'gemini-3.1-pro-preview',
-    ];
-    const orderedModels = getOrderedGeminiModels(hardcodedModelNames, preferredModel);
+    const hardcodedModelNames = aiProvider === 'deepseek'
+      ? [preferredModel || DEFAULT_DEEPSEEK_MODEL, DEFAULT_DEEPSEEK_MODEL]
+      : ['gemini-3-flash-preview', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3.1-pro-preview'];
+    const orderedModels = aiProvider === 'deepseek'
+      ? [...new Set(hardcodedModelNames.filter(Boolean))]
+      : getOrderedGeminiModels(hardcodedModelNames, preferredModel);
     const selectedModel = orderedModels[0];
-    const modelCandidates = orderedModels.slice(0, 3);
+    const modelCandidates = orderedModels.slice(0, aiProvider === 'deepseek' ? 1 : 3);
 
     let elData = null;
     let ellaData = null;
@@ -2419,7 +2538,7 @@ export default async function handler(req, res) {
         revisionPayloadElla.precomputedSupplements = precomputedSupplementsElla;
         const requestPartsElla = buildRevisionRequestParts('ELLA', payload, revisionPayloadElla);
 
-        const elResult = await generateWithGeminiWithFallback(
+        const elResult = await generateWithAiProviderWithFallback(aiProvider, 
           requestPartsEl,
           apiKey,
           modelCandidates,
@@ -2435,7 +2554,7 @@ export default async function handler(req, res) {
 
         await delay(GEMINI_SEQUENTIAL_REQUEST_DELAY_MS);
 
-        const ellaResult = await generateWithGeminiWithFallback(
+        const ellaResult = await generateWithAiProviderWithFallback(aiProvider, 
           requestPartsElla,
           apiKey,
           modelCandidates,
@@ -2476,7 +2595,7 @@ export default async function handler(req, res) {
             requestPartsEl = buildRevisionRequestParts('EL', payload, revisionPayloadEl);
             schemaEl = buildPlanOnlyResponseSchema('EL');
           }
-          const result = await generateWithGeminiWithFallback(
+          const result = await generateWithAiProviderWithFallback(aiProvider, 
             requestPartsEl,
             apiKey,
             modelCandidates,
@@ -2514,7 +2633,7 @@ export default async function handler(req, res) {
             requestPartsElla = buildRevisionRequestParts('ELLA', payload, revisionPayloadElla);
             schemaElla = buildPlanOnlyResponseSchema('ELLA');
           }
-          const result = await generateWithGeminiWithFallback(
+          const result = await generateWithAiProviderWithFallback(aiProvider, 
             requestPartsElla,
             apiKey,
             modelCandidates,
@@ -2563,7 +2682,7 @@ export default async function handler(req, res) {
       payloadElla.precomputedProfile = precomputedProfileElla;
       payloadElla.precomputedSupplements = precomputedSupplementsElla;
 
-      const elResult = await generateWithGeminiWithFallback(
+      const elResult = await generateWithAiProviderWithFallback(aiProvider, 
         buildRequestParts('EL', payloadEl),
         apiKey,
         modelCandidates,
@@ -2579,7 +2698,7 @@ export default async function handler(req, res) {
 
       await delay(GEMINI_SEQUENTIAL_REQUEST_DELAY_MS);
 
-      const ellaResult = await generateWithGeminiWithFallback(
+      const ellaResult = await generateWithAiProviderWithFallback(aiProvider, 
         buildRequestParts('ELLA', payloadElla),
         apiKey,
         modelCandidates,
@@ -2610,7 +2729,7 @@ export default async function handler(req, res) {
       const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);
       payload.precomputedProfile = precomputedProfile;
       payload.precomputedSupplements = precomputedSupplements;
-      const result = await generateWithGeminiWithFallback(
+      const result = await generateWithAiProviderWithFallback(aiProvider, 
         buildRequestParts('EL', payload),
         apiKey,
         modelCandidates,
@@ -2634,7 +2753,7 @@ export default async function handler(req, res) {
       const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);
       payload.precomputedProfile = precomputedProfile;
       payload.precomputedSupplements = precomputedSupplements;
-      const result = await generateWithGeminiWithFallback(
+      const result = await generateWithAiProviderWithFallback(aiProvider, 
         buildRequestParts('ELLA', payload),
         apiKey,
         modelCandidates,
