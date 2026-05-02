@@ -6,6 +6,15 @@ import {
   isSupportedGeminiTextModel,
   normalizeModelName,
 } from './_geminiModels.js';
+import { AI_PROVIDER_GEMINI, normalizeAiProvider } from './_aiProvider.js';
+import {
+  DEFAULT_DEEPSEEK_MODEL,
+  DEEPSEEK_MODEL_OPTIONS,
+  getOrderedDeepSeekModels,
+  isSupportedDeepSeekModel,
+  normalizeDeepSeekModelName,
+} from './_deepseekModels.js';
+import { callDeepSeekChatCompletion } from './_deepseekClient.js';
 import { generateProfile, generateSupplements } from './profileGenerator.js';
 
 const ALLOWED_ICONS = [
@@ -60,6 +69,20 @@ const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024
 const GEMINI_SEQUENTIAL_REQUEST_DELAY_MS = 1500;
 const AI_GENERIC_ERROR_MESSAGE =
   'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
+
+function resolvePreferredGeminiModel(payloadPreferredModel, envModel) {
+  const requestedModel =
+    normalizeModelName(payloadPreferredModel || envModel || DEFAULT_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
+
+  return isSupportedGeminiTextModel(requestedModel) ? requestedModel : DEFAULT_GEMINI_MODEL;
+}
+function resolvePreferredDeepSeekModel(envModel, payloadPreferredModel) {
+  const requestedModel =
+    normalizeDeepSeekModelName(envModel || payloadPreferredModel || DEFAULT_DEEPSEEK_MODEL) ||
+    DEFAULT_DEEPSEEK_MODEL;
+
+  return isSupportedDeepSeekModel(requestedModel) ? requestedModel : DEFAULT_DEEPSEEK_MODEL;
+}
 
 const CLINICAL_PROTOCOLS = [
   {
@@ -121,6 +144,18 @@ function sanitizeAttemptLogs(attempts) {
   return attempts.map((attempt) => ({
     ...attempt,
     model: attempt.model ? normalizeModelName(attempt.model) : attempt.model,
+    aiRequest: sanitizeDebugValue(attempt.aiRequest || attempt.geminiRequest),
+    aiResponse: attempt.aiResponse
+      ? {
+          status: attempt.aiResponse.status,
+          body: sanitizeDebugValue(attempt.aiResponse.body),
+        }
+      : attempt.geminiResponse
+        ? {
+            status: attempt.geminiResponse.status,
+            body: sanitizeDebugValue(attempt.geminiResponse.body),
+          }
+        : undefined,
     geminiRequest: sanitizeDebugValue(attempt.geminiRequest),
     geminiResponse: attempt.geminiResponse
       ? {
@@ -147,6 +182,13 @@ function buildAttemptLog(error, input) {
       candidate.message ||
       AI_GENERIC_ERROR_MESSAGE,
     willRetry: input.willRetry,
+    aiRequest: input.geminiRequest || debugLog?.aiRequest || debugLog?.geminiRequest,
+    aiResponse: response
+      ? {
+          status: response.status,
+          body: response.body,
+        }
+      : undefined,
     geminiRequest: input.geminiRequest || debugLog?.geminiRequest,
     geminiResponse: response
       ? {
@@ -243,8 +285,16 @@ function createLoggedAiError(debugContext, options) {
     requestMode: debugContext.requestMode,
     requestedModel: debugContext.requestedModel,
     selectedModel: debugContext.selectedModel,
+    aiProvider: debugContext.aiProvider,
     apiKeySource: debugContext.apiKeySource,
     requestPayload: sanitizeDebugValue(debugContext.payload),
+    aiRequest: sanitizeDebugValue(options.geminiRequest),
+    aiResponse: options.geminiResponse
+      ? {
+          status: options.geminiResponse.status,
+          body: sanitizeDebugValue(options.geminiResponse.body),
+        }
+      : undefined,
     geminiRequest: sanitizeDebugValue(options.geminiRequest),
     geminiResponse: options.geminiResponse
       ? {
@@ -535,6 +585,21 @@ function isIntegerValue(value) {
   return typeof value === 'number' && Number.isInteger(value);
 }
 
+function coerceIntegerValue(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.round(value);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^-?\d+(?:\.\d+)?$/.test(trimmed)) {
+      return Math.round(Number(trimmed));
+    }
+  }
+
+  return null;
+}
+
 function normalizeNutritionToken(value) {
   return String(value || '')
     .normalize('NFD')
@@ -593,6 +658,17 @@ function normalizeMealOptionAgainstCatalog(meal, catalogMeal) {
   if (!isNonEmptyString(normalizedMeal.nombre) && fallbackName) {
     normalizedMeal.nombre = fallbackName;
   }
+
+  if (!isNonEmptyString(normalizedMeal.porciones)) {
+    normalizedMeal.porciones = 'Porcion ajustada segun objetivo, horario y restricciones del perfil.';
+  }
+
+  ['caloriasKcal', 'proteinaG', 'grasasG'].forEach((fieldName) => {
+    const coercedValue = coerceIntegerValue(normalizedMeal[fieldName]);
+    if (coercedValue !== null) {
+      normalizedMeal[fieldName] = coercedValue;
+    }
+  });
 
   if (
     !String(normalizedMeal.idRef || '').includes('|MOD:') &&
@@ -692,6 +768,12 @@ function validateRequiredStringField(container, fieldName, location, debugContex
 }
 
 function validateRequiredIntegerField(container, fieldName, location, debugContext, geminiRequest, geminiResponseBody, modelName) {
+  const coercedValue = coerceIntegerValue(container?.[fieldName]);
+  if (coercedValue !== null) {
+    container[fieldName] = coercedValue;
+    return;
+  }
+
   if (!isIntegerValue(container?.[fieldName])) {
     throw createInvalidStructureError(
       debugContext,
@@ -764,11 +846,6 @@ function validateMealOptionsArray(options, location, debugContext, geminiRequest
       );
     }
 
-    validateRequiredStringField(meal, 'porciones', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-    validateRequiredIntegerField(meal, 'caloriasKcal', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-    validateRequiredIntegerField(meal, 'proteinaG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-    validateRequiredIntegerField(meal, 'grasasG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-
     const catalogMeal = findCatalogMealByIdRef(meal.idRef, debugContext.payload);
     if (!catalogMeal) {
       throw createInvalidStructureError(
@@ -782,6 +859,10 @@ function validateMealOptionsArray(options, location, debugContext, geminiRequest
 
     const normalizedMeal = normalizeMealOptionAgainstCatalog(meal, catalogMeal);
     options[index] = normalizedMeal;
+    validateRequiredStringField(normalizedMeal, 'porciones', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(normalizedMeal, 'caloriasKcal', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(normalizedMeal, 'proteinaG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(normalizedMeal, 'grasasG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredStringField(
       normalizedMeal,
       'detalle',
@@ -1287,6 +1368,129 @@ function validateLegacyPlanStructure(plan, expectedMomentKeys, location, require
   return normalizedPlan;
 }
 
+const MOMENT_CALORIE_WEIGHTS = {
+  desayuno: 0.25,
+  colacion_am: 0.10,
+  comida: 0.35,
+  colacion_pm: 0.10,
+  cena: 0.20,
+};
+
+const MOMENT_PROTEIN_WEIGHTS = {
+  desayuno: 0.24,
+  colacion_am: 0.08,
+  comida: 0.36,
+  colacion_pm: 0.08,
+  cena: 0.24,
+};
+
+function parseWeightFromProfile(profile) {
+  const directCandidates = [
+    profile?.currentWeightKg,
+    profile?.pesoKg,
+    profile?.weightKg,
+  ];
+  for (const candidate of directCandidates) {
+    const parsed = Number(candidate);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+
+  const match = String(profile?.perfil || '').match(/(\d+(?:[.,]\d+)?)\s*kg/i);
+  if (!match) return 0;
+  const parsed = Number(match[1].replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getProfileCalorieTarget(profile) {
+  const target = Number(profile?.metaCaloricaKcalDia);
+  return Number.isFinite(target) && target >= 1200 ? Math.round(target) : 0;
+}
+
+function getDailyProteinTarget(profile) {
+  const weightKg = parseWeightFromProfile(profile);
+  if (weightKg > 0) {
+    return Math.round(Math.min(170, Math.max(80, weightKg * 1.4)));
+  }
+
+  const calories = getProfileCalorieTarget(profile);
+  return calories ? Math.round(Math.min(160, Math.max(75, calories * 0.24 / 4))) : 100;
+}
+
+function roundToStep(value, step = 5) {
+  return Math.round(value / step) * step;
+}
+
+function normalizeMealNutritionToTargets(meal, momentKey, profile) {
+  if (!meal || typeof meal !== 'object') return meal;
+
+  const caloriesTarget = getProfileCalorieTarget(profile);
+  if (!caloriesTarget) return meal;
+
+  const momentWeight = MOMENT_CALORIE_WEIGHTS[momentKey] || 0.2;
+  const targetCalories = roundToStep(caloriesTarget * momentWeight, 10);
+  const currentCalories = Number(meal.caloriasKcal || 0);
+  const shouldAdjustCalories =
+    !Number.isFinite(currentCalories) ||
+    currentCalories <= 0 ||
+    currentCalories < targetCalories * 0.85 ||
+    currentCalories > targetCalories * 1.15;
+
+  if (shouldAdjustCalories) {
+    meal.caloriasKcal = targetCalories;
+    if (
+      isNonEmptyString(meal.porciones) &&
+      !/ajustad[ao] a/i.test(meal.porciones) &&
+      !/~?\d+\s*kcal/i.test(meal.porciones)
+    ) {
+      meal.porciones = `${meal.porciones} (porcion ajustada a ~${targetCalories} kcal para este perfil)`;
+    }
+  } else {
+    meal.caloriasKcal = Math.round(currentCalories);
+  }
+
+  const dailyProteinTarget = getDailyProteinTarget(profile);
+  const proteinTarget = Math.round(dailyProteinTarget * (MOMENT_PROTEIN_WEIGHTS[momentKey] || 0.2));
+  const maxProteinForMeal = Math.max(proteinTarget, Math.floor(meal.caloriasKcal * 0.45 / 4));
+  const currentProtein = Number(meal.proteinaG || 0);
+  meal.proteinaG = Math.min(
+    maxProteinForMeal,
+    Math.max(
+      Math.round(proteinTarget * 0.85),
+      Number.isFinite(currentProtein) && currentProtein > 0 ? Math.round(currentProtein) : 0
+    )
+  );
+
+  const targetFat = Math.round((meal.caloriasKcal * 0.30) / 9);
+  const currentFat = Number(meal.grasasG || 0);
+  if (!Number.isFinite(currentFat) || currentFat <= 0) {
+    meal.grasasG = targetFat;
+  } else {
+    const cappedFat = Math.min(Math.round(currentFat), Math.round((meal.caloriasKcal * 0.45) / 9));
+    meal.grasasG = Math.max(Math.round(targetFat * 0.65), cappedFat);
+  }
+
+  return meal;
+}
+
+function normalizePlanNutritionToProfile(plan, profile) {
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan) || !getProfileCalorieTarget(profile)) {
+    return plan;
+  }
+
+  WEEK_DAYS.forEach((dayKey) => {
+    const dayPlan = plan[dayKey];
+    if (!dayPlan || typeof dayPlan !== 'object' || Array.isArray(dayPlan)) return;
+
+    MEAL_MOMENT_KEYS.forEach((momentKey) => {
+      const options = dayPlan[momentKey];
+      if (!Array.isArray(options)) return;
+      options.forEach((meal) => normalizeMealNutritionToTargets(meal, momentKey, profile));
+    });
+  });
+
+  return plan;
+}
+
 function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiResponseBody, modelName) {
   const profilePrefix = debugContext.profilePrefix;
   const requestMode = debugContext.requestMode;
@@ -1459,6 +1663,11 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
       modelName
     );
   }
+
+  normalizePlanNutritionToProfile(
+    normalized[planKey],
+    normalized[perfilKey] || debugContext.payload?.precomputedProfile
+  );
 
   return normalized;
 }
@@ -2297,6 +2506,241 @@ async function generateWithGemini(
   }
 }
 
+async function generateWithDeepSeekWithFallback(
+  parts,
+  apiKey,
+  modelCandidates,
+  systemInstruction,
+  responseSchema,
+  debugContext
+) {
+  let lastError;
+  const attempts = [];
+
+  for (let index = 0; index < modelCandidates.length; index += 1) {
+    const modelName = modelCandidates[index];
+
+    try {
+      const data = await generateWithDeepSeek(
+        parts,
+        apiKey,
+        modelName,
+        systemInstruction,
+        responseSchema,
+        {
+          ...debugContext,
+          selectedModel: modelName,
+        }
+      );
+
+      return {
+        data,
+        modelUsed: modelName,
+      };
+    } catch (error) {
+      lastError = error;
+      const willRetry = index < modelCandidates.length - 1 && shouldRetryWithDifferentModel(error);
+      attempts.push(
+        buildAttemptLog(error, {
+          order: attempts.length + 1,
+          modelName,
+          willRetry,
+        })
+      );
+
+      if (!willRetry) {
+        throw attachAttemptsToError(error, attempts, {
+          ...debugContext,
+          selectedModel: modelName,
+        });
+      }
+    }
+  }
+
+  throw attachAttemptsToError(lastError, attempts, {
+    ...debugContext,
+    selectedModel: modelCandidates[modelCandidates.length - 1],
+  });
+}
+
+async function generateWithDeepSeek(
+  parts,
+  apiKey,
+  modelName,
+  systemInstruction,
+  responseSchema,
+  debugContext
+) {
+  let result;
+
+  try {
+    result = await callDeepSeekChatCompletion({
+      parts,
+      apiKey,
+      modelName,
+      systemInstruction,
+      requestMode: debugContext.requestMode,
+      responseSchema,
+    });
+  } catch (error) {
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'generate-content',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: error?.message || `Fallo de red contactando ${modelName}.`,
+        statusCode: 502,
+      }
+    );
+  }
+
+  const { body, response, responseText } = result;
+
+  if (!response.ok) {
+    const parsedError = safeParseJson(responseText);
+    let errorMessage = `Error ${response.status} llamando a DeepSeek`;
+
+    if (parsedError && typeof parsedError === 'object') {
+      errorMessage = parsedError?.error?.message || parsedError?.message || errorMessage;
+    }
+
+    if (response.status === 429 || String(errorMessage).toLowerCase().includes('rate limit')) {
+      errorMessage = 'Limite de solicitudes rebasado (Error 429). Intenta de nuevo en 1 minuto.';
+    }
+
+    if (response.status === 404) {
+      errorMessage = `Modelo '${modelName}' no encontrado o no disponible. ${errorMessage}`;
+    }
+
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'generate-content',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: errorMessage,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: parsedError,
+        },
+      }
+    );
+  }
+
+  let responseJson;
+  try {
+    responseJson = JSON.parse(responseText);
+  } catch (error) {
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: `La respuesta 200 de DeepSeek no fue JSON valido: ${error?.message || String(error)}`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseText,
+        },
+      }
+    );
+  }
+
+  const choice = responseJson?.choices?.[0];
+  const generatedText = String(choice?.message?.content || '').trim();
+
+  if (!choice) {
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: 'DeepSeek no genero choices validos para esta solicitud.',
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseJson,
+        },
+      }
+    );
+  }
+
+  if (!generatedText) {
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: 'DeepSeek devolvio texto vacio.',
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseJson,
+        },
+      }
+    );
+  }
+
+  if (choice.finish_reason && choice.finish_reason !== 'stop') {
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: `DeepSeek no pudo completar la respuesta (${choice.finish_reason}). Intenta de nuevo.`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseJson,
+        },
+      }
+    );
+  }
+
+  try {
+    const parsedData = JSON.parse(sanitizeAiJson(generatedText));
+    return validateAndNormalizeAiData(parsedData, debugContext, body, responseJson, modelName);
+  } catch (error) {
+    if (error?.aiDebugLog) {
+      throw error;
+    }
+
+    throw createLoggedAiError(
+      {
+        ...debugContext,
+        stage: 'response-parse',
+        selectedModel: modelName,
+      },
+      {
+        rawMessage: `DeepSeek devolvio JSON no parseable: ${error?.message || String(error)}`,
+        statusCode: response.status,
+        geminiRequest: body,
+        geminiResponse: {
+          status: response.status,
+          body: responseJson,
+        },
+      }
+    );
+  }
+}
+
 export default async function handler(req, res) {
   const requestMeta = applyCorsHeaders(req, res);
   res.setHeader('Content-Type', 'application/json');
@@ -2354,16 +2798,24 @@ export default async function handler(req, res) {
       return res.status(pdfValidation.status).json({ error: pdfValidation.error });
     }
 
-    const apiKey = customApiKey || (process.env.GEMINI_API_KEY || '').trim();
+    const aiProvider = normalizeAiProvider(process.env.AI_PROVIDER);
+    const apiKey =
+      aiProvider === AI_PROVIDER_GEMINI
+        ? customApiKey || (process.env.GEMINI_API_KEY || '').trim()
+        : (process.env.DEEPSEEK_API_KEY || '').trim();
     const preferredModel =
-      normalizeModelName(payload.preferredModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) ||
-      DEFAULT_GEMINI_MODEL;
+      aiProvider === AI_PROVIDER_GEMINI
+        ? resolvePreferredGeminiModel(payload.preferredModel, process.env.GEMINI_MODEL)
+        : resolvePreferredDeepSeekModel(process.env.DEEPSEEK_MODEL, payload.preferredModel);
     const requestMode = isPlanRevisionRequest(payload) ? payload.requestMode : 'generate';
     const flow = isPlanRevisionRequest(payload) ? 'plan-revision' : 'questionnaire-submit';
 
     if (!apiKey) {
       return res.status(500).json({
-        error: 'Falta configurar GEMINI_API_KEY en el entorno del servidor o una clave personalizada.',
+        error:
+          aiProvider === AI_PROVIDER_GEMINI
+            ? 'Falta configurar GEMINI_API_KEY en el entorno del servidor o una clave personalizada.'
+            : 'Falta configurar DEEPSEEK_API_KEY en el entorno del servidor.',
       });
     }
 
@@ -2382,18 +2834,29 @@ export default async function handler(req, res) {
       targetProfile: target,
       requestMode,
       requestedModel: preferredModel,
-      apiKeySource: customApiKey ? 'custom-server' : 'server-env',
+      aiProvider,
+      apiKeySource: aiProvider === AI_PROVIDER_GEMINI && customApiKey ? 'custom-server' : 'server-env',
     };
 
-    const hardcodedModelNames = [
-      'gemini-3-flash-preview',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-      'gemini-3.1-pro-preview',
-    ];
-    const orderedModels = getOrderedGeminiModels(hardcodedModelNames, preferredModel);
+    const hardcodedModelNames =
+      aiProvider === AI_PROVIDER_GEMINI
+        ? [
+            'gemini-3-flash-preview',
+            'gemini-2.5-flash',
+            'gemini-2.5-pro',
+            'gemini-3.1-pro-preview',
+          ]
+        : DEEPSEEK_MODEL_OPTIONS;
+    const orderedModels =
+      aiProvider === AI_PROVIDER_GEMINI
+        ? getOrderedGeminiModels(hardcodedModelNames, preferredModel)
+        : getOrderedDeepSeekModels(hardcodedModelNames, preferredModel);
     const selectedModel = orderedModels[0];
     const modelCandidates = orderedModels.slice(0, 3);
+    const generateWithProvider =
+      aiProvider === AI_PROVIDER_GEMINI
+        ? generateWithGeminiWithFallback
+        : generateWithDeepSeekWithFallback;
 
     let elData = null;
     let ellaData = null;
@@ -2419,7 +2882,7 @@ export default async function handler(req, res) {
         revisionPayloadElla.precomputedSupplements = precomputedSupplementsElla;
         const requestPartsElla = buildRevisionRequestParts('ELLA', payload, revisionPayloadElla);
 
-        const elResult = await generateWithGeminiWithFallback(
+        const elResult = await generateWithProvider(
           requestPartsEl,
           apiKey,
           modelCandidates,
@@ -2427,6 +2890,7 @@ export default async function handler(req, res) {
           buildPlanOnlyResponseSchema('EL'),
           {
             ...debugBase,
+            payload: revisionPayloadEl,
             stage: 'generate-content',
             selectedModel,
             profilePrefix: 'EL',
@@ -2435,7 +2899,7 @@ export default async function handler(req, res) {
 
         await delay(GEMINI_SEQUENTIAL_REQUEST_DELAY_MS);
 
-        const ellaResult = await generateWithGeminiWithFallback(
+        const ellaResult = await generateWithProvider(
           requestPartsElla,
           apiKey,
           modelCandidates,
@@ -2443,6 +2907,7 @@ export default async function handler(req, res) {
           buildPlanOnlyResponseSchema('ELLA'),
           {
             ...debugBase,
+            payload: revisionPayloadElla,
             stage: 'generate-content',
             selectedModel,
             profilePrefix: 'ELLA',
@@ -2476,7 +2941,7 @@ export default async function handler(req, res) {
             requestPartsEl = buildRevisionRequestParts('EL', payload, revisionPayloadEl);
             schemaEl = buildPlanOnlyResponseSchema('EL');
           }
-          const result = await generateWithGeminiWithFallback(
+          const result = await generateWithProvider(
             requestPartsEl,
             apiKey,
             modelCandidates,
@@ -2484,6 +2949,7 @@ export default async function handler(req, res) {
             schemaEl,
             {
               ...debugBase,
+              payload: revisionPayloadEl,
               stage: 'generate-content',
               selectedModel,
               profilePrefix: 'EL',
@@ -2514,7 +2980,7 @@ export default async function handler(req, res) {
             requestPartsElla = buildRevisionRequestParts('ELLA', payload, revisionPayloadElla);
             schemaElla = buildPlanOnlyResponseSchema('ELLA');
           }
-          const result = await generateWithGeminiWithFallback(
+          const result = await generateWithProvider(
             requestPartsElla,
             apiKey,
             modelCandidates,
@@ -2522,6 +2988,7 @@ export default async function handler(req, res) {
             schemaElla,
             {
               ...debugBase,
+              payload: revisionPayloadElla,
               stage: 'generate-content',
               selectedModel,
               profilePrefix: 'ELLA',
@@ -2563,7 +3030,7 @@ export default async function handler(req, res) {
       payloadElla.precomputedProfile = precomputedProfileElla;
       payloadElla.precomputedSupplements = precomputedSupplementsElla;
 
-      const elResult = await generateWithGeminiWithFallback(
+      const elResult = await generateWithProvider(
         buildRequestParts('EL', payloadEl),
         apiKey,
         modelCandidates,
@@ -2571,6 +3038,7 @@ export default async function handler(req, res) {
         buildPlanOnlyResponseSchema('EL'),
         {
           ...debugBase,
+          payload: payloadEl,
           stage: 'generate-content',
           selectedModel,
           profilePrefix: 'EL',
@@ -2578,8 +3046,9 @@ export default async function handler(req, res) {
       );
 
       await delay(GEMINI_SEQUENTIAL_REQUEST_DELAY_MS);
+      payloadElla.companionPlan = elResult.data?.planEL || null;
 
-      const ellaResult = await generateWithGeminiWithFallback(
+      const ellaResult = await generateWithProvider(
         buildRequestParts('ELLA', payloadElla),
         apiKey,
         modelCandidates,
@@ -2587,6 +3056,7 @@ export default async function handler(req, res) {
         buildPlanOnlyResponseSchema('ELLA'),
         {
           ...debugBase,
+          payload: payloadElla,
           stage: 'generate-content',
           selectedModel,
           profilePrefix: 'ELLA',
@@ -2610,7 +3080,7 @@ export default async function handler(req, res) {
       const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);
       payload.precomputedProfile = precomputedProfile;
       payload.precomputedSupplements = precomputedSupplements;
-      const result = await generateWithGeminiWithFallback(
+      const result = await generateWithProvider(
         buildRequestParts('EL', payload),
         apiKey,
         modelCandidates,
@@ -2618,6 +3088,7 @@ export default async function handler(req, res) {
         buildPlanOnlyResponseSchema('EL'),
         {
           ...debugBase,
+          payload,
           stage: 'generate-content',
           selectedModel,
           profilePrefix: 'EL',
@@ -2634,7 +3105,7 @@ export default async function handler(req, res) {
       const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);
       payload.precomputedProfile = precomputedProfile;
       payload.precomputedSupplements = precomputedSupplements;
-      const result = await generateWithGeminiWithFallback(
+      const result = await generateWithProvider(
         buildRequestParts('ELLA', payload),
         apiKey,
         modelCandidates,
@@ -2642,6 +3113,7 @@ export default async function handler(req, res) {
         buildPlanOnlyResponseSchema('ELLA'),
         {
           ...debugBase,
+          payload,
           stage: 'generate-content',
           selectedModel,
           profilePrefix: 'ELLA',

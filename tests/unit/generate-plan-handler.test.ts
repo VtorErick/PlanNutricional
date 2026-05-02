@@ -156,6 +156,7 @@ function createMockRes() {
 }
 
 test('handler pre-computa perfil localmente y solo pide planSemanal a la IA', async () => {
+  process.env.AI_PROVIDER = 'gemini';
   process.env.GEMINI_API_KEY = 'test-key';
   const payload = buildQuestionnairePayload();
   const aiData = buildMockAiData(payload);
@@ -217,6 +218,11 @@ test('handler pre-computa perfil localmente y solo pide planSemanal a la IA', as
     const desayuno = res.body?.ellaData?.perfilELLA?.objetivosPorMomento?.desayuno;
     assert.ok(desayuno?.verduras !== undefined, 'Precomputed profile should have proper food group keys');
     assert.ok(desayuno?.frutas !== undefined, 'Precomputed profile should have proper food group keys');
+    assert.equal(res.body?.ellaData?.perfilELLA?.momentos?.[0]?.hora, '08:00');
+    assert.ok(
+      res.body?.ellaData?.perfilELLA?.objetivosPorMomento?.cena?.proteina > 0,
+      'Dinner should keep protein portions in the precomputed table'
+    );
 
     const grupos = new Set(
       (res.body?.ellaData?.perfilELLA?.distribucionDiaria || []).map((d: { grupo: string }) => d.grupo)
@@ -225,10 +231,12 @@ test('handler pre-computa perfil localmente y solo pide planSemanal a la IA', as
     assert.ok(grupos.has('Verduras'));
   } finally {
     globalThis.fetch = originalFetch;
+    delete process.env.AI_PROVIDER;
   }
 });
 
 test('handler genera y la app rehidrata correctamente un plan de cuestionario de ella', async () => {
+  process.env.AI_PROVIDER = 'gemini';
   process.env.GEMINI_API_KEY = 'test-key';
   const payload = buildQuestionnairePayload();
   const aiData = buildMockAiData(payload);
@@ -305,10 +313,196 @@ test('handler genera y la app rehidrata correctamente un plan de cuestionario de
     assert.ok(breakfast.caloriasKcal > 0);
     assert.ok(dinner.caloriasKcal > 0);
     assert.ok(dinner.proteinaG > 0);
+    const mondayCalories = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena']
+      .reduce((sum, moment) => sum + exported.planELLA.Lunes[moment][0].caloriasKcal, 0);
+    const targetCalories = exported.perfilELLA.metaCaloricaKcalDia;
+    assert.ok(
+      Math.abs(mondayCalories - targetCalories) / targetCalories <= 0.08,
+      `Monday calories should stay near target. Got ${mondayCalories}, target ${targetCalories}`
+    );
     assert.ok(Array.isArray(exported.suplementosELLA));
     assert.ok(exported.suplementosELLA.length >= 1, 'Debe haber al menos 1 suplemento pre-computado');
     assert.ok(exported.suplementosELLA.every((item: any) => item.name && item.notes));
   } finally {
     globalThis.fetch = originalFetch;
+    delete process.env.AI_PROVIDER;
+  }
+});
+
+test('handler usa DeepSeek por defecto cuando AI_PROVIDER no existe', async () => {
+  delete process.env.AI_PROVIDER;
+  process.env.DEEPSEEK_API_KEY = 'test-deepseek-key';
+  const payload = buildQuestionnairePayload();
+  const aiData = buildMockAiData(payload);
+  const capturedBodies: any[] = [];
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string, options?: any) => {
+    if (url === 'https://api.deepseek.com/chat/completions') {
+      const parsedBody = JSON.parse(options.body);
+      capturedBodies.push({ body: parsedBody, headers: options.headers });
+      return createMockResponse(200, {
+        id: 'chatcmpl-test',
+        model: 'deepseek-v4-flash',
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'stop',
+            message: {
+              role: 'assistant',
+              content: JSON.stringify(aiData),
+            },
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      }) as any;
+    }
+
+    throw new Error(`Unexpected fetch URL in DeepSeek test: ${url}`);
+  }) as any;
+
+  try {
+    const req = {
+      method: 'POST',
+      body: payload,
+      headers: {
+        origin: 'http://localhost:5173',
+        host: 'localhost:5173',
+      },
+      socket: { remoteAddress: '127.0.0.1' },
+    } as any;
+    const res = createMockRes();
+
+    await handler(req, res as any);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body?.modelUsed, 'deepseek-v4-flash');
+    assert.equal(capturedBodies.length, 1);
+    assert.equal(capturedBodies[0].body.model, 'deepseek-v4-flash');
+    assert.equal(capturedBodies[0].body.thinking.type, 'disabled');
+    assert.match(capturedBodies[0].headers.Authorization, /^Bearer /);
+    const userPromptJson = JSON.parse(capturedBodies[0].body.messages[1].content);
+    assert.ok(userPromptJson.precomputedProfile, 'Should include precomputedProfile in DeepSeek prompt');
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.DEEPSEEK_API_KEY;
+  }
+});
+
+test('handler cae a DeepSeek Flash si AI_PROVIDER y DEEPSEEK_MODEL son invalidos', async () => {
+  process.env.AI_PROVIDER = 'proveedor-invalido';
+  process.env.DEEPSEEK_MODEL = 'modelo-invalido';
+  process.env.DEEPSEEK_API_KEY = 'test-deepseek-key';
+  const payload = buildQuestionnairePayload();
+  const aiData = buildMockAiData(payload);
+  const capturedBodies: any[] = [];
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string, options?: any) => {
+    if (url === 'https://api.deepseek.com/chat/completions') {
+      const parsedBody = JSON.parse(options.body);
+      capturedBodies.push({ body: parsedBody, headers: options.headers });
+      return createMockResponse(200, {
+        id: 'chatcmpl-test',
+        model: 'deepseek-v4-flash',
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'stop',
+            message: {
+              role: 'assistant',
+              content: JSON.stringify(aiData),
+            },
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      }) as any;
+    }
+
+    throw new Error(`Unexpected fetch URL in DeepSeek fallback test: ${url}`);
+  }) as any;
+
+  try {
+    const req = {
+      method: 'POST',
+      body: payload,
+      headers: {
+        origin: 'http://localhost:5173',
+        host: 'localhost:5173',
+      },
+      socket: { remoteAddress: '127.0.0.1' },
+    } as any;
+    const res = createMockRes();
+
+    await handler(req, res as any);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body?.modelUsed, 'deepseek-v4-flash');
+    assert.equal(capturedBodies[0].body.model, 'deepseek-v4-flash');
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.AI_PROVIDER;
+    delete process.env.DEEPSEEK_MODEL;
+    delete process.env.DEEPSEEK_API_KEY;
+  }
+});
+
+test('handler cae a Gemini Flash si GEMINI_MODEL y preferredModel son invalidos', async () => {
+  process.env.AI_PROVIDER = 'gemini';
+  process.env.GEMINI_API_KEY = 'test-key';
+  process.env.GEMINI_MODEL = 'modelo-invalido';
+  const payload = { ...buildQuestionnairePayload(), preferredModel: 'otro-modelo-invalido' };
+  const aiData = buildMockAiData(payload as ReturnType<typeof buildQuestionnairePayload>);
+  const capturedUrls: string[] = [];
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string, options?: any) => {
+    capturedUrls.push(url);
+    if (url.includes(':generateContent')) {
+      return createMockResponse(200, {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: JSON.stringify(aiData) }],
+            },
+            finishReason: 'STOP',
+            index: 0,
+          },
+        ],
+        usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+        modelVersion: 'gemini-3-flash-preview',
+      }) as any;
+    }
+    if (/\/models(?:\?|$)/.test(url)) {
+      return createMockResponse(200, {
+        models: [{ name: 'models/gemini-3-flash-preview', supportedGenerationMethods: ['generateContent'] }],
+      }) as any;
+    }
+
+    throw new Error(`Unexpected fetch URL in Gemini fallback test: ${url}`);
+  }) as any;
+
+  try {
+    const req = {
+      method: 'POST',
+      body: payload,
+      headers: {
+        origin: 'http://localhost:5173',
+        host: 'localhost:5173',
+      },
+      socket: { remoteAddress: '127.0.0.1' },
+    } as any;
+    const res = createMockRes();
+
+    await handler(req, res as any);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body?.modelUsed, 'gemini-3-flash-preview');
+    assert.ok(capturedUrls.some((url) => url.includes('/models/gemini-3-flash-preview:generateContent')));
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.AI_PROVIDER;
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GEMINI_MODEL;
   }
 });

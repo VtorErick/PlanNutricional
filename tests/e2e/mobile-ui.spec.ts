@@ -44,7 +44,7 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
   await expect(page.getByTestId('admin-tab-settings')).toBeVisible();
   await page.getByTestId('admin-tab-settings').click();
   await expect(
-    page.getByRole('heading', { name: /AI Gemini/i })
+    page.getByRole('heading', { name: /^AI$/i })
   ).toBeVisible();
   await saveDocScreenshot(page, 'admin-settings-mobile.png');
   await page.getByTestId('admin-close-button').click();

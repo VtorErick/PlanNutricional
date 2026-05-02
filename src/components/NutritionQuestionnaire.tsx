@@ -37,7 +37,7 @@ import {
 import { buildExportData, downloadJsonFile } from '../dataManager';
 import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
-import { getGeminiModelLabel } from '../utils/geminiModels';
+import { DEFAULT_AI_FALLBACK_MODELS, DEFAULT_AI_MODEL, getAiModelLabel } from '../utils/aiModels';
 import { getQuestionnaireTheme } from '../utils/theme';
 import { calculateClinicalTDEE, generateSmaePortionsFromKcal, distributeSmaeToMeals } from '../utils/nutrition';
 import {
@@ -689,7 +689,6 @@ export default function NutritionQuestionnaire({
   loading,
   errorMessage,
   aiErrorLog,
-  geminiModel,
   geminiRecommendedModel,
   geminiFallbackModels,
   lastGeneratedData,
@@ -794,10 +793,10 @@ export default function NutritionQuestionnaire({
   }, [releaseScreenWakeLock]);
 
   const steps = useMemo(() => buildSteps(targetProfile), [targetProfile]);
-  const plannedModel = geminiRecommendedModel || geminiModel;
-  const plannedModelLabel = getGeminiModelLabel(plannedModel);
-  const fallbackPreview = geminiFallbackModels.slice(0, 2);
-  const fallbackPreviewLabel = fallbackPreview.map((model) => getGeminiModelLabel(model)).join(', ');
+  const plannedModel = geminiRecommendedModel || DEFAULT_AI_MODEL;
+  const plannedModelLabel = getAiModelLabel(plannedModel);
+  const fallbackPreview = (geminiFallbackModels.length ? geminiFallbackModels : DEFAULT_AI_FALLBACK_MODELS).slice(0, 2);
+  const fallbackPreviewLabel = fallbackPreview.map((model) => getAiModelLabel(model)).join(', ');
   const currentStep = steps[stepIdx] ?? steps[0];
   const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
   const stepsLeft = Math.max(steps.length - (stepIdx + 1), 0);

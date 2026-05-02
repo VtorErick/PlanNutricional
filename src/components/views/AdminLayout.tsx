@@ -15,8 +15,8 @@ import { getRawDataText, perfilesData as origPerfilesData } from '../../data';
 import { clearAppStorage } from '../../utils/appStorage';
 import {
   DEFAULT_GEMINI_MODEL,
-  getGeminiModelLabel,
 } from '../../utils/geminiModels';
+import { DEFAULT_AI_FALLBACK_MODELS, DEFAULT_AI_MODEL, getAiModelLabel } from '../../utils/aiModels';
 
 export default function AdminLayout() {
   const {
@@ -57,15 +57,18 @@ export default function AdminLayout() {
   const defaultElJson = useMemo(() => getRawDataText('el'), []);
   const defaultEllaJson = useMemo(() => getRawDataText('ella'), []);
 
-  const currentModel = geminiModel || geminiRecommendedModel || DEFAULT_GEMINI_MODEL;
-  const currentModelLabel = getGeminiModelLabel(currentModel);
+  const currentModel = geminiRecommendedModel || DEFAULT_AI_MODEL || geminiModel || DEFAULT_GEMINI_MODEL;
+  const currentModelLabel = getAiModelLabel(currentModel);
+  const availabilityMessage = (geminiAvailabilityMessage || 'Pendiente de validacion.')
+    .replace(/\bGEMINI_API_KEY\b/g, 'API key')
+    .replace(/\bGemini\b/g, 'IA');
   const fallbackPreview = (geminiFallbackModels.length
     ? geminiFallbackModels
-    : []
+    : DEFAULT_AI_FALLBACK_MODELS
   ).slice(0, 3);
 
   const handleReplaceApiKey = async () => {
-    const nextKey = window.prompt('Pega tu API key de Gemini');
+    const nextKey = window.prompt('Pega tu API key de IA');
     if (nextKey === null) return;
 
     const customApiKey = nextKey.trim();
@@ -93,7 +96,7 @@ export default function AdminLayout() {
 
     await notify(
       'API key actualizada',
-      `Modelo activo: ${getGeminiModelLabel(status.selectedModel || currentModel)}.`
+      `Modelo activo: ${getAiModelLabel(status.selectedModel || currentModel)}.`
     );
   };
 
@@ -117,7 +120,7 @@ export default function AdminLayout() {
 
     await notify(
       'Default restaurada',
-      `Modelo activo: ${getGeminiModelLabel(status.selectedModel || currentModel)}.`
+      `Modelo activo: ${getAiModelLabel(status.selectedModel || currentModel)}.`
     );
   };
 
@@ -132,14 +135,14 @@ export default function AdminLayout() {
     if (!status?.ok) {
       await notify(
         'Validacion fallida',
-        status?.error || 'No fue posible validar Gemini.'
+        status?.error || 'No fue posible validar IA.'
       );
       return;
     }
 
     await notify(
       'Validacion completada',
-      `Modelo activo: ${getGeminiModelLabel(status.selectedModel || currentModel)}.`
+      `Modelo activo: ${getAiModelLabel(status.selectedModel || currentModel)}.`
     );
   };
 
@@ -235,7 +238,7 @@ export default function AdminLayout() {
           <div>
             <h1 className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">Configuracion</h1>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">
-              Respaldo local y control del modelo Gemini
+              Respaldo local y control del modelo IA
             </p>
           </div>
         </div>
@@ -269,7 +272,7 @@ export default function AdminLayout() {
         <div className="flex gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           {([
             { key: 'manual', label: 'Respaldo', shortLabel: 'Respaldo', emoji: 'JSON' },
-            { key: 'settings', label: 'Gemini', shortLabel: 'Gemini', emoji: 'AI' },
+            { key: 'settings', label: 'IA', shortLabel: 'IA', emoji: 'AI' },
           ] as const).map((tabItem) => (
             <button
               key={tabItem.key}
@@ -293,7 +296,7 @@ export default function AdminLayout() {
         {adminTab === 'settings' && (
           <div className="space-y-4 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">AI Gemini</h2>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">AI</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Modelo activo, fallback y llave usada por la app.
               </p>
@@ -308,8 +311,8 @@ export default function AdminLayout() {
                   <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Estado actual</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                     {geminiAvailabilityLoading
-                      ? 'Validando Gemini...'
-                      : geminiAvailabilityMessage || 'Pendiente de validacion.'}
+                      ? 'Validando IA...'
+                      : availabilityMessage}
                   </p>
                 </div>
               </div>
@@ -327,7 +330,7 @@ export default function AdminLayout() {
                   <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Fallback</p>
                   <p className="mt-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     {fallbackPreview.length
-                      ? fallbackPreview.map((model) => getGeminiModelLabel(model)).join(', ')
+                      ? fallbackPreview.map((model) => getAiModelLabel(model)).join(', ')
                       : 'Sin fallback validado todavia.'}
                   </p>
                 </div>

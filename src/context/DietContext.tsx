@@ -22,10 +22,10 @@ import { normalizeProfileSummary } from '../utils/profileSummary';
 import {
   clearLegacyGeminiApiKeyStorage,
   DEFAULT_GEMINI_MODEL,
-  getGeminiModelLabel,
   getStoredGeminiModel,
   persistGeminiModel,
 } from '../utils/geminiModels';
+import { DEFAULT_AI_FALLBACK_MODELS, DEFAULT_AI_MODEL, getAiModelLabel } from '../utils/aiModels';
 import { fetchGeminiStatus, type GeminiStatusResponse } from '../services/geminiStatusService';
 import { APP_STORAGE_ERROR_EVENT, type AppStorageErrorDetail } from '../utils/storageEvents';
 import { readStorageValue, removeStorageValue, writeStorageValue } from '../utils/safeStorage';
@@ -845,8 +845,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } catch { return DEFAULT_GEMINI_MODEL; }
   });
   const [geminiAvailableModels, setGeminiAvailableModels] = useState<string[]>([]);
-  const [geminiFallbackModels, setGeminiFallbackModels] = useState<string[]>([]);
-  const [geminiRecommendedModel, setGeminiRecommendedModel] = useState('');
+  const [geminiFallbackModels, setGeminiFallbackModels] = useState<string[]>(DEFAULT_AI_FALLBACK_MODELS);
+  const [geminiRecommendedModel, setGeminiRecommendedModel] = useState(DEFAULT_AI_MODEL);
   const [geminiAvailabilityLoading, setGeminiAvailabilityLoading] = useState(false);
   const [geminiAvailabilityMessage, setGeminiAvailabilityMessage] = useState('');
   const [geminiCustomApiKey, setGeminiCustomApiKey] = useLocalStorage<string>(
@@ -1350,16 +1350,16 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
   const formatModelUsedLabel = useCallback((modelUsed: unknown) => {
     if (typeof modelUsed !== 'string' || !modelUsed.trim()) {
-      return getGeminiModelLabel(geminiModel);
+      return getAiModelLabel(DEFAULT_AI_MODEL);
     }
 
     return modelUsed
       .split(',')
-      .map((entry) => getGeminiModelLabel(entry.trim()))
+      .map((entry) => getAiModelLabel(entry.trim()))
       .filter(Boolean)
       .filter((entry, index, source) => source.indexOf(entry) === index)
       .join(', ');
-  }, [geminiModel]);
+  }, []);
 
   const requestAiResponse = useCallback(async (payload: any) => {
     const { mealsDatabase } = await import('../data/mealsDB');
@@ -1874,16 +1874,16 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       const message = error?.message || 'No fue posible validar Gemini.';
       setGeminiAvailableModels([]);
-      setGeminiFallbackModels([]);
-      setGeminiRecommendedModel('');
+      setGeminiFallbackModels(DEFAULT_AI_FALLBACK_MODELS);
+      setGeminiRecommendedModel(DEFAULT_AI_MODEL);
       setGeminiAvailabilityMessage(message);
       const fallbackStatus = {
         ok: false,
         error: message,
-        selectedModel: '',
+        selectedModel: DEFAULT_AI_MODEL,
         availableModels: [],
-        orderedModels: [],
-        fallbackModels: [],
+        orderedModels: [DEFAULT_AI_MODEL, ...DEFAULT_AI_FALLBACK_MODELS],
+        fallbackModels: DEFAULT_AI_FALLBACK_MODELS,
       } satisfies GeminiStatusResponse;
       lastGeminiStatusRef.current = fallbackStatus;
       return fallbackStatus;
@@ -2044,12 +2044,6 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     geminiModelRef.current = geminiModel;
   }, [geminiModel]);
-
-  // Check Gemini availability once at app startup (non-blocking)
-  useEffect(() => {
-    void refreshGeminiAvailability({ checkGeneration: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Scroll to top on day/tab change
   useEffect(() => {

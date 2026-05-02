@@ -113,7 +113,7 @@ function distributeToMoments(distribution) {
   const result = {};
   MOMENT_KEYS.forEach((mk) => { result[mk] = {}; FOOD_GROUP_KEYS.forEach((gk) => { result[mk][gk] = 0; }); });
   result.desayuno.cereales = Math.ceil(distribution.cereales * 0.35);
-  result.desayuno.proteina = Math.ceil(distribution.proteina * 0.3);
+  result.desayuno.proteina = Math.max(1, Math.round(distribution.proteina * 0.3));
   result.desayuno.lacteos = Math.min(1, distribution.lacteos);
   result.desayuno.grasas = Math.ceil(distribution.grasas * 0.3);
   result.desayuno.frutas = Math.min(1, distribution.frutas);
@@ -122,11 +122,11 @@ function distributeToMoments(distribution) {
   result.colacion_am.grasas = Math.min(1, Math.max(0, distribution.grasas - result.desayuno.grasas));
   result.comida.verduras = Math.ceil(distribution.verduras * 0.5);
   result.comida.cereales = Math.min(2, Math.max(0, distribution.cereales - result.desayuno.cereales - result.colacion_am.cereales));
-  result.comida.proteina = Math.ceil(distribution.proteina * 0.45);
+  result.comida.proteina = Math.max(1, Math.round(distribution.proteina * 0.45));
   result.comida.leguminosas = distribution.leguminosas;
   result.comida.grasas = Math.min(1, Math.max(0, distribution.grasas - result.desayuno.grasas - result.colacion_am.grasas));
   result.colacion_pm.frutas = Math.min(1, Math.max(0, distribution.frutas - result.desayuno.frutas - result.colacion_am.frutas));
-  result.colacion_pm.proteina = Math.min(1, Math.max(0, distribution.proteina - result.desayuno.proteina - result.comida.proteina));
+  result.colacion_pm.proteina = 0;
   result.colacion_pm.lacteos = Math.min(1, Math.max(0, distribution.lacteos - result.desayuno.lacteos));
   result.cena.verduras = Math.max(0, distribution.verduras - result.comida.verduras);
   result.cena.cereales = Math.max(0, distribution.cereales - result.desayuno.cereales - result.colacion_am.cereales - result.comida.cereales);
@@ -153,7 +153,27 @@ function subtractHours(timeStr, hours) {
   } catch { return timeStr; }
 }
 
-function buildMomentos(wakeTime, sleepTime) {
+function buildMomentos(wakeTime, sleepTime, selectedMoments) {
+  if (Array.isArray(selectedMoments) && selectedMoments.length > 0) {
+    const byKey = new Map(
+      selectedMoments
+        .filter((moment) => moment && MOMENT_KEYS.includes(moment.key))
+        .map((moment) => [moment.key, moment])
+    );
+    const normalized = MOMENT_KEYS
+      .map((key) => byKey.get(key))
+      .filter(Boolean)
+      .map((moment) => ({
+        key: moment.key,
+        label: moment.label || MOMENT_LABELS[moment.key],
+        hora: moment.hora || '',
+      }));
+
+    if (normalized.length === MOMENT_KEYS.length && normalized.every((moment) => moment.hora)) {
+      return normalized;
+    }
+  }
+
   const wake = wakeTime || '07:00';
   const sleep = sleepTime || '22:30';
   return [
@@ -234,7 +254,7 @@ export function generateProfile(input, profileId) {
   const calories = computeTargetCalories(weightKg, heightCm, age, isMale, input.activityLevel || '', input.objectives || []);
   const distribution = computeDistribution(calories, isMale);
   const objetivosPorMomento = distributeToMoments(distribution);
-  const momentos = buildMomentos(input.wakeTime, input.sleepTime);
+  const momentos = buildMomentos(input.wakeTime, input.sleepTime, input.planConfig?.selectedMoments);
 
   return {
     id: profileId,
