@@ -698,6 +698,7 @@ interface DietContextType {
   geminiRecommendedModel: string;
   geminiAvailabilityLoading: boolean;
   geminiAvailabilityMessage: string;
+  aiProvider: 'gemini' | 'deepseek';
   geminiCustomApiKey: string;
   setGeminiCustomApiKey: React.Dispatch<React.SetStateAction<string>>;
   refreshGeminiAvailability: (options?: {
