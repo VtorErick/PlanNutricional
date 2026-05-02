@@ -33,6 +33,7 @@ export default function AdminLayout() {
     geminiCustomApiKey,
     setGeminiCustomApiKey,
     refreshGeminiAvailability,
+    aiProvider,
     customData,
     setCustomData,
     dataVersions,
@@ -235,7 +236,7 @@ export default function AdminLayout() {
           <div>
             <h1 className="text-base font-bold text-slate-800 dark:text-slate-100 leading-tight">Configuracion</h1>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">
-              Respaldo local y control del modelo Gemini
+              Respaldo local y control del proveedor/modelo de IA
             </p>
           </div>
         </div>
@@ -269,7 +270,7 @@ export default function AdminLayout() {
         <div className="flex gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           {([
             { key: 'manual', label: 'Respaldo', shortLabel: 'Respaldo', emoji: 'JSON' },
-            { key: 'settings', label: 'Gemini', shortLabel: 'Gemini', emoji: 'AI' },
+            { key: 'settings', label: 'IA', shortLabel: 'IA', emoji: 'AI' },
           ] as const).map((tabItem) => (
             <button
               key={tabItem.key}
@@ -293,7 +294,7 @@ export default function AdminLayout() {
         {adminTab === 'settings' && (
           <div className="space-y-4 max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div>
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">AI Gemini</h2>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">AI {aiProvider === 'deepseek' ? 'DeepSeek' : 'Gemini'}</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                 Modelo activo, fallback y llave usada por la app.
               </p>

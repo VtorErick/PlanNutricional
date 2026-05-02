@@ -2,6 +2,7 @@ import { DEFAULT_GEMINI_MODEL, normalizeModelName } from '../utils/geminiModels'
 
 export interface GeminiStatusResponse {
   ok: boolean;
+  provider?: 'gemini' | 'deepseek';
   error?: string;
   message?: string;
   keySource?: 'env' | 'custom';
@@ -23,6 +24,7 @@ interface FetchGeminiStatusOptions {
 function buildFallbackError(error: string): GeminiStatusResponse {
   return {
     ok: false,
+    provider: 'gemini',
     error,
     envModel: DEFAULT_GEMINI_MODEL,
     selectedModel: '',
@@ -51,6 +53,7 @@ export async function fetchGeminiStatus(
     if (response.ok) {
       return {
         ok: Boolean(json?.ok),
+        provider: json?.provider === 'deepseek' ? 'deepseek' : 'gemini',
         error: json?.error,
         message: json?.message,
         keySource: json?.keySource === 'custom' ? 'custom' : json?.keySource === 'env' ? 'env' : undefined,

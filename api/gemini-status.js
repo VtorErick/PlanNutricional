@@ -138,9 +138,12 @@ export default async function handler(req, res) {
     payload = payload && typeof payload === 'object' ? payload : {};
 
     const customApiKey = typeof payload.customApiKey === 'string' ? payload.customApiKey.trim() : '';
-    const apiKey = customApiKey || (process.env.GEMINI_API_KEY || '').trim();
+    const apiKey = customApiKey || (aiProvider === 'deepseek' ? (process.env.DEEPSEEK_API_KEY || '').trim() : (process.env.GEMINI_API_KEY || '').trim());
+    const aiProvider = ((process.env.AI_PROVIDER || 'gemini').trim().toLowerCase() === 'deepseek' ? 'deepseek' : 'gemini');
     const keySource = customApiKey ? 'custom' : 'env';
-    const envModel = normalizeModelName(process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
+    const envModel = aiProvider === 'deepseek'
+      ? (process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash').trim() || 'deepseek-v4-flash'
+      : normalizeModelName(process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
     const preferredModel =
       normalizeModelName(typeof payload.preferredModel === 'string' ? payload.preferredModel.trim() : '') ||
       envModel;
@@ -149,11 +152,29 @@ export default async function handler(req, res) {
     if (!apiKey) {
       return res.status(400).json({
         ok: false,
-        error: 'No hay una API key configurada. Define GEMINI_API_KEY en el entorno del servidor o usa una clave personalizada.',
+        error: aiProvider === 'deepseek' ? 'No hay una API key configurada. Define DEEPSEEK_API_KEY en el entorno del servidor o usa una clave personalizada.' : 'No hay una API key configurada. Define GEMINI_API_KEY en el entorno del servidor o usa una clave personalizada.',
         keySource,
         envModel,
         availableModels: [],
         selectedModel: '',
+      });
+    }
+
+    if (aiProvider === 'deepseek') {
+      const selectedModel = preferredModel || envModel;
+      const availableModels = [selectedModel];
+      return res.status(200).json({
+        ok: true,
+        provider: 'deepseek',
+        keySource,
+        envModel,
+        preferredModel,
+        selectedModel,
+        availableModels,
+        orderedModels: availableModels,
+        fallbackModels: [],
+        generationChecked,
+        message: `Se detectó configuración de DeepSeek. Modelo activo: ${selectedModel}.`,
       });
     }
 
@@ -197,6 +218,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
+      provider: 'gemini',
       keySource,
       envModel,
       preferredModel,
@@ -212,7 +234,8 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({
       ok: false,
-      error: error?.message || 'No fue posible validar la API key de Gemini.',
+      provider: ((process.env.AI_PROVIDER || 'gemini').trim().toLowerCase() === 'deepseek' ? 'deepseek' : 'gemini'),
+      error: error?.message || 'No fue posible validar la API key de IA.',
       availableModels: [],
       selectedModel: '',
       fallbackModels: [],

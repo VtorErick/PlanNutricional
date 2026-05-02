@@ -849,6 +849,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   const [geminiRecommendedModel, setGeminiRecommendedModel] = useState('');
   const [geminiAvailabilityLoading, setGeminiAvailabilityLoading] = useState(false);
   const [geminiAvailabilityMessage, setGeminiAvailabilityMessage] = useState('');
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'deepseek'>('gemini');
   const [geminiCustomApiKey, setGeminiCustomApiKey] = useLocalStorage<string>(
     'geminiCustomApiKey',
     '',
@@ -1855,6 +1856,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
       lastGeminiStatusCheckTime.current = Date.now();
       lastGeminiStatusRef.current = status;
+      setAiProvider(status.provider === 'deepseek' ? 'deepseek' : 'gemini');
 
       setGeminiAvailableModels(status.availableModels);
       setGeminiFallbackModels(status.fallbackModels);
@@ -2095,6 +2097,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     geminiRecommendedModel,
     geminiAvailabilityLoading,
     geminiAvailabilityMessage,
+    aiProvider,
     geminiCustomApiKey,
     setGeminiCustomApiKey,
     refreshGeminiAvailability,
