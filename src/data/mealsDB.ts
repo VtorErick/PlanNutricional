@@ -1112,12 +1112,15 @@ export function filterCatalogForQuestionnaire(db: CatalogMealItem[], questionnai
   if (exclusions.length === 0) return db;
 
   const exclusionMap: Record<string, string[]> = {
-    'lactosa': ['leche', 'queso', 'yogurt', 'panela', 'lácteos'],
-    'lacteos': ['leche', 'queso', 'yogurt', 'panela', 'lácteos'],
+    'lactosa': ['leche', 'queso', 'yogurt', 'yogur', 'panela', 'requeson', 'cottage', 'crema light', 'lácteos'],
+    'lacteos': ['leche', 'queso', 'yogurt', 'yogur', 'panela', 'requeson', 'cottage', 'crema light', 'lácteos'],
+    'cacahuate': ['cacahuate', 'cacahuates', 'crema cacahuate', 'crema de cacahuate'],
+    'cacahuates': ['cacahuate', 'cacahuates', 'crema cacahuate', 'crema de cacahuate'],
+    'mani': ['mani', 'cacahuate', 'cacahuates'],
     'mariscos': ['camarón', 'pescado', 'atún', 'salmón'],
     'gluten': ['pan', 'tortilla de harina', 'avena', 'galleta', 'pasta'],
     'huevo': ['huevo', 'claras'],
-    'nueces': ['nuez', 'almendras', 'cacahuate'],
+    'nueces': ['nuez', 'almendras', 'cacahuate', 'cacahuates'],
     'yogurt': ['yogurt', 'kefir'],
     'queso': ['queso', 'panela', 'oaxaca', 'cottage', 'requesón', 'requeson', 'manchego'],
     'queso manchego': ['manchego'],

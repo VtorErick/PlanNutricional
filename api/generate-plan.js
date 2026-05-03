@@ -769,8 +769,8 @@ function normalizeMealOptionAgainstCatalog(meal, catalogMeal) {
     normalizedMeal.porciones = 'Porcion ajustada segun objetivo, horario y restricciones del perfil.';
   }
 
-  if (hasMacroEstimate(catalogMeal)) {
-    const estimate = catalogMeal.macroEstimate;
+  const estimate = resolveCatalogMacroEstimate(catalogMeal);
+  if (estimate) {
     if (!Number(normalizedMeal.caloriasKcal || 0)) normalizedMeal.caloriasKcal = Math.round(Number(estimate.calories));
     if (!Number(normalizedMeal.proteinaG || 0)) normalizedMeal.proteinaG = Math.round(Number(estimate.protein));
     if (!Number(normalizedMeal.carbohidratosG || 0)) normalizedMeal.carbohidratosG = Math.round(Number(estimate.carbs));
@@ -821,12 +821,14 @@ function repairPlanSlots(plan, profile, catalog) {
   }
 
   function getMacroEstimate(catalogMeal) {
-    if (!hasMacroEstimate(catalogMeal)) return null;
+    const estimate = resolveCatalogMacroEstimate(catalogMeal);
+    if (!estimate) return null;
     return {
-      kcal: Number(catalogMeal.macroEstimate.calories),
-      protein: Number(catalogMeal.macroEstimate.protein),
-      carbs: Number(catalogMeal.macroEstimate.carbs),
-      fat: Number(catalogMeal.macroEstimate.fat),
+      kcal: Number(estimate.calories),
+      protein: Number(estimate.protein),
+      carbs: Number(estimate.carbs),
+      fat: Number(estimate.fat),
+      source: estimate.source,
     };
   }
 
@@ -862,7 +864,7 @@ function repairPlanSlots(plan, profile, catalog) {
 
   function rankedCatalogForMoment(momento, target) {
     return catalogArray
-      .filter((item) => isCatalogMealValidForMoment(item, momento) && hasMacroEstimate(item))
+      .filter((item) => isCatalogMealValidForMoment(item, momento) && getMacroEstimate(item))
       .map((item) => ({ item, score: macroDistance(getMacroEstimate(item), target) }))
       .sort((a, b) => {
         if (a.score !== b.score) return a.score - b.score;
@@ -872,7 +874,7 @@ function repairPlanSlots(plan, profile, catalog) {
   }
 
   function shouldKeepAiMeal(catalogMeal, momento, target) {
-    if (!isCatalogMealValidForMoment(catalogMeal, momento) || !hasMacroEstimate(catalogMeal)) return false;
+    if (!isCatalogMealValidForMoment(catalogMeal, momento) || !getMacroEstimate(catalogMeal)) return false;
     return macroDistance(getMacroEstimate(catalogMeal), target) <= 0.85;
   }
 
@@ -880,6 +882,48 @@ function repairPlanSlots(plan, profile, catalog) {
     if (!Number.isFinite(value) || value <= 0) return '1 porcion';
     const rounded = Math.round(value * 10) / 10;
     return Math.abs(rounded - 1) < 0.05 ? '1 porcion' : `${rounded} porciones`;
+  }
+
+  function formatAmount(value, unit) {
+    return `${Math.max(1, Math.round(value))} ${unit}`;
+  }
+
+  function estimateIngredientPortion(ingredient, scaleFactor) {
+    const normalized = normalizeNutritionToken(ingredient);
+    if (/(salsa soya|salsa de soya|salsa|caldo|consome|aderezo|vinagre|limon|chile)/.test(normalized)) return `${formatAmount(scaleFactor * 12, 'g')} ${ingredient}`;
+    if (/(tortilla|tostada)/.test(normalized)) return `${Math.max(1, Math.round(scaleFactor * 2))} pzas ${ingredient}`;
+    if (/(arroz|pasta|fideo|quinoa|avena|papa|camote|masa|maiz|amaranto|harina|pan|galleta|cereal)/.test(normalized)) return `${formatAmount(scaleFactor * 75, 'g')} ${ingredient}`;
+    if (/(pollo|atun|pescado|salmon|sardina|res|carne|pavo|lomo|bistec|camaron|soya|tofu)/.test(normalized)) return `${formatAmount(scaleFactor * 95, 'g')} ${ingredient}`;
+    if (/(huevo|claras)/.test(normalized)) return `${Math.max(1, Math.round(scaleFactor * (normalized.includes('clara') ? 4 : 2)))} pzas ${ingredient}`;
+    if (/(yogurt|yogur|queso|panela|requeson|cottage|leche|whey|proteina)/.test(normalized)) return `${formatAmount(scaleFactor * 90, 'g')} ${ingredient}`;
+    if (/(frijol|lenteja|garbanzo|edamame|leguminosa)/.test(normalized)) return `${formatAmount(scaleFactor * 80, 'g')} ${ingredient}`;
+    if (/(aceite|crema cacahuate)/.test(normalized)) return `${formatAmount(scaleFactor * 5, 'g')} ${ingredient}`;
+    if (/(cacahuate|almendra|nuez|chia|linaza|coco|aceituna)/.test(normalized)) return `${formatAmount(scaleFactor * 4, 'g')} ${ingredient}`;
+    if (/aguacate/.test(normalized)) return `${formatAmount(scaleFactor * 10, 'g')} ${ingredient}`;
+    if (/(manzana|platano|mango|durazno|fruta|pera|uva|berries|fresa)/.test(normalized)) return `${formatAmount(scaleFactor * 90, 'g')} ${ingredient}`;
+    if (/(nopal|lechuga|pepino|tomate|jitomate|cebolla|calabaza|zanahoria|espinaca|verdura|pimiento|repollo|chayote|apio)/.test(normalized)) return `${formatAmount(scaleFactor * 70, 'g')} ${ingredient}`;
+    return `${formatAmount(scaleFactor * 25, 'g')} ${ingredient}`;
+  }
+
+  function buildPortionsText(catalogMeal, scaleFactor, macros, baseMacros) {
+    const ingredients = Array.isArray(catalogMeal.super) ? catalogMeal.super.slice(0, 6) : [];
+    const displayScale = Math.min(Math.max(scaleFactor, 0.45), 1.8);
+    const portions = ingredients.length
+      ? ingredients.map((ingredient) => estimateIngredientPortion(ingredient, displayScale))
+      : [`${formatScaleFactor(displayScale)} de receta base`];
+
+    const visibleProtein = Number(baseMacros?.protein || 0) * displayScale;
+    const visibleCarbs = Number(baseMacros?.carbs || 0) * displayScale;
+    const visibleFat = Number(baseMacros?.fat || 0) * displayScale;
+    const proteinGap = Math.max(0, Number(macros?.protein || 0) - visibleProtein);
+    const carbGap = Math.max(0, Number(macros?.carbs || 0) - visibleCarbs);
+    const fatGap = Math.max(0, Number(macros?.fat || 0) - visibleFat);
+
+    if (proteinGap >= 12) portions.push(`${formatAmount(proteinGap * 4, 'g')} pechuga de pollo`);
+    if (carbGap >= 18) portions.push(`${formatAmount(carbGap * 2.7, 'g')} arroz cocido`);
+    if (fatGap >= 7) portions.push(`${formatAmount(fatGap * 5, 'g')} aguacate`);
+
+    return portions.join(' + ');
   }
 
   function normalizedTags(tags, macros) {
@@ -913,23 +957,19 @@ function repairPlanSlots(plan, profile, catalog) {
       fat: Math.max(0, Math.round(base.fat * scaleFactor)),
     };
     const kcal = macroCalories(macros);
-    const ingredientText = Array.isArray(catalogMeal.super)
-      ? catalogMeal.super.slice(0, 6).join(', ')
-      : '';
-
     return {
       idRef: fallbackIdRef || catalogMeal.id,
       nombre: catalogMeal.nombre,
       detalle: buildCanonicalMealDetail(catalogMeal.nombre, catalogMeal.super),
       tags: normalizedTags(catalogMeal.tags, macros),
       super: Array.isArray(catalogMeal.super) ? catalogMeal.super : [],
-      porciones: `${formatScaleFactor(scaleFactor)} de receta base${ingredientText ? ` (${ingredientText})` : ''}`,
+      porciones: buildPortionsText(catalogMeal, scaleFactor, macros, base),
       caloriasKcal: kcal,
       proteinaG: macros.protein,
       carbohidratosG: macros.carbs,
       grasasG: macros.fat,
       aiMeta: {
-        source: 'catalog-macro-estimate',
+        source: base.source || 'catalog-macro-estimate',
         normalizedTargetKcal: Math.round(target?.kcal || kcal),
         macroConsistentKcal: kcal,
       },
@@ -955,6 +995,9 @@ function repairPlanSlots(plan, profile, catalog) {
         const [baseId] = idRef.split('|MOD:');
         const aiCatalogMeal = catalogArray.find((item) => item?.id === baseId.trim());
         let selectedCatalogMeal = shouldKeepAiMeal(aiCatalogMeal, momento, momentTarget) ? aiCatalogMeal : null;
+        if (selectedCatalogMeal && usedIds.has(selectedCatalogMeal.id)) {
+          selectedCatalogMeal = null;
+        }
 
         if (!selectedCatalogMeal) {
           const start = ranked.length ? (dayIndex + optionIndex) % ranked.length : 0;
@@ -1713,7 +1756,69 @@ function hasMacroEstimate(catalogMeal) {
     Number.isFinite(Number(estimate.fat));
 }
 
-function normalizeMealNutritionToTargets(meal, momentKey, profile) {
+function inferMacroEstimateFromCatalogMeal(catalogMeal) {
+  const ingredients = Array.isArray(catalogMeal?.super) ? catalogMeal.super : [];
+  const text = normalizeNutritionToken([catalogMeal?.nombre, ...(catalogMeal?.tags || []), ...ingredients].join(' '));
+  if (!text.trim()) return null;
+
+  const macros = ingredients.reduce((acc, ingredient) => {
+    const normalized = normalizeNutritionToken(ingredient);
+    if (/(pollo|atun|pescado|salmon|sardina|res|carne|pavo|lomo|bistec|camaron)/.test(normalized)) {
+      acc.protein += 24; acc.fat += 4; return acc;
+    }
+    if (/(huevo|claras)/.test(normalized)) {
+      acc.protein += normalized.includes('clara') ? 14 : 12; acc.fat += normalized.includes('clara') ? 0 : 8; return acc;
+    }
+    if (/(yogurt|yogur|queso|panela|requeson|cottage|leche|whey|proteina)/.test(normalized)) {
+      acc.protein += 14; acc.carbs += 6; acc.fat += 4; return acc;
+    }
+    if (/(tofu|soya|edamame|lenteja|frijol|garbanzo|leguminosa)/.test(normalized)) {
+      acc.protein += 10; acc.carbs += 18; acc.fat += 3; return acc;
+    }
+    if (/(tortilla|arroz|avena|pasta|fideo|pan|masa|maiz|quinoa|papa|camote|amaranto|galleta|cereal|harina)/.test(normalized)) {
+      acc.protein += 4; acc.carbs += 28; acc.fat += 2; return acc;
+    }
+    if (/(platano|manzana|mango|fruta|durazno|berries|fresa|pera|uva)/.test(normalized)) {
+      acc.carbs += 18; return acc;
+    }
+    if (/(aceite|aguacate|cacahuate|almendra|nuez|chia|linaza|crema|coco|aceituna)/.test(normalized)) {
+      acc.protein += 2; acc.carbs += 3; acc.fat += 10; return acc;
+    }
+    if (/(nopal|lechuga|pepino|tomate|jitomate|cebolla|calabaza|zanahoria|espinaca|verdura|pimiento|repollo|chayote|apio)/.test(normalized)) {
+      acc.protein += 1; acc.carbs += 6; return acc;
+    }
+    return acc;
+  }, { protein: 0, carbs: 0, fat: 0 });
+
+  if (macros.protein <= 0 && /(proteina|alto-proteina)/.test(text)) macros.protein = 18;
+  if (macros.carbs <= 0 && /(alto-carb|dulce|cereal|botana)/.test(text)) macros.carbs = 30;
+  if (macros.fat <= 0 && /(grasas|saciante|cremoso)/.test(text)) macros.fat = 8;
+
+  const calories = calculateCaloriesFromMacros(macros.protein, macros.carbs, macros.fat);
+  if (calories <= 0) return null;
+  return {
+    calories,
+    protein: Math.round(macros.protein),
+    carbs: Math.round(macros.carbs),
+    fat: Math.round(macros.fat),
+    source: 'ingredient-inference',
+  };
+}
+
+function resolveCatalogMacroEstimate(catalogMeal) {
+  if (hasMacroEstimate(catalogMeal)) {
+    return {
+      calories: Number(catalogMeal.macroEstimate.calories),
+      protein: Number(catalogMeal.macroEstimate.protein),
+      carbs: Number(catalogMeal.macroEstimate.carbs),
+      fat: Number(catalogMeal.macroEstimate.fat),
+      source: 'catalog-macro-estimate',
+    };
+  }
+  return inferMacroEstimateFromCatalogMeal(catalogMeal);
+}
+
+function normalizeMealNutritionToTargets(meal, momentKey, profile, momentTarget) {
   if (!meal || typeof meal !== 'object') return meal;
 
   meal.porciones = stripProfileCalorieAdjustmentNote(meal.porciones);
@@ -1722,14 +1827,18 @@ function normalizeMealNutritionToTargets(meal, momentKey, profile) {
   if (!caloriesTarget) return meal;
 
   const momentWeight = MOMENT_CALORIE_WEIGHTS[momentKey] || 0.2;
-  const targetCalories = roundToStep(caloriesTarget * momentWeight, 10);
+  const targetCalories = Number(momentTarget?.kcal || 0) > 0
+    ? Math.round(Number(momentTarget.kcal))
+    : roundToStep(caloriesTarget * momentWeight, 10);
   const currentCalories = Number(meal.caloriasKcal || 0);
   let protein = Number(meal.proteinaG || 0);
   let fat = Number(meal.grasasG || 0);
   let carbs = Number(meal.carbohidratosG || 0);
 
   const dailyProteinTarget = getDailyProteinTarget(profile);
-  const proteinTarget = Math.round(dailyProteinTarget * (MOMENT_PROTEIN_WEIGHTS[momentKey] || 0.2));
+  const proteinTarget = Number(momentTarget?.protein || 0) > 0
+    ? Math.round(Number(momentTarget.protein))
+    : Math.round(dailyProteinTarget * (MOMENT_PROTEIN_WEIGHTS[momentKey] || 0.2));
 
   if (!Number.isFinite(protein) || protein <= 0) {
     protein = proteinTarget;
@@ -1752,11 +1861,19 @@ function normalizeMealNutritionToTargets(meal, momentKey, profile) {
     macroCalories = calculateCaloriesFromMacros(protein, carbs, fat);
   }
 
-  const reconciledCalories =
+  let reconciledCalories =
     macroCalories > 0 &&
     (!hasValidCurrentCalories || Math.abs(macroCalories - currentCalories) / Math.max(currentCalories, 1) > 0.12)
       ? macroCalories
       : Math.round(currentCalories);
+
+  if (reconciledCalories > 0 && Math.abs(reconciledCalories - targetCalories) / targetCalories > 0.15) {
+    const scale = targetCalories / reconciledCalories;
+    protein = Math.max(0, Math.round(protein * scale));
+    carbs = Math.max(0, Math.round(carbs * scale));
+    fat = Math.max(0, Math.round(fat * scale));
+    reconciledCalories = calculateCaloriesFromMacros(protein, carbs, fat);
+  }
 
   meal.caloriasKcal = reconciledCalories;
   meal.proteinaG = Math.round(protein);
@@ -1780,6 +1897,12 @@ function normalizePlanNutritionToProfile(plan, profile) {
   if (!plan || typeof plan !== 'object' || Array.isArray(plan) || !getProfileCalorieTarget(profile)) {
     return plan;
   }
+  const baseMomentMacros = calculateMomentMacros(profile?.objetivosPorMomento);
+  const targetMomentMacros = scaleMomentMacrosToDailyTarget(
+    baseMomentMacros,
+    profile?.objetivosPorMomento,
+    profile?.metaCaloricaKcalDia || 0
+  );
 
   WEEK_DAYS.forEach((dayKey) => {
     const dayPlan = plan[dayKey];
@@ -1788,7 +1911,7 @@ function normalizePlanNutritionToProfile(plan, profile) {
     MEAL_MOMENT_KEYS.forEach((momentKey) => {
       const options = dayPlan[momentKey];
       if (!Array.isArray(options)) return;
-      options.forEach((meal) => normalizeMealNutritionToTargets(meal, momentKey, profile));
+      options.forEach((meal) => normalizeMealNutritionToTargets(meal, momentKey, profile, targetMomentMacros[momentKey]));
     });
   });
 
@@ -2587,6 +2710,70 @@ function buildScopedPayload(payload, profileData) {
   };
 }
 
+function splitRestrictionValues(value) {
+  if (Array.isArray(value)) return value.flatMap(splitRestrictionValues).filter(Boolean);
+  if (typeof value !== 'string') return [];
+  return value.split(/[,;]/).map((entry) => entry.trim()).filter(Boolean);
+}
+
+function expandRestrictionTerm(value) {
+  const normalized = normalizeNutritionToken(value);
+  const aliases = {
+    lacteos: ['lacteo', 'lacteos', 'leche', 'queso', 'yogurt', 'yogur', 'panela', 'requeson', 'cottage', 'crema light'],
+    lactosa: ['lactosa', 'leche', 'queso', 'yogurt', 'yogur', 'panela', 'requeson', 'cottage', 'crema light'],
+    cacahuate: ['cacahuate', 'cacahuates', 'crema cacahuate', 'crema de cacahuate'],
+    cacahuates: ['cacahuate', 'cacahuates', 'crema cacahuate', 'crema de cacahuate'],
+    mani: ['mani', 'cacahuate', 'cacahuates'],
+    nueces: ['nuez', 'nueces', 'almendra', 'almendras', 'cacahuate', 'cacahuates'],
+    brocoli: ['brocoli'],
+    coliflor: ['coliflor'],
+    gluten: ['gluten', 'pan', 'tortilla de harina', 'harina', 'galleta', 'pasta'],
+    atun: ['atun'],
+  };
+  return aliases[normalized] || [normalized];
+}
+
+function getProfileRestrictionTerms(profilePayload) {
+  const health = profilePayload?.healthContext || profilePayload || {};
+  const preferences = profilePayload?.preferences || profilePayload || {};
+  const rawTerms = [
+    ...splitRestrictionValues(health.allergies),
+    ...splitRestrictionValues(health.intolerances),
+    ...splitRestrictionValues(preferences.dislikedFoods),
+  ];
+  const diagnostics = normalizeNutritionToken(splitRestrictionValues(health.diagnostics).join(' '));
+  if (/(hipertension|presion|renal|rinon|riñon)/.test(diagnostics)) {
+    rawTerms.push('sal de mar', 'sodio', 'jamon', 'tocino', 'embutido');
+  }
+  return [...new Set(rawTerms.flatMap(expandRestrictionTerm).filter(Boolean))];
+}
+
+function filterCatalogForProfiles(catalog, profilePayloads) {
+  const catalogArray = Array.isArray(catalog) ? catalog : [];
+  if (!catalogArray.length) return catalogArray;
+
+  const terms = [...new Set(
+    (Array.isArray(profilePayloads) ? profilePayloads : [profilePayloads])
+      .flatMap(getProfileRestrictionTerms)
+      .filter(Boolean)
+  )];
+  if (!terms.length) return catalogArray;
+
+  const filtered = catalogArray.filter((meal) => {
+    const haystack = normalizeNutritionToken([
+      meal?.nombre,
+      ...(Array.isArray(meal?.tags) ? meal.tags : []),
+      ...(Array.isArray(meal?.super) ? meal.super : []),
+    ].join(' '));
+    return !terms.some((term) => haystack.includes(term));
+  });
+
+  const hasAtLeastOneByMoment = MEAL_MOMENT_KEYS.every((momentKey) =>
+    filtered.filter((meal) => isCatalogMealValidForMoment(meal, momentKey)).length >= 3
+  );
+  return hasAtLeastOneByMoment ? filtered : catalogArray;
+}
+
 function buildRevisionScopedPayload(payload, profileId) {
   const companionId = profileId === 'el' ? 'ella' : 'el';
   return {
@@ -3343,6 +3530,12 @@ export default async function handler(req, res) {
       const precomputedSupplementsElla = generateSupplements(payloadElla, payload.supplementsCatalog || []);
       payloadElla.precomputedProfile = precomputedProfileElla;
       payloadElla.precomputedSupplements = precomputedSupplementsElla;
+      const sharedMealsCatalog = filterCatalogForProfiles(
+        payload.mealsCatalog || [],
+        [payload.el, payload.ella]
+      );
+      payloadEl.mealsCatalog = sharedMealsCatalog;
+      payloadElla.mealsCatalog = sharedMealsCatalog;
 
       const elResult = await generateWithProvider(
         buildRequestParts('EL', payloadEl),
@@ -3387,6 +3580,7 @@ export default async function handler(req, res) {
       const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);
       payload.precomputedProfile = precomputedProfile;
       payload.precomputedSupplements = precomputedSupplements;
+      payload.mealsCatalog = filterCatalogForProfiles(payload.mealsCatalog || [], payload);
       const result = await generateWithProvider(
         buildRequestParts('EL', payload),
         apiKey,
@@ -3412,6 +3606,7 @@ export default async function handler(req, res) {
       const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);
       payload.precomputedProfile = precomputedProfile;
       payload.precomputedSupplements = precomputedSupplements;
+      payload.mealsCatalog = filterCatalogForProfiles(payload.mealsCatalog || [], payload);
       const result = await generateWithProvider(
         buildRequestParts('ELLA', payload),
         apiKey,

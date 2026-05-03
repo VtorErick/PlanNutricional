@@ -389,9 +389,9 @@ test('handler usa DeepSeek por defecto cuando AI_PROVIDER no existe', async () =
     await handler(req, res as any);
 
     assert.equal(res.statusCode, 200);
-    assert.equal(res.body?.modelUsed, 'deepseek-v4-flash');
+    assert.equal(res.body?.modelUsed, 'deepseek-v4-pro');
     assert.equal(capturedBodies.length, 1);
-    assert.equal(capturedBodies[0].body.model, 'deepseek-v4-flash');
+    assert.equal(capturedBodies[0].body.model, 'deepseek-v4-pro');
     assert.equal(capturedBodies[0].body.thinking.type, 'disabled');
     assert.match(capturedBodies[0].headers.Authorization, /^Bearer /);
     const userPromptJson = JSON.parse(capturedBodies[0].body.messages[1].content);
@@ -489,7 +489,7 @@ test('handler genera ambos con una sola llamada DeepSeek y escala Ella determini
   }
 });
 
-test('handler cae a DeepSeek Flash si AI_PROVIDER y DEEPSEEK_MODEL son invalidos', async () => {
+test('handler cae al default DeepSeek Pro si AI_PROVIDER y DEEPSEEK_MODEL son invalidos', async () => {
   process.env.AI_PROVIDER = 'proveedor-invalido';
   process.env.DEEPSEEK_MODEL = 'modelo-invalido';
   process.env.DEEPSEEK_API_KEY = 'test-deepseek-key';
@@ -537,8 +537,8 @@ test('handler cae a DeepSeek Flash si AI_PROVIDER y DEEPSEEK_MODEL son invalidos
     await handler(req, res as any);
 
     assert.equal(res.statusCode, 200);
-    assert.equal(res.body?.modelUsed, 'deepseek-v4-flash');
-    assert.equal(capturedBodies[0].body.model, 'deepseek-v4-flash');
+    assert.equal(res.body?.modelUsed, 'deepseek-v4-pro');
+    assert.equal(capturedBodies[0].body.model, 'deepseek-v4-pro');
   } finally {
     globalThis.fetch = originalFetch;
     delete process.env.AI_PROVIDER;

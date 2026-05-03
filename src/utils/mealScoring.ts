@@ -38,6 +38,18 @@ const DIFFICULTY_ORDER = { facil: 1, media: 2, dificil: 3 };
 const PRACTICAL_TAGS = ['rapido', 'portatil', 'meal-prep', 'economico', 'facil', 'sencillo'];
 const QUALITY_TAGS = ['saciante', 'fibra', 'omega3', 'anti-inflamatorio', 'volumen', 'digestivo', 'proteina', 'alto-proteina'];
 const GLUCOSE_RISK_TAGS = ['dulce', 'postre', 'alto-carb', 'carbohidrato-rapido', 'miel', 'pan dulce', 'galleta'];
+const FORBIDDEN_TERM_ALIASES: Record<string, string[]> = {
+  lacteos: ['lacteo', 'lacteos', 'leche', 'queso', 'yogurt', 'yogur', 'panela', 'requeson', 'cottage', 'crema light'],
+  lactosa: ['lactosa', 'leche', 'queso', 'yogurt', 'yogur', 'panela', 'requeson', 'cottage', 'crema light'],
+  cacahuate: ['cacahuate', 'cacahuates', 'crema cacahuate', 'crema de cacahuate'],
+  cacahuates: ['cacahuate', 'cacahuates', 'crema cacahuate', 'crema de cacahuate'],
+  mani: ['mani', 'cacahuate', 'cacahuates'],
+  nueces: ['nuez', 'nueces', 'almendra', 'almendras', 'cacahuate', 'cacahuates'],
+  brocoli: ['brocoli', 'brocoli'],
+  'brócoli': ['brocoli', 'brocoli'],
+  coliflor: ['coliflor'],
+  gluten: ['gluten', 'pan', 'tortilla de harina', 'harina', 'galleta', 'pasta'],
+};
 
 /**
  * Normaliza texto para comparación (minúsculas, sin acentos)
@@ -56,6 +68,13 @@ function normalizeText(text: string): string {
 function containsAny(text: string, keywords: string[]): boolean {
   const normalizedText = normalizeText(text);
   return keywords.some(kw => normalizedText.includes(normalizeText(kw)));
+}
+
+function expandForbiddenTerms(values: string[]): string[] {
+  return uniqueList(values.flatMap((value) => {
+    const normalized = normalizeText(value);
+    return FORBIDDEN_TERM_ALIASES[normalized] || [value];
+  }));
 }
 
 function splitTextList(value: unknown): string[] {
@@ -154,7 +173,7 @@ function containsForbiddenIngredients(
     ...meal.tags,
   ].join(' ');
 
-  return forbiddenList.some(forbidden => containsAny(searchSpace, [forbidden]));
+  return expandForbiddenTerms(forbiddenList).some(forbidden => containsAny(searchSpace, [forbidden]));
 }
 
 /**
@@ -263,6 +282,12 @@ export function filterMealsForUser(
     if (config.medicalConditions.length > 0) {
       if (hasMedicalConflict(meal, config.medicalConditions)) {
         return false;
+      }
+      const medicalText = normalizeText(config.medicalConditions.join(' '));
+      if (/(hipertension|presion|renal|rinon|riñon)/.test(medicalText)) {
+        if (containsForbiddenIngredients(meal, ['sal de mar', 'sodio', 'jamon', 'tocino', 'embutido'])) {
+          return false;
+        }
       }
     }
 

@@ -1,7 +1,7 @@
 import { getGeminiModelLabel } from './geminiModels';
 
-export const DEFAULT_AI_MODEL = 'deepseek-v4-flash';
-export const DEFAULT_AI_FALLBACK_MODELS = ['deepseek-v4-pro'];
+export const DEFAULT_AI_MODEL = 'deepseek-v4-pro';
+export const DEFAULT_AI_FALLBACK_MODELS = ['deepseek-v4-flash'];
 
 const AI_MODEL_LABELS: Record<string, string> = {
   'deepseek-v4-flash': 'DeepSeek V4 Flash',

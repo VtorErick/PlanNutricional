@@ -1,4 +1,4 @@
-export const DEFAULT_DEEPSEEK_MODEL = 'deepseek-v4-flash';
+export const DEFAULT_DEEPSEEK_MODEL = 'deepseek-v4-pro';
 export const DEEPSEEK_PRO_MODEL = 'deepseek-v4-pro';
 export const MAX_DEEPSEEK_MODEL_CANDIDATES = 2;
 
@@ -43,9 +43,17 @@ function getUniqueModelNames(modelNames, preferredModelRaw) {
 }
 
 export function getOrderedDeepSeekModels(modelNames, preferredModelRaw) {
+  const preferredModel = normalizeDeepSeekModelName(preferredModelRaw);
   const remaining = getUniqueModelNames(modelNames, preferredModelRaw)
     .filter(isSupportedDeepSeekModel);
   const ordered = [];
+
+  const preferredMatch = remaining.find(
+    (name) => preferredModel && name.toLowerCase() === preferredModel.toLowerCase()
+  );
+  if (preferredMatch) {
+    ordered.push(preferredMatch);
+  }
 
   MODEL_PRIORITY_MATCHERS.forEach((matcher) => {
     const match = remaining.find((name) => matcher.test(name) && !ordered.includes(name));
