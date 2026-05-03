@@ -1049,12 +1049,13 @@ export const mealsDatabase: CatalogMealItem[] = [
 
 export function getCompactMealsCatalog(
   db: CatalogMealItem[] = mealsDatabase
-): {id: string, nombre: string, tags: string[], momentos: string[]}[] {
+): {id: string, nombre: string, tags: string[], momentos: string[], macroEstimate?: CatalogMealItem['macroEstimate']}[] {
   return db.map(m => ({
     id: m.id,
     nombre: m.nombre,
     tags: m.tags,
     momentos: m.momentos,
+    ...(m.macroEstimate ? { macroEstimate: m.macroEstimate } : {}),
   }));
 }
 
@@ -1192,7 +1193,7 @@ function scoreMealForQuestionnaire(item: CatalogMealItem, questionnaire: any) {
 export function buildQuestionnaireMealsCatalog(
   db: CatalogMealItem[],
   questionnaire: any
-): {id: string, nombre: string, tags: string[], momentos: string[]}[] {
+): {id: string, nombre: string, tags: string[], momentos: string[], macroEstimate?: CatalogMealItem['macroEstimate']}[] {
   const filtered = filterCatalogForQuestionnaire(db, questionnaire);
   const source = filtered.length > 0 ? filtered : db;
   const limitByMoment: Record<string, number> = {
@@ -1272,6 +1273,7 @@ export function rehydratePlanRecord(plan: Record<string, Record<string, any[]>>,
                   : repairedDetail,
                 caloriasKcal: Number(op.caloriasKcal) || 0,
                 proteinaG: Number(op.proteinaG) || 0,
+                carbohidratosG: Number(op.carbohidratosG) || 0,
                 grasasG: Number(op.grasasG) || 0,
                 ...(op.aiMeta && typeof op.aiMeta === 'object' ? { aiMeta: { ...op.aiMeta } } : {})
               };

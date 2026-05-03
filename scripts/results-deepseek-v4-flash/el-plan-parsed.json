@@ -1,0 +1,1264 @@
+{
+  "planSemanalEL": [
+    {
+      "dia": "Lunes",
+      "momento": "desayuno",
+      "opciones": [
+        {
+          "idRef": "des_44",
+          "detalle": "Chilaquiles de salsa verde con pollo y crema ligera",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 45,
+            "grasasG": 15,
+            "kcal": 435
+          }
+        },
+        {
+          "idRef": "des_46",
+          "detalle": "Tlacoyos de haba con nopal ensalada",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 50,
+            "grasasG": 10,
+            "kcal": 370
+          }
+        },
+        {
+          "idRef": "des_41",
+          "detalle": "Sopes de pollo deshebrado con frijol y nopal",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 40,
+            "grasasG": 12,
+            "kcal": 368
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Lunes",
+      "momento": "colacion_am",
+      "opciones": [
+        {
+          "idRef": "col_36",
+          "detalle": "Yogurt griego natural con linaza molida",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 10,
+            "grasasG": 8,
+            "kcal": 172
+          }
+        },
+        {
+          "idRef": "col_37",
+          "detalle": "Manzana con crema de cacahuate natural",
+          "porciones": {
+            "proteinaG": 7,
+            "carbohidratosG": 25,
+            "grasasG": 10,
+            "kcal": 218
+          }
+        },
+        {
+          "idRef": "col_39",
+          "detalle": "Hummus casero con bastones de zanahoria",
+          "porciones": {
+            "proteinaG": 8,
+            "carbohidratosG": 20,
+            "grasasG": 12,
+            "kcal": 220
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Lunes",
+      "momento": "comida",
+      "opciones": [
+        {
+          "idRef": "com_44",
+          "detalle": "Picadillo de res con verduras (zucchini, zanahoria)",
+          "porciones": {
+            "proteinaG": 40,
+            "carbohidratosG": 30,
+            "grasasG": 15,
+            "kcal": 415
+          }
+        },
+        {
+          "idRef": "com_57",
+          "detalle": "Caldo tlalpeño con pollo y garbanzo",
+          "porciones": {
+            "proteinaG": 35,
+            "carbohidratosG": 25,
+            "grasasG": 10,
+            "kcal": 330
+          }
+        },
+        {
+          "idRef": "com_43",
+          "detalle": "Chiles rellenos de queso capeados (horno)",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 20,
+            "grasasG": 20,
+            "kcal": 360
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Lunes",
+      "momento": "colacion_pm",
+      "opciones": [
+        {
+          "idRef": "col_42",
+          "detalle": "Queso cottage con piña natural",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 15,
+            "grasasG": 5,
+            "kcal": 165
+          }
+        },
+        {
+          "idRef": "col_43",
+          "detalle": "Rollo de pavo con queso crema y espinaca",
+          "porciones": {
+            "proteinaG": 18,
+            "carbohidratosG": 5,
+            "grasasG": 10,
+            "kcal": 182
+          }
+        },
+        {
+          "idRef": "col_45",
+          "detalle": "Berries con nueces y toque de limón",
+          "porciones": {
+            "proteinaG": 5,
+            "carbohidratosG": 20,
+            "grasasG": 10,
+            "kcal": 190
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Lunes",
+      "momento": "cena",
+      "opciones": [
+        {
+          "idRef": "cen_39",
+          "detalle": "Omelette de claras con champiñones y espinaca",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 185
+          }
+        },
+        {
+          "idRef": "cen_40",
+          "detalle": "Ensalada de garbanzos con tomate y pepino",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 30,
+            "grasasG": 10,
+            "kcal": 270
+          }
+        },
+        {
+          "idRef": "cen_41",
+          "detalle": "Sardinas en lata con ensalada verde y tostada",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 15,
+            "grasasG": 12,
+            "kcal": 248
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Martes",
+      "momento": "desayuno",
+      "opciones": [
+        {
+          "idRef": "des_47",
+          "detalle": "Caldo de pollo con verduras y garbanzo",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 30,
+            "grasasG": 10,
+            "kcal": 310
+          }
+        },
+        {
+          "idRef": "des_51",
+          "detalle": "Congee de arroz integral con pollo y jengibre",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 50,
+            "grasasG": 8,
+            "kcal": 352
+          }
+        },
+        {
+          "idRef": "des_57",
+          "detalle": "Panini integral de mozzarella, tomate y albahaca",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 35,
+            "grasasG": 15,
+            "kcal": 355
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Martes",
+      "momento": "colacion_am",
+      "opciones": [
+        {
+          "idRef": "col_41",
+          "detalle": "Pepino relleno de atún con mayonesa ligera",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 5,
+            "grasasG": 8,
+            "kcal": 152
+          }
+        },
+        {
+          "idRef": "col_44",
+          "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
+          "porciones": {
+            "proteinaG": 12,
+            "carbohidratosG": 5,
+            "grasasG": 15,
+            "kcal": 203
+          }
+        },
+        {
+          "idRef": "col_46",
+          "detalle": "Batido de proteína con café frío (proteína frappé)",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 185
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Martes",
+      "momento": "comida",
+      "opciones": [
+        {
+          "idRef": "com_49",
+          "detalle": "Moussaka griega de berenjena (versión light)",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 25,
+            "grasasG": 15,
+            "kcal": 355
+          }
+        },
+        {
+          "idRef": "com_47",
+          "detalle": "Pollo a la parmesana al horno (light)",
+          "porciones": {
+            "proteinaG": 40,
+            "carbohidratosG": 20,
+            "grasasG": 15,
+            "kcal": 375
+          }
+        },
+        {
+          "idRef": "com_56",
+          "detalle": "Carnitas de cerdo horneadas con nopales asados",
+          "porciones": {
+            "proteinaG": 35,
+            "carbohidratosG": 15,
+            "grasasG": 20,
+            "kcal": 380
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Martes",
+      "momento": "colacion_pm",
+      "opciones": [
+        {
+          "idRef": "col_38",
+          "detalle": "Requesón descremado con pepino y chía",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 145
+          }
+        },
+        {
+          "idRef": "col_40",
+          "detalle": "Edamames calientes con sal de mar",
+          "porciones": {
+            "proteinaG": 12,
+            "carbohidratosG": 10,
+            "grasasG": 6,
+            "kcal": 142
+          }
+        },
+        {
+          "idRef": "col_48",
+          "detalle": "Chía pudding con leche de coco sin azúcar",
+          "porciones": {
+            "proteinaG": 5,
+            "carbohidratosG": 15,
+            "grasasG": 10,
+            "kcal": 170
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Martes",
+      "momento": "cena",
+      "opciones": [
+        {
+          "idRef": "cen_45",
+          "detalle": "Atún a la plancha con ensalada de aguacate",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 10,
+            "grasasG": 15,
+            "kcal": 295
+          }
+        },
+        {
+          "idRef": "cen_46",
+          "detalle": "Huevo revuelto con espinaca y queso cottage",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 5,
+            "grasasG": 10,
+            "kcal": 210
+          }
+        },
+        {
+          "idRef": "cen_47",
+          "detalle": "Guiso de lentejas con verduras (pequeña porción)",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 30,
+            "grasasG": 5,
+            "kcal": 225
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Miércoles",
+      "momento": "desayuno",
+      "opciones": [
+        {
+          "idRef": "des_46",
+          "detalle": "Tlacoyos de haba con nopal ensalada",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 50,
+            "grasasG": 10,
+            "kcal": 370
+          }
+        },
+        {
+          "idRef": "des_44",
+          "detalle": "Chilaquiles de salsa verde con pollo y crema ligera",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 45,
+            "grasasG": 15,
+            "kcal": 435
+          }
+        },
+        {
+          "idRef": "des_59",
+          "detalle": "Ricotta toast con frutos rojos y miel",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 40,
+            "grasasG": 12,
+            "kcal": 328
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Miércoles",
+      "momento": "colacion_am",
+      "opciones": [
+        {
+          "idRef": "col_36",
+          "detalle": "Yogurt griego natural con linaza molida",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 10,
+            "grasasG": 8,
+            "kcal": 172
+          }
+        },
+        {
+          "idRef": "col_37",
+          "detalle": "Manzana con crema de cacahuate natural",
+          "porciones": {
+            "proteinaG": 7,
+            "carbohidratosG": 25,
+            "grasasG": 10,
+            "kcal": 218
+          }
+        },
+        {
+          "idRef": "col_39",
+          "detalle": "Hummus casero con bastones de zanahoria",
+          "porciones": {
+            "proteinaG": 8,
+            "carbohidratosG": 20,
+            "grasasG": 12,
+            "kcal": 220
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Miércoles",
+      "momento": "comida",
+      "opciones": [
+        {
+          "idRef": "com_53",
+          "detalle": "Curry de garbanzos y espinaca (chana saag)",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 40,
+            "grasasG": 15,
+            "kcal": 375
+          }
+        },
+        {
+          "idRef": "com_44",
+          "detalle": "Picadillo de res con verduras (zucchini, zanahoria)",
+          "porciones": {
+            "proteinaG": 40,
+            "carbohidratosG": 30,
+            "grasasG": 15,
+            "kcal": 415
+          }
+        },
+        {
+          "idRef": "com_57",
+          "detalle": "Caldo tlalpeño con pollo y garbanzo",
+          "porciones": {
+            "proteinaG": 35,
+            "carbohidratosG": 25,
+            "grasasG": 10,
+            "kcal": 330
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Miércoles",
+      "momento": "colacion_pm",
+      "opciones": [
+        {
+          "idRef": "col_42",
+          "detalle": "Queso cottage con piña natural",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 15,
+            "grasasG": 5,
+            "kcal": 165
+          }
+        },
+        {
+          "idRef": "col_43",
+          "detalle": "Rollo de pavo con queso crema y espinaca",
+          "porciones": {
+            "proteinaG": 18,
+            "carbohidratosG": 5,
+            "grasasG": 10,
+            "kcal": 182
+          }
+        },
+        {
+          "idRef": "col_45",
+          "detalle": "Berries con nueces y toque de limón",
+          "porciones": {
+            "proteinaG": 5,
+            "carbohidratosG": 20,
+            "grasasG": 10,
+            "kcal": 190
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Miércoles",
+      "momento": "cena",
+      "opciones": [
+        {
+          "idRef": "cen_39",
+          "detalle": "Omelette de claras con champiñones y espinaca",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 185
+          }
+        },
+        {
+          "idRef": "cen_40",
+          "detalle": "Ensalada de garbanzos con tomate y pepino",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 30,
+            "grasasG": 10,
+            "kcal": 270
+          }
+        },
+        {
+          "idRef": "cen_50",
+          "detalle": "Ensalada griega con queso feta y aceitunas",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 10,
+            "grasasG": 20,
+            "kcal": 280
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Jueves",
+      "momento": "desayuno",
+      "opciones": [
+        {
+          "idRef": "des_47",
+          "detalle": "Caldo de pollo con verduras y garbanzo",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 30,
+            "grasasG": 10,
+            "kcal": 310
+          }
+        },
+        {
+          "idRef": "des_51",
+          "detalle": "Congee de arroz integral con pollo y jengibre",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 50,
+            "grasasG": 8,
+            "kcal": 352
+          }
+        },
+        {
+          "idRef": "des_57",
+          "detalle": "Panini integral de mozzarella, tomate y albahaca",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 35,
+            "grasasG": 15,
+            "kcal": 355
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Jueves",
+      "momento": "colacion_am",
+      "opciones": [
+        {
+          "idRef": "col_41",
+          "detalle": "Pepino relleno de atún con mayonesa ligera",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 5,
+            "grasasG": 8,
+            "kcal": 152
+          }
+        },
+        {
+          "idRef": "col_44",
+          "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
+          "porciones": {
+            "proteinaG": 12,
+            "carbohidratosG": 5,
+            "grasasG": 15,
+            "kcal": 203
+          }
+        },
+        {
+          "idRef": "col_46",
+          "detalle": "Batido de proteína con café frío (proteína frappé)",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 185
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Jueves",
+      "momento": "comida",
+      "opciones": [
+        {
+          "idRef": "com_49",
+          "detalle": "Moussaka griega de berenjena (versión light)",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 25,
+            "grasasG": 15,
+            "kcal": 355
+          }
+        },
+        {
+          "idRef": "com_47",
+          "detalle": "Pollo a la parmesana al horno (light)",
+          "porciones": {
+            "proteinaG": 40,
+            "carbohidratosG": 20,
+            "grasasG": 15,
+            "kcal": 375
+          }
+        },
+        {
+          "idRef": "com_56",
+          "detalle": "Carnitas de cerdo horneadas con nopales asados",
+          "porciones": {
+            "proteinaG": 35,
+            "carbohidratosG": 15,
+            "grasasG": 20,
+            "kcal": 380
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Jueves",
+      "momento": "colacion_pm",
+      "opciones": [
+        {
+          "idRef": "col_38",
+          "detalle": "Requesón descremado con pepino y chía",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 145
+          }
+        },
+        {
+          "idRef": "col_40",
+          "detalle": "Edamames calientes con sal de mar",
+          "porciones": {
+            "proteinaG": 12,
+            "carbohidratosG": 10,
+            "grasasG": 6,
+            "kcal": 142
+          }
+        },
+        {
+          "idRef": "col_48",
+          "detalle": "Chía pudding con leche de coco sin azúcar",
+          "porciones": {
+            "proteinaG": 5,
+            "carbohidratosG": 15,
+            "grasasG": 10,
+            "kcal": 170
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Jueves",
+      "momento": "cena",
+      "opciones": [
+        {
+          "idRef": "cen_45",
+          "detalle": "Atún a la plancha con ensalada de aguacate",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 10,
+            "grasasG": 15,
+            "kcal": 295
+          }
+        },
+        {
+          "idRef": "cen_46",
+          "detalle": "Huevo revuelto con espinaca y queso cottage",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 5,
+            "grasasG": 10,
+            "kcal": 210
+          }
+        },
+        {
+          "idRef": "cen_47",
+          "detalle": "Guiso de lentejas con verduras (pequeña porción)",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 30,
+            "grasasG": 5,
+            "kcal": 225
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Viernes",
+      "momento": "desayuno",
+      "opciones": [
+        {
+          "idRef": "des_44",
+          "detalle": "Chilaquiles de salsa verde con pollo y crema ligera",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 45,
+            "grasasG": 15,
+            "kcal": 435
+          }
+        },
+        {
+          "idRef": "des_46",
+          "detalle": "Tlacoyos de haba con nopal ensalada",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 50,
+            "grasasG": 10,
+            "kcal": 370
+          }
+        },
+        {
+          "idRef": "des_41",
+          "detalle": "Sopes de pollo deshebrado con frijol y nopal",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 40,
+            "grasasG": 12,
+            "kcal": 368
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Viernes",
+      "momento": "colacion_am",
+      "opciones": [
+        {
+          "idRef": "col_36",
+          "detalle": "Yogurt griego natural con linaza molida",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 10,
+            "grasasG": 8,
+            "kcal": 172
+          }
+        },
+        {
+          "idRef": "col_37",
+          "detalle": "Manzana con crema de cacahuate natural",
+          "porciones": {
+            "proteinaG": 7,
+            "carbohidratosG": 25,
+            "grasasG": 10,
+            "kcal": 218
+          }
+        },
+        {
+          "idRef": "col_39",
+          "detalle": "Hummus casero con bastones de zanahoria",
+          "porciones": {
+            "proteinaG": 8,
+            "carbohidratosG": 20,
+            "grasasG": 12,
+            "kcal": 220
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Viernes",
+      "momento": "comida",
+      "opciones": [
+        {
+          "idRef": "com_44",
+          "detalle": "Picadillo de res con verduras (zucchini, zanahoria)",
+          "porciones": {
+            "proteinaG": 40,
+            "carbohidratosG": 30,
+            "grasasG": 15,
+            "kcal": 415
+          }
+        },
+        {
+          "idRef": "com_57",
+          "detalle": "Caldo tlalpeño con pollo y garbanzo",
+          "porciones": {
+            "proteinaG": 35,
+            "carbohidratosG": 25,
+            "grasasG": 10,
+            "kcal": 330
+          }
+        },
+        {
+          "idRef": "com_43",
+          "detalle": "Chiles rellenos de queso capeados (horno)",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 20,
+            "grasasG": 20,
+            "kcal": 360
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Viernes",
+      "momento": "colacion_pm",
+      "opciones": [
+        {
+          "idRef": "col_42",
+          "detalle": "Queso cottage con piña natural",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 15,
+            "grasasG": 5,
+            "kcal": 165
+          }
+        },
+        {
+          "idRef": "col_43",
+          "detalle": "Rollo de pavo con queso crema y espinaca",
+          "porciones": {
+            "proteinaG": 18,
+            "carbohidratosG": 5,
+            "grasasG": 10,
+            "kcal": 182
+          }
+        },
+        {
+          "idRef": "col_45",
+          "detalle": "Berries con nueces y toque de limón",
+          "porciones": {
+            "proteinaG": 5,
+            "carbohidratosG": 20,
+            "grasasG": 10,
+            "kcal": 190
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Viernes",
+      "momento": "cena",
+      "opciones": [
+        {
+          "idRef": "cen_39",
+          "detalle": "Omelette de claras con champiñones y espinaca",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 185
+          }
+        },
+        {
+          "idRef": "cen_40",
+          "detalle": "Ensalada de garbanzos con tomate y pepino",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 30,
+            "grasasG": 10,
+            "kcal": 270
+          }
+        },
+        {
+          "idRef": "cen_41",
+          "detalle": "Sardinas en lata con ensalada verde y tostada",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 15,
+            "grasasG": 12,
+            "kcal": 248
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Sábado",
+      "momento": "desayuno",
+      "opciones": [
+        {
+          "idRef": "des_47",
+          "detalle": "Caldo de pollo con verduras y garbanzo",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 30,
+            "grasasG": 10,
+            "kcal": 310
+          }
+        },
+        {
+          "idRef": "des_51",
+          "detalle": "Congee de arroz integral con pollo y jengibre",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 50,
+            "grasasG": 8,
+            "kcal": 352
+          }
+        },
+        {
+          "idRef": "des_57",
+          "detalle": "Panini integral de mozzarella, tomate y albahaca",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 35,
+            "grasasG": 15,
+            "kcal": 355
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Sábado",
+      "momento": "colacion_am",
+      "opciones": [
+        {
+          "idRef": "col_41",
+          "detalle": "Pepino relleno de atún con mayonesa ligera",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 5,
+            "grasasG": 8,
+            "kcal": 152
+          }
+        },
+        {
+          "idRef": "col_44",
+          "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
+          "porciones": {
+            "proteinaG": 12,
+            "carbohidratosG": 5,
+            "grasasG": 15,
+            "kcal": 203
+          }
+        },
+        {
+          "idRef": "col_46",
+          "detalle": "Batido de proteína con café frío (proteína frappé)",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 185
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Sábado",
+      "momento": "comida",
+      "opciones": [
+        {
+          "idRef": "com_49",
+          "detalle": "Moussaka griega de berenjena (versión light)",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 25,
+            "grasasG": 15,
+            "kcal": 355
+          }
+        },
+        {
+          "idRef": "com_47",
+          "detalle": "Pollo a la parmesana al horno (light)",
+          "porciones": {
+            "proteinaG": 40,
+            "carbohidratosG": 20,
+            "grasasG": 15,
+            "kcal": 375
+          }
+        },
+        {
+          "idRef": "com_56",
+          "detalle": "Carnitas de cerdo horneadas con nopales asados",
+          "porciones": {
+            "proteinaG": 35,
+            "carbohidratosG": 15,
+            "grasasG": 20,
+            "kcal": 380
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Sábado",
+      "momento": "colacion_pm",
+      "opciones": [
+        {
+          "idRef": "col_38",
+          "detalle": "Requesón descremado con pepino y chía",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 145
+          }
+        },
+        {
+          "idRef": "col_40",
+          "detalle": "Edamames calientes con sal de mar",
+          "porciones": {
+            "proteinaG": 12,
+            "carbohidratosG": 10,
+            "grasasG": 6,
+            "kcal": 142
+          }
+        },
+        {
+          "idRef": "col_48",
+          "detalle": "Chía pudding con leche de coco sin azúcar",
+          "porciones": {
+            "proteinaG": 5,
+            "carbohidratosG": 15,
+            "grasasG": 10,
+            "kcal": 170
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Sábado",
+      "momento": "cena",
+      "opciones": [
+        {
+          "idRef": "cen_45",
+          "detalle": "Atún a la plancha con ensalada de aguacate",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 10,
+            "grasasG": 15,
+            "kcal": 295
+          }
+        },
+        {
+          "idRef": "cen_46",
+          "detalle": "Huevo revuelto con espinaca y queso cottage",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 5,
+            "grasasG": 10,
+            "kcal": 210
+          }
+        },
+        {
+          "idRef": "cen_47",
+          "detalle": "Guiso de lentejas con verduras (pequeña porción)",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 30,
+            "grasasG": 5,
+            "kcal": 225
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Domingo",
+      "momento": "desayuno",
+      "opciones": [
+        {
+          "idRef": "des_44",
+          "detalle": "Chilaquiles de salsa verde con pollo y crema ligera",
+          "porciones": {
+            "proteinaG": 30,
+            "carbohidratosG": 45,
+            "grasasG": 15,
+            "kcal": 435
+          }
+        },
+        {
+          "idRef": "des_46",
+          "detalle": "Tlacoyos de haba con nopal ensalada",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 50,
+            "grasasG": 10,
+            "kcal": 370
+          }
+        },
+        {
+          "idRef": "des_41",
+          "detalle": "Sopes de pollo deshebrado con frijol y nopal",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 40,
+            "grasasG": 12,
+            "kcal": 368
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Domingo",
+      "momento": "colacion_am",
+      "opciones": [
+        {
+          "idRef": "col_36",
+          "detalle": "Yogurt griego natural con linaza molida",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 10,
+            "grasasG": 8,
+            "kcal": 172
+          }
+        },
+        {
+          "idRef": "col_37",
+          "detalle": "Manzana con crema de cacahuate natural",
+          "porciones": {
+            "proteinaG": 7,
+            "carbohidratosG": 25,
+            "grasasG": 10,
+            "kcal": 218
+          }
+        },
+        {
+          "idRef": "col_39",
+          "detalle": "Hummus casero con bastones de zanahoria",
+          "porciones": {
+            "proteinaG": 8,
+            "carbohidratosG": 20,
+            "grasasG": 12,
+            "kcal": 220
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Domingo",
+      "momento": "comida",
+      "opciones": [
+        {
+          "idRef": "com_44",
+          "detalle": "Picadillo de res con verduras (zucchini, zanahoria)",
+          "porciones": {
+            "proteinaG": 40,
+            "carbohidratosG": 30,
+            "grasasG": 15,
+            "kcal": 415
+          }
+        },
+        {
+          "idRef": "com_57",
+          "detalle": "Caldo tlalpeño con pollo y garbanzo",
+          "porciones": {
+            "proteinaG": 35,
+            "carbohidratosG": 25,
+            "grasasG": 10,
+            "kcal": 330
+          }
+        },
+        {
+          "idRef": "com_43",
+          "detalle": "Chiles rellenos de queso capeados (horno)",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 20,
+            "grasasG": 20,
+            "kcal": 360
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Domingo",
+      "momento": "colacion_pm",
+      "opciones": [
+        {
+          "idRef": "col_42",
+          "detalle": "Queso cottage con piña natural",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 15,
+            "grasasG": 5,
+            "kcal": 165
+          }
+        },
+        {
+          "idRef": "col_43",
+          "detalle": "Rollo de pavo con queso crema y espinaca",
+          "porciones": {
+            "proteinaG": 18,
+            "carbohidratosG": 5,
+            "grasasG": 10,
+            "kcal": 182
+          }
+        },
+        {
+          "idRef": "col_45",
+          "detalle": "Berries con nueces y toque de limón",
+          "porciones": {
+            "proteinaG": 5,
+            "carbohidratosG": 20,
+            "grasasG": 10,
+            "kcal": 190
+          }
+        }
+      ]
+    },
+    {
+      "dia": "Domingo",
+      "momento": "cena",
+      "opciones": [
+        {
+          "idRef": "cen_39",
+          "detalle": "Omelette de claras con champiñones y espinaca",
+          "porciones": {
+            "proteinaG": 25,
+            "carbohidratosG": 10,
+            "grasasG": 5,
+            "kcal": 185
+          }
+        },
+        {
+          "idRef": "cen_40",
+          "detalle": "Ensalada de garbanzos con tomate y pepino",
+          "porciones": {
+            "proteinaG": 15,
+            "carbohidratosG": 30,
+            "grasasG": 10,
+            "kcal": 270
+          }
+        },
+        {
+          "idRef": "cen_41",
+          "detalle": "Sardinas en lata con ensalada verde y tostada",
+          "porciones": {
+            "proteinaG": 20,
+            "carbohidratosG": 15,
+            "grasasG": 12,
+            "kcal": 248
+          }
+        }
+      ]
+    }
+  ]
+}

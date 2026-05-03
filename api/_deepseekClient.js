@@ -40,8 +40,9 @@ export function buildDeepSeekChatRequest({
 Responde solo JSON valido. No uses markdown ni texto fuera del JSON.
 Contrato estricto para comidas:
 - "porciones" siempre debe ser un string no vacio con cantidades realistas.
-- "caloriasKcal", "proteinaG" y "grasasG" siempre deben ser numeros enteros JSON, nunca strings, null ni texto con unidades.
-- Si no puedes estimar macros exactos, usa enteros razonables y consistentes con la porcion.`,
+- "caloriasKcal", "proteinaG", "carbohidratosG" y "grasasG" siempre deben ser numeros enteros JSON, nunca strings, null ni texto con unidades.
+- Las kcal deben cerrar con macros: kcal ≈ proteinaG*4 + carbohidratosG*4 + grasasG*9.
+- Si las kcal requieren carbohidratos altos, las porciones deben mostrar la fuente real; si la porcion no lo justifica, baja las kcal.`,
       },
       {
         role: 'user',

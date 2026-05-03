@@ -5,13 +5,14 @@ import { hasRecognizablePortions, shouldTreatMacroAsMissing } from './nutritionV
 
 export function estimateMealNutritionFromPortions(
   portionsText: string
-): { caloriasKcal: number; proteinaG: number; grasasG: number } {
+): { caloriasKcal: number; proteinaG: number; carbohidratosG: number; grasasG: number } {
   if (!portionsText || /libre/i.test(portionsText)) {
-    return { caloriasKcal: 35, proteinaG: 1, grasasG: 0 };
+    return { caloriasKcal: 35, proteinaG: 1, carbohidratosG: 7, grasasG: 0 };
   }
 
   let kcal = 0;
   let protein = 0;
+  let carbs = 0;
   let fat = 0;
 
   const sanitizedPortionsText = sanitizeMealPortionsText(portionsText);
@@ -26,14 +27,25 @@ export function estimateMealNutritionFromPortions(
     if (!exchange || Number.isNaN(amount)) continue;
     kcal += exchange.kcal * amount;
     protein += exchange.protein * amount;
+    carbs += exchange.carbs * amount;
     fat += exchange.fat * amount;
   }
 
   return {
     caloriasKcal: Math.max(35, Math.round(kcal || 0)),
     proteinaG: Math.max(0, Math.round(protein || 0)),
+    carbohidratosG: Math.max(0, Math.round(carbs || 0)),
     grasasG: Math.max(0, Math.round(fat || 0)),
   };
+}
+
+export function calculateCaloriesFromMacros(proteinaG = 0, carbohidratosG = 0, grasasG = 0) {
+  return Math.round((proteinaG * 4) + (carbohidratosG * 4) + (grasasG * 9));
+}
+
+export function deriveCarbsFromCalories(caloriasKcal = 0, proteinaG = 0, grasasG = 0) {
+  const remaining = caloriasKcal - (proteinaG * 4) - (grasasG * 9);
+  return Math.max(0, Math.round(remaining / 4));
 }
 
 export function ensureMealNutrition(meal: MealItem): MealItem {
@@ -57,12 +69,25 @@ export function ensureMealNutrition(meal: MealItem): MealItem {
       : typeof meal.grasasG === 'number' && Number.isFinite(meal.grasasG)
         ? Math.round(meal.grasasG)
         : estimated.grasasG;
+  const currentCarbs =
+    canEstimateFromPortions && shouldTreatMacroAsMissing(meal.carbohidratosG, estimated.carbohidratosG)
+      ? estimated.carbohidratosG
+      : typeof meal.carbohidratosG === 'number' && Number.isFinite(meal.carbohidratosG)
+        ? Math.round(meal.carbohidratosG)
+        : deriveCarbsFromCalories(currentCalories, currentProtein, currentFat);
+  const macroCalories = calculateCaloriesFromMacros(currentProtein, currentCarbs, currentFat);
+  const reconciledCalories =
+    macroCalories > 0 &&
+    Math.abs(macroCalories - currentCalories) / Math.max(currentCalories, 1) > 0.12
+      ? macroCalories
+      : currentCalories;
 
   return {
     ...meal,
     porciones: sanitizeMealPortionsText(meal.porciones),
-    caloriasKcal: currentCalories,
+    caloriasKcal: reconciledCalories,
     proteinaG: currentProtein,
+    carbohidratosG: currentCarbs,
     grasasG: currentFat,
   };
 }
@@ -86,10 +111,11 @@ export function estimateDailyCaloriesFromObjectives(profile: Profile): number {
 
 export function estimateDailyMacroTargetsFromObjectives(
   profile: Profile
-): { kcal: number; proteinG: number; fatG: number } {
+): { kcal: number; proteinG: number; carbsG: number; fatG: number } {
   const objetivos = profile.objetivosPorMomento || {};
   let kcal = 0;
   let protein = 0;
+  let carbs = 0;
   let fat = 0;
 
   for (const grupos of Object.values(objetivos)) {
@@ -99,6 +125,7 @@ export function estimateDailyMacroTargetsFromObjectives(
       const n = Number(amount) || 0;
       kcal += exchange.kcal * n;
       protein += exchange.protein * n;
+      carbs += exchange.carbs * n;
       fat += exchange.fat * n;
     }
   }
@@ -106,6 +133,7 @@ export function estimateDailyMacroTargetsFromObjectives(
   return {
     kcal: Math.round(kcal),
     proteinG: Math.round(protein),
+    carbsG: Math.round(carbs),
     fatG: Math.round(fat),
   };
 }

@@ -6,6 +6,7 @@ export interface MealOriginalSnapshot {
   super: string[];
   caloriasKcal?: number;
   proteinaG?: number;
+  carbohidratosG?: number;
   grasasG?: number;
 }
 
@@ -17,6 +18,7 @@ export interface MealEditMeta {
 export interface MealAiMeta {
   normalizedByProfile?: boolean;
   normalizedTargetKcal?: number;
+  macroConsistentKcal?: number;
   profileId?: 'el' | 'ella';
 }
 
@@ -29,6 +31,7 @@ export interface MealItem {
   super: string[];
   caloriasKcal?: number;
   proteinaG?: number;
+  carbohidratosG?: number;
   grasasG?: number;
   editMeta?: MealEditMeta;
   aiMeta?: MealAiMeta;

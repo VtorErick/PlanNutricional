@@ -485,13 +485,14 @@ function buildPlanSlotSchema() {
         type: 'array',
         items: {
           type: 'object',
-          required: ['idRef', 'porciones', 'detalle', 'caloriasKcal', 'proteinaG', 'grasasG'],
+          required: ['idRef', 'porciones', 'detalle', 'caloriasKcal', 'proteinaG', 'carbohidratosG', 'grasasG'],
           properties: {
             idRef: { type: 'string' },
             porciones: { type: 'string' },
             detalle: { type: 'string' },
             caloriasKcal: { type: 'integer' },
             proteinaG: { type: 'integer' },
+            carbohidratosG: { type: 'integer' },
             grasasG: { type: 'integer' },
           }
         }
@@ -666,6 +667,46 @@ function findCatalogMealByIdRef(idRef, payload) {
   return (payload?.mealsCatalog || []).find((item) => item?.id === base) || null;
 }
 
+function isCatalogMealValidForMoment(catalogMeal, momento) {
+  if (!catalogMeal || !Array.isArray(catalogMeal.momentos)) return false;
+  return catalogMeal.momentos.includes(momento);
+}
+
+const PORTION_LABELS = {
+  frutas: 'fruta',
+  verduras: 'verdura',
+  cereales: 'cereal',
+  leguminosas: 'leguminosa',
+  lacteos: 'lacteo',
+  proteina: 'proteina',
+  grasas: 'grasa',
+};
+
+function buildDescriptivePortions(momento, objetivosPorMomento) {
+  const goals = objetivosPorMomento?.[momento];
+  if (!goals || typeof goals !== 'object') return '';
+  const parts = [];
+  FOOD_GROUP_KEYS.forEach((key) => {
+    const qty = Number(goals[key] || 0);
+    if (qty > 0) {
+      const label = PORTION_LABELS[key] || key;
+      parts.push(`${qty} ${label}${qty > 1 ? 's' : ''}`);
+    }
+  });
+  return parts.join(', ');
+}
+
+function isObjectLikePortions(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) && (value.proteinaG !== undefined || value.kcal !== undefined || value.caloriasKcal !== undefined);
+}
+
+function flattenObjectPortions(value) {
+  if (!isObjectLikePortions(value)) return value;
+  // Si la IA devolvio porciones como objeto anidado con macros, ignorarlo y devolver string vacio
+  // para que se genere desde objetivosPorMomento
+  return '';
+}
+
 function normalizeMealOptionAgainstCatalog(meal, catalogMeal) {
   if (!meal || typeof meal !== 'object' || !catalogMeal) return meal;
 
@@ -682,12 +723,28 @@ function normalizeMealOptionAgainstCatalog(meal, catalogMeal) {
     normalizedMeal.porciones = 'Porcion ajustada segun objetivo, horario y restricciones del perfil.';
   }
 
-  ['caloriasKcal', 'proteinaG', 'grasasG'].forEach((fieldName) => {
+  if (hasMacroEstimate(catalogMeal)) {
+    const estimate = catalogMeal.macroEstimate;
+    if (!Number(normalizedMeal.caloriasKcal || 0)) normalizedMeal.caloriasKcal = Math.round(Number(estimate.calories));
+    if (!Number(normalizedMeal.proteinaG || 0)) normalizedMeal.proteinaG = Math.round(Number(estimate.protein));
+    if (!Number(normalizedMeal.carbohidratosG || 0)) normalizedMeal.carbohidratosG = Math.round(Number(estimate.carbs));
+    if (!Number(normalizedMeal.grasasG || 0)) normalizedMeal.grasasG = Math.round(Number(estimate.fat));
+  }
+
+  ['caloriasKcal', 'proteinaG', 'carbohidratosG', 'grasasG'].forEach((fieldName) => {
     const coercedValue = coerceIntegerValue(normalizedMeal[fieldName]);
     if (coercedValue !== null) {
       normalizedMeal[fieldName] = coercedValue;
     }
   });
+
+  if (!Number.isFinite(Number(normalizedMeal.carbohidratosG))) {
+    normalizedMeal.carbohidratosG = deriveCarbsFromCalories(
+      Number(normalizedMeal.caloriasKcal || 0),
+      Number(normalizedMeal.proteinaG || 0),
+      Number(normalizedMeal.grasasG || 0)
+    );
+  }
 
   if (
     !String(normalizedMeal.idRef || '').includes('|MOD:') &&
@@ -697,6 +754,121 @@ function normalizeMealOptionAgainstCatalog(meal, catalogMeal) {
   }
 
   return normalizedMeal;
+}
+
+function repairPlanSlots(plan, profile, catalog) {
+  if (!plan || typeof plan !== 'object' || Array.isArray(plan)) return plan;
+  const objetivos = profile?.objetivosPorMomento;
+  if (!objetivos || typeof objetivos !== 'object') return plan;
+
+  const catalogArray = Array.isArray(catalog) ? catalog : [];
+
+  function extractMacrosFromObject(obj, targetMeal) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
+    const map = { kcal: 'caloriasKcal', caloriasKcal: 'caloriasKcal', proteinaG: 'proteinaG', carbohidratosG: 'carbohidratosG', grasasG: 'grasasG' };
+    Object.entries(map).forEach(([src, dst]) => {
+      if (Number.isFinite(Number(obj[src])) && !Number.isFinite(Number(targetMeal[dst]))) {
+        targetMeal[dst] = Math.round(Number(obj[src]));
+      }
+    });
+  }
+
+  WEEK_DAYS.forEach((dia) => {
+    const dayPlan = plan[dia];
+    if (!dayPlan || typeof dayPlan !== 'object' || Array.isArray(dayPlan)) return;
+
+    MEAL_MOMENT_KEYS.forEach((momento) => {
+      const options = dayPlan[momento];
+      if (!Array.isArray(options)) return;
+
+      dayPlan[momento] = options.map((meal) => {
+        if (!meal || typeof meal !== 'object') return meal;
+
+        // Extract macros nested inside portions object before overwriting it
+        extractMacrosFromObject(meal.porciones, meal);
+        // Normalize kcal -> caloriasKcal if needed
+        if (Number.isFinite(Number(meal.kcal)) && !Number.isFinite(Number(meal.caloriasKcal))) {
+          meal.caloriasKcal = Math.round(Number(meal.kcal));
+        }
+
+        // 1. Validar que idRef pertenezca al momento correcto
+        const idRef = String(meal.idRef || '');
+        const [baseId] = idRef.split('|MOD:');
+        const catalogMeal = catalogArray.find((item) => item?.id === baseId.trim());
+
+        if (!catalogMeal || !isCatalogMealValidForMoment(catalogMeal, momento)) {
+          // Reemplazar con primera opcion valida del catalogo para este momento que tenga macroEstimate si es posible
+          const fallback = catalogArray.find((item) =>
+            item?.momentos?.includes(momento) && hasMacroEstimate(item)
+          ) || catalogArray.find((item) => item?.momentos?.includes(momento));
+          if (fallback) {
+            meal.idRef = fallback.id;
+            meal.nombre = fallback.nombre;
+            meal.detalle = buildCanonicalMealDetail(fallback.nombre, fallback.super);
+            if (hasMacroEstimate(fallback)) {
+              meal.caloriasKcal = Math.round(Number(fallback.macroEstimate.calories));
+              meal.proteinaG = Math.round(Number(fallback.macroEstimate.protein));
+              meal.carbohidratosG = Math.round(Number(fallback.macroEstimate.carbs));
+              meal.grasasG = Math.round(Number(fallback.macroEstimate.fat));
+            }
+            // else preserve original AI macros already extracted above
+          }
+        } else {
+          // Asegurar nombre y detalle desde catalogo
+          if (!isNonEmptyString(meal.nombre)) {
+            meal.nombre = catalogMeal.nombre;
+          }
+          if (!isNonEmptyString(meal.detalle) || shouldReplaceMealDetail(meal.detalle, catalogMeal.nombre, catalogMeal.super)) {
+            meal.detalle = buildCanonicalMealDetail(catalogMeal.nombre, catalogMeal.super);
+          }
+          if (hasMacroEstimate(catalogMeal)) {
+            if (!Number(meal.caloriasKcal || 0)) meal.caloriasKcal = Math.round(Number(catalogMeal.macroEstimate.calories));
+            if (!Number(meal.proteinaG || 0)) meal.proteinaG = Math.round(Number(catalogMeal.macroEstimate.protein));
+            if (!Number(meal.carbohidratosG || 0)) meal.carbohidratosG = Math.round(Number(catalogMeal.macroEstimate.carbs));
+            if (!Number(meal.grasasG || 0)) meal.grasasG = Math.round(Number(catalogMeal.macroEstimate.fat));
+          }
+        }
+
+        // 2. Normalizar porciones: convertir objetos o numeros a string vacio para regenerar
+        let rawPortions = meal.porciones;
+        if (isObjectLikePortions(rawPortions) || typeof rawPortions === 'number') {
+          rawPortions = '';
+        } else {
+          rawPortions = stripProfileCalorieAdjustmentNote(rawPortions);
+        }
+
+        // 3. Generar porciones descriptivas desde objetivosPorMomento si no hay string valido
+        if (!isNonEmptyString(rawPortions) || !hasRecognizablePortions(rawPortions)) {
+          const descriptive = buildDescriptivePortions(momento, objetivos);
+          if (descriptive) {
+            meal.porciones = descriptive;
+          } else {
+            meal.porciones = 'Porcion ajustada segun objetivo, horario y restricciones del perfil.';
+          }
+        } else {
+          meal.porciones = rawPortions;
+        }
+
+        // 4. Asegurar macros coherentes
+        ['caloriasKcal', 'proteinaG', 'carbohidratosG', 'grasasG'].forEach((field) => {
+          const coerced = coerceIntegerValue(meal[field]);
+          if (coerced !== null) meal[field] = coerced;
+        });
+
+        if (!Number.isFinite(Number(meal.carbohidratosG))) {
+          meal.carbohidratosG = deriveCarbsFromCalories(
+            Number(meal.caloriasKcal || 0),
+            Number(meal.proteinaG || 0),
+            Number(meal.grasasG || 0)
+          );
+        }
+
+        return meal;
+      });
+    });
+  });
+
+  return plan;
 }
 
 function shouldReplaceMealDetail(detail, mealName, ingredients) {
@@ -820,6 +992,7 @@ function validateMealItemStructure(item, location, debugContext, geminiRequest, 
   validateRequiredStringField(item, 'detalle', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredIntegerField(item, 'caloriasKcal', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredIntegerField(item, 'proteinaG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
+  validateRequiredIntegerField(item, 'carbohidratosG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
   validateRequiredIntegerField(item, 'grasasG', location, debugContext, geminiRequest, geminiResponseBody, modelName);
 
   if (!Array.isArray(item.tags)) {
@@ -881,6 +1054,7 @@ function validateMealOptionsArray(options, location, debugContext, geminiRequest
     validateRequiredStringField(normalizedMeal, 'porciones', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredIntegerField(normalizedMeal, 'caloriasKcal', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredIntegerField(normalizedMeal, 'proteinaG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
+    validateRequiredIntegerField(normalizedMeal, 'carbohidratosG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredIntegerField(normalizedMeal, 'grasasG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
     validateRequiredStringField(
       normalizedMeal,
@@ -896,10 +1070,12 @@ function validateMealOptionsArray(options, location, debugContext, geminiRequest
       hasRecognizablePortions(normalizedMeal.porciones) &&
       Number(normalizedMeal.caloriasKcal) <= 0 &&
       Number(normalizedMeal.proteinaG) <= 0 &&
+      Number(normalizedMeal.carbohidratosG) <= 0 &&
       Number(normalizedMeal.grasasG) <= 0
     ) {
       normalizedMeal.caloriasKcal = Number(normalizedMeal.caloriasKcal) || 0;
       normalizedMeal.proteinaG = Number(normalizedMeal.proteinaG) || 0;
+      normalizedMeal.carbohidratosG = Number(normalizedMeal.carbohidratosG) || 0;
       normalizedMeal.grasasG = Number(normalizedMeal.grasasG) || 0;
     }
   });
@@ -1439,6 +1615,24 @@ function roundToStep(value, step = 5) {
   return Math.round(value / step) * step;
 }
 
+function calculateCaloriesFromMacros(proteinG = 0, carbsG = 0, fatG = 0) {
+  return Math.round((proteinG * 4) + (carbsG * 4) + (fatG * 9));
+}
+
+function deriveCarbsFromCalories(calories = 0, proteinG = 0, fatG = 0) {
+  const remaining = calories - (proteinG * 4) - (fatG * 9);
+  return Math.max(0, Math.round(remaining / 4));
+}
+
+function hasMacroEstimate(catalogMeal) {
+  const estimate = catalogMeal?.macroEstimate;
+  return estimate &&
+    Number.isFinite(Number(estimate.calories)) &&
+    Number.isFinite(Number(estimate.protein)) &&
+    Number.isFinite(Number(estimate.carbs)) &&
+    Number.isFinite(Number(estimate.fat));
+}
+
 function normalizeMealNutritionToTargets(meal, momentKey, profile) {
   if (!meal || typeof meal !== 'object') return meal;
 
@@ -1450,43 +1644,53 @@ function normalizeMealNutritionToTargets(meal, momentKey, profile) {
   const momentWeight = MOMENT_CALORIE_WEIGHTS[momentKey] || 0.2;
   const targetCalories = roundToStep(caloriesTarget * momentWeight, 10);
   const currentCalories = Number(meal.caloriasKcal || 0);
-  const shouldAdjustCalories =
-    !Number.isFinite(currentCalories) ||
-    currentCalories <= 0 ||
-    currentCalories < targetCalories * 0.85 ||
-    currentCalories > targetCalories * 1.15;
-
-  if (shouldAdjustCalories) {
-    meal.caloriasKcal = targetCalories;
-    meal.aiMeta = {
-      ...(meal.aiMeta || {}),
-      normalizedByProfile: true,
-      normalizedTargetKcal: targetCalories,
-      profileId: profile?.id === 'ella' ? 'ella' : profile?.id === 'el' ? 'el' : meal.aiMeta?.profileId,
-    };
-  } else {
-    meal.caloriasKcal = Math.round(currentCalories);
-  }
+  let protein = Number(meal.proteinaG || 0);
+  let fat = Number(meal.grasasG || 0);
+  let carbs = Number(meal.carbohidratosG || 0);
 
   const dailyProteinTarget = getDailyProteinTarget(profile);
   const proteinTarget = Math.round(dailyProteinTarget * (MOMENT_PROTEIN_WEIGHTS[momentKey] || 0.2));
-  const maxProteinForMeal = Math.max(proteinTarget, Math.floor(meal.caloriasKcal * 0.45 / 4));
-  const currentProtein = Number(meal.proteinaG || 0);
-  meal.proteinaG = Math.min(
-    maxProteinForMeal,
-    Math.max(
-      Math.round(proteinTarget * 0.85),
-      Number.isFinite(currentProtein) && currentProtein > 0 ? Math.round(currentProtein) : 0
-    )
-  );
 
-  const targetFat = Math.round((meal.caloriasKcal * 0.30) / 9);
-  const currentFat = Number(meal.grasasG || 0);
-  if (!Number.isFinite(currentFat) || currentFat <= 0) {
-    meal.grasasG = targetFat;
-  } else {
-    const cappedFat = Math.min(Math.round(currentFat), Math.round((meal.caloriasKcal * 0.45) / 9));
-    meal.grasasG = Math.max(Math.round(targetFat * 0.65), cappedFat);
+  if (!Number.isFinite(protein) || protein <= 0) {
+    protein = proteinTarget;
+  }
+
+  if (!Number.isFinite(fat) || fat <= 0) {
+    fat = Math.round((targetCalories * 0.30) / 9);
+  }
+
+  if (!Number.isFinite(carbs) || carbs < 0) {
+    carbs = Number.isFinite(currentCalories) && currentCalories > 0
+      ? deriveCarbsFromCalories(currentCalories, protein, fat)
+      : deriveCarbsFromCalories(targetCalories, protein, fat);
+  }
+
+  let macroCalories = calculateCaloriesFromMacros(protein, carbs, fat);
+  const hasValidCurrentCalories = Number.isFinite(currentCalories) && currentCalories > 0;
+  if (!hasValidCurrentCalories && macroCalories <= 0) {
+    carbs = deriveCarbsFromCalories(targetCalories, protein, fat);
+    macroCalories = calculateCaloriesFromMacros(protein, carbs, fat);
+  }
+
+  const reconciledCalories =
+    macroCalories > 0 &&
+    (!hasValidCurrentCalories || Math.abs(macroCalories - currentCalories) / Math.max(currentCalories, 1) > 0.12)
+      ? macroCalories
+      : Math.round(currentCalories);
+
+  meal.caloriasKcal = reconciledCalories;
+  meal.proteinaG = Math.round(protein);
+  meal.carbohidratosG = Math.round(carbs);
+  meal.grasasG = Math.round(fat);
+
+  if (Math.abs(reconciledCalories - targetCalories) / targetCalories > 0.15) {
+    meal.aiMeta = {
+      ...(meal.aiMeta || {}),
+      normalizedByProfile: false,
+      normalizedTargetKcal: targetCalories,
+      macroConsistentKcal: reconciledCalories,
+      profileId: profile?.id === 'ella' ? 'ella' : profile?.id === 'el' ? 'el' : meal.aiMeta?.profileId,
+    };
   }
 
   return meal;
@@ -1684,9 +1888,18 @@ function validateAndNormalizeAiData(data, debugContext, geminiRequest, geminiRes
     );
   }
 
+  // Post-process: ensure each meal idRef belongs to the correct moment,
+  // and generate descriptive portions from objetivosPorMomento.
+  const profileForRepair = normalized[perfilKey] || debugContext.payload?.precomputedProfile;
+  normalized[planKey] = repairPlanSlots(
+    normalized[planKey],
+    profileForRepair,
+    debugContext.payload?.mealsCatalog || []
+  );
+
   normalizePlanNutritionToProfile(
     normalized[planKey],
-    normalized[perfilKey] || debugContext.payload?.precomputedProfile
+    profileForRepair
   );
 
   return normalized;
@@ -1981,7 +2194,7 @@ Reglas criticas:
 - Usa exactamente estos dias dentro del JSON: ${WEEK_DAYS.join(', ')}.
 - Usa exactamente estos momentos dentro del JSON: ${MEAL_MOMENT_KEYS.join(', ')}.
 - En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog".
-- Cada entrada de "mealsCatalog" incluye id, nombre, tags y momentos. Usa el nombre de la receta para redactar un "detalle" corto y claro.
+- Cada entrada de "mealsCatalog" incluye id, nombre, tags, momentos y macroEstimate cuando existe. Usa el nombre de la receta para redactar un "detalle" corto y claro.
 - CRITICO: Debes respetar ESTRICTAMENTE todo lo pedido en el cuestionario: preferencias alimenticias (ej. vegano, mexicano, asiático), restricciones medicas, ingredientes excluidos, tiempos de cocina, etc. Selecciona unicamente IDs del catalogo que casen con estas preferencias e ignora los demas.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener exactamente estas claves: dia, momento, opciones.
@@ -1989,7 +2202,7 @@ Reglas criticas:
 - Ordena los slots primero por dia (${WEEK_DAYS.join(', ')}) y dentro de cada dia por momento (${MEAL_MOMENT_KEYS.join(', ')}).
 - Cada slot debe devolver exactamente 3 objetos en 'opciones'.
 - No anides momentos dentro de dias ni dias dentro de objetos complejos; usa solo el arreglo plano de slots.
-- Las calorias y macros deben ser enteros realistas y consistentes con las porciones; prioriza coherencia de receta y porciones sobre hacer calculos perfectos.
+- Las calorias y macros deben cerrar entre si: kcal ≈ proteinaG*4 + carbohidratosG*4 + grasasG*9. Si las kcal requieren carbohidratos altos, las porciones deben mostrar la fuente real (tortillas, arroz, pasta, fruta, leguminosa, etc.); si no hay fuente suficiente, baja las kcal.
 - No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
 - Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
 - Rotacion semanal: si no aplica la regla anterior de companionPlan, alterna idRef entre dias para el mismo momento (no repitas el mismo plato principal los 7 dias en el mismo horario si el catalogo ofrece alternativas compatibles con porciones y restricciones).
@@ -2015,7 +2228,7 @@ function buildUserPrompt(payload, prefix) {
       selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
       slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
-      noteToAI: `El perfil, objetivosPorMomento, distribucionDiaria y suplementos YA ESTAN PRE-CALCULADOS en 'precomputedProfile'. TU SOLO DEBES GENERAR 'planSemanal${prefix}'. En 'opciones' regresa objetos usando SOLO 'idRef' válidos de 'mealsCatalog'. Usa el campo 'nombre' para redactar un 'detalle' corto. OBLIGATORIO: recalcula 'porciones' con gramos realistas. Mantén macros/calorias como enteros razonables. Si piden ignorar/añadir fuera de bd, usa '|MOD: cambio' en el idRef. Variedad: alterna idRef entre dias por momento.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+      noteToAI: `El perfil, objetivosPorMomento, distribucionDiaria y suplementos YA ESTAN PRE-CALCULADOS en 'precomputedProfile'. TU SOLO DEBES GENERAR 'planSemanal${prefix}'. En 'opciones' regresa objetos usando SOLO 'idRef' válidos de 'mealsCatalog'. Usa el campo 'nombre' para redactar un 'detalle' corto. OBLIGATORIO: recalcula 'porciones' con gramos realistas y fuentes visibles para proteina, carbohidratos y grasa. Mantén kcal/macros como enteros y deben cerrar: kcal ≈ proteinaG*4 + carbohidratosG*4 + grasasG*9. Si piden ignorar/añadir fuera de bd, usa '|MOD: cambio' en el idRef. Variedad: alterna idRef entre dias por momento.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }
@@ -2101,8 +2314,8 @@ function buildRevisionUserPrompt(prefix, payload, profilePayload) {
       returnOnlyChangedSections: !isRegenerate,
       mealOptionsPerMoment: 3,
       noteToAI: isRegenerate && precomputed
-        ? `El perfil, objetivosPorMomento, distribucionDiaria y suplementos YA ESTAN PRE-CALCULADOS en 'precomputedProfile'. TU SOLO DEBES GENERAR 'planSemanal${prefix}'. En 'opciones' regresa objetos usando SOLO 'idRef' válidos de 'mealsCatalog'. Usa el 'nombre' para mantener 'detalle' alineado. OBLIGATORIO: recalcula 'porciones' con gramos realistas. Mantén macros/calorias como enteros razonables. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Variedad: alterna idRef entre dias por momento.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`
-        : `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el 'nombre' de la receta para mantener 'detalle' alineado. OBLIGATORIO: recalcula 'porciones' con gramos realistas coherentes con la receta. Mantén macros/calorias como enteros razonables; el ajuste fino se resolverá en código local. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Si cambias suplementos, usa SOLO IDs válidos de 'supplementsCatalog'. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+        ? `El perfil, objetivosPorMomento, distribucionDiaria y suplementos YA ESTAN PRE-CALCULADOS en 'precomputedProfile'. TU SOLO DEBES GENERAR 'planSemanal${prefix}'. En 'opciones' regresa objetos usando SOLO 'idRef' válidos de 'mealsCatalog'. Usa el 'nombre' para mantener 'detalle' alineado. OBLIGATORIO: recalcula 'porciones' con gramos realistas y fuentes visibles para proteina, carbohidratos y grasa. Mantén kcal/macros como enteros y deben cerrar: kcal ≈ proteinaG*4 + carbohidratosG*4 + grasasG*9. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Variedad: alterna idRef entre dias por momento.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`
+        : `En 'opciones' regresa objetos usando SOLO 'idRef' válidos tomados de 'mealsCatalog'. Usa el 'nombre' de la receta para mantener 'detalle' alineado. OBLIGATORIO: recalcula 'porciones' con gramos realistas coherentes con la receta y fuentes visibles para proteina, carbohidratos y grasa. Mantén kcal/macros como enteros y deben cerrar: kcal ≈ proteinaG*4 + carbohidratosG*4 + grasasG*9. Si piden ignorar/añadir, usa '|MOD: cambio' en el idRef. Si cambias suplementos, usa SOLO IDs válidos de 'supplementsCatalog'. Variedad: alterna idRef entre dias por momento salvo regla companionPlan/Ambos.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }

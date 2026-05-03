@@ -307,6 +307,10 @@ function normalizeMealItem(value: unknown, fallback?: MealItem): MealItem | null
       typeof value.proteinaG === 'number' && Number.isFinite(value.proteinaG)
         ? Math.round(value.proteinaG)
         : fallback?.proteinaG,
+    carbohidratosG:
+      typeof value.carbohidratosG === 'number' && Number.isFinite(value.carbohidratosG)
+        ? Math.round(value.carbohidratosG)
+        : fallback?.carbohidratosG,
     grasasG:
       typeof value.grasasG === 'number' && Number.isFinite(value.grasasG)
         ? Math.round(value.grasasG)
@@ -343,6 +347,10 @@ function normalizeMealOriginalSnapshot(
       typeof value.proteinaG === 'number' && Number.isFinite(value.proteinaG)
         ? Math.round(value.proteinaG)
         : fallback?.proteinaG,
+    carbohidratosG:
+      typeof value.carbohidratosG === 'number' && Number.isFinite(value.carbohidratosG)
+        ? Math.round(value.carbohidratosG)
+        : fallback?.carbohidratosG,
     grasasG:
       typeof value.grasasG === 'number' && Number.isFinite(value.grasasG)
         ? Math.round(value.grasasG)

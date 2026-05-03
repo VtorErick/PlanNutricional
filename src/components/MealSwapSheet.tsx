@@ -165,6 +165,7 @@ export default function MealSwapSheet({
 
                             <p className={`mt-1.5 text-[10px] font-black uppercase tracking-[0.08em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                               {typeof comida.proteinaG === 'number' ? `${comida.proteinaG}g proteina` : 'Proteina n/d'}
+                              {typeof comida.carbohidratosG === 'number' ? ` · ${comida.carbohidratosG}g carbohidratos` : ''}
                               {typeof comida.grasasG === 'number' ? ` · ${comida.grasasG}g grasas` : ''}
                             </p>
 

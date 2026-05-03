@@ -104,15 +104,17 @@ function buildMinimalEllaPayload() {
 
 test('estimateMealNutritionFromPortions soporta aliases abreviados', () => {
   const result = estimateMealNutritionFromPortions('8 prot, 1 verd, 1 frut, 1 lact, 1 gras, 1 cer');
-  assert.equal(result.caloriasKcal, 895);
+  assert.equal(result.caloriasKcal, 735);
   assert.equal(result.proteinaG, 67);
+  assert.equal(result.carbohidratosG, 46);
   assert.equal(result.grasasG, 33);
 });
 
 test('estimateMealNutritionFromPortions soporta orden inverso y separador pipe', () => {
   const result = estimateMealNutritionFromPortions('proteina 8 | verduras 1 | frutas 1');
-  assert.equal(result.caloriasKcal, 685);
+  assert.equal(result.caloriasKcal, 525);
   assert.equal(result.proteinaG, 58);
+  assert.equal(result.carbohidratosG, 19);
   assert.equal(result.grasasG, 24);
 });
 
@@ -128,8 +130,9 @@ test('ensureMealNutrition recalcula placeholders en cero', () => {
     grasasG: 0,
   });
 
-  assert.equal(result.caloriasKcal, 120);
+  assert.equal(result.caloriasKcal, 100);
   assert.equal(result.proteinaG, 7);
+  assert.equal(result.carbohidratosG, 0);
   assert.equal(result.grasasG, 8);
 });
 
@@ -142,12 +145,33 @@ test('ensureMealNutrition conserva macros validos ya calculados', () => {
     super: [],
     caloriasKcal: 321,
     proteinaG: 22,
+    carbohidratosG: 34,
     grasasG: 11,
   });
 
   assert.equal(result.caloriasKcal, 321);
   assert.equal(result.proteinaG, 22);
+  assert.equal(result.carbohidratosG, 34);
   assert.equal(result.grasasG, 11);
+});
+
+test('ensureMealNutrition reconcilia kcal infladas cuando macros no las sostienen', () => {
+  const result = ensureMealNutrition({
+    nombre: 'Tacos de carne molida magra',
+    porciones: '120g carne molida magra, 3 tortillas de maiz, 1/2 taza de verduras',
+    detalle: 'Tacos con carne molida magra y verduras.',
+    tags: [],
+    super: [],
+    caloriasKcal: 610,
+    proteinaG: 38,
+    carbohidratosG: 50,
+    grasasG: 15,
+  });
+
+  assert.equal(result.caloriasKcal, 487);
+  assert.equal(result.proteinaG, 38);
+  assert.equal(result.carbohidratosG, 50);
+  assert.equal(result.grasasG, 15);
 });
 
 test('sanitizeMealPortionsText remueve notas tecnicas de ajuste calórico', () => {
@@ -171,7 +195,7 @@ test('ensureMealNutrition sanea porciones legacy sin mezclar kcal objetivo', () 
   });
 
   assert.equal(result.porciones, '1 prot, 1 gras');
-  assert.equal(result.caloriasKcal, 480);
+  assert.equal(result.caloriasKcal, 100);
 });
 
 test('buildExportData enriquece macros y sanea suplementos y detalle incoherente', () => {

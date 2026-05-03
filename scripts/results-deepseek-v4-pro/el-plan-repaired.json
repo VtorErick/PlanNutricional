@@ -1,0 +1,1241 @@
+{
+  "Lunes": {
+    "desayuno": [
+      {
+        "idRef": "des_47",
+        "detalle": "Caldo de pollo con verduras y garbanzo",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 350,
+        "proteinaG": 30,
+        "carbohidratosG": 35,
+        "grasasG": 10,
+        "caloriasKcal": 350,
+        "nombre": "Caldo de pollo con verduras y garbanzo"
+      },
+      {
+        "idRef": "des_51",
+        "detalle": "Congee de arroz integral con pollo y jengibre",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 320,
+        "proteinaG": 25,
+        "carbohidratosG": 40,
+        "grasasG": 8,
+        "caloriasKcal": 320,
+        "nombre": "Congee de arroz integral con pollo y jengibre"
+      },
+      {
+        "idRef": "des_46",
+        "detalle": "Tlacoyos de haba con nopal ensalada",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 20,
+        "carbohidratosG": 45,
+        "grasasG": 12,
+        "caloriasKcal": 380,
+        "nombre": "Tlacoyos de haba con nopal ensalada"
+      }
+    ],
+    "colacion_am": [
+      {
+        "idRef": "col_36",
+        "detalle": "Yogurt griego natural con linaza molida",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 150,
+        "proteinaG": 15,
+        "carbohidratosG": 10,
+        "grasasG": 5,
+        "caloriasKcal": 150,
+        "nombre": "Yogurt griego natural con linaza molida"
+      },
+      {
+        "idRef": "col_41",
+        "detalle": "Pepino relleno de atún con mayonesa ligera",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 120,
+        "proteinaG": 18,
+        "carbohidratosG": 5,
+        "grasasG": 3,
+        "caloriasKcal": 120,
+        "nombre": "Pepino relleno de atún con mayonesa ligera"
+      },
+      {
+        "idRef": "col_42",
+        "detalle": "Queso cottage con piña natural",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 160,
+        "proteinaG": 20,
+        "carbohidratosG": 12,
+        "grasasG": 2,
+        "caloriasKcal": 160,
+        "nombre": "Queso cottage con piña natural"
+      }
+    ],
+    "comida": [
+      {
+        "idRef": "com_43",
+        "detalle": "Chiles rellenos de queso capeados (horno)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 400,
+        "proteinaG": 25,
+        "carbohidratosG": 30,
+        "grasasG": 18,
+        "caloriasKcal": 400,
+        "nombre": "Chiles rellenos de queso capeados (horno)"
+      },
+      {
+        "idRef": "com_44",
+        "detalle": "Picadillo de res con verduras (zucchini, zanahoria)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 450,
+        "proteinaG": 35,
+        "carbohidratosG": 20,
+        "grasasG": 22,
+        "caloriasKcal": 450,
+        "nombre": "Picadillo de res con verduras (zucchini, zanahoria)"
+      },
+      {
+        "idRef": "com_49",
+        "detalle": "Moussaka griega de berenjena (versión light)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 420,
+        "proteinaG": 28,
+        "carbohidratosG": 25,
+        "grasasG": 20,
+        "caloriasKcal": 420,
+        "nombre": "Moussaka griega de berenjena (versión light)"
+      }
+    ],
+    "colacion_pm": [
+      {
+        "idRef": "col_39",
+        "detalle": "Hummus casero con bastones de zanahoria",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 150,
+        "proteinaG": 6,
+        "carbohidratosG": 15,
+        "grasasG": 8,
+        "caloriasKcal": 150,
+        "nombre": "Hummus casero con bastones de zanahoria"
+      },
+      {
+        "idRef": "col_43",
+        "detalle": "Rollo de pavo con queso crema y espinaca",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 130,
+        "proteinaG": 15,
+        "carbohidratosG": 3,
+        "grasasG": 7,
+        "caloriasKcal": 130,
+        "nombre": "Rollo de pavo con queso crema y espinaca"
+      },
+      {
+        "idRef": "col_45",
+        "detalle": "Berries con nueces y toque de limón",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 180,
+        "proteinaG": 4,
+        "carbohidratosG": 20,
+        "grasasG": 10,
+        "caloriasKcal": 180,
+        "nombre": "Berries con nueces y toque de limón"
+      }
+    ],
+    "cena": [
+      {
+        "idRef": "cen_41",
+        "detalle": "Sardinas en lata con ensalada verde y tostada",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 300,
+        "proteinaG": 25,
+        "carbohidratosG": 15,
+        "grasasG": 15,
+        "caloriasKcal": 300,
+        "nombre": "Sardinas en lata con ensalada verde y tostada"
+      },
+      {
+        "idRef": "cen_47",
+        "detalle": "Guiso de lentejas con verduras (pequeña porción)",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 280,
+        "proteinaG": 18,
+        "carbohidratosG": 35,
+        "grasasG": 5,
+        "caloriasKcal": 280,
+        "nombre": "Guiso de lentejas con verduras (pequeña porción)"
+      },
+      {
+        "idRef": "cen_40",
+        "detalle": "Ensalada de garbanzos con tomate y pepino",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 320,
+        "proteinaG": 15,
+        "carbohidratosG": 30,
+        "grasasG": 12,
+        "caloriasKcal": 320,
+        "nombre": "Ensalada de garbanzos con tomate y pepino"
+      }
+    ]
+  },
+  "Martes": {
+    "desayuno": [
+      {
+        "idRef": "des_44",
+        "detalle": "Chilaquiles de salsa verde con pollo y crema ligera",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 400,
+        "proteinaG": 28,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 400,
+        "nombre": "Chilaquiles de salsa verde con pollo y crema ligera"
+      },
+      {
+        "idRef": "des_57",
+        "detalle": "Panini integral de mozzarella, tomate y albahaca",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 22,
+        "carbohidratosG": 35,
+        "grasasG": 15,
+        "caloriasKcal": 380,
+        "nombre": "Panini integral de mozzarella, tomate y albahaca"
+      },
+      {
+        "idRef": "des_59",
+        "detalle": "Ricotta toast con frutos rojos y miel",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 350,
+        "proteinaG": 18,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 350,
+        "nombre": "Ricotta toast con frutos rojos y miel"
+      }
+    ],
+    "colacion_am": [
+      {
+        "idRef": "col_50",
+        "detalle": "Cottage cheese con ralladura de limón y hierbas",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 140,
+        "proteinaG": 22,
+        "carbohidratosG": 6,
+        "grasasG": 2,
+        "caloriasKcal": 140,
+        "nombre": "Cottage cheese con ralladura de limón y hierbas"
+      },
+      {
+        "idRef": "col_37",
+        "detalle": "Manzana con crema de cacahuate natural",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 200,
+        "proteinaG": 5,
+        "carbohidratosG": 25,
+        "grasasG": 10,
+        "caloriasKcal": 200,
+        "nombre": "Manzana con crema de cacahuate natural"
+      },
+      {
+        "idRef": "col_40",
+        "detalle": "Edamames calientes con sal de mar",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 180,
+        "proteinaG": 17,
+        "carbohidratosG": 14,
+        "grasasG": 8,
+        "caloriasKcal": 180,
+        "nombre": "Edamames calientes con sal de mar"
+      }
+    ],
+    "comida": [
+      {
+        "idRef": "com_57",
+        "detalle": "Caldo tlalpeño con pollo y garbanzo",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 380,
+        "proteinaG": 30,
+        "carbohidratosG": 35,
+        "grasasG": 10,
+        "caloriasKcal": 380,
+        "nombre": "Caldo tlalpeño con pollo y garbanzo"
+      },
+      {
+        "idRef": "com_47",
+        "detalle": "Pollo a la parmesana al horno (light)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 450,
+        "proteinaG": 40,
+        "carbohidratosG": 20,
+        "grasasG": 18,
+        "caloriasKcal": 450,
+        "nombre": "Pollo a la parmesana al horno (light)"
+      },
+      {
+        "idRef": "com_56",
+        "detalle": "Carnitas de cerdo horneadas con nopales asados",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 420,
+        "proteinaG": 35,
+        "carbohidratosG": 15,
+        "grasasG": 22,
+        "caloriasKcal": 420,
+        "nombre": "Carnitas de cerdo horneadas con nopales asados"
+      }
+    ],
+    "colacion_pm": [
+      {
+        "idRef": "col_38",
+        "detalle": "Requesón descremado con pepino y chía",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 130,
+        "proteinaG": 20,
+        "carbohidratosG": 8,
+        "grasasG": 1,
+        "caloriasKcal": 130,
+        "nombre": "Requesón descremado con pepino y chía"
+      },
+      {
+        "idRef": "col_44",
+        "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 200,
+        "proteinaG": 8,
+        "carbohidratosG": 5,
+        "grasasG": 16,
+        "caloriasKcal": 200,
+        "nombre": "Huevo cocido con aguacate y todo bagel seasoning"
+      },
+      {
+        "idRef": "col_47",
+        "detalle": "Palta chilena (aguacate) con tomate y sal marina",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 160,
+        "proteinaG": 2,
+        "carbohidratosG": 8,
+        "grasasG": 14,
+        "caloriasKcal": 160,
+        "nombre": "Palta chilena (aguacate) con tomate y sal marina"
+      }
+    ],
+    "cena": [
+      {
+        "idRef": "cen_39",
+        "detalle": "Omelette de claras con champiñones y espinaca",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 200,
+        "proteinaG": 25,
+        "carbohidratosG": 5,
+        "grasasG": 8,
+        "caloriasKcal": 200,
+        "nombre": "Omelette de claras con champiñones y espinaca"
+      },
+      {
+        "idRef": "cen_50",
+        "detalle": "Ensalada griega con queso feta y aceitunas",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 300,
+        "proteinaG": 15,
+        "carbohidratosG": 15,
+        "grasasG": 18,
+        "caloriasKcal": 300,
+        "nombre": "Ensalada griega con queso feta y aceitunas"
+      },
+      {
+        "idRef": "cen_45",
+        "detalle": "Atún a la plancha con ensalada de aguacate",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 350,
+        "proteinaG": 35,
+        "carbohidratosG": 10,
+        "grasasG": 18,
+        "caloriasKcal": 350,
+        "nombre": "Atún a la plancha con ensalada de aguacate"
+      }
+    ]
+  },
+  "Miercoles": {
+    "desayuno": [
+      {
+        "idRef": "des_41",
+        "detalle": "Sopes de pollo deshebrado con frijol y nopal",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 25,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 380,
+        "nombre": "Sopes de pollo deshebrado con frijol y nopal"
+      },
+      {
+        "idRef": "des_47",
+        "detalle": "Caldo de pollo con verduras y garbanzo",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 350,
+        "proteinaG": 30,
+        "carbohidratosG": 35,
+        "grasasG": 10,
+        "caloriasKcal": 350,
+        "nombre": "Caldo de pollo con verduras y garbanzo"
+      },
+      {
+        "idRef": "des_51",
+        "detalle": "Congee de arroz integral con pollo y jengibre",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 320,
+        "proteinaG": 25,
+        "carbohidratosG": 40,
+        "grasasG": 8,
+        "caloriasKcal": 320,
+        "nombre": "Congee de arroz integral con pollo y jengibre"
+      }
+    ],
+    "colacion_am": [
+      {
+        "idRef": "col_46",
+        "detalle": "Batido de proteína con café frío (proteína frappé)",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 180,
+        "proteinaG": 25,
+        "carbohidratosG": 10,
+        "grasasG": 3,
+        "caloriasKcal": 180,
+        "nombre": "Batido de proteína con café frío (proteína frappé)"
+      },
+      {
+        "idRef": "col_48",
+        "detalle": "Chía pudding con leche de coco sin azúcar",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 200,
+        "proteinaG": 5,
+        "carbohidratosG": 15,
+        "grasasG": 12,
+        "caloriasKcal": 200,
+        "nombre": "Chía pudding con leche de coco sin azúcar"
+      },
+      {
+        "idRef": "col_36",
+        "detalle": "Yogurt griego natural con linaza molida",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 150,
+        "proteinaG": 15,
+        "carbohidratosG": 10,
+        "grasasG": 5,
+        "caloriasKcal": 150,
+        "nombre": "Yogurt griego natural con linaza molida"
+      }
+    ],
+    "comida": [
+      {
+        "idRef": "com_53",
+        "detalle": "Curry de garbanzos y espinaca (chana saag)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 400,
+        "proteinaG": 20,
+        "carbohidratosG": 45,
+        "grasasG": 12,
+        "caloriasKcal": 400,
+        "nombre": "Curry de garbanzos y espinaca (chana saag)"
+      },
+      {
+        "idRef": "com_43",
+        "detalle": "Chiles rellenos de queso capeados (horno)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 400,
+        "proteinaG": 25,
+        "carbohidratosG": 30,
+        "grasasG": 18,
+        "caloriasKcal": 400,
+        "nombre": "Chiles rellenos de queso capeados (horno)"
+      },
+      {
+        "idRef": "com_44",
+        "detalle": "Picadillo de res con verduras (zucchini, zanahoria)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 450,
+        "proteinaG": 35,
+        "carbohidratosG": 20,
+        "grasasG": 22,
+        "caloriasKcal": 450,
+        "nombre": "Picadillo de res con verduras (zucchini, zanahoria)"
+      }
+    ],
+    "colacion_pm": [
+      {
+        "idRef": "col_41",
+        "detalle": "Pepino relleno de atún con mayonesa ligera",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 120,
+        "proteinaG": 18,
+        "carbohidratosG": 5,
+        "grasasG": 3,
+        "caloriasKcal": 120,
+        "nombre": "Pepino relleno de atún con mayonesa ligera"
+      },
+      {
+        "idRef": "col_42",
+        "detalle": "Queso cottage con piña natural",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 160,
+        "proteinaG": 20,
+        "carbohidratosG": 12,
+        "grasasG": 2,
+        "caloriasKcal": 160,
+        "nombre": "Queso cottage con piña natural"
+      },
+      {
+        "idRef": "col_39",
+        "detalle": "Hummus casero con bastones de zanahoria",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 150,
+        "proteinaG": 6,
+        "carbohidratosG": 15,
+        "grasasG": 8,
+        "caloriasKcal": 150,
+        "nombre": "Hummus casero con bastones de zanahoria"
+      }
+    ],
+    "cena": [
+      {
+        "idRef": "cen_46",
+        "detalle": "Huevo revuelto con espinaca y queso cottage",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 250,
+        "proteinaG": 25,
+        "carbohidratosG": 5,
+        "grasasG": 12,
+        "caloriasKcal": 250,
+        "nombre": "Huevo revuelto con espinaca y queso cottage"
+      },
+      {
+        "idRef": "cen_41",
+        "detalle": "Sardinas en lata con ensalada verde y tostada",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 300,
+        "proteinaG": 25,
+        "carbohidratosG": 15,
+        "grasasG": 15,
+        "caloriasKcal": 300,
+        "nombre": "Sardinas en lata con ensalada verde y tostada"
+      },
+      {
+        "idRef": "cen_47",
+        "detalle": "Guiso de lentejas con verduras (pequeña porción)",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 280,
+        "proteinaG": 18,
+        "carbohidratosG": 35,
+        "grasasG": 5,
+        "caloriasKcal": 280,
+        "nombre": "Guiso de lentejas con verduras (pequeña porción)"
+      }
+    ]
+  },
+  "Jueves": {
+    "desayuno": [
+      {
+        "idRef": "des_46",
+        "detalle": "Tlacoyos de haba con nopal ensalada",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 20,
+        "carbohidratosG": 45,
+        "grasasG": 12,
+        "caloriasKcal": 380,
+        "nombre": "Tlacoyos de haba con nopal ensalada"
+      },
+      {
+        "idRef": "des_44",
+        "detalle": "Chilaquiles de salsa verde con pollo y crema ligera",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 400,
+        "proteinaG": 28,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 400,
+        "nombre": "Chilaquiles de salsa verde con pollo y crema ligera"
+      },
+      {
+        "idRef": "des_57",
+        "detalle": "Panini integral de mozzarella, tomate y albahaca",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 22,
+        "carbohidratosG": 35,
+        "grasasG": 15,
+        "caloriasKcal": 380,
+        "nombre": "Panini integral de mozzarella, tomate y albahaca"
+      }
+    ],
+    "colacion_am": [
+      {
+        "idRef": "col_43",
+        "detalle": "Rollo de pavo con queso crema y espinaca",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 130,
+        "proteinaG": 15,
+        "carbohidratosG": 3,
+        "grasasG": 7,
+        "caloriasKcal": 130,
+        "nombre": "Rollo de pavo con queso crema y espinaca"
+      },
+      {
+        "idRef": "col_45",
+        "detalle": "Berries con nueces y toque de limón",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 180,
+        "proteinaG": 4,
+        "carbohidratosG": 20,
+        "grasasG": 10,
+        "caloriasKcal": 180,
+        "nombre": "Berries con nueces y toque de limón"
+      },
+      {
+        "idRef": "col_50",
+        "detalle": "Cottage cheese con ralladura de limón y hierbas",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 140,
+        "proteinaG": 22,
+        "carbohidratosG": 6,
+        "grasasG": 2,
+        "caloriasKcal": 140,
+        "nombre": "Cottage cheese con ralladura de limón y hierbas"
+      }
+    ],
+    "comida": [
+      {
+        "idRef": "com_49",
+        "detalle": "Moussaka griega de berenjena (versión light)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 420,
+        "proteinaG": 28,
+        "carbohidratosG": 25,
+        "grasasG": 20,
+        "caloriasKcal": 420,
+        "nombre": "Moussaka griega de berenjena (versión light)"
+      },
+      {
+        "idRef": "com_57",
+        "detalle": "Caldo tlalpeño con pollo y garbanzo",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 380,
+        "proteinaG": 30,
+        "carbohidratosG": 35,
+        "grasasG": 10,
+        "caloriasKcal": 380,
+        "nombre": "Caldo tlalpeño con pollo y garbanzo"
+      },
+      {
+        "idRef": "com_47",
+        "detalle": "Pollo a la parmesana al horno (light)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 450,
+        "proteinaG": 40,
+        "carbohidratosG": 20,
+        "grasasG": 18,
+        "caloriasKcal": 450,
+        "nombre": "Pollo a la parmesana al horno (light)"
+      }
+    ],
+    "colacion_pm": [
+      {
+        "idRef": "col_37",
+        "detalle": "Manzana con crema de cacahuate natural",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 200,
+        "proteinaG": 5,
+        "carbohidratosG": 25,
+        "grasasG": 10,
+        "caloriasKcal": 200,
+        "nombre": "Manzana con crema de cacahuate natural"
+      },
+      {
+        "idRef": "col_40",
+        "detalle": "Edamames calientes con sal de mar",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 180,
+        "proteinaG": 17,
+        "carbohidratosG": 14,
+        "grasasG": 8,
+        "caloriasKcal": 180,
+        "nombre": "Edamames calientes con sal de mar"
+      },
+      {
+        "idRef": "col_38",
+        "detalle": "Requesón descremado con pepino y chía",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 130,
+        "proteinaG": 20,
+        "carbohidratosG": 8,
+        "grasasG": 1,
+        "caloriasKcal": 130,
+        "nombre": "Requesón descremado con pepino y chía"
+      }
+    ],
+    "cena": [
+      {
+        "idRef": "cen_40",
+        "detalle": "Ensalada de garbanzos con tomate y pepino",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 320,
+        "proteinaG": 15,
+        "carbohidratosG": 30,
+        "grasasG": 12,
+        "caloriasKcal": 320,
+        "nombre": "Ensalada de garbanzos con tomate y pepino"
+      },
+      {
+        "idRef": "cen_39",
+        "detalle": "Omelette de claras con champiñones y espinaca",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 200,
+        "proteinaG": 25,
+        "carbohidratosG": 5,
+        "grasasG": 8,
+        "caloriasKcal": 200,
+        "nombre": "Omelette de claras con champiñones y espinaca"
+      },
+      {
+        "idRef": "cen_50",
+        "detalle": "Ensalada griega con queso feta y aceitunas",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 300,
+        "proteinaG": 15,
+        "carbohidratosG": 15,
+        "grasasG": 18,
+        "caloriasKcal": 300,
+        "nombre": "Ensalada griega con queso feta y aceitunas"
+      }
+    ]
+  },
+  "Viernes": {
+    "desayuno": [
+      {
+        "idRef": "des_59",
+        "detalle": "Ricotta toast con frutos rojos y miel",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 350,
+        "proteinaG": 18,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 350,
+        "nombre": "Ricotta toast con frutos rojos y miel"
+      },
+      {
+        "idRef": "des_41",
+        "detalle": "Sopes de pollo deshebrado con frijol y nopal",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 25,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 380,
+        "nombre": "Sopes de pollo deshebrado con frijol y nopal"
+      },
+      {
+        "idRef": "des_47",
+        "detalle": "Caldo de pollo con verduras y garbanzo",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 350,
+        "proteinaG": 30,
+        "carbohidratosG": 35,
+        "grasasG": 10,
+        "caloriasKcal": 350,
+        "nombre": "Caldo de pollo con verduras y garbanzo"
+      }
+    ],
+    "colacion_am": [
+      {
+        "idRef": "col_44",
+        "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 200,
+        "proteinaG": 8,
+        "carbohidratosG": 5,
+        "grasasG": 16,
+        "caloriasKcal": 200,
+        "nombre": "Huevo cocido con aguacate y todo bagel seasoning"
+      },
+      {
+        "idRef": "col_47",
+        "detalle": "Palta chilena (aguacate) con tomate y sal marina",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 160,
+        "proteinaG": 2,
+        "carbohidratosG": 8,
+        "grasasG": 14,
+        "caloriasKcal": 160,
+        "nombre": "Palta chilena (aguacate) con tomate y sal marina"
+      },
+      {
+        "idRef": "col_46",
+        "detalle": "Batido de proteína con café frío (proteína frappé)",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 180,
+        "proteinaG": 25,
+        "carbohidratosG": 10,
+        "grasasG": 3,
+        "caloriasKcal": 180,
+        "nombre": "Batido de proteína con café frío (proteína frappé)"
+      }
+    ],
+    "comida": [
+      {
+        "idRef": "com_56",
+        "detalle": "Carnitas de cerdo horneadas con nopales asados",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 420,
+        "proteinaG": 35,
+        "carbohidratosG": 15,
+        "grasasG": 22,
+        "caloriasKcal": 420,
+        "nombre": "Carnitas de cerdo horneadas con nopales asados"
+      },
+      {
+        "idRef": "com_53",
+        "detalle": "Curry de garbanzos y espinaca (chana saag)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 400,
+        "proteinaG": 20,
+        "carbohidratosG": 45,
+        "grasasG": 12,
+        "caloriasKcal": 400,
+        "nombre": "Curry de garbanzos y espinaca (chana saag)"
+      },
+      {
+        "idRef": "com_43",
+        "detalle": "Chiles rellenos de queso capeados (horno)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 400,
+        "proteinaG": 25,
+        "carbohidratosG": 30,
+        "grasasG": 18,
+        "caloriasKcal": 400,
+        "nombre": "Chiles rellenos de queso capeados (horno)"
+      }
+    ],
+    "colacion_pm": [
+      {
+        "idRef": "col_48",
+        "detalle": "Chía pudding con leche de coco sin azúcar",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 200,
+        "proteinaG": 5,
+        "carbohidratosG": 15,
+        "grasasG": 12,
+        "caloriasKcal": 200,
+        "nombre": "Chía pudding con leche de coco sin azúcar"
+      },
+      {
+        "idRef": "col_36",
+        "detalle": "Yogurt griego natural con linaza molida",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 150,
+        "proteinaG": 15,
+        "carbohidratosG": 10,
+        "grasasG": 5,
+        "caloriasKcal": 150,
+        "nombre": "Yogurt griego natural con linaza molida"
+      },
+      {
+        "idRef": "col_41",
+        "detalle": "Pepino relleno de atún con mayonesa ligera",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 120,
+        "proteinaG": 18,
+        "carbohidratosG": 5,
+        "grasasG": 3,
+        "caloriasKcal": 120,
+        "nombre": "Pepino relleno de atún con mayonesa ligera"
+      }
+    ],
+    "cena": [
+      {
+        "idRef": "cen_45",
+        "detalle": "Atún a la plancha con ensalada de aguacate",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 350,
+        "proteinaG": 35,
+        "carbohidratosG": 10,
+        "grasasG": 18,
+        "caloriasKcal": 350,
+        "nombre": "Atún a la plancha con ensalada de aguacate"
+      },
+      {
+        "idRef": "cen_46",
+        "detalle": "Huevo revuelto con espinaca y queso cottage",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 250,
+        "proteinaG": 25,
+        "carbohidratosG": 5,
+        "grasasG": 12,
+        "caloriasKcal": 250,
+        "nombre": "Huevo revuelto con espinaca y queso cottage"
+      },
+      {
+        "idRef": "cen_41",
+        "detalle": "Sardinas en lata con ensalada verde y tostada",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 300,
+        "proteinaG": 25,
+        "carbohidratosG": 15,
+        "grasasG": 15,
+        "caloriasKcal": 300,
+        "nombre": "Sardinas en lata con ensalada verde y tostada"
+      }
+    ]
+  },
+  "Sabado": {
+    "desayuno": [
+      {
+        "idRef": "des_51",
+        "detalle": "Congee de arroz integral con pollo y jengibre",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 320,
+        "proteinaG": 25,
+        "carbohidratosG": 40,
+        "grasasG": 8,
+        "caloriasKcal": 320,
+        "nombre": "Congee de arroz integral con pollo y jengibre"
+      },
+      {
+        "idRef": "des_46",
+        "detalle": "Tlacoyos de haba con nopal ensalada",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 20,
+        "carbohidratosG": 45,
+        "grasasG": 12,
+        "caloriasKcal": 380,
+        "nombre": "Tlacoyos de haba con nopal ensalada"
+      },
+      {
+        "idRef": "des_44",
+        "detalle": "Chilaquiles de salsa verde con pollo y crema ligera",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 400,
+        "proteinaG": 28,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 400,
+        "nombre": "Chilaquiles de salsa verde con pollo y crema ligera"
+      }
+    ],
+    "colacion_am": [
+      {
+        "idRef": "col_42",
+        "detalle": "Queso cottage con piña natural",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 160,
+        "proteinaG": 20,
+        "carbohidratosG": 12,
+        "grasasG": 2,
+        "caloriasKcal": 160,
+        "nombre": "Queso cottage con piña natural"
+      },
+      {
+        "idRef": "col_39",
+        "detalle": "Hummus casero con bastones de zanahoria",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 150,
+        "proteinaG": 6,
+        "carbohidratosG": 15,
+        "grasasG": 8,
+        "caloriasKcal": 150,
+        "nombre": "Hummus casero con bastones de zanahoria"
+      },
+      {
+        "idRef": "col_43",
+        "detalle": "Rollo de pavo con queso crema y espinaca",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 130,
+        "proteinaG": 15,
+        "carbohidratosG": 3,
+        "grasasG": 7,
+        "caloriasKcal": 130,
+        "nombre": "Rollo de pavo con queso crema y espinaca"
+      }
+    ],
+    "comida": [
+      {
+        "idRef": "com_44",
+        "detalle": "Picadillo de res con verduras (zucchini, zanahoria)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 450,
+        "proteinaG": 35,
+        "carbohidratosG": 20,
+        "grasasG": 22,
+        "caloriasKcal": 450,
+        "nombre": "Picadillo de res con verduras (zucchini, zanahoria)"
+      },
+      {
+        "idRef": "com_49",
+        "detalle": "Moussaka griega de berenjena (versión light)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 420,
+        "proteinaG": 28,
+        "carbohidratosG": 25,
+        "grasasG": 20,
+        "caloriasKcal": 420,
+        "nombre": "Moussaka griega de berenjena (versión light)"
+      },
+      {
+        "idRef": "com_57",
+        "detalle": "Caldo tlalpeño con pollo y garbanzo",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 380,
+        "proteinaG": 30,
+        "carbohidratosG": 35,
+        "grasasG": 10,
+        "caloriasKcal": 380,
+        "nombre": "Caldo tlalpeño con pollo y garbanzo"
+      }
+    ],
+    "colacion_pm": [
+      {
+        "idRef": "col_45",
+        "detalle": "Berries con nueces y toque de limón",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 180,
+        "proteinaG": 4,
+        "carbohidratosG": 20,
+        "grasasG": 10,
+        "caloriasKcal": 180,
+        "nombre": "Berries con nueces y toque de limón"
+      },
+      {
+        "idRef": "col_50",
+        "detalle": "Cottage cheese con ralladura de limón y hierbas",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 140,
+        "proteinaG": 22,
+        "carbohidratosG": 6,
+        "grasasG": 2,
+        "caloriasKcal": 140,
+        "nombre": "Cottage cheese con ralladura de limón y hierbas"
+      },
+      {
+        "idRef": "col_37",
+        "detalle": "Manzana con crema de cacahuate natural",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 200,
+        "proteinaG": 5,
+        "carbohidratosG": 25,
+        "grasasG": 10,
+        "caloriasKcal": 200,
+        "nombre": "Manzana con crema de cacahuate natural"
+      }
+    ],
+    "cena": [
+      {
+        "idRef": "cen_47",
+        "detalle": "Guiso de lentejas con verduras (pequeña porción)",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 280,
+        "proteinaG": 18,
+        "carbohidratosG": 35,
+        "grasasG": 5,
+        "caloriasKcal": 280,
+        "nombre": "Guiso de lentejas con verduras (pequeña porción)"
+      },
+      {
+        "idRef": "cen_40",
+        "detalle": "Ensalada de garbanzos con tomate y pepino",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 320,
+        "proteinaG": 15,
+        "carbohidratosG": 30,
+        "grasasG": 12,
+        "caloriasKcal": 320,
+        "nombre": "Ensalada de garbanzos con tomate y pepino"
+      },
+      {
+        "idRef": "cen_39",
+        "detalle": "Omelette de claras con champiñones y espinaca",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 200,
+        "proteinaG": 25,
+        "carbohidratosG": 5,
+        "grasasG": 8,
+        "caloriasKcal": 200,
+        "nombre": "Omelette de claras con champiñones y espinaca"
+      }
+    ]
+  },
+  "Domingo": {
+    "desayuno": [
+      {
+        "idRef": "des_57",
+        "detalle": "Panini integral de mozzarella, tomate y albahaca",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 22,
+        "carbohidratosG": 35,
+        "grasasG": 15,
+        "caloriasKcal": 380,
+        "nombre": "Panini integral de mozzarella, tomate y albahaca"
+      },
+      {
+        "idRef": "des_59",
+        "detalle": "Ricotta toast con frutos rojos y miel",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 350,
+        "proteinaG": 18,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 350,
+        "nombre": "Ricotta toast con frutos rojos y miel"
+      },
+      {
+        "idRef": "des_41",
+        "detalle": "Sopes de pollo deshebrado con frijol y nopal",
+        "porciones": "1 fruta, 3 cereals, 1 lacteo, 2 proteinas, 2 grasas",
+        "kcal": 380,
+        "proteinaG": 25,
+        "carbohidratosG": 40,
+        "grasasG": 12,
+        "caloriasKcal": 380,
+        "nombre": "Sopes de pollo deshebrado con frijol y nopal"
+      }
+    ],
+    "colacion_am": [
+      {
+        "idRef": "col_40",
+        "detalle": "Edamames calientes con sal de mar",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 180,
+        "proteinaG": 17,
+        "carbohidratosG": 14,
+        "grasasG": 8,
+        "caloriasKcal": 180,
+        "nombre": "Edamames calientes con sal de mar"
+      },
+      {
+        "idRef": "col_38",
+        "detalle": "Requesón descremado con pepino y chía",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 130,
+        "proteinaG": 20,
+        "carbohidratosG": 8,
+        "grasasG": 1,
+        "caloriasKcal": 130,
+        "nombre": "Requesón descremado con pepino y chía"
+      },
+      {
+        "idRef": "col_44",
+        "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
+        "porciones": "1 fruta, 1 cereal, 1 grasa",
+        "kcal": 200,
+        "proteinaG": 8,
+        "carbohidratosG": 5,
+        "grasasG": 16,
+        "caloriasKcal": 200,
+        "nombre": "Huevo cocido con aguacate y todo bagel seasoning"
+      }
+    ],
+    "comida": [
+      {
+        "idRef": "com_47",
+        "detalle": "Pollo a la parmesana al horno (light)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 450,
+        "proteinaG": 40,
+        "carbohidratosG": 20,
+        "grasasG": 18,
+        "caloriasKcal": 450,
+        "nombre": "Pollo a la parmesana al horno (light)"
+      },
+      {
+        "idRef": "com_56",
+        "detalle": "Carnitas de cerdo horneadas con nopales asados",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 420,
+        "proteinaG": 35,
+        "carbohidratosG": 15,
+        "grasasG": 22,
+        "caloriasKcal": 420,
+        "nombre": "Carnitas de cerdo horneadas con nopales asados"
+      },
+      {
+        "idRef": "com_53",
+        "detalle": "Curry de garbanzos y espinaca (chana saag)",
+        "porciones": "2 verduras, 2 cereals, 1 leguminosa, 4 proteinas, 1 grasa",
+        "kcal": 400,
+        "proteinaG": 20,
+        "carbohidratosG": 45,
+        "grasasG": 12,
+        "caloriasKcal": 400,
+        "nombre": "Curry de garbanzos y espinaca (chana saag)"
+      }
+    ],
+    "colacion_pm": [
+      {
+        "idRef": "col_47",
+        "detalle": "Palta chilena (aguacate) con tomate y sal marina",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 160,
+        "proteinaG": 2,
+        "carbohidratosG": 8,
+        "grasasG": 14,
+        "caloriasKcal": 160,
+        "nombre": "Palta chilena (aguacate) con tomate y sal marina"
+      },
+      {
+        "idRef": "col_46",
+        "detalle": "Batido de proteína con café frío (proteína frappé)",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 180,
+        "proteinaG": 25,
+        "carbohidratosG": 10,
+        "grasasG": 3,
+        "caloriasKcal": 180,
+        "nombre": "Batido de proteína con café frío (proteína frappé)"
+      },
+      {
+        "idRef": "col_48",
+        "detalle": "Chía pudding con leche de coco sin azúcar",
+        "porciones": "1 fruta, 1 lacteo",
+        "kcal": 200,
+        "proteinaG": 5,
+        "carbohidratosG": 15,
+        "grasasG": 12,
+        "caloriasKcal": 200,
+        "nombre": "Chía pudding con leche de coco sin azúcar"
+      }
+    ],
+    "cena": [
+      {
+        "idRef": "cen_50",
+        "detalle": "Ensalada griega con queso feta y aceitunas",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 300,
+        "proteinaG": 15,
+        "carbohidratosG": 15,
+        "grasasG": 18,
+        "caloriasKcal": 300,
+        "nombre": "Ensalada griega con queso feta y aceitunas"
+      },
+      {
+        "idRef": "cen_45",
+        "detalle": "Atún a la plancha con ensalada de aguacate",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 350,
+        "proteinaG": 35,
+        "carbohidratosG": 10,
+        "grasasG": 18,
+        "caloriasKcal": 350,
+        "nombre": "Atún a la plancha con ensalada de aguacate"
+      },
+      {
+        "idRef": "cen_46",
+        "detalle": "Huevo revuelto con espinaca y queso cottage",
+        "porciones": "2 verduras, 1 cereal, 2 proteinas",
+        "kcal": 250,
+        "proteinaG": 25,
+        "carbohidratosG": 5,
+        "grasasG": 12,
+        "caloriasKcal": 250,
+        "nombre": "Huevo revuelto con espinaca y queso cottage"
+      }
+    ]
+  }
+}

@@ -314,14 +314,24 @@ test('handler genera y la app rehidrata correctamente un plan de cuestionario de
     assert.doesNotMatch(breakfast.porciones, /ajustad|kcal para este perfil/i);
     assert.ok(dinner.caloriasKcal > 0);
     assert.doesNotMatch(dinner.porciones, /ajustad|kcal para este perfil/i);
-    assert.equal(typeof dinner.aiMeta?.normalizedTargetKcal, 'number');
+    assert.equal(dinner.caloriasKcal, Math.round((dinner.proteinaG * 4) + (dinner.carbohidratosG * 4) + (dinner.grasasG * 9)));
     assert.ok(dinner.proteinaG > 0);
-    const mondayCalories = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena']
-      .reduce((sum, moment) => sum + exported.planELLA.Lunes[moment][0].caloriasKcal, 0);
+    const mondayMeals = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena']
+      .map((moment) => exported.planELLA.Lunes[moment][0]);
+    const mondayCalories = mondayMeals.reduce((sum, meal) => sum + meal.caloriasKcal, 0);
     const targetCalories = exported.perfilELLA.metaCaloricaKcalDia;
     assert.ok(
-      Math.abs(mondayCalories - targetCalories) / targetCalories <= 0.08,
-      `Monday calories should stay near target. Got ${mondayCalories}, target ${targetCalories}`
+      mondayMeals.every((meal) => (
+        Math.abs(
+          meal.caloriasKcal -
+          Math.round((meal.proteinaG * 4) + (meal.carbohidratosG * 4) + (meal.grasasG * 9))
+        ) / Math.max(meal.caloriasKcal, 1) <= 0.12
+      )),
+      'Every selected meal should keep calories supported by macros'
+    );
+    assert.ok(
+      Math.abs(mondayCalories - targetCalories) / targetCalories <= 0.25,
+      `Monday calories should stay reasonably near target without inventing unsupported kcal. Got ${mondayCalories}, target ${targetCalories}`
     );
     assert.ok(Array.isArray(exported.suplementosELLA));
     assert.ok(exported.suplementosELLA.length >= 1, 'Debe haber al menos 1 suplemento pre-computado');

@@ -257,12 +257,15 @@ export default function PlanView() {
       <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
         {meal.detalle}
       </p>
-      <div className="mt-2 grid grid-cols-3 gap-1.5 text-[11px]">
+      <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] sm:grid-cols-4">
         <span className={`rounded-xl px-2 py-1 font-black ${isDarkMode ? 'bg-slate-950 text-slate-200' : 'bg-slate-50 text-slate-700'}`}>
           {meal.caloriasKcal || 0} kcal
         </span>
         <span className={`rounded-xl px-2 py-1 font-bold ${isDarkMode ? 'bg-slate-950 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
           {typeof meal.proteinaG === 'number' ? `${meal.proteinaG}g prot` : '-'}
+        </span>
+        <span className={`rounded-xl px-2 py-1 font-bold ${isDarkMode ? 'bg-slate-950 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+          {typeof meal.carbohidratosG === 'number' ? `${meal.carbohidratosG}g carb` : '-'}
         </span>
         <span className={`rounded-xl px-2 py-1 font-bold ${isDarkMode ? 'bg-slate-950 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
           {typeof meal.grasasG === 'number' ? `${meal.grasasG}g grasa` : '-'}

@@ -70,9 +70,10 @@ export default function CalorieMonitoringView() {
         return {
           kcal: acc.kcal + (selected?.caloriasKcal || 0),
           proteinG: acc.proteinG + (selected?.proteinaG || 0),
+          carbsG: acc.carbsG + (selected?.carbohidratosG || 0),
           fatG: acc.fatG + (selected?.grasasG || 0),
         };
-      }, { kcal: 0, proteinG: 0, fatG: 0 });
+      }, { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 });
     };
 
     const daySummaries = diasDisponibles.map((dia) => {
@@ -233,8 +234,9 @@ export default function CalorieMonitoringView() {
 
         <div className="grid grid-cols-1 gap-2.5">
           <MetricCard label="Calorías" value={metrics.selectedDayTotals.kcal} target={metrics.calorieTarget} unit="kcal" accent={accent} />
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
             <MetricCard label="Proteína" value={metrics.selectedDayTotals.proteinG} target={metrics.macroTargets.proteinG} unit="g" accent={accent} />
+            <MetricCard label="Carbohidratos" value={metrics.selectedDayTotals.carbsG} target={metrics.macroTargets.carbsG} unit="g" accent={accent} />
             <MetricCard label="Grasas" value={metrics.selectedDayTotals.fatG} target={metrics.macroTargets.fatG} unit="g" accent={accent} />
           </div>
         </div>

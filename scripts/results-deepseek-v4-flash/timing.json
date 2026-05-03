@@ -1,0 +1,6 @@
+{
+  "model": "deepseek-v4-flash",
+  "elMs": 514,
+  "ellaMs": 360,
+  "totalMs": 874
+}

@@ -1,0 +1,129 @@
+{
+  "id": "el",
+  "nombre": "El",
+  "edad": 30,
+  "descripcion": "Plan personalizado para: Perder grasa, Ganar músculo. Nivel de actividad moderado. Distribución balanceada con énfasis en saciedad y adherencia.",
+  "perfil": "80 kg | 1.75 m | 30 años | IMC 26.1",
+  "detallesPerfil": "Perfil masculino de 30 años. Sobrepeso según IMC (26.1). Actividad moderado.",
+  "meta": "Llegar a peso ~75 kg enfocándose en perder grasa, ganar músculo",
+  "metaCaloricaKcalDia": 2311,
+  "horariosTexto": "07:00 • 10:00 • 13:00 • 16:00 • 20:30",
+  "notaSalud": "Mantener hidratación adecuada y consultar cambios importantes con profesional de la salud.",
+  "momentos": [
+    {
+      "key": "desayuno",
+      "label": "Desayuno",
+      "hora": "07:00"
+    },
+    {
+      "key": "colacion_am",
+      "label": "Colación mañana",
+      "hora": "10:00"
+    },
+    {
+      "key": "comida",
+      "label": "Comida",
+      "hora": "13:00"
+    },
+    {
+      "key": "colacion_pm",
+      "label": "Colación tarde",
+      "hora": "16:00"
+    },
+    {
+      "key": "cena",
+      "label": "Cena",
+      "hora": "20:30"
+    }
+  ],
+  "objetivosPorMomento": {
+    "desayuno": {
+      "frutas": 1,
+      "verduras": 0,
+      "cereales": 3,
+      "leguminosas": 0,
+      "lacteos": 1,
+      "proteina": 2,
+      "grasas": 2
+    },
+    "colacion_am": {
+      "frutas": 1,
+      "verduras": 0,
+      "cereales": 1,
+      "leguminosas": 0,
+      "lacteos": 0,
+      "proteina": 0,
+      "grasas": 1
+    },
+    "comida": {
+      "frutas": 0,
+      "verduras": 2,
+      "cereales": 2,
+      "leguminosas": 1,
+      "lacteos": 0,
+      "proteina": 4,
+      "grasas": 1
+    },
+    "colacion_pm": {
+      "frutas": 1,
+      "verduras": 0,
+      "cereales": 0,
+      "leguminosas": 0,
+      "lacteos": 1,
+      "proteina": 0,
+      "grasas": 0
+    },
+    "cena": {
+      "frutas": 0,
+      "verduras": 2,
+      "cereales": 1,
+      "leguminosas": 0,
+      "lacteos": 0,
+      "proteina": 2,
+      "grasas": 0
+    }
+  },
+  "distribucionDiaria": [
+    {
+      "grupo": "Frutas",
+      "total": 3,
+      "detalle": "1 desayuno + 1 colación mañana + 1 colación tarde"
+    },
+    {
+      "grupo": "Verduras",
+      "total": 4,
+      "detalle": "2 comida + 2 cena"
+    },
+    {
+      "grupo": "Cereales",
+      "total": 7,
+      "detalle": "3 desayuno + 1 colación mañana + 2 comida + 1 cena"
+    },
+    {
+      "grupo": "Leguminosas",
+      "total": 1,
+      "detalle": "1 comida"
+    },
+    {
+      "grupo": "Lácteos",
+      "total": 2,
+      "detalle": "1 desayuno + 1 colación tarde"
+    },
+    {
+      "grupo": "Proteína",
+      "total": 8,
+      "detalle": "2 desayuno + 4 comida + 2 cena"
+    },
+    {
+      "grupo": "Grasas",
+      "total": 4,
+      "detalle": "2 desayuno + 1 colación mañana + 1 comida"
+    }
+  ],
+  "resumenPersonal": [
+    "IMC actual: 26.1 (Sobrepeso). Objetivos: perder grasa, ganar músculo.",
+    "Meta de peso: reducir 5.0 kg de forma gradual y sostenida.",
+    "Déficit calórico moderado priorizando saciedad con fibra y proteína para adherencia sostenida.",
+    "El plan usa equivalentes SMAE flexibles para facilitar sustituciones sin desviarse de metas."
+  ]
+}
