@@ -181,6 +181,7 @@ function catalogMealToRecommendation(
     super: meal.super,
     caloriasKcal: meal.macroEstimate?.calories,
     proteinaG: meal.macroEstimate?.protein,
+    carbohidratosG: meal.macroEstimate?.carbs,
     grasasG: meal.macroEstimate?.fat,
   });
 
@@ -208,6 +209,7 @@ export function snapshotMeal(meal: MealItem): MealOriginalSnapshot {
     super: [...(meal.super || [])],
     caloriasKcal: meal.caloriasKcal,
     proteinaG: meal.proteinaG,
+    carbohidratosG: meal.carbohidratosG,
     grasasG: meal.grasasG,
   };
 }
@@ -231,6 +233,7 @@ export function buildMealFromDraft(meal: MealItem, draft: MealEditorDraft): Meal
     super: sanitizeList(draft.superText.split(',')),
     caloriasKcal: parseNumberInput(draft.caloriasKcal),
     proteinaG: parseNumberInput(draft.proteinaG),
+    carbohidratosG: meal.carbohidratosG,
     grasasG: parseNumberInput(draft.grasasG),
     editMeta: {
       isEdited: true,

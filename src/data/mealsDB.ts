@@ -481,7 +481,7 @@ export const mealsDatabase: CatalogMealItem[] = [
     id: 'col_39',
     momentos: ['colacion_am', 'colacion_pm'],
     nombre: 'Hummus casero con bastones de zanahoria',
-    tags: ['vegano', 'fibra', 'proteina-vegetal', 'mediterraneo'],
+    tags: ['vegano', 'fibra', 'leguminosa', 'mediterraneo'],
     super: ['garbanzo cocido', 'tahini', 'limón', 'ajo', 'aceite de oliva', 'zanahoria'],
     cuisineStyles: ['Mediterránea', 'Vegetariana'],
     prepTimeMinutes: 10,
@@ -541,7 +541,7 @@ export const mealsDatabase: CatalogMealItem[] = [
     id: 'col_44',
     momentos: ['colacion_am', 'colacion_pm'],
     nombre: 'Huevo cocido con aguacate y todo bagel seasoning',
-    tags: ['proteina', 'grasas-saludables', 'keto-friendly'],
+    tags: ['saciante', 'grasas-saludables', 'keto-friendly'],
     super: ['huevo grande cocido', 'aguacate', 'semillas de sésamo', 'semillas de amapola', 'sal'],
     cuisineStyles: ['Casera'],
     prepTimeMinutes: 12,
@@ -652,7 +652,7 @@ export const mealsDatabase: CatalogMealItem[] = [
     momentos: ['comida'],
     nombre: 'Chiles rellenos de queso capeados (horno)',
     tags: ['mexicano', 'vegetariano', 'proteina', 'sin-freir'],
-    super: ['chile poblano', 'queso oaxaca', 'huevo (capeado)', 'caldillo de tomate', 'cebolla'],
+    super: ['chile poblano', 'queso oaxaca', 'huevo (capeado)', 'harina para capeado', 'caldillo de tomate', 'cebolla'],
     cuisineStyles: ['Mexicana', 'Vegetariana'],
     prepTimeMinutes: 45,
     difficulty: 'dificil',
@@ -874,7 +874,7 @@ export const mealsDatabase: CatalogMealItem[] = [
     cuisineStyles: ['Casera', 'Asiática'],
     prepTimeMinutes: 30,
     difficulty: 'facil',
-    macroEstimate: { calories: 140, protein: 4, carbs: 22, fat: 6 },
+    macroEstimate: { calories: 158, protein: 4, carbs: 22, fat: 6 },
     medicalContraindications: ['diabetes descontrolada (limitar porción)']
   },
   {
@@ -917,7 +917,7 @@ export const mealsDatabase: CatalogMealItem[] = [
     id: 'cen_40',
     momentos: ['cena'],
     nombre: 'Ensalada de garbanzos con tomate y pepino',
-    tags: ['vegetariano', 'proteina-vegetal', 'fresco', 'mediterraneo'],
+    tags: ['vegetariano', 'leguminosa', 'fresco', 'mediterraneo'],
     super: ['garbanzo cocido', 'tomate', 'pepino', 'cebolla morada', 'perejil', 'aceite de oliva', 'limón'],
     cuisineStyles: ['Mediterránea', 'Vegetariana'],
     prepTimeMinutes: 10,
@@ -970,7 +970,7 @@ export const mealsDatabase: CatalogMealItem[] = [
     cuisineStyles: ['Mexicana', 'Casera'],
     prepTimeMinutes: 20,
     difficulty: 'facil',
-    macroEstimate: { calories: 80, protein: 12, carbs: 6, fat: 2 },
+    macroEstimate: { calories: 90, protein: 12, carbs: 6, fat: 2 },
     medicalContraindications: ['dieta baja en sodio (controlar caldo)']
   },
   {
@@ -1018,7 +1018,7 @@ export const mealsDatabase: CatalogMealItem[] = [
     cuisineStyles: ['Italiana', 'Vegetariana'],
     prepTimeMinutes: 25,
     difficulty: 'facil',
-    macroEstimate: { calories: 100, protein: 3, carbs: 14, fat: 5 },
+    macroEstimate: { calories: 113, protein: 3, carbs: 14, fat: 5 },
     medicalContraindications: ['reflujo gastroesofágico (tomate ácido)']
   },
   {
@@ -1049,12 +1049,13 @@ export const mealsDatabase: CatalogMealItem[] = [
 
 export function getCompactMealsCatalog(
   db: CatalogMealItem[] = mealsDatabase
-): {id: string, nombre: string, tags: string[], momentos: string[], macroEstimate?: CatalogMealItem['macroEstimate']}[] {
+): {id: string, nombre: string, tags: string[], momentos: string[], super: string[], macroEstimate?: CatalogMealItem['macroEstimate']}[] {
   return db.map(m => ({
     id: m.id,
     nombre: m.nombre,
     tags: m.tags,
     momentos: m.momentos,
+    super: m.super,
     ...(m.macroEstimate ? { macroEstimate: m.macroEstimate } : {}),
   }));
 }
@@ -1193,7 +1194,7 @@ function scoreMealForQuestionnaire(item: CatalogMealItem, questionnaire: any) {
 export function buildQuestionnaireMealsCatalog(
   db: CatalogMealItem[],
   questionnaire: any
-): {id: string, nombre: string, tags: string[], momentos: string[], macroEstimate?: CatalogMealItem['macroEstimate']}[] {
+): {id: string, nombre: string, tags: string[], momentos: string[], super: string[], macroEstimate?: CatalogMealItem['macroEstimate']}[] {
   const filtered = filterCatalogForQuestionnaire(db, questionnaire);
   const source = filtered.length > 0 ? filtered : db;
   const limitByMoment: Record<string, number> = {

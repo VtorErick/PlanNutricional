@@ -687,12 +687,12 @@ const PORTION_LABELS = {
 
 // Factores SMAE estandar por porcion (kcal ≈ P*4 + C*4 + G*9)
 const SMAE_MACRO_FACTORS = {
-  frutas:   { kcal: 60,  protein: 0,  carbs: 15, fat: 0 },
-  verduras: { kcal: 25,  protein: 1,  carbs: 5,  fat: 0 },
-  cereales: { kcal: 70,  protein: 2,  carbs: 15, fat: 0 },
+  frutas:   { kcal: 60,  protein: 0.5, carbs: 15, fat: 0 },
+  verduras: { kcal: 25,  protein: 1,  carbs: 4,  fat: 0 },
+  cereales: { kcal: 70,  protein: 2,  carbs: 15, fat: 1 },
   leguminosas: { kcal: 120, protein: 8,  carbs: 20, fat: 1 },
-  lacteos:  { kcal: 100, protein: 8,  carbs: 12, fat: 2 },
-  proteina: { kcal: 100, protein: 15, carbs: 0,  fat: 4 },
+  lacteos:  { kcal: 95, protein: 7,  carbs: 12, fat: 3 },
+  proteina: { kcal: 55, protein: 7, carbs: 0,  fat: 3 },
   grasas:   { kcal: 45,  protein: 0,  carbs: 0,  fat: 5 },
 };
 
@@ -814,102 +814,169 @@ function repairPlanSlots(plan, profile, catalog) {
   if (!objetivos || typeof objetivos !== 'object') return plan;
 
   const catalogArray = Array.isArray(catalog) ? catalog : [];
-
-  // Calculate target macros per moment based on objetivosPorMomento
   const baseMomentMacros = calculateMomentMacros(objetivos);
   const targetMomentMacros = scaleMomentMacrosToDailyTarget(
     baseMomentMacros,
     objetivos,
     profile?.metaCaloricaKcalDia || 0
   );
+  const dayIndexByName = new Map(WEEK_DAYS.map((day, index) => [day, index]));
 
-  function extractMacrosFromObject(obj, targetMeal) {
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
-    const map = { kcal: 'caloriasKcal', caloriasKcal: 'caloriasKcal', proteinaG: 'proteinaG', carbohidratosG: 'carbohidratosG', grasasG: 'grasasG' };
-    Object.entries(map).forEach(([src, dst]) => {
-      if (Number.isFinite(Number(obj[src])) && !Number.isFinite(Number(targetMeal[dst]))) {
-        targetMeal[dst] = Math.round(Number(obj[src]));
-      }
-    });
+  function macroCalories(macros) {
+    return calculateCaloriesFromMacros(macros.protein, macros.carbs, macros.fat);
+  }
+
+  function getMacroEstimate(catalogMeal) {
+    if (!hasMacroEstimate(catalogMeal)) return null;
+    return {
+      kcal: Number(catalogMeal.macroEstimate.calories),
+      protein: Number(catalogMeal.macroEstimate.protein),
+      carbs: Number(catalogMeal.macroEstimate.carbs),
+      fat: Number(catalogMeal.macroEstimate.fat),
+    };
+  }
+
+  function macroDistance(base, target) {
+    if (!base || !target?.kcal) return Number.POSITIVE_INFINITY;
+    const targetKcal = Math.max(1, target.kcal);
+    const baseKcal = Math.max(1, base.kcal);
+    const ratioPenalty = Math.abs(baseKcal - targetKcal) / targetKcal;
+    const targetRatios = {
+      protein: target.protein / targetKcal,
+      carbs: target.carbs / targetKcal,
+      fat: target.fat / targetKcal,
+    };
+    const baseRatios = {
+      protein: base.protein / baseKcal,
+      carbs: base.carbs / baseKcal,
+      fat: base.fat / baseKcal,
+    };
+    let score =
+      ratioPenalty * 0.3 +
+      Math.abs(baseRatios.protein - targetRatios.protein) * 2.2 +
+      Math.abs(baseRatios.carbs - targetRatios.carbs) * 2.0 +
+      Math.abs(baseRatios.fat - targetRatios.fat) * 1.4;
+
+    if (target.carbs >= 25 && base.carbs < 12) score += 0.7;
+    if (target.carbs <= 15 && base.carbs > 45) score += 0.5;
+    if (target.protein >= 25 && base.protein < 14) score += 0.5;
+
+    const scaleFactor = targetKcal / baseKcal;
+    if (scaleFactor < 0.55 || scaleFactor > 2.25) score += 0.5;
+    return score;
+  }
+
+  function rankedCatalogForMoment(momento, target) {
+    return catalogArray
+      .filter((item) => isCatalogMealValidForMoment(item, momento) && hasMacroEstimate(item))
+      .map((item) => ({ item, score: macroDistance(getMacroEstimate(item), target) }))
+      .sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        return String(a.item.nombre || '').localeCompare(String(b.item.nombre || ''), 'es');
+      })
+      .map(({ item }) => item);
+  }
+
+  function shouldKeepAiMeal(catalogMeal, momento, target) {
+    if (!isCatalogMealValidForMoment(catalogMeal, momento) || !hasMacroEstimate(catalogMeal)) return false;
+    return macroDistance(getMacroEstimate(catalogMeal), target) <= 0.85;
+  }
+
+  function formatScaleFactor(value) {
+    if (!Number.isFinite(value) || value <= 0) return '1 porcion';
+    const rounded = Math.round(value * 10) / 10;
+    return Math.abs(rounded - 1) < 0.05 ? '1 porcion' : `${rounded} porciones`;
+  }
+
+  function normalizedTags(tags, macros) {
+    const next = new Set((Array.isArray(tags) ? tags : []).filter(Boolean));
+    if (macros.protein >= 20) {
+      next.add('proteina');
+    } else if (macros.protein < 12) {
+      Array.from(next).forEach((tag) => {
+        if (/prote/i.test(String(tag))) next.delete(tag);
+      });
+    }
+    if (macros.carbs >= 40) {
+      next.add('alto-carb');
+      next.delete('bajo-carb');
+    }
+    if (macros.carbs <= 15) {
+      next.add('bajo-carb');
+      next.delete('alto-carb');
+    }
+    if (macros.fat >= 16) next.add('grasas');
+    return Array.from(next).slice(0, 4);
+  }
+
+  function hydrateMealFromCatalog(catalogMeal, target, fallbackIdRef) {
+    const base = getMacroEstimate(catalogMeal);
+    if (!base) return null;
+    const scaleFactor = target?.kcal && base.kcal > 0 ? target.kcal / base.kcal : 1;
+    const macros = {
+      protein: Math.max(0, Math.round(base.protein * scaleFactor)),
+      carbs: Math.max(0, Math.round(base.carbs * scaleFactor)),
+      fat: Math.max(0, Math.round(base.fat * scaleFactor)),
+    };
+    const kcal = macroCalories(macros);
+    const ingredientText = Array.isArray(catalogMeal.super)
+      ? catalogMeal.super.slice(0, 6).join(', ')
+      : '';
+
+    return {
+      idRef: fallbackIdRef || catalogMeal.id,
+      nombre: catalogMeal.nombre,
+      detalle: buildCanonicalMealDetail(catalogMeal.nombre, catalogMeal.super),
+      tags: normalizedTags(catalogMeal.tags, macros),
+      super: Array.isArray(catalogMeal.super) ? catalogMeal.super : [],
+      porciones: `${formatScaleFactor(scaleFactor)} de receta base${ingredientText ? ` (${ingredientText})` : ''}`,
+      caloriasKcal: kcal,
+      proteinaG: macros.protein,
+      carbohidratosG: macros.carbs,
+      grasasG: macros.fat,
+      aiMeta: {
+        source: 'catalog-macro-estimate',
+        normalizedTargetKcal: Math.round(target?.kcal || kcal),
+        macroConsistentKcal: kcal,
+      },
+    };
   }
 
   WEEK_DAYS.forEach((dia) => {
     const dayPlan = plan[dia];
     if (!dayPlan || typeof dayPlan !== 'object' || Array.isArray(dayPlan)) return;
+    const dayIndex = dayIndexByName.get(dia) || 0;
 
     MEAL_MOMENT_KEYS.forEach((momento) => {
       const options = dayPlan[momento];
       if (!Array.isArray(options)) return;
 
       const momentTarget = targetMomentMacros[momento] || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
-      const optionCount = options.length || 1;
+      const ranked = rankedCatalogForMoment(momento, momentTarget);
+      const usedIds = new Set();
 
       dayPlan[momento] = options.map((meal, optionIndex) => {
-        if (!meal || typeof meal !== 'object') return meal;
-
-        // Extract macros nested inside portions object before overwriting it
-        extractMacrosFromObject(meal.porciones, meal);
-        if (Number.isFinite(Number(meal.kcal)) && !Number.isFinite(Number(meal.caloriasKcal))) {
-          meal.caloriasKcal = Math.round(Number(meal.kcal));
-        }
-
-        // 1. Validar que idRef pertenezca al momento correcto
-        const idRef = String(meal.idRef || '');
+        const sourceMeal = meal && typeof meal === 'object' ? meal : {};
+        const idRef = String(sourceMeal.idRef || '');
         const [baseId] = idRef.split('|MOD:');
-        const catalogMeal = catalogArray.find((item) => item?.id === baseId.trim());
+        const aiCatalogMeal = catalogArray.find((item) => item?.id === baseId.trim());
+        let selectedCatalogMeal = shouldKeepAiMeal(aiCatalogMeal, momento, momentTarget) ? aiCatalogMeal : null;
 
-        if (!catalogMeal || !isCatalogMealValidForMoment(catalogMeal, momento)) {
-          const fallback = catalogArray.find((item) =>
-            item?.momentos?.includes(momento) && hasMacroEstimate(item)
-          ) || catalogArray.find((item) => item?.momentos?.includes(momento));
-          if (fallback) {
-            meal.idRef = fallback.id;
-            meal.nombre = fallback.nombre;
-            meal.detalle = buildCanonicalMealDetail(fallback.nombre, fallback.super);
-          }
-        } else {
-          if (!isNonEmptyString(meal.nombre)) {
-            meal.nombre = catalogMeal.nombre;
-          }
-          if (!isNonEmptyString(meal.detalle) || shouldReplaceMealDetail(meal.detalle, catalogMeal.nombre, catalogMeal.super)) {
-            meal.detalle = buildCanonicalMealDetail(catalogMeal.nombre, catalogMeal.super);
+        if (!selectedCatalogMeal) {
+          const start = ranked.length ? (dayIndex + optionIndex) % ranked.length : 0;
+          for (let offset = 0; offset < ranked.length; offset += 1) {
+            const candidate = ranked[(start + offset) % ranked.length];
+            if (!usedIds.has(candidate.id)) {
+              selectedCatalogMeal = candidate;
+              break;
+            }
           }
         }
 
-        // 2. Asignar macros EXACTOS del objetivo del momento a cada opcion
-        // Las opciones son intercambiables nutricionalmente; aplicamos el mismo objetivo
-        // con una pequena variacion de +/-3% entre opciones para que no sean identicas
-        const variance = 1 + ((optionIndex - 1) * 0.03); // -3%, 0%, +3%
-        meal.caloriasKcal = Math.round(momentTarget.kcal * variance);
-        meal.proteinaG = Math.round(momentTarget.protein * variance);
-        meal.grasasG = Math.round(momentTarget.fat * variance);
-        // Carbohidratos se derivan del remanente calorico para garantizar cierre exacto
-        const derivedCarbs = deriveCarbsFromCalories(meal.caloriasKcal, meal.proteinaG, meal.grasasG);
-        meal.carbohidratosG = Number.isFinite(derivedCarbs) ? Math.round(derivedCarbs) : Math.round(momentTarget.carbs * variance);
+        if (!selectedCatalogMeal) return sourceMeal;
 
-        // 3. Normalizar porciones: convertir objetos o numeros a string vacio para regenerar
-        let rawPortions = meal.porciones;
-        if (isObjectLikePortions(rawPortions) || typeof rawPortions === 'number') {
-          rawPortions = '';
-        } else {
-          rawPortions = stripProfileCalorieAdjustmentNote(rawPortions);
-        }
-
-        // 4. Generar porciones descriptivas desde objetivosPorMomento
-        const descriptive = buildDescriptivePortions(momento, objetivos);
-        if (descriptive) {
-          meal.porciones = descriptive;
-        } else {
-          meal.porciones = 'Porcion ajustada segun objetivo, horario y restricciones del perfil.';
-        }
-
-        // 5. Asegurar enteros coherentes
-        ['caloriasKcal', 'proteinaG', 'carbohidratosG', 'grasasG'].forEach((field) => {
-          const coerced = coerceIntegerValue(meal[field]);
-          if (coerced !== null) meal[field] = coerced;
-        });
-
-        return meal;
+        usedIds.add(selectedCatalogMeal.id);
+        return hydrateMealFromCatalog(selectedCatalogMeal, momentTarget, selectedCatalogMeal.id) || sourceMeal;
       });
     });
   });

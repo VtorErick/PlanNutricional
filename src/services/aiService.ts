@@ -1187,12 +1187,22 @@ function validateProfileStructure(
 
 function normalizeDayName(day: unknown) {
   if (typeof day !== 'string') return '';
-  return day
+  const normalized = day
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
-    .toLowerCase()
-    .replace(/^\w/, (match) => match.toUpperCase());
+    .toLowerCase();
+  const dayMap: Record<string, string> = {
+    lunes: 'Lunes',
+    martes: 'Martes',
+    miercoles: 'Miércoles',
+    jueves: 'Jueves',
+    viernes: 'Viernes',
+    sabado: 'Sábado',
+    domingo: 'Domingo',
+  };
+
+  return dayMap[normalized] || normalized.replace(/^\w/, (match) => match.toUpperCase());
 }
 
 function buildPlanObjectFromSlots(

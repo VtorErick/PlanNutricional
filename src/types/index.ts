@@ -19,6 +19,7 @@ export interface MealAiMeta {
   normalizedByProfile?: boolean;
   normalizedTargetKcal?: number;
   macroConsistentKcal?: number;
+  source?: string;
   profileId?: 'el' | 'ella';
 }
 

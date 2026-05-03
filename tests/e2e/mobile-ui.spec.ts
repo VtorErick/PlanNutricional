@@ -157,6 +157,7 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
         super: ['avena', 'fruta'],
         caloriasKcal: 320,
         proteinaG: 20,
+        carbohidratosG: 38,
         grasasG: 10,
       },
       {
@@ -167,6 +168,7 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
         super: ['yogur', 'fruta'],
         caloriasKcal: 290,
         proteinaG: 18,
+        carbohidratosG: 37,
         grasasG: 8,
       },
       {
@@ -177,6 +179,7 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
         super: ['pan', 'huevo'],
         caloriasKcal: 340,
         proteinaG: 22,
+        carbohidratosG: 38,
         grasasG: 11,
       },
     ]);
@@ -234,6 +237,7 @@ test('AI regenerate tolerates patch-shaped responses and still refreshes the vis
                   super: ['avena', 'berries'],
                   caloriasKcal: 330,
                   proteinaG: 21,
+                  carbohidratosG: 39,
                   grasasG: 10,
                 },
                 {
@@ -244,6 +248,7 @@ test('AI regenerate tolerates patch-shaped responses and still refreshes the vis
                   super: ['pan', 'huevo'],
                   caloriasKcal: 340,
                   proteinaG: 22,
+                  carbohidratosG: 38,
                   grasasG: 11,
                 },
                 {
@@ -254,6 +259,7 @@ test('AI regenerate tolerates patch-shaped responses and still refreshes the vis
                   super: ['yogur', 'fruta'],
                   caloriasKcal: 300,
                   proteinaG: 18,
+                  carbohidratosG: 39,
                   grasasG: 8,
                 },
               ],

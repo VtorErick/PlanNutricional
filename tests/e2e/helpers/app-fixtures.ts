@@ -16,6 +16,11 @@ const ellaFixture = JSON.parse(
   readFileSync(path.join(repoRoot, 'src', 'data', 'defaults', 'perfil-ella.json'), 'utf8')
 );
 
+const dayNameMap: Record<string, string> = {
+  Miercoles: 'Miércoles',
+  Sabado: 'Sábado',
+};
+
 type SeedPlanOptions = {
   selectedDays?: string[];
   lastQuestionnaireContext?: Record<string, unknown> | null;
@@ -52,6 +57,48 @@ export function buildAdjustPlanResponse(
   };
 }
 
+function cloneFixture<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function deriveCarbsFromMeal(meal: Record<string, unknown>) {
+  if (typeof meal.carbohidratosG === 'number' && Number.isFinite(meal.carbohidratosG)) {
+    return Math.round(meal.carbohidratosG);
+  }
+
+  const kcal = Number(meal.caloriasKcal) || 0;
+  const protein = Number(meal.proteinaG) || 0;
+  const fat = Number(meal.grasasG) || 0;
+  return Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4));
+}
+
+function normalizePlanForAiContract(plan: Record<string, Record<string, Array<Record<string, unknown>>>>) {
+  const nextPlan: Record<string, Record<string, Array<Record<string, unknown>>>> = {};
+
+  for (const [rawDay, dayPlan] of Object.entries(plan || {})) {
+    const day = dayNameMap[rawDay] || rawDay;
+    nextPlan[day] = {};
+
+    for (const [momento, meals] of Object.entries(dayPlan || {})) {
+      nextPlan[day][momento] = Array.isArray(meals)
+        ? meals.map((meal) => ({
+            ...meal,
+            carbohidratosG: deriveCarbsFromMeal(meal),
+          }))
+        : [];
+    }
+  }
+
+  return nextPlan;
+}
+
+function buildGeneratedFixture(profileId: 'el' | 'ella') {
+  const fixture = cloneFixture(profileId === 'el' ? elFixture : ellaFixture);
+  const planKey = profileId === 'el' ? 'planEL' : 'planELLA';
+  fixture[planKey] = normalizePlanForAiContract(fixture[planKey]);
+  return fixture;
+}
+
 export async function resetAppStorage(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.clear();
@@ -61,14 +108,18 @@ export async function resetAppStorage(page: Page) {
 
 export function getGeneratedPlanResponse(targetProfile: 'el' | 'ella' | 'ambos' = 'ambos') {
   if (targetProfile === 'el') {
-    return { elData: elFixture, modelUsed: 'gemini-3.1-pro-preview' };
+    return { elData: buildGeneratedFixture('el'), modelUsed: 'gemini-3.1-pro-preview' };
   }
 
   if (targetProfile === 'ella') {
-    return { ellaData: ellaFixture, modelUsed: 'gemini-3.1-pro-preview' };
+    return { ellaData: buildGeneratedFixture('ella'), modelUsed: 'gemini-3.1-pro-preview' };
   }
 
-  return { elData: elFixture, ellaData: ellaFixture, modelUsed: 'gemini-3.1-pro-preview' };
+  return {
+    elData: buildGeneratedFixture('el'),
+    ellaData: buildGeneratedFixture('ella'),
+    modelUsed: 'gemini-3.1-pro-preview',
+  };
 }
 
 function buildSelectionSeed(days: string[]) {
