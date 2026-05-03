@@ -2,7 +2,7 @@ import { repairPlanSlots } from '../api/generate-plan.js';
 import { mealsDatabase } from '../src/data/mealsDB.ts';
 import { buildOptimizedMealsCatalog } from '../src/utils/mealCatalogBuilder.ts';
 
-const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+const WEEK_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const MEAL_MOMENT_KEYS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
 
 function slotsToObject(slots: any[]) {

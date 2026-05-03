@@ -1,6 +1,6 @@
 {
   "model": "deepseek-v4-flash",
-  "elMs": 514,
-  "ellaMs": 360,
-  "totalMs": 874
+  "elMs": 621,
+  "ellaMs": 411,
+  "totalMs": 1032
 }

@@ -1,6 +1,6 @@
 {
   "model": "deepseek-v4-pro",
-  "elMs": 432,
-  "ellaMs": 484,
-  "totalMs": 916
+  "elMs": 443,
+  "ellaMs": 430,
+  "totalMs": 873
 }

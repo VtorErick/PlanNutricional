@@ -62,7 +62,7 @@
           "kcal": 160,
           "proteinaG": 20,
           "carbohidratosG": 12,
-          "grasasG": 2
+          "grasasG": 4
         }
       ]
     },
@@ -73,7 +73,7 @@
         {
           "idRef": "com_43",
           "detalle": "Chiles rellenos de queso capeados (horno)",
-          "porciones": "2 piezas (250g)",
+          "porciones": "2 chiles (250g)",
           "kcal": 400,
           "proteinaG": 25,
           "carbohidratosG": 30,
@@ -85,8 +85,8 @@
           "porciones": "1 plato (300g)",
           "kcal": 450,
           "proteinaG": 35,
-          "carbohidratosG": 20,
-          "grasasG": 22
+          "carbohidratosG": 25,
+          "grasasG": 20
         },
         {
           "idRef": "com_49",
@@ -94,8 +94,8 @@
           "porciones": "1 porción (300g)",
           "kcal": 420,
           "proteinaG": 28,
-          "carbohidratosG": 25,
-          "grasasG": 20
+          "carbohidratosG": 35,
+          "grasasG": 16
         }
       ]
     },
@@ -107,17 +107,17 @@
           "idRef": "col_39",
           "detalle": "Hummus casero con bastones de zanahoria",
           "porciones": "1/2 taza (100g)",
-          "kcal": 150,
+          "kcal": 130,
           "proteinaG": 6,
           "carbohidratosG": 15,
-          "grasasG": 8
+          "grasasG": 5
         },
         {
           "idRef": "col_43",
           "detalle": "Rollo de pavo con queso crema y espinaca",
           "porciones": "2 rollos (100g)",
-          "kcal": 130,
-          "proteinaG": 15,
+          "kcal": 140,
+          "proteinaG": 18,
           "carbohidratosG": 3,
           "grasasG": 7
         },
@@ -125,10 +125,10 @@
           "idRef": "col_45",
           "detalle": "Berries con nueces y toque de limón",
           "porciones": "1 taza (150g)",
-          "kcal": 180,
+          "kcal": 160,
           "proteinaG": 4,
           "carbohidratosG": 20,
-          "grasasG": 10
+          "grasasG": 8
         }
       ]
     },
@@ -152,7 +152,7 @@
           "kcal": 280,
           "proteinaG": 18,
           "carbohidratosG": 35,
-          "grasasG": 5
+          "grasasG": 6
         },
         {
           "idRef": "cen_40",
@@ -160,8 +160,8 @@
           "porciones": "1 plato (300g)",
           "kcal": 320,
           "proteinaG": 15,
-          "carbohidratosG": 30,
-          "grasasG": 12
+          "carbohidratosG": 40,
+          "grasasG": 10
         }
       ]
     },
@@ -209,25 +209,25 @@
           "kcal": 140,
           "proteinaG": 22,
           "carbohidratosG": 6,
-          "grasasG": 2
+          "grasasG": 3
         },
         {
-          "idRef": "col_37",
-          "detalle": "Manzana con crema de cacahuate natural",
-          "porciones": "1 manzana + 1 cda (30g)",
-          "kcal": 200,
-          "proteinaG": 5,
-          "carbohidratosG": 25,
-          "grasasG": 10
-        },
-        {
-          "idRef": "col_40",
-          "detalle": "Edamames calientes con sal de mar",
-          "porciones": "1 taza (150g)",
+          "idRef": "col_46",
+          "detalle": "Batido de proteína con café frío (proteína frappé)",
+          "porciones": "1 vaso (300ml)",
           "kcal": 180,
-          "proteinaG": 17,
-          "carbohidratosG": 14,
-          "grasasG": 8
+          "proteinaG": 25,
+          "carbohidratosG": 10,
+          "grasasG": 4
+        },
+        {
+          "idRef": "col_48",
+          "detalle": "Chía pudding con leche de coco sin azúcar",
+          "porciones": "1 porción (150g)",
+          "kcal": 160,
+          "proteinaG": 5,
+          "carbohidratosG": 12,
+          "grasasG": 10
         }
       ]
     },
@@ -269,31 +269,31 @@
       "momento": "colacion_pm",
       "opciones": [
         {
+          "idRef": "col_37",
+          "detalle": "Manzana con crema de cacahuate natural",
+          "porciones": "1 manzana + 1 cda (30g)",
+          "kcal": 180,
+          "proteinaG": 5,
+          "carbohidratosG": 25,
+          "grasasG": 8
+        },
+        {
+          "idRef": "col_40",
+          "detalle": "Edamames calientes con sal de mar",
+          "porciones": "1 taza (150g)",
+          "kcal": 150,
+          "proteinaG": 12,
+          "carbohidratosG": 10,
+          "grasasG": 6
+        },
+        {
           "idRef": "col_38",
           "detalle": "Requesón descremado con pepino y chía",
           "porciones": "1 taza (200g)",
           "kcal": 130,
           "proteinaG": 20,
-          "carbohidratosG": 8,
-          "grasasG": 1
-        },
-        {
-          "idRef": "col_44",
-          "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
-          "porciones": "1 huevo + 1/2 aguacate",
-          "kcal": 200,
-          "proteinaG": 8,
           "carbohidratosG": 5,
-          "grasasG": 16
-        },
-        {
-          "idRef": "col_47",
-          "detalle": "Palta chilena (aguacate) con tomate y sal marina",
-          "porciones": "1/2 aguacate + tomate",
-          "kcal": 160,
-          "proteinaG": 2,
-          "carbohidratosG": 8,
-          "grasasG": 14
+          "grasasG": 3
         }
       ]
     },
@@ -306,15 +306,15 @@
           "detalle": "Omelette de claras con champiñones y espinaca",
           "porciones": "1 omelette (200g)",
           "kcal": 200,
-          "proteinaG": 25,
+          "proteinaG": 30,
           "carbohidratosG": 5,
-          "grasasG": 8
+          "grasasG": 5
         },
         {
           "idRef": "cen_50",
           "detalle": "Ensalada griega con queso feta y aceitunas",
           "porciones": "1 plato (300g)",
-          "kcal": 300,
+          "kcal": 280,
           "proteinaG": 15,
           "carbohidratosG": 15,
           "grasasG": 18
@@ -323,10 +323,10 @@
           "idRef": "cen_45",
           "detalle": "Atún a la plancha con ensalada de aguacate",
           "porciones": "1 filete (150g) + ensalada",
-          "kcal": 350,
+          "kcal": 300,
           "proteinaG": 35,
           "carbohidratosG": 10,
-          "grasasG": 18
+          "grasasG": 12
         }
       ]
     },
@@ -338,10 +338,10 @@
           "idRef": "des_41",
           "detalle": "Sopes de pollo deshebrado con frijol y nopal",
           "porciones": "2 sopes (200g)",
-          "kcal": 380,
+          "kcal": 370,
           "proteinaG": 25,
           "carbohidratosG": 40,
-          "grasasG": 12
+          "grasasG": 10
         },
         {
           "idRef": "des_47",
@@ -368,22 +368,22 @@
       "momento": "colacion_am",
       "opciones": [
         {
-          "idRef": "col_46",
-          "detalle": "Batido de proteína con café frío (proteína frappé)",
-          "porciones": "1 vaso (300ml)",
-          "kcal": 180,
-          "proteinaG": 25,
-          "carbohidratosG": 10,
-          "grasasG": 3
+          "idRef": "col_44",
+          "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
+          "porciones": "1 huevo + 1/2 aguacate (150g)",
+          "kcal": 200,
+          "proteinaG": 10,
+          "carbohidratosG": 5,
+          "grasasG": 15
         },
         {
-          "idRef": "col_48",
-          "detalle": "Chía pudding con leche de coco sin azúcar",
-          "porciones": "1 porción (150g)",
-          "kcal": 200,
-          "proteinaG": 5,
-          "carbohidratosG": 15,
-          "grasasG": 12
+          "idRef": "col_47",
+          "detalle": "Palta chilena (aguacate) con tomate y sal marina",
+          "porciones": "1/2 aguacate + tomate (150g)",
+          "kcal": 160,
+          "proteinaG": 3,
+          "carbohidratosG": 10,
+          "grasasG": 14
         },
         {
           "idRef": "col_36",
@@ -403,7 +403,7 @@
         {
           "idRef": "com_53",
           "detalle": "Curry de garbanzos y espinaca (chana saag)",
-          "porciones": "1 tazón (350g)",
+          "porciones": "1 plato (350g)",
           "kcal": 400,
           "proteinaG": 20,
           "carbohidratosG": 45,
@@ -412,7 +412,7 @@
         {
           "idRef": "com_43",
           "detalle": "Chiles rellenos de queso capeados (horno)",
-          "porciones": "2 piezas (250g)",
+          "porciones": "2 chiles (250g)",
           "kcal": 400,
           "proteinaG": 25,
           "carbohidratosG": 30,
@@ -424,8 +424,8 @@
           "porciones": "1 plato (300g)",
           "kcal": 450,
           "proteinaG": 35,
-          "carbohidratosG": 20,
-          "grasasG": 22
+          "carbohidratosG": 25,
+          "grasasG": 20
         }
       ]
     },
@@ -449,16 +449,16 @@
           "kcal": 160,
           "proteinaG": 20,
           "carbohidratosG": 12,
-          "grasasG": 2
+          "grasasG": 4
         },
         {
           "idRef": "col_39",
           "detalle": "Hummus casero con bastones de zanahoria",
           "porciones": "1/2 taza (100g)",
-          "kcal": 150,
+          "kcal": 130,
           "proteinaG": 6,
           "carbohidratosG": 15,
-          "grasasG": 8
+          "grasasG": 5
         }
       ]
     },
@@ -470,10 +470,10 @@
           "idRef": "cen_46",
           "detalle": "Huevo revuelto con espinaca y queso cottage",
           "porciones": "1 plato (200g)",
-          "kcal": 250,
+          "kcal": 220,
           "proteinaG": 25,
           "carbohidratosG": 5,
-          "grasasG": 12
+          "grasasG": 10
         },
         {
           "idRef": "cen_41",
@@ -491,7 +491,7 @@
           "kcal": 280,
           "proteinaG": 18,
           "carbohidratosG": 35,
-          "grasasG": 5
+          "grasasG": 6
         }
       ]
     },
@@ -536,8 +536,8 @@
           "idRef": "col_43",
           "detalle": "Rollo de pavo con queso crema y espinaca",
           "porciones": "2 rollos (100g)",
-          "kcal": 130,
-          "proteinaG": 15,
+          "kcal": 140,
+          "proteinaG": 18,
           "carbohidratosG": 3,
           "grasasG": 7
         },
@@ -545,10 +545,10 @@
           "idRef": "col_45",
           "detalle": "Berries con nueces y toque de limón",
           "porciones": "1 taza (150g)",
-          "kcal": 180,
+          "kcal": 160,
           "proteinaG": 4,
           "carbohidratosG": 20,
-          "grasasG": 10
+          "grasasG": 8
         },
         {
           "idRef": "col_50",
@@ -557,7 +557,7 @@
           "kcal": 140,
           "proteinaG": 22,
           "carbohidratosG": 6,
-          "grasasG": 2
+          "grasasG": 3
         }
       ]
     },
@@ -571,8 +571,8 @@
           "porciones": "1 porción (300g)",
           "kcal": 420,
           "proteinaG": 28,
-          "carbohidratosG": 25,
-          "grasasG": 20
+          "carbohidratosG": 35,
+          "grasasG": 16
         },
         {
           "idRef": "com_57",
@@ -599,31 +599,31 @@
       "momento": "colacion_pm",
       "opciones": [
         {
-          "idRef": "col_37",
-          "detalle": "Manzana con crema de cacahuate natural",
-          "porciones": "1 manzana + 1 cda (30g)",
-          "kcal": 200,
+          "idRef": "col_46",
+          "detalle": "Batido de proteína con café frío (proteína frappé)",
+          "porciones": "1 vaso (300ml)",
+          "kcal": 180,
+          "proteinaG": 25,
+          "carbohidratosG": 10,
+          "grasasG": 4
+        },
+        {
+          "idRef": "col_48",
+          "detalle": "Chía pudding con leche de coco sin azúcar",
+          "porciones": "1 porción (150g)",
+          "kcal": 160,
           "proteinaG": 5,
-          "carbohidratosG": 25,
+          "carbohidratosG": 12,
           "grasasG": 10
         },
         {
-          "idRef": "col_40",
-          "detalle": "Edamames calientes con sal de mar",
-          "porciones": "1 taza (150g)",
+          "idRef": "col_37",
+          "detalle": "Manzana con crema de cacahuate natural",
+          "porciones": "1 manzana + 1 cda (30g)",
           "kcal": 180,
-          "proteinaG": 17,
-          "carbohidratosG": 14,
+          "proteinaG": 5,
+          "carbohidratosG": 25,
           "grasasG": 8
-        },
-        {
-          "idRef": "col_38",
-          "detalle": "Requesón descremado con pepino y chía",
-          "porciones": "1 taza (200g)",
-          "kcal": 130,
-          "proteinaG": 20,
-          "carbohidratosG": 8,
-          "grasasG": 1
         }
       ]
     },
@@ -637,23 +637,23 @@
           "porciones": "1 plato (300g)",
           "kcal": 320,
           "proteinaG": 15,
-          "carbohidratosG": 30,
-          "grasasG": 12
+          "carbohidratosG": 40,
+          "grasasG": 10
         },
         {
           "idRef": "cen_39",
           "detalle": "Omelette de claras con champiñones y espinaca",
           "porciones": "1 omelette (200g)",
           "kcal": 200,
-          "proteinaG": 25,
+          "proteinaG": 30,
           "carbohidratosG": 5,
-          "grasasG": 8
+          "grasasG": 5
         },
         {
           "idRef": "cen_50",
           "detalle": "Ensalada griega con queso feta y aceitunas",
           "porciones": "1 plato (300g)",
-          "kcal": 300,
+          "kcal": 280,
           "proteinaG": 15,
           "carbohidratosG": 15,
           "grasasG": 18
@@ -677,10 +677,10 @@
           "idRef": "des_41",
           "detalle": "Sopes de pollo deshebrado con frijol y nopal",
           "porciones": "2 sopes (200g)",
-          "kcal": 380,
+          "kcal": 370,
           "proteinaG": 25,
           "carbohidratosG": 40,
-          "grasasG": 12
+          "grasasG": 10
         },
         {
           "idRef": "des_47",
@@ -698,31 +698,31 @@
       "momento": "colacion_am",
       "opciones": [
         {
+          "idRef": "col_40",
+          "detalle": "Edamames calientes con sal de mar",
+          "porciones": "1 taza (150g)",
+          "kcal": 150,
+          "proteinaG": 12,
+          "carbohidratosG": 10,
+          "grasasG": 6
+        },
+        {
+          "idRef": "col_38",
+          "detalle": "Requesón descremado con pepino y chía",
+          "porciones": "1 taza (200g)",
+          "kcal": 130,
+          "proteinaG": 20,
+          "carbohidratosG": 5,
+          "grasasG": 3
+        },
+        {
           "idRef": "col_44",
           "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
-          "porciones": "1 huevo + 1/2 aguacate",
+          "porciones": "1 huevo + 1/2 aguacate (150g)",
           "kcal": 200,
-          "proteinaG": 8,
+          "proteinaG": 10,
           "carbohidratosG": 5,
-          "grasasG": 16
-        },
-        {
-          "idRef": "col_47",
-          "detalle": "Palta chilena (aguacate) con tomate y sal marina",
-          "porciones": "1/2 aguacate + tomate",
-          "kcal": 160,
-          "proteinaG": 2,
-          "carbohidratosG": 8,
-          "grasasG": 14
-        },
-        {
-          "idRef": "col_46",
-          "detalle": "Batido de proteína con café frío (proteína frappé)",
-          "porciones": "1 vaso (300ml)",
-          "kcal": 180,
-          "proteinaG": 25,
-          "carbohidratosG": 10,
-          "grasasG": 3
+          "grasasG": 15
         }
       ]
     },
@@ -742,7 +742,7 @@
         {
           "idRef": "com_53",
           "detalle": "Curry de garbanzos y espinaca (chana saag)",
-          "porciones": "1 tazón (350g)",
+          "porciones": "1 plato (350g)",
           "kcal": 400,
           "proteinaG": 20,
           "carbohidratosG": 45,
@@ -751,7 +751,7 @@
         {
           "idRef": "com_43",
           "detalle": "Chiles rellenos de queso capeados (horno)",
-          "porciones": "2 piezas (250g)",
+          "porciones": "2 chiles (250g)",
           "kcal": 400,
           "proteinaG": 25,
           "carbohidratosG": 30,
@@ -764,13 +764,13 @@
       "momento": "colacion_pm",
       "opciones": [
         {
-          "idRef": "col_48",
-          "detalle": "Chía pudding con leche de coco sin azúcar",
-          "porciones": "1 porción (150g)",
-          "kcal": 200,
-          "proteinaG": 5,
-          "carbohidratosG": 15,
-          "grasasG": 12
+          "idRef": "col_47",
+          "detalle": "Palta chilena (aguacate) con tomate y sal marina",
+          "porciones": "1/2 aguacate + tomate (150g)",
+          "kcal": 160,
+          "proteinaG": 3,
+          "carbohidratosG": 10,
+          "grasasG": 14
         },
         {
           "idRef": "col_36",
@@ -800,19 +800,19 @@
           "idRef": "cen_45",
           "detalle": "Atún a la plancha con ensalada de aguacate",
           "porciones": "1 filete (150g) + ensalada",
-          "kcal": 350,
+          "kcal": 300,
           "proteinaG": 35,
           "carbohidratosG": 10,
-          "grasasG": 18
+          "grasasG": 12
         },
         {
           "idRef": "cen_46",
           "detalle": "Huevo revuelto con espinaca y queso cottage",
           "porciones": "1 plato (200g)",
-          "kcal": 250,
+          "kcal": 220,
           "proteinaG": 25,
           "carbohidratosG": 5,
-          "grasasG": 12
+          "grasasG": 10
         },
         {
           "idRef": "cen_41",
@@ -869,23 +869,23 @@
           "kcal": 160,
           "proteinaG": 20,
           "carbohidratosG": 12,
-          "grasasG": 2
+          "grasasG": 4
         },
         {
           "idRef": "col_39",
           "detalle": "Hummus casero con bastones de zanahoria",
           "porciones": "1/2 taza (100g)",
-          "kcal": 150,
+          "kcal": 130,
           "proteinaG": 6,
           "carbohidratosG": 15,
-          "grasasG": 8
+          "grasasG": 5
         },
         {
           "idRef": "col_43",
           "detalle": "Rollo de pavo con queso crema y espinaca",
           "porciones": "2 rollos (100g)",
-          "kcal": 130,
-          "proteinaG": 15,
+          "kcal": 140,
+          "proteinaG": 18,
           "carbohidratosG": 3,
           "grasasG": 7
         }
@@ -901,8 +901,8 @@
           "porciones": "1 plato (300g)",
           "kcal": 450,
           "proteinaG": 35,
-          "carbohidratosG": 20,
-          "grasasG": 22
+          "carbohidratosG": 25,
+          "grasasG": 20
         },
         {
           "idRef": "com_49",
@@ -910,8 +910,8 @@
           "porciones": "1 porción (300g)",
           "kcal": 420,
           "proteinaG": 28,
-          "carbohidratosG": 25,
-          "grasasG": 20
+          "carbohidratosG": 35,
+          "grasasG": 16
         },
         {
           "idRef": "com_57",
@@ -932,10 +932,10 @@
           "idRef": "col_45",
           "detalle": "Berries con nueces y toque de limón",
           "porciones": "1 taza (150g)",
-          "kcal": 180,
+          "kcal": 160,
           "proteinaG": 4,
           "carbohidratosG": 20,
-          "grasasG": 10
+          "grasasG": 8
         },
         {
           "idRef": "col_50",
@@ -944,16 +944,16 @@
           "kcal": 140,
           "proteinaG": 22,
           "carbohidratosG": 6,
-          "grasasG": 2
+          "grasasG": 3
         },
         {
-          "idRef": "col_37",
-          "detalle": "Manzana con crema de cacahuate natural",
-          "porciones": "1 manzana + 1 cda (30g)",
-          "kcal": 200,
-          "proteinaG": 5,
-          "carbohidratosG": 25,
-          "grasasG": 10
+          "idRef": "col_46",
+          "detalle": "Batido de proteína con café frío (proteína frappé)",
+          "porciones": "1 vaso (300ml)",
+          "kcal": 180,
+          "proteinaG": 25,
+          "carbohidratosG": 10,
+          "grasasG": 4
         }
       ]
     },
@@ -968,7 +968,7 @@
           "kcal": 280,
           "proteinaG": 18,
           "carbohidratosG": 35,
-          "grasasG": 5
+          "grasasG": 6
         },
         {
           "idRef": "cen_40",
@@ -976,17 +976,17 @@
           "porciones": "1 plato (300g)",
           "kcal": 320,
           "proteinaG": 15,
-          "carbohidratosG": 30,
-          "grasasG": 12
+          "carbohidratosG": 40,
+          "grasasG": 10
         },
         {
           "idRef": "cen_39",
           "detalle": "Omelette de claras con champiñones y espinaca",
           "porciones": "1 omelette (200g)",
           "kcal": 200,
-          "proteinaG": 25,
+          "proteinaG": 30,
           "carbohidratosG": 5,
-          "grasasG": 8
+          "grasasG": 5
         }
       ]
     },
@@ -1016,10 +1016,10 @@
           "idRef": "des_41",
           "detalle": "Sopes de pollo deshebrado con frijol y nopal",
           "porciones": "2 sopes (200g)",
-          "kcal": 380,
+          "kcal": 370,
           "proteinaG": 25,
           "carbohidratosG": 40,
-          "grasasG": 12
+          "grasasG": 10
         }
       ]
     },
@@ -1028,31 +1028,31 @@
       "momento": "colacion_am",
       "opciones": [
         {
-          "idRef": "col_40",
-          "detalle": "Edamames calientes con sal de mar",
-          "porciones": "1 taza (150g)",
+          "idRef": "col_48",
+          "detalle": "Chía pudding con leche de coco sin azúcar",
+          "porciones": "1 porción (150g)",
+          "kcal": 160,
+          "proteinaG": 5,
+          "carbohidratosG": 12,
+          "grasasG": 10
+        },
+        {
+          "idRef": "col_37",
+          "detalle": "Manzana con crema de cacahuate natural",
+          "porciones": "1 manzana + 1 cda (30g)",
           "kcal": 180,
-          "proteinaG": 17,
-          "carbohidratosG": 14,
+          "proteinaG": 5,
+          "carbohidratosG": 25,
           "grasasG": 8
         },
         {
-          "idRef": "col_38",
-          "detalle": "Requesón descremado con pepino y chía",
-          "porciones": "1 taza (200g)",
-          "kcal": 130,
-          "proteinaG": 20,
-          "carbohidratosG": 8,
-          "grasasG": 1
-        },
-        {
-          "idRef": "col_44",
-          "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
-          "porciones": "1 huevo + 1/2 aguacate",
-          "kcal": 200,
-          "proteinaG": 8,
-          "carbohidratosG": 5,
-          "grasasG": 16
+          "idRef": "col_40",
+          "detalle": "Edamames calientes con sal de mar",
+          "porciones": "1 taza (150g)",
+          "kcal": 150,
+          "proteinaG": 12,
+          "carbohidratosG": 10,
+          "grasasG": 6
         }
       ]
     },
@@ -1081,7 +1081,7 @@
         {
           "idRef": "com_53",
           "detalle": "Curry de garbanzos y espinaca (chana saag)",
-          "porciones": "1 tazón (350g)",
+          "porciones": "1 plato (350g)",
           "kcal": 400,
           "proteinaG": 20,
           "carbohidratosG": 45,
@@ -1094,31 +1094,31 @@
       "momento": "colacion_pm",
       "opciones": [
         {
-          "idRef": "col_47",
-          "detalle": "Palta chilena (aguacate) con tomate y sal marina",
-          "porciones": "1/2 aguacate + tomate",
-          "kcal": 160,
-          "proteinaG": 2,
-          "carbohidratosG": 8,
-          "grasasG": 14
-        },
-        {
-          "idRef": "col_46",
-          "detalle": "Batido de proteína con café frío (proteína frappé)",
-          "porciones": "1 vaso (300ml)",
-          "kcal": 180,
-          "proteinaG": 25,
-          "carbohidratosG": 10,
+          "idRef": "col_38",
+          "detalle": "Requesón descremado con pepino y chía",
+          "porciones": "1 taza (200g)",
+          "kcal": 130,
+          "proteinaG": 20,
+          "carbohidratosG": 5,
           "grasasG": 3
         },
         {
-          "idRef": "col_48",
-          "detalle": "Chía pudding con leche de coco sin azúcar",
-          "porciones": "1 porción (150g)",
+          "idRef": "col_44",
+          "detalle": "Huevo cocido con aguacate y todo bagel seasoning",
+          "porciones": "1 huevo + 1/2 aguacate (150g)",
           "kcal": 200,
-          "proteinaG": 5,
-          "carbohidratosG": 15,
-          "grasasG": 12
+          "proteinaG": 10,
+          "carbohidratosG": 5,
+          "grasasG": 15
+        },
+        {
+          "idRef": "col_47",
+          "detalle": "Palta chilena (aguacate) con tomate y sal marina",
+          "porciones": "1/2 aguacate + tomate (150g)",
+          "kcal": 160,
+          "proteinaG": 3,
+          "carbohidratosG": 10,
+          "grasasG": 14
         }
       ]
     },
@@ -1130,7 +1130,7 @@
           "idRef": "cen_50",
           "detalle": "Ensalada griega con queso feta y aceitunas",
           "porciones": "1 plato (300g)",
-          "kcal": 300,
+          "kcal": 280,
           "proteinaG": 15,
           "carbohidratosG": 15,
           "grasasG": 18
@@ -1139,19 +1139,19 @@
           "idRef": "cen_45",
           "detalle": "Atún a la plancha con ensalada de aguacate",
           "porciones": "1 filete (150g) + ensalada",
-          "kcal": 350,
+          "kcal": 300,
           "proteinaG": 35,
           "carbohidratosG": 10,
-          "grasasG": 18
+          "grasasG": 12
         },
         {
           "idRef": "cen_46",
           "detalle": "Huevo revuelto con espinaca y queso cottage",
           "porciones": "1 plato (200g)",
-          "kcal": 250,
+          "kcal": 220,
           "proteinaG": 25,
           "carbohidratosG": 5,
-          "grasasG": 12
+          "grasasG": 10
         }
       ]
     }

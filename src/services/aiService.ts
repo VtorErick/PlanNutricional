@@ -85,7 +85,7 @@ const ALLOWED_ICONS = [
   'Heart',
 ];
 
-const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+const WEEK_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const MEAL_MOMENT_KEYS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
 const MEAL_ITEM_REQUIRED_KEYS = [
   'nombre',

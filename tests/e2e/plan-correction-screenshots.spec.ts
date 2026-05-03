@@ -9,7 +9,7 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const resultsDir = path.join(repoRoot, 'scripts', 'results-deepseek-v4-flash');
 const screenshotDir = path.join(repoRoot, 'docs', 'screenshots', 'plan-correction');
 
-const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+const WEEK_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const MEAL_MOMENT_KEYS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
 
 function slotsToObject(slots: any[]) {

@@ -168,7 +168,7 @@ async function main() {
   const precomputedSupplementsElla = generateSupplements(payload.ella, supplementsCatalog);
 
   // Build prompts exactly like the app does
-  const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+  const WEEK_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const MEAL_MOMENT_KEYS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
 
   function buildSystemPrompt(prefix: string) {

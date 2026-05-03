@@ -6,7 +6,7 @@ import { buildExportData } from '../../src/dataManager.ts';
 import { buildQuestionnaireMealsCatalog, mealsDatabase } from '../../src/data/mealsDB.ts';
 import { buildQuestionnaireSupplementsCatalog } from '../../src/data/supplementsDB.ts';
 
-const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+const WEEK_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const MOMENTS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'] as const;
 
 function buildQuestionnairePayload() {

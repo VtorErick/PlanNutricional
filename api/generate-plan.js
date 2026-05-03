@@ -29,8 +29,21 @@ const ALLOWED_ICONS = [
   'AlertTriangle',
   'Heart',
 ];
-const WEEK_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+const WEEK_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const MEAL_MOMENT_KEYS = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
+
+function normalizeDayName(dia) {
+  const map = {
+    'miercoles': 'Miércoles',
+    'sabado': 'Sábado',
+    'lunes': 'Lunes',
+    'martes': 'Martes',
+    'jueves': 'Jueves',
+    'viernes': 'Viernes',
+    'domingo': 'Domingo',
+  };
+  return map[String(dia).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')] || dia;
+}
 const MEAL_ITEM_REQUIRED_KEYS = [
   'nombre',
   'porciones',
@@ -585,16 +598,6 @@ function cloneSerializableData(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function normalizeDayName(day) {
-  if (typeof day !== 'string') return '';
-  return day
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase()
-    .replace(/^\w/, (match) => match.toUpperCase());
-}
-
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -682,6 +685,55 @@ const PORTION_LABELS = {
   grasas: 'grasa',
 };
 
+// Factores SMAE estandar por porcion (kcal ≈ P*4 + C*4 + G*9)
+const SMAE_MACRO_FACTORS = {
+  frutas:   { kcal: 60,  protein: 0,  carbs: 15, fat: 0 },
+  verduras: { kcal: 25,  protein: 1,  carbs: 5,  fat: 0 },
+  cereales: { kcal: 70,  protein: 2,  carbs: 15, fat: 0 },
+  leguminosas: { kcal: 120, protein: 8,  carbs: 20, fat: 1 },
+  lacteos:  { kcal: 100, protein: 8,  carbs: 12, fat: 2 },
+  proteina: { kcal: 100, protein: 15, carbs: 0,  fat: 4 },
+  grasas:   { kcal: 45,  protein: 0,  carbs: 0,  fat: 5 },
+};
+
+function calculateMomentMacros(objetivosPorMomento) {
+  const result = {};
+  MEAL_MOMENT_KEYS.forEach((momento) => {
+    const goals = objetivosPorMomento?.[momento];
+    if (!goals) { result[momento] = { kcal: 0, protein: 0, carbs: 0, fat: 0 }; return; }
+    let kcal = 0, protein = 0, carbs = 0, fat = 0;
+    Object.entries(SMAE_MACRO_FACTORS).forEach(([group, factor]) => {
+      const qty = Number(goals[group] || 0);
+      if (qty > 0) {
+        kcal += factor.kcal * qty;
+        protein += factor.protein * qty;
+        carbs += factor.carbs * qty;
+        fat += factor.fat * qty;
+      }
+    });
+    result[momento] = { kcal, protein, carbs, fat };
+  });
+  return result;
+}
+
+function scaleMomentMacrosToDailyTarget(momentMacros, objetivosPorMomento, metaCaloricaKcalDia) {
+  if (!metaCaloricaKcalDia || metaCaloricaKcalDia <= 0) return momentMacros;
+  const totalBaseKcal = MEAL_MOMENT_KEYS.reduce((sum, mk) => sum + (momentMacros[mk]?.kcal || 0), 0);
+  if (totalBaseKcal <= 0) return momentMacros;
+  const scale = metaCaloricaKcalDia / totalBaseKcal;
+  const scaled = {};
+  MEAL_MOMENT_KEYS.forEach((mk) => {
+    const base = momentMacros[mk];
+    scaled[mk] = {
+      kcal: Math.round(base.kcal * scale),
+      protein: Math.round(base.protein * scale),
+      carbs: Math.round(base.carbs * scale),
+      fat: Math.round(base.fat * scale),
+    };
+  });
+  return scaled;
+}
+
 function buildDescriptivePortions(momento, objetivosPorMomento) {
   const goals = objetivosPorMomento?.[momento];
   if (!goals || typeof goals !== 'object') return '';
@@ -763,6 +815,14 @@ function repairPlanSlots(plan, profile, catalog) {
 
   const catalogArray = Array.isArray(catalog) ? catalog : [];
 
+  // Calculate target macros per moment based on objetivosPorMomento
+  const baseMomentMacros = calculateMomentMacros(objetivos);
+  const targetMomentMacros = scaleMomentMacrosToDailyTarget(
+    baseMomentMacros,
+    objetivos,
+    profile?.metaCaloricaKcalDia || 0
+  );
+
   function extractMacrosFromObject(obj, targetMeal) {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
     const map = { kcal: 'caloriasKcal', caloriasKcal: 'caloriasKcal', proteinaG: 'proteinaG', carbohidratosG: 'carbohidratosG', grasasG: 'grasasG' };
@@ -781,12 +841,14 @@ function repairPlanSlots(plan, profile, catalog) {
       const options = dayPlan[momento];
       if (!Array.isArray(options)) return;
 
-      dayPlan[momento] = options.map((meal) => {
+      const momentTarget = targetMomentMacros[momento] || { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+      const optionCount = options.length || 1;
+
+      dayPlan[momento] = options.map((meal, optionIndex) => {
         if (!meal || typeof meal !== 'object') return meal;
 
         // Extract macros nested inside portions object before overwriting it
         extractMacrosFromObject(meal.porciones, meal);
-        // Normalize kcal -> caloriasKcal if needed
         if (Number.isFinite(Number(meal.kcal)) && !Number.isFinite(Number(meal.caloriasKcal))) {
           meal.caloriasKcal = Math.round(Number(meal.kcal));
         }
@@ -797,7 +859,6 @@ function repairPlanSlots(plan, profile, catalog) {
         const catalogMeal = catalogArray.find((item) => item?.id === baseId.trim());
 
         if (!catalogMeal || !isCatalogMealValidForMoment(catalogMeal, momento)) {
-          // Reemplazar con primera opcion valida del catalogo para este momento que tenga macroEstimate si es posible
           const fallback = catalogArray.find((item) =>
             item?.momentos?.includes(momento) && hasMacroEstimate(item)
           ) || catalogArray.find((item) => item?.momentos?.includes(momento));
@@ -805,31 +866,28 @@ function repairPlanSlots(plan, profile, catalog) {
             meal.idRef = fallback.id;
             meal.nombre = fallback.nombre;
             meal.detalle = buildCanonicalMealDetail(fallback.nombre, fallback.super);
-            if (hasMacroEstimate(fallback)) {
-              meal.caloriasKcal = Math.round(Number(fallback.macroEstimate.calories));
-              meal.proteinaG = Math.round(Number(fallback.macroEstimate.protein));
-              meal.carbohidratosG = Math.round(Number(fallback.macroEstimate.carbs));
-              meal.grasasG = Math.round(Number(fallback.macroEstimate.fat));
-            }
-            // else preserve original AI macros already extracted above
           }
         } else {
-          // Asegurar nombre y detalle desde catalogo
           if (!isNonEmptyString(meal.nombre)) {
             meal.nombre = catalogMeal.nombre;
           }
           if (!isNonEmptyString(meal.detalle) || shouldReplaceMealDetail(meal.detalle, catalogMeal.nombre, catalogMeal.super)) {
             meal.detalle = buildCanonicalMealDetail(catalogMeal.nombre, catalogMeal.super);
           }
-          if (hasMacroEstimate(catalogMeal)) {
-            if (!Number(meal.caloriasKcal || 0)) meal.caloriasKcal = Math.round(Number(catalogMeal.macroEstimate.calories));
-            if (!Number(meal.proteinaG || 0)) meal.proteinaG = Math.round(Number(catalogMeal.macroEstimate.protein));
-            if (!Number(meal.carbohidratosG || 0)) meal.carbohidratosG = Math.round(Number(catalogMeal.macroEstimate.carbs));
-            if (!Number(meal.grasasG || 0)) meal.grasasG = Math.round(Number(catalogMeal.macroEstimate.fat));
-          }
         }
 
-        // 2. Normalizar porciones: convertir objetos o numeros a string vacio para regenerar
+        // 2. Asignar macros EXACTOS del objetivo del momento a cada opcion
+        // Las opciones son intercambiables nutricionalmente; aplicamos el mismo objetivo
+        // con una pequena variacion de +/-3% entre opciones para que no sean identicas
+        const variance = 1 + ((optionIndex - 1) * 0.03); // -3%, 0%, +3%
+        meal.caloriasKcal = Math.round(momentTarget.kcal * variance);
+        meal.proteinaG = Math.round(momentTarget.protein * variance);
+        meal.grasasG = Math.round(momentTarget.fat * variance);
+        // Carbohidratos se derivan del remanente calorico para garantizar cierre exacto
+        const derivedCarbs = deriveCarbsFromCalories(meal.caloriasKcal, meal.proteinaG, meal.grasasG);
+        meal.carbohidratosG = Number.isFinite(derivedCarbs) ? Math.round(derivedCarbs) : Math.round(momentTarget.carbs * variance);
+
+        // 3. Normalizar porciones: convertir objetos o numeros a string vacio para regenerar
         let rawPortions = meal.porciones;
         if (isObjectLikePortions(rawPortions) || typeof rawPortions === 'number') {
           rawPortions = '';
@@ -837,31 +895,19 @@ function repairPlanSlots(plan, profile, catalog) {
           rawPortions = stripProfileCalorieAdjustmentNote(rawPortions);
         }
 
-        // 3. Generar porciones descriptivas desde objetivosPorMomento si no hay string valido
-        if (!isNonEmptyString(rawPortions) || !hasRecognizablePortions(rawPortions)) {
-          const descriptive = buildDescriptivePortions(momento, objetivos);
-          if (descriptive) {
-            meal.porciones = descriptive;
-          } else {
-            meal.porciones = 'Porcion ajustada segun objetivo, horario y restricciones del perfil.';
-          }
+        // 4. Generar porciones descriptivas desde objetivosPorMomento
+        const descriptive = buildDescriptivePortions(momento, objetivos);
+        if (descriptive) {
+          meal.porciones = descriptive;
         } else {
-          meal.porciones = rawPortions;
+          meal.porciones = 'Porcion ajustada segun objetivo, horario y restricciones del perfil.';
         }
 
-        // 4. Asegurar macros coherentes
+        // 5. Asegurar enteros coherentes
         ['caloriasKcal', 'proteinaG', 'carbohidratosG', 'grasasG'].forEach((field) => {
           const coerced = coerceIntegerValue(meal[field]);
           if (coerced !== null) meal[field] = coerced;
         });
-
-        if (!Number.isFinite(Number(meal.carbohidratosG))) {
-          meal.carbohidratosG = deriveCarbsFromCalories(
-            Number(meal.caloriasKcal || 0),
-            Number(meal.proteinaG || 0),
-            Number(meal.grasasG || 0)
-          );
-        }
 
         return meal;
       });
@@ -3376,3 +3422,6 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Named exports for test/verification scripts
+export { repairPlanSlots, calculateMomentMacros, scaleMomentMacrosToDailyTarget, buildDescriptivePortions, isCatalogMealValidForMoment, normalizeDayName };
