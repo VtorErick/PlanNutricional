@@ -344,7 +344,7 @@ function createLoggedAiError(debugContext, options) {
 function getMaxOutputTokens(modelName, requestMode) {
   const normalized = normalizeModelName(modelName).toLowerCase();
   const hardLimit = normalized.includes('gemini-2.0') || normalized.includes('gemma') ? 8192 : 65536;
-  const desired = requestMode === 'adjust' ? 4096 : 16384;
+  const desired = requestMode === 'adjust' ? 4096 : 8192;
   return Math.min(desired, hardLimit);
 }
 
@@ -498,15 +498,9 @@ function buildPlanSlotSchema() {
         type: 'array',
         items: {
           type: 'object',
-          required: ['idRef', 'porciones', 'detalle', 'caloriasKcal', 'proteinaG', 'carbohidratosG', 'grasasG'],
+          required: ['idRef'],
           properties: {
             idRef: { type: 'string' },
-            porciones: { type: 'string' },
-            detalle: { type: 'string' },
-            caloriasKcal: { type: 'integer' },
-            proteinaG: { type: 'integer' },
-            carbohidratosG: { type: 'integer' },
-            grasasG: { type: 'integer' },
           }
         }
       }
@@ -1164,33 +1158,6 @@ function validateMealOptionsArray(options, location, debugContext, geminiRequest
 
     const normalizedMeal = normalizeMealOptionAgainstCatalog(meal, catalogMeal);
     options[index] = normalizedMeal;
-    validateRequiredStringField(normalizedMeal, 'porciones', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-    validateRequiredIntegerField(normalizedMeal, 'caloriasKcal', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-    validateRequiredIntegerField(normalizedMeal, 'proteinaG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-    validateRequiredIntegerField(normalizedMeal, 'carbohidratosG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-    validateRequiredIntegerField(normalizedMeal, 'grasasG', `${location}[${index}]`, debugContext, geminiRequest, geminiResponseBody, modelName);
-    validateRequiredStringField(
-      normalizedMeal,
-      'detalle',
-      `${location}[${index}]`,
-      debugContext,
-      geminiRequest,
-      geminiResponseBody,
-      modelName
-    );
-
-    if (
-      hasRecognizablePortions(normalizedMeal.porciones) &&
-      Number(normalizedMeal.caloriasKcal) <= 0 &&
-      Number(normalizedMeal.proteinaG) <= 0 &&
-      Number(normalizedMeal.carbohidratosG) <= 0 &&
-      Number(normalizedMeal.grasasG) <= 0
-    ) {
-      normalizedMeal.caloriasKcal = Number(normalizedMeal.caloriasKcal) || 0;
-      normalizedMeal.proteinaG = Number(normalizedMeal.proteinaG) || 0;
-      normalizedMeal.carbohidratosG = Number(normalizedMeal.carbohidratosG) || 0;
-      normalizedMeal.grasasG = Number(normalizedMeal.grasasG) || 0;
-    }
   });
 }
 
@@ -2297,7 +2264,7 @@ Perfil objetivo:
 - id fijo: "${lowerPrefix}"
 - nombre fijo: "${profileLabel}"
 
-El perfil completo (incluyendo objetivosPorMomento, distribucionDiaria, suplementos, descripcion, meta, etc.) ya esta pre-calculado por la app. TU SOLO DEBES GENERAR EL PLAN SEMANAL.
+El perfil completo (incluyendo objetivosPorMomento, distribucionDiaria, suplementos, descripcion, meta, etc.) ya esta pre-calculado por la app. TU SOLO DEBES ELEGIR RECETAS DEL CATALOGO.
 
 Clave raiz obligatoria:
 - ${planTransportKey}
@@ -2306,16 +2273,15 @@ Reglas criticas:
 - No cambies id ni nombre.
 - Usa exactamente estos dias dentro del JSON: ${WEEK_DAYS.join(', ')}.
 - Usa exactamente estos momentos dentro del JSON: ${MEAL_MOMENT_KEYS.join(', ')}.
-- En la clave 'opciones', cada comida debe ser un OBJETO que incluya 'idRef' extraido del "mealsCatalog".
-- Cada entrada de "mealsCatalog" incluye id, nombre, tags, momentos y macroEstimate cuando existe. Usa el nombre de la receta para redactar un "detalle" corto y claro.
+- En la clave 'opciones', cada comida debe ser un OBJETO con SOLO la clave 'idRef' extraida del "mealsCatalog".
+- Cada entrada de "mealsCatalog" incluye id, nombre, tags, momentos y macroEstimate cuando existe. No copies nombre, porciones, detalle, ingredientes ni macros.
 - CRITICO: Debes respetar ESTRICTAMENTE todo lo pedido en el cuestionario: preferencias alimenticias (ej. vegano, mexicano, asiático), restricciones medicas, ingredientes excluidos, tiempos de cocina, etc. Selecciona unicamente IDs del catalogo que casen con estas preferencias e ignora los demas.
 - ${planTransportKey} debe ser un arreglo plano de 35 slots.
 - Cada slot debe tener exactamente estas claves: dia, momento, opciones.
 - Debe haber exactamente un slot por cada combinacion de dia + momento.
 - Ordena los slots primero por dia (${WEEK_DAYS.join(', ')}) y dentro de cada dia por momento (${MEAL_MOMENT_KEYS.join(', ')}).
-- Cada slot debe devolver exactamente 3 objetos en 'opciones'.
+- Cada slot debe devolver exactamente 3 objetos en 'opciones', con formato exacto: {"idRef":"<ID_REAL_DEL_CATALOGO>"}.
 - No anides momentos dentro de dias ni dias dentro de objetos complejos; usa solo el arreglo plano de slots.
-- Las calorias y macros deben cerrar entre si: kcal ≈ proteinaG*4 + carbohidratosG*4 + grasasG*9. Si las kcal requieren carbohidratos altos, las porciones deben mostrar la fuente real (tortillas, arroz, pasta, fruta, leguminosa, etc.); si no hay fuente suficiente, baja las kcal.
 - No devuelvas objetos vacios, arreglos vacios para comidas ni slots con opciones incompletas.
 - Si targetProfile = "ambos" y recibes companionPlan, conserva la misma preparacion base por dia, momento e indice; cambia solo porciones y macros cuando haga falta.
 - Rotacion semanal: si no aplica la regla anterior de companionPlan, alterna idRef entre dias para el mismo momento (no repitas el mismo plato principal los 7 dias en el mismo horario si el catalogo ofrece alternativas compatibles con porciones y restricciones).
@@ -2341,7 +2307,9 @@ function buildUserPrompt(payload, prefix) {
       selectedMomentsSource: 'questionnaire.planConfig.selectedMoments',
       slotCount: WEEK_DAYS.length * MEAL_MOMENT_KEYS.length,
       mealOptionsPerMoment: 3,
-      noteToAI: `El perfil, objetivosPorMomento, distribucionDiaria y suplementos YA ESTAN PRE-CALCULADOS en 'precomputedProfile'. TU SOLO DEBES GENERAR 'planSemanal${prefix}'. En 'opciones' regresa objetos usando SOLO 'idRef' válidos de 'mealsCatalog'. Usa el campo 'nombre' para redactar un 'detalle' corto. OBLIGATORIO: recalcula 'porciones' con gramos realistas y fuentes visibles para proteina, carbohidratos y grasa. Mantén kcal/macros como enteros y deben cerrar: kcal ≈ proteinaG*4 + carbohidratosG*4 + grasasG*9. Si piden ignorar/añadir fuera de bd, usa '|MOD: cambio' en el idRef. Variedad: alterna idRef entre dias por momento.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
+      mealOptionFormat: { idRef: 'id del mealsCatalog' },
+      doNotReturnFields: ['nombre', 'detalle', 'porciones', 'super', 'tags', 'caloriasKcal', 'proteinaG', 'carbohidratosG', 'grasasG'],
+      noteToAI: `El perfil, objetivosPorMomento, distribucionDiaria y suplementos YA ESTAN PRE-CALCULADOS en 'precomputedProfile'. TU SOLO DEBES GENERAR 'planSemanal${prefix}' con 35 slots. En 'opciones' regresa objetos con SOLO 'idRef' validos de 'mealsCatalog'. No incluyas nombre, detalle, porciones, ingredientes, kcal ni macros; la app los calcula. Variedad: alterna idRef entre dias por momento.${resolveClinicalProtocols(extractDiagnosticsText(payload))}`,
     },
   });
 }
@@ -3391,22 +3359,15 @@ export default async function handler(req, res) {
         }
       );
 
-      await delay(GEMINI_SEQUENTIAL_REQUEST_DELAY_MS);
-      payloadElla.companionPlan = elResult.data?.planEL || null;
-
-      const ellaResult = await generateWithProvider(
-        buildRequestParts('ELLA', payloadElla),
-        apiKey,
-        modelCandidates,
-        buildSystemPrompt('ELLA'),
-        buildPlanOnlyResponseSchema('ELLA'),
-        {
-          ...debugBase,
-          payload: payloadElla,
-          stage: 'generate-content',
-          selectedModel,
-          profilePrefix: 'ELLA',
-        }
+      const derivedEllaPlan = cloneSerializableData(elResult.data?.planEL || {});
+      repairPlanSlots(
+        derivedEllaPlan,
+        precomputedProfileElla,
+        payloadElla.mealsCatalog || []
+      );
+      normalizePlanNutritionToProfile(
+        derivedEllaPlan,
+        precomputedProfileElla
       );
 
       elData = {
@@ -3418,9 +3379,9 @@ export default async function handler(req, res) {
       ellaData = {
         perfilELLA: precomputedProfileElla,
         suplementosELLA: precomputedSupplementsElla,
-        planELLA: ellaResult.data?.planELLA,
+        planELLA: derivedEllaPlan,
       };
-      ellaModelUsed = ellaResult.modelUsed;
+      ellaModelUsed = `${elResult.modelUsed}+deterministic-scaling`;
     } else if (target === 'el') {
       const precomputedProfile = generateProfile(payload, 'el');
       const precomputedSupplements = generateSupplements(payload, payload.supplementsCatalog || []);

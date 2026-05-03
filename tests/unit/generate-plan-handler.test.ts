@@ -402,6 +402,93 @@ test('handler usa DeepSeek por defecto cuando AI_PROVIDER no existe', async () =
   }
 });
 
+test('handler genera ambos con una sola llamada DeepSeek y escala Ella deterministicamente', async () => {
+  process.env.AI_PROVIDER = 'deepseek';
+  process.env.DEEPSEEK_API_KEY = 'test-deepseek-key';
+  const basePayload = buildQuestionnairePayload();
+  const profileBundle = {
+    profileContext: basePayload.profileContext,
+    healthContext: basePayload.healthContext,
+    preferences: basePayload.preferences,
+    routine: basePayload.routine,
+    bodyMeasurements: basePayload.bodyMeasurements,
+  };
+  const payload = {
+    ...basePayload,
+    targetProfile: 'ambos' as const,
+    profileToUpdate: 'ambos' as const,
+    el: profileBundle,
+    ella: profileBundle,
+  };
+  const aiData = {
+    planSemanalEL: buildMockAiData(basePayload).planSemanalELLA.map((slot) => ({
+      ...slot,
+      opciones: slot.opciones.map((option) => ({ idRef: option.idRef })),
+    })),
+  };
+  const capturedBodies: any[] = [];
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string, options?: any) => {
+    if (url === 'https://api.deepseek.com/chat/completions') {
+      const parsedBody = JSON.parse(options.body);
+      capturedBodies.push({ body: parsedBody, headers: options.headers });
+      return createMockResponse(200, {
+        id: 'chatcmpl-test',
+        model: 'deepseek-v4-flash',
+        choices: [
+          {
+            index: 0,
+            finish_reason: 'stop',
+            message: {
+              role: 'assistant',
+              content: JSON.stringify(aiData),
+            },
+          },
+        ],
+        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+      }) as any;
+    }
+
+    throw new Error(`Unexpected fetch URL in DeepSeek ambos test: ${url}`);
+  }) as any;
+
+  try {
+    const req = {
+      method: 'POST',
+      body: payload,
+      headers: {
+        origin: 'http://localhost:5173',
+        host: 'localhost:5173',
+      },
+      socket: { remoteAddress: '127.0.0.1' },
+    } as any;
+    const res = createMockRes();
+
+    await handler(req, res as any);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(capturedBodies.length, 1);
+    assert.ok(res.body?.elData?.planEL);
+    assert.ok(res.body?.ellaData?.planELLA);
+    assert.match(res.body?.modelUsed, /deterministic-scaling/);
+    const firstEl = res.body.elData.planEL.Lunes.desayuno[0];
+    const firstElla = res.body.ellaData.planELLA.Lunes.desayuno[0];
+    assert.equal(firstEl.nombre, firstElla.nombre);
+    assert.notEqual(firstEl.caloriasKcal, firstElla.caloriasKcal);
+    assert.equal(
+      firstElla.caloriasKcal,
+      Math.round((firstElla.proteinaG * 4) + (firstElla.carbohidratosG * 4) + (firstElla.grasasG * 9))
+    );
+    const userPromptJson = JSON.parse(capturedBodies[0].body.messages[1].content);
+    assert.deepEqual(userPromptJson.outputHints.doNotReturnFields.includes('caloriasKcal'), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    delete process.env.AI_PROVIDER;
+    delete process.env.DEEPSEEK_API_KEY;
+  }
+});
+
 test('handler cae a DeepSeek Flash si AI_PROVIDER y DEEPSEEK_MODEL son invalidos', async () => {
   process.env.AI_PROVIDER = 'proveedor-invalido';
   process.env.DEEPSEEK_MODEL = 'modelo-invalido';

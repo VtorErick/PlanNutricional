@@ -65,6 +65,8 @@ export interface CompactMealCatalogItem {
   nombre: string;
   tags: string[];
   momentos: string[];
+  super: string[];
+  macroEstimate?: CatalogMealItem['macroEstimate'];
 }
 
 /**
@@ -102,6 +104,8 @@ function toCompactFormat(meal: CatalogMealItem): CompactMealCatalogItem {
     nombre: meal.nombre,
     tags: meal.tags,
     momentos: meal.momentos,
+    super: meal.super,
+    ...(meal.macroEstimate ? { macroEstimate: meal.macroEstimate } : {}),
   };
 }
 
