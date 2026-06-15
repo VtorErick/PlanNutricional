@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "env": {},
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 300
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/home", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/questionnaire", "destination": "/index.html" },
+    { "source": "/miplan", "destination": "/index.html" },
+    { "source": "/equivalencias", "destination": "/index.html" },
+    { "source": "/calorias", "destination": "/index.html" },
+    { "source": "/compras", "destination": "/index.html" },
+    { "source": "/resumen", "destination": "/index.html" },
+    { "source": "/suplementos", "destination": "/index.html" }
+  ]
+}

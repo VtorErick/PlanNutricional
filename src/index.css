@@ -1,0 +1,131 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Profile color themes */
+[data-profile="el"] {
+  --accent-50: #eff6ff;
+  --accent-100: #dbeafe;
+  --accent-200: #bfdbfe;
+  --accent-300: #93c5fd;
+  --accent-400: #60a5fa;
+  --accent-500: #3b82f6;
+  --accent-600: #2563eb;
+  --accent-700: #1d4ed8;
+  --accent-800: #1e40af;
+  --accent-900: #1e3a8a;
+  --accent-gradient: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  --accent-gradient-dark: linear-gradient(135deg, #1e3a5f, #1e40af);
+}
+
+[data-profile="ella"] {
+  --accent-50: #fff1f2;
+  --accent-100: #ffe4e6;
+  --accent-200: #fecdd3;
+  --accent-300: #fda4af;
+  --accent-400: #fb7185;
+  --accent-500: #f43f5e;
+  --accent-600: #e11d48;
+  --accent-700: #be123c;
+  --accent-800: #9f1239;
+  --accent-900: #4c0519;
+  --accent-gradient: linear-gradient(135deg, #f43f5e, #e11d48);
+  --accent-gradient-soft: linear-gradient(135deg, #fff1f2, #ffe4e6);
+  --accent-gradient-dark: linear-gradient(135deg, #4c0519, #9f1239);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+#root {
+  min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+@supports (height: 100svh) {
+  body,
+  #root {
+    min-height: 100svh;
+  }
+}
+
+.dark body {
+  background: #020617;
+  color: #e2e8f0;
+}
+
+/* Smooth transitions between profiles and themes */
+[data-profile],
+[data-profile] *,
+.dark,
+.dark * {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.25s;
+  transition-timing-function: ease;
+}
+
+/* Scrollbar-none utility for horizontal scroll areas */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--accent-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-400); }
+
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Hide scrollbar on horizontal scroll areas (day selector) */
+.overflow-x-auto {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+/* Shimmer animation for PlanButton */
+@keyframes shimmer {
+  0% { left: -75%; }
+  100% { left: 125%; }
+}
+
+.shimmer {
+  animation: shimmer 2.5s infinite;
+}
+

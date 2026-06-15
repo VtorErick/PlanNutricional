@@ -1,0 +1,136 @@
+const rateLimitBuckets = globalThis.__planNutricionalRateLimits ?? new Map();
+
+if (!globalThis.__planNutricionalRateLimits) {
+  globalThis.__planNutricionalRateLimits = rateLimitBuckets;
+}
+
+function normalizeHostCandidate(value) {
+  if (!value || typeof value !== 'string') return '';
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  try {
+    const normalized = trimmed.includes('://') ? trimmed : `https://${trimmed}`;
+    return new URL(normalized).host.toLowerCase();
+  } catch {
+    return trimmed.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
+  }
+}
+
+function getAllowedHosts(req) {
+  return new Set(
+    [
+      req.headers['x-forwarded-host'],
+      req.headers.host,
+      process.env.VERCEL_URL,
+      process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      process.env.APP_URL,
+      process.env.SITE_URL,
+      'localhost:3000',
+      'localhost:3002',
+      'localhost:3003',
+      'localhost:3004',
+      'localhost:3005',
+      'localhost:5173',
+      'localhost:3001',
+      '127.0.0.1:3000',
+      '127.0.0.1:3002',
+      '127.0.0.1:3003',
+      '127.0.0.1:3004',
+      '127.0.0.1:3005',
+      '127.0.0.1:5173',
+    ]
+      .map(normalizeHostCandidate)
+      .filter(Boolean)
+  );
+}
+
+function resolveTrustedUrl(rawValue, allowedHosts) {
+  if (!rawValue || typeof rawValue !== 'string') return null;
+
+  try {
+    const url = new URL(rawValue.trim());
+    return allowedHosts.has(url.host.toLowerCase()) ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getTrustedRequestMeta(req) {
+  const allowedHosts = getAllowedHosts(req);
+  const requestOrigin = typeof req.headers.origin === 'string' ? req.headers.origin.trim() : '';
+  const requestReferer = typeof req.headers.referer === 'string' ? req.headers.referer.trim() : '';
+  const trustedOriginUrl = resolveTrustedUrl(requestOrigin, allowedHosts);
+  const trustedRefererUrl = resolveTrustedUrl(requestReferer, allowedHosts);
+
+  return {
+    requestOrigin,
+    requestReferer,
+    allowedOrigin: trustedOriginUrl?.origin || '',
+    trustedRequest: Boolean(trustedOriginUrl || trustedRefererUrl),
+  };
+}
+
+export function applyCorsHeaders(req, res) {
+  const meta = getTrustedRequestMeta(req);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Vary', 'Origin');
+
+  if (meta.allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', meta.allowedOrigin);
+  }
+
+  return meta;
+}
+
+function getClientIp(req) {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  const realIp = req.headers['x-real-ip'];
+  if (typeof realIp === 'string' && realIp.trim()) {
+    return realIp.trim();
+  }
+
+  return req.socket?.remoteAddress || 'unknown';
+}
+
+export function enforceRateLimit(req, config) {
+  const now = Date.now();
+  const ip = getClientIp(req);
+  const key = `${config.bucket}:${ip}`;
+  const current = rateLimitBuckets.get(key);
+
+  if (!current || current.resetAt <= now) {
+    rateLimitBuckets.set(key, {
+      count: 1,
+      resetAt: now + config.windowMs,
+    });
+    return {
+      ok: true,
+      remaining: Math.max(config.maxRequests - 1, 0),
+      retryAfterSeconds: Math.ceil(config.windowMs / 1000),
+    };
+  }
+
+  if (current.count >= config.maxRequests) {
+    return {
+      ok: false,
+      remaining: 0,
+      retryAfterSeconds: Math.max(Math.ceil((current.resetAt - now) / 1000), 1),
+    };
+  }
+
+  current.count += 1;
+  rateLimitBuckets.set(key, current);
+
+  return {
+    ok: true,
+    remaining: Math.max(config.maxRequests - current.count, 0),
+    retryAfterSeconds: Math.max(Math.ceil((current.resetAt - now) / 1000), 1),
+  };
+}
