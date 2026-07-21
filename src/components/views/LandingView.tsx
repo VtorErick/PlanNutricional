@@ -1,20 +1,61 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ElementType } from 'react';
 import { motion } from 'framer-motion';
 import {
+  Apple,
   ArrowRight,
   Camera,
+  ChevronLeft,
+  ChevronRight,
   Clock,
+  Coffee,
+  Moon,
   Sparkles,
+  Sun,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import type { MealItem, MealTime } from '../../types';
+import { getMealEmoji } from '../../utils/mealEmoji';
 import { getProfileLabel } from '../../utils/profileLabels';
 import { getAccentColors } from '../../utils/theme';
 
 const MEAL_WINDOW_MINUTES = 75;
 const PROFILE_IDS = ['el', 'ella'] as const;
 const AVAILABLE_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'] as const;
+const REEL_GAP_PX = 12;
+const MOMENT_STYLES: Record<string, { icon: ElementType; surface: string; iconSurface: string; iconColor: string }> = {
+  desayuno: {
+    icon: Sun,
+    surface: 'from-apricot-100/80 to-white dark:from-apricot-950/50 dark:to-ink-900',
+    iconSurface: 'bg-apricot-100 dark:bg-apricot-950/70',
+    iconColor: 'text-apricot-600 dark:text-apricot-300',
+  },
+  colacion_am: {
+    icon: Apple,
+    surface: 'from-coral-100/70 to-white dark:from-coral-950/50 dark:to-ink-900',
+    iconSurface: 'bg-coral-100 dark:bg-coral-950/70',
+    iconColor: 'text-coral-500 dark:text-coral-300',
+  },
+  comida: {
+    icon: UtensilsCrossed,
+    surface: 'from-pine-100/80 to-white dark:from-pine-950/50 dark:to-ink-900',
+    iconSurface: 'bg-pine-100 dark:bg-pine-950/70',
+    iconColor: 'text-pine-600 dark:text-pine-300',
+  },
+  colacion_pm: {
+    icon: Coffee,
+    surface: 'from-ocean-100/70 to-white dark:from-ocean-950/40 dark:to-ink-900',
+    iconSurface: 'bg-ocean-100 dark:bg-ocean-950/70',
+    iconColor: 'text-ocean-600 dark:text-ocean-300',
+  },
+  cena: {
+    icon: Moon,
+    surface: 'from-ink-100/90 to-white dark:from-ink-800 dark:to-ink-900',
+    iconSurface: 'bg-ink-800 dark:bg-ink-700',
+    iconColor: 'text-cream-100',
+  },
+};
+
 function parseTimeToMinutes(value: string) {
   const [rawHour, rawMinute] = value.split(':').map((part) => Number.parseInt(part, 10));
   const hour = Number.isFinite(rawHour) ? rawHour : 0;
@@ -197,7 +238,42 @@ export default function LandingView() {
     };
   }, [currentDayOfWeek, currentMinutes, perfilActivo, profileLabels, profilesData, selections]);
 
-  const activeCard = homeReel.cards[homeReel.initialIndex] || homeReel.cards[0] || null;
+  const [activeReelIndex, setActiveReelIndex] = useState(homeReel.initialIndex);
+  const reelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const nextIndex = Math.max(0, Math.min(homeReel.initialIndex, homeReel.cards.length - 1));
+    setActiveReelIndex(nextIndex);
+    const frame = window.requestAnimationFrame(() => {
+      const reel = reelRef.current;
+      if (!reel) return;
+      reel.scrollTo({ left: nextIndex * (reel.clientWidth + REEL_GAP_PX), behavior: 'auto' });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [homeReel.cards.length, homeReel.initialIndex]);
+
+  const goToReelIndex = (nextIndex: number) => {
+    const reel = reelRef.current;
+    const boundedIndex = Math.max(0, Math.min(nextIndex, homeReel.cards.length - 1));
+    setActiveReelIndex(boundedIndex);
+    reel?.scrollTo({
+      left: boundedIndex * (reel.clientWidth + REEL_GAP_PX),
+      behavior: 'smooth',
+    });
+  };
+
+  const handleReelScroll = () => {
+    const reel = reelRef.current;
+    if (!reel || homeReel.cards.length === 0) return;
+    const nextIndex = Math.max(
+      0,
+      Math.min(homeReel.cards.length - 1, Math.round(reel.scrollLeft / (reel.clientWidth + REEL_GAP_PX)))
+    );
+    setActiveReelIndex((current) => current === nextIndex ? current : nextIndex);
+  };
+
+  const activeCard = homeReel.cards[activeReelIndex] || homeReel.cards[0] || null;
   const activeMomentName = activeCard ? getMomentActionName(activeCard.moment.label) : 'comida';
   const hasPersonalizedPlan =
     perfilActivo === 'el'
@@ -253,24 +329,29 @@ export default function LandingView() {
   };
 
   const renderMealSummary = (card: (typeof homeReel.cards)[number]) => (
-    <div className="mt-4 space-y-3">
+    <div className="mt-4 space-y-2">
       {card.selectedMealGroups.slice(0, 2).map(({ labels, meal }) => {
         const groupLabel = labels.length > 1 ? 'Para ambos' : labels[0];
 
         return (
           <div
             key={`${card.moment.key}-${labels.join('-')}-${meal.nombre}`}
-            className={`rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-ink-800/60' : 'bg-cream-100/80'}`}
+            className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 ${isDarkMode ? 'bg-ink-800/70' : 'bg-white/80'}`}
           >
-            <p className={`text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-pine-300' : accent.text}`}>
-              {groupLabel}
-            </p>
-            <p className={`mt-1 text-[15px] font-bold leading-snug ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
-              {meal.nombre}
-            </p>
-            <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-              {meal.detalle || meal.porciones}
-            </p>
+            <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xl ${isDarkMode ? 'bg-ink-900' : 'bg-cream-50'}`}>
+              {getMealEmoji(meal.nombre)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={`text-[9px] font-extrabold uppercase tracking-[0.12em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                {groupLabel}
+              </p>
+              <p className={`mt-0.5 truncate text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>
+                {meal.nombre}
+              </p>
+            </div>
+            <span className={`flex-shrink-0 rounded-full px-2 py-1 text-[10px] font-black tabular-nums ${accent.tagBg} ${accent.tagText}`}>
+              {meal.caloriasKcal || 0} kcal
+            </span>
           </div>
         );
       })}
@@ -284,29 +365,29 @@ export default function LandingView() {
 
   return (
     <div className="relative flex min-h-0 flex-1 overflow-hidden overscroll-none bg-cream-50 text-ink-900 dark:bg-ink-950 dark:text-cream-100">
-      {/* Decorative background */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className={`home-food-halo absolute -right-24 -top-20 h-[22rem] w-[22rem] opacity-[0.14] sm:-right-8 sm:opacity-20 ${isDarkMode ? 'mix-blend-luminosity opacity-[0.1]' : ''}`} />
-        <div className={`ambient-drift absolute -top-32 -right-24 h-96 w-96 rounded-full blur-3xl ${isDarkMode ? 'bg-pine-900/30' : 'bg-pine-100/70'}`} />
-        <div className={`absolute -bottom-40 -left-28 h-[28rem] w-[28rem] rounded-full blur-3xl ${isDarkMode ? 'bg-ocean-900/15' : 'bg-ocean-100/50'}`} />
+        <div className={`home-food-halo absolute -right-24 -top-24 h-[20rem] w-[20rem] opacity-[0.1] sm:-right-8 sm:opacity-15 ${isDarkMode ? 'mix-blend-luminosity opacity-[0.08]' : ''}`} />
+        <div className={`ambient-drift absolute -top-32 -right-24 h-80 w-80 rounded-full blur-3xl ${isDarkMode ? 'bg-pine-900/25' : 'bg-pine-100/50'}`} />
+        <div className={`absolute -bottom-40 -left-28 h-96 w-96 rounded-full blur-3xl ${isDarkMode ? 'bg-ocean-900/10' : 'bg-ocean-100/35'}`} />
         <div className={`absolute inset-0 bg-gradient-to-b ${isDarkMode ? 'from-ink-950/60 via-transparent to-ink-950/80' : 'from-cream-50/40 via-transparent to-cream-50/90'}`} />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-[96px] pt-4 max-[340px]:px-3 sm:px-6 sm:pb-10 sm:pt-8">
-        <main className="flex min-h-0 flex-1 flex-col justify-center gap-3 py-2 sm:gap-5 sm:py-10">
-          {/* Greeting */}
+        <main className="flex min-h-0 flex-1 flex-col justify-center gap-3 py-1 sm:gap-5 sm:py-8">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 32 }}
             className="px-1"
           >
-            <p className={`text-[11px] font-extrabold uppercase tracking-[0.2em] ${isDarkMode ? 'text-pine-300' : accent.text}`}>
-              {currentDayOfWeek} · {formatMinutesAsTime(currentMinutes)}
-            </p>
-            <h1 className="mt-1 font-display text-[32px] leading-[1.05] font-semibold tracking-tight text-ink-900 dark:text-cream-50 max-[340px]:text-[28px] sm:text-5xl">
-              {getGreeting(currentMinutes)}
-            </h1>
+            <div>
+              <p className={`text-[10px] font-extrabold uppercase tracking-[0.18em] ${isDarkMode ? 'text-pine-300' : accent.text}`}>
+                {currentDayOfWeek} · {formatMinutesAsTime(currentMinutes)}
+              </p>
+              <h1 className="mt-1 font-display text-[30px] leading-none font-semibold tracking-tight text-ink-900 dark:text-cream-50 max-[340px]:text-[27px] sm:text-5xl">
+                {getGreeting(currentMinutes)}
+              </h1>
+            </div>
           </motion.div>
 
           <motion.section
@@ -314,70 +395,135 @@ export default function LandingView() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 32, delay: 0.05 }}
             data-testid="landing-profile-ambos-card"
-            className={`relative overflow-hidden rounded-[28px] border p-4 shadow-lift max-[340px]:rounded-[24px] max-[340px]:p-3.5 sm:p-6 ${
-              isDarkMode
-                ? 'border-ink-700 bg-ink-900/95'
-                : 'border-cream-200 bg-white/95'
-            }`}
+            className="min-w-0"
           >
-            <div className={`pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accent.bgGradient}`} />
-
-            <div className="relative z-10">
-              {activeCard ? (
-                <motion.article
-                  key={activeCard.moment.key}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                        Tu siguiente momento
-                      </p>
-                      <h2 className="mt-1 font-display text-[32px] font-semibold tracking-tight text-ink-900 max-[340px]:text-[29px] dark:text-cream-50 sm:text-5xl">
-                        {activeCard.moment.label}
-                      </h2>
-                    </div>
-                    <div className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-extrabold tabular-nums ${
-                      isDarkMode
-                        ? 'border-ink-700 bg-ink-800 text-cream-200'
-                        : 'border-cream-200 bg-cream-100 text-ink-700'
-                    }`}>
-                      <Clock className={`h-3.5 w-3.5 ${isDarkMode ? 'text-pine-300' : accent.text}`} />
-                      {activeCard.moment.hora}
-                    </div>
-                  </div>
-
-                  {activeCard.selectedMealGroups.length > 0 ? (
-                    renderMealSummary(activeCard)
-                  ) : (
-                    <div className={`mt-4 flex items-center gap-3 rounded-2xl px-3.5 py-3 ${
-                      isDarkMode
-                        ? 'bg-ink-800/60 text-ink-300'
-                        : 'bg-cream-100/80 text-ink-500'
-                    }`}>
-                      <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${accent.bgLight} ${accent.text}`}>
-                        <UtensilsCrossed className="h-4 w-4" />
-                      </span>
-                      <div>
-                        <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
-                          Aún sin comida
-                        </p>
-                        <p className="mt-0.5 text-xs font-medium">Elige una opción o registra lo que comiste.</p>
-                      </div>
-                    </div>
-                  )}
-                </motion.article>
-              ) : null}
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className={`text-xs font-extrabold ${isDarkMode ? 'text-cream-200' : 'text-ink-700'}`}>
+                Comidas de hoy
+              </p>
+              <p className={`text-[10px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
+                Desliza
+              </p>
             </div>
 
-            <div className="relative z-10 mt-4 flex gap-2">
+            <div
+              ref={reelRef}
+              onScroll={handleReelScroll}
+              className="scrollbar-none grid snap-x snap-mandatory auto-cols-[100%] grid-flow-col gap-3 overflow-x-auto overscroll-x-contain pb-2"
+              aria-label="Carrete de comidas de hoy"
+            >
+              {homeReel.cards.map((card, index) => {
+                const momentStyle = MOMENT_STYLES[card.moment.key] || MOMENT_STYLES.comida;
+                const MomentIcon = momentStyle.icon;
+                const isNextMeal = index === homeReel.initialIndex;
+
+                return (
+                  <article
+                    key={card.moment.key}
+                    data-testid={`landing-meal-slide-${card.moment.key}`}
+                    aria-label={`${card.moment.label}, ${card.moment.hora}`}
+                    className={`min-h-[210px] snap-center rounded-[26px] border bg-gradient-to-br p-4 shadow-soft max-[340px]:min-h-[198px] max-[340px]:rounded-[23px] ${momentStyle.surface} ${
+                      isDarkMode ? 'border-ink-700' : 'border-cream-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ${momentStyle.iconSurface}`}>
+                          <MomentIcon className={`h-5 w-5 ${momentStyle.iconColor}`} />
+                        </span>
+                        <div className="min-w-0">
+                          <p className={`text-[9px] font-extrabold uppercase tracking-[0.15em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                            {isNextMeal ? 'Siguiente comida' : 'Hoy'}
+                          </p>
+                          <h2 className={`mt-0.5 truncate font-display text-[24px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+                            {card.moment.label}
+                          </h2>
+                        </div>
+                      </div>
+                      <span className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-extrabold tabular-nums ${
+                        isDarkMode ? 'bg-ink-800 text-ink-200' : 'bg-white/80 text-ink-600'
+                      }`}>
+                        <Clock className="h-3.5 w-3.5" />
+                        {card.moment.hora}
+                      </span>
+                    </div>
+
+                    {card.selectedMealGroups.length > 0 ? (
+                      renderMealSummary(card)
+                    ) : (
+                      <div className={`mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 ${
+                        isDarkMode ? 'bg-ink-800/70 text-ink-300' : 'bg-white/75 text-ink-500'
+                      }`}>
+                        <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${momentStyle.iconSurface}`}>
+                          <UtensilsCrossed className={`h-4 w-4 ${momentStyle.iconColor}`} />
+                        </span>
+                        <div className="min-w-0">
+                          <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
+                            Sin elegir todavía
+                          </p>
+                          <p className="mt-0.5 truncate text-xs font-medium">Puedes elegirla cuando estés listo.</p>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="mt-1 flex items-center justify-between px-1">
+              <button
+                type="button"
+                onClick={() => goToReelIndex(activeReelIndex - 1)}
+                disabled={activeReelIndex === 0}
+                aria-label="Comida anterior"
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:opacity-25 ${
+                  isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-white text-ink-500 shadow-soft'
+                }`}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <div className="flex flex-col items-center gap-1.5">
+                <span className={`text-[10px] font-extrabold tabular-nums ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
+                  {activeReelIndex + 1} de {homeReel.cards.length}
+                </span>
+                <div className="flex items-center gap-1.5" aria-label="Posición en el carrete">
+                  {homeReel.cards.map((card, index) => (
+                    <button
+                      key={card.moment.key}
+                      type="button"
+                      onClick={() => goToReelIndex(index)}
+                      aria-label={`Ir a ${card.moment.label}`}
+                      aria-pressed={index === activeReelIndex}
+                      className={`h-1.5 rounded-full transition-all ${
+                        index === activeReelIndex
+                          ? `w-5 bg-gradient-to-r ${accent.bgGradient}`
+                          : isDarkMode ? 'w-1.5 bg-ink-700' : 'w-1.5 bg-cream-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => goToReelIndex(activeReelIndex + 1)}
+                disabled={activeReelIndex >= homeReel.cards.length - 1}
+                aria-label="Siguiente comida"
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:opacity-25 ${
+                  isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-white text-ink-500 shadow-soft'
+                }`}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-3">
               <button
                 type="button"
                 onClick={handlePrimaryAction}
                 data-testid="landing-customize-ambos"
-                className={`group inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[18px] bg-gradient-to-r ${accent.bgGradient} px-4 py-3.5 text-[15px] font-bold text-white shadow-[0_14px_30px_-10px_rgba(234,65,9,0.45)] transition hover:brightness-105 active:scale-[0.98] max-[340px]:min-h-[46px]`}
+                className={`group inline-flex min-h-[50px] w-full items-center justify-center gap-2 overflow-hidden rounded-[17px] bg-gradient-to-r ${accent.bgGradient} px-4 py-3 text-sm font-bold text-white shadow-[0_12px_26px_-10px_rgba(234,65,9,0.45)] transition hover:brightness-105 active:scale-[0.98]`}
               >
                 {!hasPersonalizedPlan ? <Sparkles className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}
                 <span>{primaryActionLabel}</span>
@@ -387,31 +533,14 @@ export default function LandingView() {
                 <button
                   type="button"
                   onClick={handleRegisterAction}
-                  className={`inline-flex min-h-[52px] min-w-[88px] flex-col items-center justify-center gap-0.5 rounded-[18px] border px-3 text-[11px] font-extrabold transition active:scale-[0.97] ${
-                    isDarkMode
-                      ? 'border-ink-700 bg-ink-800 text-cream-200'
-                      : `border-cream-200 bg-cream-50 ${accent.text}`
-                  }`}
+                  className={`mx-auto mt-1.5 flex min-h-9 items-center justify-center gap-1.5 rounded-full px-4 text-[11px] font-bold transition active:scale-[0.97] ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}
                   aria-label={`Registrar ${activeMomentName}`}
                 >
-                  <Camera className="h-4 w-4" />
-                  Registrar
+                  <Camera className="h-3.5 w-3.5" />
+                  Registrar lo que comí
                 </button>
               ) : null}
             </div>
-            {hasPersonalizedPlan ? (
-              <button
-                type="button"
-                onClick={openQuestionnaire}
-                data-testid="landing-ai-adjust"
-                className={`relative z-10 mx-auto mt-3 flex min-h-[34px] items-center justify-center gap-1.5 rounded-full px-4 text-xs font-bold transition-opacity hover:opacity-70 active:scale-[0.98] ${
-                  isDarkMode ? 'text-ink-300' : 'text-ink-500'
-                }`}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Ajustar plan con IA</span>
-              </button>
-            ) : null}
           </motion.section>
         </main>
       </div>
