@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type TouchEvent, type WheelEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ElementType, type KeyboardEvent, type TouchEvent, type WheelEvent } from 'react';
 import { motion } from 'framer-motion';
 import {
+  Apple,
   ArrowRight,
-  ChevronDown,
-  ChevronUp,
+  Camera,
   Clock,
+  Coffee,
+  Moon,
   Sparkles,
+  Sun,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
@@ -16,6 +19,13 @@ import { getAccentColors } from '../../utils/theme';
 const MEAL_WINDOW_MINUTES = 75;
 const PROFILE_IDS = ['el', 'ella'] as const;
 const AVAILABLE_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'] as const;
+const MEAL_ICONS: Record<string, ElementType> = {
+  desayuno: Sun,
+  colacion_am: Apple,
+  comida: UtensilsCrossed,
+  colacion_pm: Coffee,
+  cena: Moon,
+};
 
 function parseTimeToMinutes(value: string) {
   const [rawHour, rawMinute] = value.split(':').map((part) => Number.parseInt(part, 10));
@@ -270,8 +280,6 @@ export default function LandingView() {
 
   const activeCard = homeReel.cards[activeReelIndex] || homeReel.cards[0] || null;
   const reelCount = homeReel.cards.length;
-  const previousCard = reelCount > 1 ? homeReel.cards[(activeReelIndex - 1 + reelCount) % reelCount] : null;
-  const nextCard = reelCount > 1 ? homeReel.cards[(activeReelIndex + 1) % reelCount] : null;
   const activeMomentName = activeCard ? getMomentActionName(activeCard.moment.label) : 'comida';
   const hasPersonalizedPlan =
     perfilActivo === 'el'
@@ -290,6 +298,15 @@ export default function LandingView() {
       openQuestionnaire();
       return;
     }
+    if (!activeCard) return;
+    setDiaActivo(currentDayOfWeek);
+    setTab('plan');
+    window.setTimeout(() => {
+      scrollToMomento(activeCard.moment.key, false);
+    }, 120);
+  };
+
+  const handleRegisterAction = () => {
     if (!activeCard) return;
     setDiaActivo(currentDayOfWeek);
     setTab('plan');
@@ -351,7 +368,8 @@ export default function LandingView() {
     <div className="relative flex min-h-0 flex-1 overflow-hidden overscroll-none bg-cream-50 text-ink-900 dark:bg-ink-950 dark:text-cream-100">
       {/* Decorative background */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className={`absolute -top-32 -right-24 h-96 w-96 rounded-full blur-3xl ${isDarkMode ? 'bg-pine-900/30' : 'bg-pine-100/80'}`} />
+        <div className={`home-food-halo absolute -right-20 -top-16 h-[25rem] w-[24rem] opacity-[0.18] sm:-right-8 sm:opacity-25 ${isDarkMode ? 'mix-blend-luminosity opacity-[0.12]' : ''}`} />
+        <div className={`ambient-drift absolute -top-32 -right-24 h-96 w-96 rounded-full blur-3xl ${isDarkMode ? 'bg-pine-900/30' : 'bg-pine-100/70'}`} />
         <div className={`absolute -bottom-40 -left-28 h-[28rem] w-[28rem] rounded-full blur-3xl ${isDarkMode ? 'bg-ocean-900/15' : 'bg-ocean-100/50'}`} />
         <div className={`absolute inset-0 bg-gradient-to-b ${isDarkMode ? 'from-ink-950/60 via-transparent to-ink-950/80' : 'from-cream-50/40 via-transparent to-cream-50/90'}`} />
       </div>
@@ -368,9 +386,12 @@ export default function LandingView() {
             <p className={`text-[11px] font-extrabold uppercase tracking-[0.2em] ${isDarkMode ? 'text-pine-300' : accent.text}`}>
               {currentDayOfWeek} · {formatMinutesAsTime(currentMinutes)}
             </p>
-            <h1 className="mt-1 font-display text-[34px] leading-[1.05] font-semibold tracking-tight text-ink-900 dark:text-cream-50 max-[340px]:text-[28px] sm:text-5xl">
+            <h1 className="mt-1 font-display text-[32px] leading-[1.05] font-semibold tracking-tight text-ink-900 dark:text-cream-50 max-[340px]:text-[28px] sm:text-5xl">
               {getGreeting(currentMinutes)}
             </h1>
+            <p className={`mt-1.5 text-sm font-medium ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+              Un paso a la vez. Hoy solo necesitas tu siguiente comida.
+            </p>
           </motion.div>
 
           <motion.section
@@ -378,7 +399,7 @@ export default function LandingView() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 32, delay: 0.05 }}
             data-testid="landing-profile-ambos-card"
-            className={`relative overflow-hidden rounded-[32px] border p-4 shadow-lift max-[340px]:rounded-[26px] max-[340px]:p-3.5 sm:p-6 ${
+            className={`relative overflow-hidden rounded-[30px] border p-4 shadow-lift max-[340px]:rounded-[26px] max-[340px]:p-3.5 sm:p-6 ${
               isDarkMode
                 ? 'border-ink-700 bg-ink-900/95'
                 : 'border-cream-200 bg-white/95'
@@ -445,80 +466,66 @@ export default function LandingView() {
                 </motion.article>
               ) : null}
 
-              {/* Prev / next moments timeline */}
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {previousCard ? (
-                  <button
-                    type="button"
-                    onClick={() => moveReel(-1)}
-                    className={`min-w-0 rounded-2xl border px-3.5 py-2.5 text-left transition active:scale-[0.97] ${
-                      isDarkMode
-                        ? 'border-ink-700 bg-ink-800/60 text-ink-200 hover:bg-ink-800'
-                        : 'border-cream-200 bg-cream-100/70 text-ink-600 hover:bg-cream-100'
-                    }`}
-                    aria-label={`Ver momento anterior: ${previousCard.moment.label}`}
-                  >
-                    <span className={`flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                      <ChevronUp className="h-3 w-3" />
-                      Anterior
-                    </span>
-                    <span className="mt-1 flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-bold">{previousCard.moment.label}</span>
-                      <span className="text-[11px] font-bold tabular-nums opacity-60">{previousCard.moment.hora}</span>
-                    </span>
-                  </button>
-                ) : null}
-
-                {nextCard ? (
-                  <button
-                    type="button"
-                    onClick={() => moveReel(1)}
-                    className={`min-w-0 rounded-2xl border px-3.5 py-2.5 text-left transition active:scale-[0.97] ${
-                      isDarkMode
-                        ? 'border-ink-700 bg-ink-800/60 text-ink-200 hover:bg-ink-800'
-                        : 'border-cream-200 bg-cream-100/70 text-ink-600 hover:bg-cream-100'
-                    }`}
-                    aria-label={`Ver siguiente momento: ${nextCard.moment.label}`}
-                  >
-                    <span className={`flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                      <ChevronDown className="h-3 w-3" />
-                      Siguiente
-                    </span>
-                    <span className="mt-1 flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-bold">{nextCard.moment.label}</span>
-                      <span className="text-[11px] font-bold tabular-nums opacity-60">{nextCard.moment.hora}</span>
-                    </span>
-                  </button>
-                ) : null}
-              </div>
-
-              {/* Reel position dots */}
+              {/* Keep every moment visible so navigation never depends on a gesture. */}
               {reelCount > 1 ? (
-                <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
-                  {homeReel.cards.map((card, index) => (
-                    <span
-                      key={card.moment.key}
-                      className={`h-1 rounded-full transition-all duration-300 ${
-                        index === activeReelIndex
-                          ? `w-5 ${accent.dot}`
-                          : `w-1 ${isDarkMode ? 'bg-ink-600' : 'bg-cream-300'}`
-                      }`}
-                    />
-                  ))}
+                <div className="scrollbar-none mt-4 overflow-x-auto pb-1" role="tablist" aria-label="Momentos del día">
+                  <div className="flex min-w-max items-center gap-1.5">
+                    {homeReel.cards.map((card, index) => {
+                      const MomentIcon = MEAL_ICONS[card.moment.key] || UtensilsCrossed;
+                      const isActive = index === activeReelIndex;
+                      return (
+                        <button
+                          key={card.moment.key}
+                          type="button"
+                          role="tab"
+                          aria-selected={isActive}
+                          onClick={() => setActiveReelIndex(index)}
+                          className={`flex min-h-[48px] min-w-[58px] flex-col items-center justify-center gap-0.5 rounded-2xl px-2.5 transition active:scale-95 ${
+                            isActive
+                              ? `bg-gradient-to-br ${accent.bgGradient} text-white shadow-sm`
+                              : isDarkMode
+                                ? 'bg-ink-800 text-ink-300 hover:bg-ink-700'
+                                : 'bg-cream-100 text-ink-500 hover:bg-cream-200'
+                          }`}
+                          aria-label={`Ver ${card.moment.label}, ${card.moment.hora}`}
+                        >
+                          <MomentIcon className={`h-4 w-4 ${isActive ? 'gentle-breathe' : ''}`} />
+                          <span className="text-[10px] font-extrabold">{card.moment.hora}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
             </div>
 
-            <button
-              type="button"
-              onClick={handlePrimaryAction}
-              data-testid="landing-customize-ambos"
-              className={`group relative z-10 mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r ${accent.bgGradient} px-5 py-3.5 text-[15px] font-bold text-white shadow-[0_14px_30px_-10px_rgba(234,65,9,0.45)] transition hover:brightness-105 active:scale-[0.98] max-[340px]:min-h-[46px]`}
-            >
-              {!hasPersonalizedPlan ? <Sparkles className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}
-              <span>{primaryActionLabel}</span>
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </button>
+            <div className="relative z-10 mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={handlePrimaryAction}
+                data-testid="landing-customize-ambos"
+                className={`group inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[18px] bg-gradient-to-r ${accent.bgGradient} px-4 py-3.5 text-[15px] font-bold text-white shadow-[0_14px_30px_-10px_rgba(234,65,9,0.45)] transition hover:brightness-105 active:scale-[0.98] max-[340px]:min-h-[46px]`}
+              >
+                {!hasPersonalizedPlan ? <Sparkles className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}
+                <span>{primaryActionLabel}</span>
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </button>
+              {hasPersonalizedPlan ? (
+                <button
+                  type="button"
+                  onClick={handleRegisterAction}
+                  className={`inline-flex min-h-[52px] min-w-[88px] flex-col items-center justify-center gap-0.5 rounded-[18px] border px-3 text-[11px] font-extrabold transition active:scale-[0.97] ${
+                    isDarkMode
+                      ? 'border-ink-700 bg-ink-800 text-cream-200'
+                      : `border-cream-200 bg-cream-50 ${accent.text}`
+                  }`}
+                  aria-label={`Registrar ${activeMomentName}`}
+                >
+                  <Camera className="h-4 w-4" />
+                  Registrar
+                </button>
+              ) : null}
+            </div>
             {hasPersonalizedPlan ? (
               <button
                 type="button"

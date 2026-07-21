@@ -118,15 +118,6 @@ export default function DailyProgress() {
       {/* Mobile compact strip */}
       <div className="relative z-10 mx-auto max-w-md px-3 pb-3 pt-3 sm:hidden">
         <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setProgressExpanded((expanded) => !expanded)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              setProgressExpanded((expanded) => !expanded);
-            }
-          }}
           className={`w-full flex items-center gap-3 rounded-[22px] border px-3 py-2.5 text-left shadow-soft ${
             isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'
           }`}
@@ -144,6 +135,8 @@ export default function DailyProgress() {
                       event.stopPropagation();
                       setActiveDay(day);
                     }}
+                    aria-label={`Ver ${day}`}
+                    aria-pressed={active}
                     className={`h-[34px] min-w-[42px] rounded-full px-2 text-[11px] font-extrabold transition-all active:scale-90 snap-start ${
                       active
                         ? `${accentColors.btnActive} shadow-sm`
@@ -170,7 +163,7 @@ export default function DailyProgress() {
               </p>
               <div className={`mt-1 h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}>
                 <motion.div
-                  className={`h-full rounded-full bg-gradient-to-r ${accentColors.progressFill}`}
+                  className={`progress-shine h-full rounded-full bg-gradient-to-r ${accentColors.progressFill}`}
                   animate={{ width: `${dailyProgressPercent}%` }}
                   transition={{ type: 'spring', stiffness: 80, damping: 15 }}
                 />
@@ -179,6 +172,17 @@ export default function DailyProgress() {
             <span className={`text-sm font-black tabular-nums ${accentColors.text}`}>
               {dailyProgressPercent}%
             </span>
+            <button
+              type="button"
+              onClick={() => setProgressExpanded((expanded) => !expanded)}
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition active:scale-90 ${
+                isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-cream-100 text-ink-500'
+              }`}
+              aria-label={progressExpanded ? 'Ocultar detalle del día' : 'Ver detalle del día'}
+              aria-expanded={progressExpanded}
+            >
+              {progressExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
           </div>
         </div>
       </div>
@@ -273,7 +277,7 @@ export default function DailyProgress() {
             }`}
           >
             <motion.div
-              className={`h-full bg-gradient-to-r ${accentColors.progressFill} rounded-full`}
+              className={`progress-shine h-full bg-gradient-to-r ${accentColors.progressFill} rounded-full`}
               animate={{ width: `${dailyProgressPercent}%` }}
               transition={{ type: 'spring', stiffness: 80, damping: 15 }}
             />

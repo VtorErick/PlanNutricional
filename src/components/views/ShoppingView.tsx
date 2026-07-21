@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
+  ArrowRight,
   ShoppingCart,
   Check,
   ChevronDown,
@@ -89,6 +90,7 @@ export default function ShoppingView() {
     profileLabels,
     comprasCheck,
     setComprasCheck,
+    setTab,
     isDarkMode,
   } = useDiet();
   const [expandedIngredients, setExpandedIngredients] = useState<Record<string, boolean>>({});
@@ -340,6 +342,14 @@ export default function ShoppingView() {
             <p className={`mt-1 px-6 text-sm ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
               Ve a &quot;Mi Plan&quot; y selecciona comidas para agregar ingredientes automáticamente.
             </p>
+            <button
+              type="button"
+              onClick={() => setTab('plan')}
+              className="mx-auto mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-ink-900 px-5 text-sm font-bold text-white transition hover:bg-ink-800 active:scale-[0.97] dark:bg-cream-100 dark:text-ink-900"
+            >
+              Ir a mi plan
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         ) : (
           <div className="space-y-4">

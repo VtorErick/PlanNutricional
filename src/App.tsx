@@ -189,27 +189,34 @@ export default function App() {
       aria-label="Navegación principal móvil"
     >
       <div className="mx-auto w-full max-w-md px-4">
-        <div className="grid grid-cols-5 gap-1 rounded-full border border-cream-200/80 bg-white/90 p-1.5 shadow-lift backdrop-blur-xl dark:border-ink-700/80 dark:bg-ink-900/90">
+        <div className="grid grid-cols-5 gap-1 rounded-[26px] border border-white/80 bg-white/88 p-1.5 shadow-[0_18px_50px_-22px_rgba(15,23,42,0.42)] backdrop-blur-2xl dark:border-ink-700/80 dark:bg-ink-900/90">
           {tabItems.map((tabItem) => {
             const isActive = activeTab === tabItem.key;
             return (
-              <button
+              <motion.button
                 key={tabItem.key}
                 type="button"
                 onClick={() => setActiveTab(tabItem.key)}
                 data-testid={`mobile-tab-${tabItem.key}`}
-                className={`relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-200 active:scale-90 ${
-                  isActive
-                    ? navActiveSurface
-                    : 'text-ink-400 hover:text-ink-600 dark:text-ink-400 dark:hover:text-ink-200'
+                whileTap={{ scale: 0.9 }}
+                className={`relative isolate flex min-h-[54px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[20px] transition-colors duration-200 ${
+                  isActive ? 'text-white' : 'text-ink-400 hover:text-ink-600 dark:text-ink-400 dark:hover:text-ink-200'
                 }`}
                 aria-label={tabItem.label}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <tabItem.icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.4 : 1.9} />
-                <span className={`text-[10px] leading-none ${isActive ? 'font-extrabold' : 'font-semibold'}`}>
+                {isActive ? (
+                  <motion.span
+                    layoutId="mobile-nav-active"
+                    className={`absolute inset-0 -z-10 rounded-[20px] ${navActiveSurface}`}
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                  />
+                ) : null}
+                <tabItem.icon className="h-[19px] w-[19px]" strokeWidth={isActive ? 2.5 : 1.9} />
+                <span className={`text-[10px] leading-none ${isActive ? 'font-black' : 'font-semibold'}`}>
                   {tabItem.shortLabel}
                 </span>
-              </button>
+              </motion.button>
             );
           })}
         </div>

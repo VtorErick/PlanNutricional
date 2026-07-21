@@ -233,6 +233,17 @@ function buildSteps(tp: TargetProfile): WizardStep[] {
   return steps;
 }
 
+function getWizardSection(step: WizardStep, target: TargetProfile) {
+  const total = target === 'ambos' ? 5 : 4;
+  if (step.type === 'who') return { current: 1, total, label: 'Configuración' };
+  if (step.profile) {
+    const current = target === 'ambos' ? (step.profile === 'el' ? 2 : 3) : 2;
+    return { current, total, label: 'Tu información' };
+  }
+  if (step.type === 'confirm') return { current: total, total, label: 'Revisión' };
+  return { current: total - 1, total, label: 'Ajustes finales' };
+}
+
 // ─── Motion ───────────────────────────────────────────────────────────────────
 const slideVariants = {
   enter: (d: number) => ({ x: d > 0 ? 32 : -32, opacity: 0 }),
@@ -799,7 +810,7 @@ export default function NutritionQuestionnaire({
   const fallbackPreviewLabel = fallbackPreview.map((model) => getAiModelLabel(model)).join(', ');
   const currentStep = steps[stepIdx] ?? steps[0];
   const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
-  const stepsLeft = Math.max(steps.length - (stepIdx + 1), 0);
+  const sectionMeta = getWizardSection(currentStep, targetProfile);
   const tc = THEME[currentStep.profile ?? targetProfile];
   const labelEl = getProfileLabel(profileLabels, 'el');
   const labelElla = getProfileLabel(profileLabels, 'ella');
@@ -2198,17 +2209,11 @@ export default function NutritionQuestionnaire({
                 {visualProfileSuffix}
               </p>
               <p className="text-xs font-medium text-ink-400 dark:text-ink-400">
-                Paso {stepIdx + 1} de {steps.length} · {stepsLeft <= 3 ? 'Ya casi terminamos' : `Solo ${stepsLeft} pasos más`}
+                Sección {sectionMeta.current} de {sectionMeta.total} · {sectionMeta.label}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onCancel}
-            className="flex-shrink-0 rounded-xl bg-cream-100 px-3 py-2 text-xs font-bold text-ink-400 transition hover:bg-cream-200 dark:bg-ink-800 dark:text-cream-200 dark:hover:bg-ink-700"
-          >
-            Cerrar
-          </button>
         </div>
 
         <div className="px-4 py-4 sm:px-5 sm:py-5">
@@ -2250,7 +2255,7 @@ export default function NutritionQuestionnaire({
                   className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-ink-400 underline underline-offset-2 hover:text-ink-500 transition active:scale-95 dark:text-ink-400 dark:hover:text-cream-300"
                 >
                     <SkipForward className="w-3.5 h-3.5" />
-                    Saltar
+                    Ahora no
                   </button>
                 )}
 

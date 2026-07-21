@@ -314,7 +314,7 @@ export default function PlanView() {
           <p className={`mt-1 line-clamp-2 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
             {meal.detalle}
           </p>
-          <p className={`mt-1.5 text-[11px] font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+          <p className={`mt-1.5 line-clamp-1 text-[11px] font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
             {typeof meal.proteinaG === 'number' ? `${meal.proteinaG}g proteína` : ''}
             {typeof meal.grasasG === 'number' ? ` · ${meal.grasasG}g grasa` : ''}
             {' · '}{sanitizeMealPortionsText(meal.porciones)}
@@ -352,6 +352,35 @@ export default function PlanView() {
     </div>
   ), [isDarkMode]);
 
+  const renderLogMealButton = React.useCallback((
+    profileId: ProfileId,
+    momentoKey: string,
+    momentoLabel: string,
+    accent: AccentColors,
+    compact = false,
+  ) => (
+    <button
+      type="button"
+      onClick={() => openLogSheet(profileId, momentoKey, momentoLabel)}
+      data-testid={`meal-log-open-${profileId}-${diaActivo}-${momentoKey}`}
+      className={`flex w-full items-center justify-center rounded-[20px] border font-extrabold transition hover:shadow-soft active:scale-[0.97] ${
+        compact
+          ? 'min-h-11 flex-row gap-2 px-3 text-xs'
+          : 'min-h-[74px] flex-col gap-1 px-2 text-[11px]'
+      } ${
+        isDarkMode
+          ? 'border-ink-700 bg-ink-800/60 text-ink-200 hover:bg-ink-800'
+          : 'border-cream-200 bg-white text-ink-600 hover:bg-cream-50'
+      }`}
+      aria-label={`Registrar ${momentoLabel} con foto o texto`}
+    >
+      <span className={`flex h-8 w-8 items-center justify-center rounded-full ${accent.tagBg} ${accent.text}`}>
+        <Camera className="h-4 w-4" />
+      </span>
+      <span>{compact ? 'Registrar lo que comí' : 'Con foto'}</span>
+    </button>
+  ), [diaActivo, isDarkMode, openLogSheet]);
+
   return (
     <>
       <motion.div
@@ -363,7 +392,7 @@ export default function PlanView() {
         className="space-y-4"
       >
         <div className="space-y-4">
-          <div className="flex items-end justify-between gap-3 px-1">
+          <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className={`text-[11px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
                 Semana actual
@@ -372,35 +401,36 @@ export default function PlanView() {
                 Mi plan
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-1.5">
               <button
                 type="button"
                 onClick={() => setIsSupplementsSheetOpen(true)}
                 data-testid="plan-suplementos-nav"
                 aria-label="Suplementos"
                 title="Suplementos"
-                className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 [&>span]:hidden ${
+                className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[11px] font-bold transition active:scale-90 ${
                   isDarkMode
                     ? 'border-ink-700 bg-ink-900 text-ink-200 hover:bg-ink-800'
                     : 'border-cream-200 bg-white text-ink-500 shadow-soft hover:bg-cream-100'
                 }`}
-              >
-                <Pill className="h-4 w-4" />
-              </button>
+                >
+                  <Pill className="h-4 w-4" />
+                  <span>Extras</span>
+                </button>
               <button
                 type="button"
                 onClick={() => setIsEquivalenciasSheetOpen(true)}
                 data-testid="plan-equivalencias-open"
                 aria-label="Guia"
                 title="Guia"
-                className={`inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 [&>span]:hidden ${
+                className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[11px] font-bold transition active:scale-90 ${
                   isDarkMode
                     ? 'border-ink-700 bg-ink-900 text-ink-200 hover:bg-ink-800'
                     : 'border-cream-200 bg-white text-ink-500 shadow-soft hover:bg-cream-100'
                 }`}
-              >
-                <BookOpen className="h-4 w-4" />
-                <span className="hidden min-[370px]:inline">Guía</span>
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Guía</span>
               </button>
               <button
                 type="button"
@@ -411,7 +441,7 @@ export default function PlanView() {
                 className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-3.5 text-xs font-bold text-white transition active:scale-90 bg-gradient-to-r ${ac.bgGradient} shadow-[0_8px_18px_-6px_rgba(234,65,9,0.4)]`}
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
-                <span className="hidden min-[400px]:inline">Ajustar IA</span>
+                <span>Ajustar</span>
               </button>
             </div>
           </div>
@@ -529,7 +559,7 @@ export default function PlanView() {
                     >
                       <div className="px-4 pb-4 pt-0">
                         {!isAmbos ? (
-                          <div className="space-y-2.5">
+                          <div className={isElegidoVacio ? 'grid grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'space-y-2.5'}>
                             <div
                               onClick={() => openSwapSheet(
                                 singleProfileId,
@@ -559,23 +589,11 @@ export default function PlanView() {
                                 </div>
                               )}
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => openLogSheet(singleProfileId, momento.key, momento.label)}
-                              data-testid={`meal-log-open-${singleProfileId}-${diaActivo}-${momento.key}`}
-                              className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-full border text-sm font-bold transition active:scale-[0.98] ${
-                                isDarkMode
-                                  ? 'border-ink-700 bg-ink-800/60 text-ink-200 hover:bg-ink-800'
-                                  : 'border-cream-200 bg-white text-ink-600 hover:bg-cream-50'
-                              }`}
-                            >
-                              <Camera className={`h-4 w-4 ${singleEmptyAccent.text}`} />
-                              Registrar lo que comí
-                            </button>
+                            {renderLogMealButton(singleProfileId, momento.key, momento.label, singleEmptyAccent, !isElegidoVacio)}
                           </div>
                         ) : (
                           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                            <div className="space-y-2.5">
+                            <div className={mealsElSeleccionadas.length === 0 ? 'grid grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'space-y-2.5'}>
                               <div
                                 onClick={() => openSwapSheet(
                                   'el',
@@ -603,17 +621,10 @@ export default function PlanView() {
                                   )
                                 )}
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => openLogSheet('el', momento.key, momento.label)}
-                                data-testid={`meal-log-open-el-${diaActivo}-${momento.key}`}
-                                className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-full border text-sm font-bold transition active:scale-[0.98] ${isDarkMode ? 'border-ink-700 bg-ink-800/60 text-ink-200' : 'border-cream-200 bg-white text-ink-600'}`}
-                              >
-                                <Camera className={`h-4 w-4 ${elAccent.text}`} /> Registrar lo que comí
-                              </button>
+                              {renderLogMealButton('el', momento.key, momento.label, elAccent, mealsElSeleccionadas.length > 0)}
                             </div>
 
-                            <div className="space-y-2.5">
+                            <div className={mealsEllaSeleccionadas.length === 0 ? 'grid grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'space-y-2.5'}>
                               <div
                                 onClick={() => openSwapSheet(
                                   'ella',
@@ -641,14 +652,7 @@ export default function PlanView() {
                                   )
                                 )}
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => openLogSheet('ella', momento.key, momento.label)}
-                                data-testid={`meal-log-open-ella-${diaActivo}-${momento.key}`}
-                                className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-full border text-sm font-bold transition active:scale-[0.98] ${isDarkMode ? 'border-ink-700 bg-ink-800/60 text-ink-200' : 'border-cream-200 bg-white text-ink-600'}`}
-                              >
-                                <Camera className={`h-4 w-4 ${ellaAccent.text}`} /> Registrar lo que comí
-                              </button>
+                              {renderLogMealButton('ella', momento.key, momento.label, ellaAccent, mealsEllaSeleccionadas.length > 0)}
                             </div>
                           </div>
                         )}
