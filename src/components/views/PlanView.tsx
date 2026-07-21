@@ -35,6 +35,10 @@ import {
 import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
 import { getProfileLabel } from '../../utils/profileLabels';
 import { sanitizeMealPortionsText } from '../../utils/mealPortions';
+import {
+  estimateDailyCaloriesFromObjectives,
+  sumSelectedMealCalories,
+} from '../../utils/nutrition';
 
 const momentoIcons: Record<string, React.ElementType> = {
   desayuno: Sun,
@@ -100,6 +104,8 @@ export default function PlanView() {
     equivalenciasData,
     supplementsData,
     diaActivo,
+    diasDisponibles,
+    setDiaActivo,
     isAmbos,
     selecciones,
     toggleSeleccion,
@@ -151,6 +157,47 @@ export default function PlanView() {
   const ellaAccent = getAccentColors('ella', isDarkMode);
   const labelEl = getProfileLabel(profileLabels, 'el');
   const labelElla = getProfileLabel(profileLabels, 'ella');
+
+  const profileDayStats = React.useMemo(() => {
+    const sumForProfile = (profileId: ProfileId) => {
+      const profile = perfilesData[profileId];
+      const dayPlan = profile?.plan?.[diaActivo] || {};
+      const selectedMeals = Object.entries(dayPlan).flatMap(([momentKey, meals]) =>
+        (meals || []).filter(
+          (meal) => selecciones[`${profileId}-${diaActivo}-${momentKey}-${meal.nombre}`]
+        )
+      );
+      const estimatedTarget = estimateDailyCaloriesFromObjectives(profile);
+      const target = profile.metaCaloricaKcalDia && profile.metaCaloricaKcalDia > 0
+        ? profile.metaCaloricaKcalDia
+        : estimatedTarget;
+
+      return {
+        kcal: sumSelectedMealCalories(selectedMeals),
+        target,
+      };
+    };
+
+    return {
+      el: sumForProfile('el'),
+      ella: sumForProfile('ella'),
+    };
+  }, [diaActivo, perfilesData, selecciones]);
+
+  const activeDayStats = React.useMemo(() => {
+    if (perfilActivo === 'ambos') {
+      return {
+        kcal: profileDayStats.el.kcal + profileDayStats.ella.kcal,
+        target: profileDayStats.el.target + profileDayStats.ella.target,
+      };
+    }
+
+    return profileDayStats[perfilActivo === 'ella' ? 'ella' : 'el'];
+  }, [perfilActivo, profileDayStats]);
+
+  const calorieProgress = activeDayStats.target > 0
+    ? Math.min(100, Math.round((activeDayStats.kcal / activeDayStats.target) * 100))
+    : 0;
 
   const handleDownloadDayPdf = React.useCallback(async () => {
     if (!perfilActivo) return;
@@ -392,16 +439,68 @@ export default function PlanView() {
         className="space-y-4"
       >
         <div className="space-y-4">
-          <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className={`text-[11px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
-                Semana actual
-              </p>
-              <h2 className={`mt-0.5 font-display text-[28px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
-                Mi plan
-              </h2>
+          <div className="px-1">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className={`text-[11px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
+                  Semana actual
+                </p>
+                <h2 className={`mt-0.5 font-display text-[28px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+                  Mi plan
+                </h2>
+              </div>
+
+              <div className={`min-w-0 rounded-2xl border px-3 py-2 text-right ${
+                isDarkMode
+                  ? 'border-ink-700 bg-ink-900'
+                  : 'border-cream-200 bg-white shadow-soft'
+              }`}>
+                <p className={`text-[9px] font-extrabold uppercase tracking-[0.12em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                  Seleccionado
+                </p>
+                <p className={`mt-0.5 whitespace-nowrap text-sm font-black tabular-nums ${ac.text}`}>
+                  {activeDayStats.kcal}
+                  <span className={`ml-1 text-[11px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                    / {activeDayStats.target} kcal
+                  </span>
+                </p>
+              </div>
             </div>
-            <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-1.5">
+
+            <div className="mt-3 grid grid-cols-7 gap-1" aria-label="Elegir día del plan">
+              {diasDisponibles.map((day) => {
+                const isActiveDay = day === diaActivo;
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => setDiaActivo(day)}
+                    aria-label={`Ver ${day}`}
+                    aria-pressed={isActiveDay}
+                    data-testid={`plan-day-${day}`}
+                    className={`min-h-10 rounded-xl px-1 text-[10px] font-extrabold transition active:scale-90 sm:text-xs ${
+                      isActiveDay
+                        ? `${ac.btnActive} shadow-sm`
+                        : isDarkMode
+                          ? 'bg-ink-900 text-ink-300 hover:bg-ink-800'
+                          : 'border border-cream-200 bg-white text-ink-500 hover:bg-cream-100'
+                    }`}
+                  >
+                    {day.slice(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? 'bg-ink-800' : 'bg-cream-200'}`}>
+              <motion.div
+                className={`h-full rounded-full bg-gradient-to-r ${ac.progressFill}`}
+                animate={{ width: `${calorieProgress}%` }}
+                transition={{ type: 'spring', stiffness: 100, damping: 18 }}
+              />
+            </div>
+
+            <div className="mt-3 grid w-full grid-cols-3 gap-2 sm:flex sm:justify-end sm:gap-1.5">
               <button
                 type="button"
                 onClick={() => setIsSupplementsSheetOpen(true)}

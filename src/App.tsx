@@ -17,7 +17,6 @@ import { useDiet } from './context/DietContext';
 
 import LandingView from './components/views/LandingView';
 import Header from './components/views/Header';
-import DailyProgress from './components/views/DailyProgress';
 const AdminLayout = lazy(() => import('./components/views/AdminLayout'));
 const PlanView = lazy(() => import('./components/views/PlanView'));
 const ShoppingView = lazy(() => import('./components/views/ShoppingView'));
@@ -333,8 +332,6 @@ export default function App() {
         data-profile={activeProfile}
       >
       {!isChromeHidden && <Header />}
-
-      {activeTab === 'plan' && !isChromeHidden ? <DailyProgress /> : null}
 
       <main className="relative z-0 mx-auto w-full max-w-5xl min-w-0 px-4 py-4 pb-[calc(96px+env(safe-area-inset-bottom))] sm:px-6 sm:pb-8 space-y-4">
         {desktopTabBackdrop ? (

@@ -1,14 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ElementType, type KeyboardEvent, type TouchEvent, type WheelEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Apple,
   ArrowRight,
   Camera,
   Clock,
-  Coffee,
-  Moon,
   Sparkles,
-  Sun,
   UtensilsCrossed,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
@@ -19,14 +15,6 @@ import { getAccentColors } from '../../utils/theme';
 const MEAL_WINDOW_MINUTES = 75;
 const PROFILE_IDS = ['el', 'ella'] as const;
 const AVAILABLE_DAYS = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'] as const;
-const MEAL_ICONS: Record<string, ElementType> = {
-  desayuno: Sun,
-  colacion_am: Apple,
-  comida: UtensilsCrossed,
-  colacion_pm: Coffee,
-  cena: Moon,
-};
-
 function parseTimeToMinutes(value: string) {
   const [rawHour, rawMinute] = value.split(':').map((part) => Number.parseInt(part, 10));
   const hour = Number.isFinite(rawHour) ? rawHour : 0;
@@ -159,9 +147,8 @@ export default function LandingView() {
       ? moments.findIndex((moment) => moment.key === targetMoment.key)
       : -1;
 
-    const buildMomentCard = (moment: MealTime, index: number) => {
+    const buildMomentCard = (moment: MealTime) => {
       if (!moment) return null;
-      const offset = targetIndex >= 0 ? index - targetIndex : 0;
 
       const selectedMeals = activeProfileIds.map((profileId) => {
         const meals = profilesData[profileId]?.plan?.[currentDayOfWeek]?.[moment.key] || [];
@@ -194,92 +181,23 @@ export default function LandingView() {
           .values()
       );
 
-      const actionName = getMomentActionName(moment.label);
-      let preparationMessage = `No has elegido tu ${actionName}.`;
-      if (selectedCount === selectedMeals.length && selectedCount > 0) {
-        preparationMessage = 'Sugerencia actual.';
-      } else if (selectedCount > 0) {
-        preparationMessage = `Falta elegir para ${missingLabels.join(' y ')}.`;
-      }
-
       return {
-        offset,
         moment,
         selectedMealGroups,
         selectedCount,
         missingLabels,
-        preparationMessage,
       };
     };
 
     return {
-      currentKey: targetMoment?.key || null,
       initialIndex: targetIndex >= 0 ? targetIndex : 0,
       cards: moments
-        .map((moment, index) => buildMomentCard(moment, index))
+        .map((moment) => buildMomentCard(moment))
         .filter((card): card is NonNullable<typeof card> => Boolean(card)),
     };
   }, [currentDayOfWeek, currentMinutes, perfilActivo, profileLabels, profilesData, selections]);
 
-  const [activeReelIndex, setActiveReelIndex] = useState(0);
-  const touchStartYRef = useRef<number | null>(null);
-  const wheelLockRef = useRef(false);
-
-  useEffect(() => {
-    setActiveReelIndex(homeReel.initialIndex);
-  }, [homeReel.initialIndex]);
-
-  const moveReel = (direction: 1 | -1) => {
-    const total = homeReel.cards.length;
-    if (total <= 1) return;
-    setActiveReelIndex((current) => (current + direction + total) % total);
-  };
-
-  const handleReelWheel = (event: WheelEvent<HTMLDivElement>) => {
-    if (Math.abs(event.deltaY) < 12 || wheelLockRef.current) return;
-    event.preventDefault();
-    wheelLockRef.current = true;
-    moveReel(event.deltaY > 0 ? 1 : -1);
-    window.setTimeout(() => {
-      wheelLockRef.current = false;
-    }, 260);
-  };
-
-  const handleTouchStart = (event: TouchEvent<HTMLDivElement>) => {
-    touchStartYRef.current = event.touches[0]?.clientY ?? null;
-  };
-
-  const handleTouchMove = (event: TouchEvent<HTMLDivElement>) => {
-    const startY = touchStartYRef.current;
-    const currentY = event.touches[0]?.clientY ?? startY;
-    if (startY === null || currentY === null) return;
-    if (Math.abs(startY - currentY) > 8) {
-      event.preventDefault();
-    }
-  };
-
-  const handleTouchEnd = (event: TouchEvent<HTMLDivElement>) => {
-    const startY = touchStartYRef.current;
-    touchStartYRef.current = null;
-    if (startY === null) return;
-    const endY = event.changedTouches[0]?.clientY ?? startY;
-    const delta = startY - endY;
-    if (Math.abs(delta) < 28) return;
-    moveReel(delta > 0 ? 1 : -1);
-  };
-
-  const handleReelKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      moveReel(1);
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      moveReel(-1);
-    }
-  };
-
-  const activeCard = homeReel.cards[activeReelIndex] || homeReel.cards[0] || null;
-  const reelCount = homeReel.cards.length;
+  const activeCard = homeReel.cards[homeReel.initialIndex] || homeReel.cards[0] || null;
   const activeMomentName = activeCard ? getMomentActionName(activeCard.moment.label) : 'comida';
   const hasPersonalizedPlan =
     perfilActivo === 'el'
@@ -368,14 +286,14 @@ export default function LandingView() {
     <div className="relative flex min-h-0 flex-1 overflow-hidden overscroll-none bg-cream-50 text-ink-900 dark:bg-ink-950 dark:text-cream-100">
       {/* Decorative background */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className={`home-food-halo absolute -right-20 -top-16 h-[25rem] w-[24rem] opacity-[0.18] sm:-right-8 sm:opacity-25 ${isDarkMode ? 'mix-blend-luminosity opacity-[0.12]' : ''}`} />
+        <div className={`home-food-halo absolute -right-24 -top-20 h-[22rem] w-[22rem] opacity-[0.14] sm:-right-8 sm:opacity-20 ${isDarkMode ? 'mix-blend-luminosity opacity-[0.1]' : ''}`} />
         <div className={`ambient-drift absolute -top-32 -right-24 h-96 w-96 rounded-full blur-3xl ${isDarkMode ? 'bg-pine-900/30' : 'bg-pine-100/70'}`} />
         <div className={`absolute -bottom-40 -left-28 h-[28rem] w-[28rem] rounded-full blur-3xl ${isDarkMode ? 'bg-ocean-900/15' : 'bg-ocean-100/50'}`} />
         <div className={`absolute inset-0 bg-gradient-to-b ${isDarkMode ? 'from-ink-950/60 via-transparent to-ink-950/80' : 'from-cream-50/40 via-transparent to-cream-50/90'}`} />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-[96px] pt-4 max-[340px]:px-3 sm:px-6 sm:pb-10 sm:pt-8">
-        <main className="flex min-h-0 flex-1 flex-col justify-center gap-4 py-2 sm:gap-6 sm:py-10">
+        <main className="flex min-h-0 flex-1 flex-col justify-center gap-3 py-2 sm:gap-5 sm:py-10">
           {/* Greeting */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -389,9 +307,6 @@ export default function LandingView() {
             <h1 className="mt-1 font-display text-[32px] leading-[1.05] font-semibold tracking-tight text-ink-900 dark:text-cream-50 max-[340px]:text-[28px] sm:text-5xl">
               {getGreeting(currentMinutes)}
             </h1>
-            <p className={`mt-1.5 text-sm font-medium ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-              Un paso a la vez. Hoy solo necesitas tu siguiente comida.
-            </p>
           </motion.div>
 
           <motion.section
@@ -399,7 +314,7 @@ export default function LandingView() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 360, damping: 32, delay: 0.05 }}
             data-testid="landing-profile-ambos-card"
-            className={`relative overflow-hidden rounded-[30px] border p-4 shadow-lift max-[340px]:rounded-[26px] max-[340px]:p-3.5 sm:p-6 ${
+            className={`relative overflow-hidden rounded-[28px] border p-4 shadow-lift max-[340px]:rounded-[24px] max-[340px]:p-3.5 sm:p-6 ${
               isDarkMode
                 ? 'border-ink-700 bg-ink-900/95'
                 : 'border-cream-200 bg-white/95'
@@ -407,23 +322,10 @@ export default function LandingView() {
           >
             <div className={`pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accent.bgGradient}`} />
 
-            <div
-              className="relative z-10 touch-none overscroll-contain"
-              style={{ touchAction: 'none' }}
-              aria-label="Momentos de comida del dia"
-              role="listbox"
-              tabIndex={0}
-              onWheel={handleReelWheel}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onKeyDown={handleReelKeyDown}
-            >
+            <div className="relative z-10">
               {activeCard ? (
                 <motion.article
                   key={activeCard.moment.key}
-                  role="option"
-                  aria-selected="true"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ type: 'spring', stiffness: 320, damping: 30 }}
@@ -433,12 +335,9 @@ export default function LandingView() {
                       <p className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                         Tu siguiente momento
                       </p>
-                      <h2 className="mt-1 font-display text-4xl font-semibold tracking-tight text-ink-900 max-[340px]:text-[32px] dark:text-cream-50 sm:text-5xl">
+                      <h2 className="mt-1 font-display text-[32px] font-semibold tracking-tight text-ink-900 max-[340px]:text-[29px] dark:text-cream-50 sm:text-5xl">
                         {activeCard.moment.label}
                       </h2>
-                      <p className={`mt-2 text-sm font-medium ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-                        {activeCard.preparationMessage}
-                      </p>
                     </div>
                     <div className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-extrabold tabular-nums ${
                       isDarkMode
@@ -453,49 +352,23 @@ export default function LandingView() {
                   {activeCard.selectedMealGroups.length > 0 ? (
                     renderMealSummary(activeCard)
                   ) : (
-                    <div className={`mt-4 rounded-2xl border border-dashed px-4 py-4 ${
+                    <div className={`mt-4 flex items-center gap-3 rounded-2xl px-3.5 py-3 ${
                       isDarkMode
-                        ? 'border-ink-600 bg-ink-800/40 text-ink-300'
-                        : `${accent.border} bg-cream-100/60 text-ink-500`
+                        ? 'bg-ink-800/60 text-ink-300'
+                        : 'bg-cream-100/80 text-ink-500'
                     }`}>
-                      <p className="text-[13px] font-medium leading-relaxed">
-                        Elige una opcion para dejar listo este momento del dia.
-                      </p>
+                      <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${accent.bgLight} ${accent.text}`}>
+                        <UtensilsCrossed className="h-4 w-4" />
+                      </span>
+                      <div>
+                        <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
+                          Aún sin comida
+                        </p>
+                        <p className="mt-0.5 text-xs font-medium">Elige una opción o registra lo que comiste.</p>
+                      </div>
                     </div>
                   )}
                 </motion.article>
-              ) : null}
-
-              {/* Keep every moment visible so navigation never depends on a gesture. */}
-              {reelCount > 1 ? (
-                <div className="scrollbar-none mt-4 overflow-x-auto pb-1" role="tablist" aria-label="Momentos del día">
-                  <div className="flex min-w-max items-center gap-1.5">
-                    {homeReel.cards.map((card, index) => {
-                      const MomentIcon = MEAL_ICONS[card.moment.key] || UtensilsCrossed;
-                      const isActive = index === activeReelIndex;
-                      return (
-                        <button
-                          key={card.moment.key}
-                          type="button"
-                          role="tab"
-                          aria-selected={isActive}
-                          onClick={() => setActiveReelIndex(index)}
-                          className={`flex min-h-[48px] min-w-[58px] flex-col items-center justify-center gap-0.5 rounded-2xl px-2.5 transition active:scale-95 ${
-                            isActive
-                              ? `bg-gradient-to-br ${accent.bgGradient} text-white shadow-sm`
-                              : isDarkMode
-                                ? 'bg-ink-800 text-ink-300 hover:bg-ink-700'
-                                : 'bg-cream-100 text-ink-500 hover:bg-cream-200'
-                          }`}
-                          aria-label={`Ver ${card.moment.label}, ${card.moment.hora}`}
-                        >
-                          <MomentIcon className={`h-4 w-4 ${isActive ? 'gentle-breathe' : ''}`} />
-                          <span className="text-[10px] font-extrabold">{card.moment.hora}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
               ) : null}
             </div>
 
