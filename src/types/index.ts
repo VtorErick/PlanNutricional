@@ -18,6 +18,10 @@ export interface MealAiMeta {
   normalizedByProfile?: boolean;
   normalizedTargetKcal?: number;
   profileId?: 'el' | 'ella';
+  analyzedSource?: 'image' | 'text';
+  analyzedModel?: string;
+  confidence?: 'alta' | 'media' | 'baja';
+  loggedAt?: string;
 }
 
 export interface MealItem {

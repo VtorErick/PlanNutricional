@@ -8,6 +8,7 @@ import {
   Lightbulb,
   Moon,
   ShoppingCart,
+  Sparkles,
   Sun,
   X,
 } from 'lucide-react';
@@ -16,7 +17,6 @@ import { useDiet } from './context/DietContext';
 
 import LandingView from './components/views/LandingView';
 import Header from './components/views/Header';
-import DailyProgress from './components/views/DailyProgress';
 const AdminLayout = lazy(() => import('./components/views/AdminLayout'));
 const PlanView = lazy(() => import('./components/views/PlanView'));
 const ShoppingView = lazy(() => import('./components/views/ShoppingView'));
@@ -27,13 +27,13 @@ const SupplementsView = lazy(() => import('./components/views/SupplementsView'))
 
 function ViewFallback() {
   return (
-    <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+    <div className="rounded-[28px] border border-cream-200 bg-white p-6 shadow-soft dark:border-ink-700 dark:bg-ink-900">
       <div className="animate-pulse space-y-4">
-        <div className="h-5 w-1/3 rounded-full bg-slate-200 dark:bg-slate-800" />
-        <div className="h-4 w-2/3 rounded-full bg-slate-100 dark:bg-slate-800/60" />
+        <div className="h-5 w-1/3 rounded-full bg-cream-200 dark:bg-ink-700" />
+        <div className="h-4 w-2/3 rounded-full bg-cream-100 dark:bg-ink-800" />
         <div className="space-y-3 pt-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-2xl bg-slate-50 dark:bg-slate-900/60" />
+            <div key={i} className="h-20 rounded-2xl bg-cream-100 dark:bg-ink-800/70" />
           ))}
         </div>
       </div>
@@ -138,19 +138,19 @@ export default function App() {
         return {
           imageSrc: '/images/hero.png',
           imagePosition: 'center 22%',
-          overlay: 'from-sky-200/45 via-white/40 to-transparent',
+          overlay: 'from-pine-200/40 via-cream-50/40 to-transparent',
         };
       case 'compras':
         return {
           imageSrc: '/images/meal-prep.png',
           imagePosition: 'center 26%',
-          overlay: 'from-emerald-200/40 via-white/35 to-transparent',
+          overlay: 'from-apricot-200/35 via-cream-50/35 to-transparent',
         };
       case 'resumen':
         return {
           imageSrc: '/images/hero.png',
           imagePosition: 'center 18%',
-          overlay: 'from-violet-200/38 via-white/34 to-transparent',
+          overlay: 'from-pine-200/35 via-cream-50/35 to-transparent',
         };
       default:
         return null;
@@ -166,61 +166,58 @@ export default function App() {
     { key: 'resumen' as const, label: 'Resumen', shortLabel: 'Resumen', icon: Lightbulb },
   ];
 
-  const tabIconColors: Record<(typeof tabItems)[number]['key'], string> = {
-    inicio: 'text-slate-500 dark:text-slate-400',
-    plan: 'text-blue-500 dark:text-sky-300',
-    calorias: 'text-orange-500 dark:text-amber-300',
-    compras: 'text-teal-500 dark:text-teal-300',
-    resumen: 'text-violet-500 dark:text-violet-300',
-  };
-
-  // ── Mobile nav active tint by active profile (uniform shadow size to prevent jump) ──
-  const navActiveTint = useMemo(() => {
-    switch (activeProfile) {
-      case 'el':
-        return 'text-blue-600 dark:text-sky-300';
-      case 'ella':
-        return 'text-rose-600 dark:text-pink-300';
-      case 'ambos':
-        return 'text-violet-600 dark:text-violet-300';
-    }
-  }, [activeProfile]);
+  // ── Mobile nav active tint by active profile ──
   const navActiveSurface = useMemo(() => {
     switch (activeProfile) {
       case 'el':
-        return 'bg-blue-50 text-blue-700 shadow-sm dark:bg-blue-500/12 dark:text-sky-200 dark:shadow-none';
+        return 'bg-ocean-600 text-white shadow-[0_8px_20px_-6px_rgba(47,107,255,0.45)]';
       case 'ella':
-        return 'bg-rose-50 text-rose-700 shadow-sm dark:bg-rose-500/12 dark:text-pink-200 dark:shadow-none';
+        return 'bg-coral-500 text-white shadow-[0_8px_20px_-6px_rgba(249,47,124,0.45)]';
       case 'ambos':
-        return 'bg-violet-50 text-violet-700 shadow-sm dark:bg-violet-500/12 dark:text-violet-200 dark:shadow-none';
+        return 'bg-pine-600 text-white shadow-[0_8px_20px_-6px_rgba(234,65,9,0.45)]';
+      default:
+        return 'bg-ink-900 text-white shadow-[0_8px_20px_-6px_rgba(23,23,27,0.5)]';
     }
   }, [activeProfile]);
 
   const mobileNavigationBar = (
     <nav
       ref={mobileNavRef}
-      className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-x-clip border-t border-slate-200/60 bg-white/95 shadow-[0_-6px_18px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/95 sm:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-x-clip sm:hidden"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 10px)' }}
       aria-label="Navegación principal móvil"
     >
-      <div className="mx-auto w-full max-w-md px-3 py-2">
-        <div className="grid grid-cols-5 gap-0.5 rounded-[24px] border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950 p-1.5 shadow-[0_8px_22px_rgba(15,23,42,0.09)]">
-          {tabItems.map((tabItem) => (
-            <button
-              key={tabItem.key}
-              type="button"
-              onClick={() => setActiveTab(tabItem.key)}
-              data-testid={`mobile-tab-${tabItem.key}`}
-              className={`relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 px-0.5 rounded-[18px] transition-all duration-200 active:scale-95 ${
-                activeTab === tabItem.key
-                  ? navActiveSurface
-                  : 'text-slate-400 dark:text-slate-500'
-              }`}
-            >
-              <tabItem.icon className={`h-[17px] w-[17px] ${activeTab === tabItem.key ? navActiveTint : ''}`} strokeWidth={activeTab === tabItem.key ? 2.5 : 1.8} />
-              <span className="text-[10px] font-bold tracking-wide">{tabItem.shortLabel}</span>
-            </button>
-          ))}
+      <div className="mx-auto w-full max-w-md px-4">
+        <div className="grid grid-cols-5 gap-1 rounded-[26px] border border-white/80 bg-white/88 p-1.5 shadow-[0_18px_50px_-22px_rgba(15,23,42,0.42)] backdrop-blur-2xl dark:border-ink-700/80 dark:bg-ink-900/90">
+          {tabItems.map((tabItem) => {
+            const isActive = activeTab === tabItem.key;
+            return (
+              <motion.button
+                key={tabItem.key}
+                type="button"
+                onClick={() => setActiveTab(tabItem.key)}
+                data-testid={`mobile-tab-${tabItem.key}`}
+                whileTap={{ scale: 0.9 }}
+                className={`relative isolate flex min-h-[54px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[20px] transition-colors duration-200 ${
+                  isActive ? 'text-white' : 'text-ink-400 hover:text-ink-600 dark:text-ink-400 dark:hover:text-ink-200'
+                }`}
+                aria-label={tabItem.label}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {isActive ? (
+                  <motion.span
+                    layoutId="mobile-nav-active"
+                    className={`absolute inset-0 -z-10 rounded-[20px] ${navActiveSurface}`}
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                  />
+                ) : null}
+                <tabItem.icon className="h-[19px] w-[19px]" strokeWidth={isActive ? 2.5 : 1.9} />
+                <span className={`text-[10px] leading-none ${isActive ? 'font-black' : 'font-semibold'}`}>
+                  {tabItem.shortLabel}
+                </span>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
     </nav>
@@ -229,17 +226,17 @@ export default function App() {
   // ── EARLY RETURNS (after all hooks) ──────────────────────────────────
   if (isQuestionnaireOpen) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50/70 via-white to-indigo-50/70 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-200/70 bg-white/92 px-4 py-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/92 sm:px-6">
+      <div className="min-h-screen bg-cream-50 dark:bg-ink-950">
+        <header className="sticky top-0 z-50 flex items-center justify-between border-b border-cream-200 bg-cream-50/90 px-4 py-3 backdrop-blur-xl dark:border-ink-700 dark:bg-ink-950/90 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-violet-100 bg-violet-50 text-violet-600 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-200">
-              <Lightbulb className="h-4 w-4" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-pine-700 text-white shadow-sm">
+              <Sparkles className="h-4 w-4" />
             </div>
             <div>
-              <h1 className="text-sm font-black leading-tight text-slate-800 dark:text-slate-50">
+              <h1 className="font-display text-base font-bold leading-tight text-ink-900 dark:text-cream-100">
                 Generar plan con IA
               </h1>
-              <p className="text-[11px] text-slate-400 hidden sm:block dark:text-slate-500">
+              <p className="hidden text-[11px] text-ink-400 dark:text-ink-400 sm:block">
                 Completa el formulario para crear y aplicar un plan personalizado.
               </p>
             </div>
@@ -249,23 +246,23 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsDarkMode((prev) => !prev)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-cream-200 bg-white text-ink-500 transition-colors hover:bg-cream-100 dark:border-ink-700 dark:bg-ink-900 dark:text-cream-200 dark:hover:bg-ink-800"
               aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
             >
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
             <button
               onClick={() => setIsQuestionnaireOpen(false)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-cream-100 text-ink-500 transition-colors hover:bg-cream-200 dark:bg-ink-800 dark:text-cream-200 dark:hover:bg-ink-700"
               aria-label="Cerrar cuestionario"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </header>
 
-        <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 pb-24">
+        <main className="mx-auto w-full max-w-5xl px-4 py-6 pb-24 sm:px-6">
           <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Suspense fallback={<ViewFallback />}>
               <NutritionQuestionnaire
@@ -319,7 +316,7 @@ export default function App() {
   if (activeTab === 'inicio') {
     return (
       <div
-        className="flex h-[100svh] w-full flex-col overflow-hidden bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50 sm:min-h-[100dvh] sm:overflow-x-hidden"
+        className="flex h-[100svh] w-full flex-col overflow-hidden bg-cream-50 text-ink-900 dark:bg-ink-950 dark:text-cream-100 sm:min-h-[100dvh] sm:overflow-x-hidden"
         data-profile={activeProfile}
       >
         {!isChromeHidden && <Header />}
@@ -331,14 +328,12 @@ export default function App() {
 
   return (
       <div
-        className="min-h-[100svh] w-full overflow-x-hidden overscroll-x-none bg-gradient-to-br from-slate-50 via-white to-slate-50 transition-colors duration-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950"
+        className="min-h-[100svh] w-full overflow-x-hidden overscroll-x-none bg-cream-50 transition-colors duration-200 dark:bg-ink-950"
         data-profile={activeProfile}
       >
       {!isChromeHidden && <Header />}
 
-      {activeTab === 'plan' && !isChromeHidden ? <DailyProgress /> : null}
-
-      <main className="relative z-0 mx-auto w-full max-w-5xl min-w-0 px-4 py-4 pb-[calc(88px+env(safe-area-inset-bottom))] sm:px-6 sm:pb-8 space-y-4">
+      <main className="relative z-0 mx-auto w-full max-w-5xl min-w-0 px-4 py-4 pb-[calc(96px+env(safe-area-inset-bottom))] sm:px-6 sm:pb-8 space-y-4">
         {desktopTabBackdrop ? (
           <div
             aria-hidden="true"
@@ -352,28 +347,28 @@ export default function App() {
               }}
             />
             <div className={`absolute inset-0 bg-gradient-to-br ${desktopTabBackdrop.overlay}`} />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/12 via-white/50 to-white/92 dark:from-slate-950/20 dark:via-slate-950/45 dark:to-slate-950/88" />
+            <div className="absolute inset-0 bg-gradient-to-b from-cream-50/15 via-cream-50/55 to-cream-50/95 dark:from-ink-950/25 dark:via-ink-950/50 dark:to-ink-950/90" />
             <div className="absolute inset-0 backdrop-blur-[2px]" />
           </div>
         ) : null}
 
-        <div className="hidden sm:block sticky top-[72px] z-40">
+        <div className="hidden sm:block sticky top-[76px] z-40">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="grid grid-cols-5 gap-1.5 rounded-[26px] border border-white/70 bg-white/88 p-2 shadow-[0_18px_46px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-900/88"
+            className="grid grid-cols-5 gap-1.5 rounded-full border border-cream-200/90 bg-white/85 p-1.5 shadow-lift backdrop-blur-xl dark:border-ink-700/80 dark:bg-ink-900/85"
           >
             {tabItems.map((tabItem) => (
               <button
                 key={tabItem.key}
                 onClick={() => setActiveTab(tabItem.key)}
-                className={`flex min-h-[64px] items-center justify-center gap-2 rounded-[18px] px-4 py-3 text-sm font-extrabold transition-all duration-300 active:scale-[0.98] ${activeTab === tabItem.key
-                  ? 'bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950'
-                  : 'bg-slate-100/72 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:bg-slate-800/70 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'
+                className={`flex min-h-[46px] items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-all duration-300 active:scale-[0.98] ${activeTab === tabItem.key
+                  ? 'bg-ink-900 text-cream-50 shadow-sm dark:bg-cream-100 dark:text-ink-900'
+                  : 'text-ink-500 hover:bg-cream-100 hover:text-ink-800 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-cream-100'
                   }`}
               >
-                <tabItem.icon className={`w-4 h-4 flex-shrink-0 ${activeTab === tabItem.key ? 'text-white dark:text-slate-950' : tabIconColors[tabItem.key]}`} />
+                <tabItem.icon className="h-4 w-4 flex-shrink-0" />
                 <span>{tabItem.label}</span>
               </button>
             ))}
@@ -393,8 +388,8 @@ export default function App() {
 
       {!isChromeHidden && mobileNavigationBar}
 
-      <footer className="hidden bg-white/40 mt-10 dark:bg-slate-950/60 sm:block">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 text-center text-slate-500 text-xs sm:text-sm dark:text-slate-400">
+      <footer className="hidden bg-transparent mt-10 sm:block">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 text-center text-ink-400 text-xs sm:text-sm dark:text-ink-400">
           <p className="flex items-center justify-center gap-2">
             <ChefHat className="w-3.5 h-3.5" />
             Plan de alimentación personalizado - 2026

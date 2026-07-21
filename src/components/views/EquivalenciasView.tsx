@@ -29,17 +29,17 @@ export default function EquivalenciasView() {
               backgroundSize: '155%',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/72 to-white/88 dark:from-slate-950/84 dark:via-slate-950/72 dark:to-slate-950/86" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/72 to-white/88 dark:from-ink-900/84 dark:via-ink-900/72 dark:to-ink-900/86" />
         </div>
         <div className="relative flex items-center gap-3">
-          <div className={`flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-slate-900/80' : 'bg-white/90'}`}>
+          <div className={`flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl shadow-sm ${isDarkMode ? 'bg-ink-800/80' : 'bg-white/90'}`}>
             <Repeat className={`h-5 w-5 sm:h-6 sm:w-6 ${ac.text}`} />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className={`truncate text-lg sm:text-xl font-extrabold ${ac.textDark}`}>
               Diccionario de Intercambios
             </h2>
-            <p className={`mt-0.5 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p className={`mt-0.5 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
               Vista Bento: explora en grid y toca para ver el detalle completo.
             </p>
           </div>
@@ -60,8 +60,8 @@ export default function EquivalenciasView() {
               transition={{ delay: idx * 0.03 }}
               className={`aspect-square rounded-2xl p-3 text-left transition-all active:scale-[0.98] sm:aspect-[1.18] sm:p-4 ${
                 isDarkMode
-                  ? 'bg-slate-950/92 border border-slate-800 hover:border-slate-700'
-                  : 'bg-white border border-slate-100 hover:border-slate-200 shadow-[0_6px_18px_rgba(15,23,42,0.06)]'
+                  ? 'bg-ink-900/92 border border-ink-700 hover:border-ink-600'
+                  : 'bg-white border border-cream-100 hover:border-cream-200 shadow-[0_6px_18px_rgba(15,23,42,0.06)]'
               }`}
             >
               <div className="flex h-full flex-col justify-between">
@@ -79,7 +79,7 @@ export default function EquivalenciasView() {
                     <li
                       key={item}
                       className={`line-clamp-1 text-xs font-semibold leading-relaxed ${
-                        isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                        isDarkMode ? 'text-ink-400' : 'text-ink-400'
                       }`}
                     >
                       {item}
@@ -88,10 +88,10 @@ export default function EquivalenciasView() {
                 </ul>
 
                 <div>
-                  <h3 className={`line-clamp-2 text-sm font-black leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                  <h3 className={`line-clamp-2 text-sm font-black leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>
                     {eq.titulo}
                   </h3>
-                  <p className={`mt-1 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <p className={`mt-1 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                     {eq.items.length} opciones
                   </p>
                   <p className={`mt-2 text-[11px] font-bold ${ac.text}`}>
@@ -114,7 +114,7 @@ export default function EquivalenciasView() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-slate-950/55 backdrop-blur-[2px]"
+              className="fixed inset-0 z-40 bg-ink-900/55 backdrop-blur-[2px]"
             />
 
             <motion.section
@@ -126,16 +126,16 @@ export default function EquivalenciasView() {
               exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 34 }}
               className={`fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-t-[28px] border ${
-                isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'
+                isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'
               }`}
               style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
             >
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur-xl bg-white/90 dark:bg-slate-950/90 dark:border-slate-800 border-slate-200">
-                <p className={`text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Detalle</p>
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur-xl bg-white/90 dark:bg-ink-900/90 dark:border-ink-700 border-cream-200">
+                <p className={`text-sm font-black ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>Detalle</p>
                 <button
                   type="button"
                   onClick={() => setSelectedEq(null)}
-                  className={`rounded-xl p-2 ${isDarkMode ? 'hover:bg-slate-900 text-slate-300' : 'hover:bg-slate-100 text-slate-600'}`}
+                  className={`rounded-xl p-2 ${isDarkMode ? 'hover:bg-ink-800 text-cream-300' : 'hover:bg-cream-100 text-ink-500'}`}
                 >
                   <X className="h-4 w-4" />
                 </button>

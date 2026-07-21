@@ -233,6 +233,17 @@ function buildSteps(tp: TargetProfile): WizardStep[] {
   return steps;
 }
 
+function getWizardSection(step: WizardStep, target: TargetProfile) {
+  const total = target === 'ambos' ? 5 : 4;
+  if (step.type === 'who') return { current: 1, total, label: 'Configuración' };
+  if (step.profile) {
+    const current = target === 'ambos' ? (step.profile === 'el' ? 2 : 3) : 2;
+    return { current, total, label: 'Tu información' };
+  }
+  if (step.type === 'confirm') return { current: total, total, label: 'Revisión' };
+  return { current: total - 1, total, label: 'Ajustes finales' };
+}
+
 // ─── Motion ───────────────────────────────────────────────────────────────────
 const slideVariants = {
   enter: (d: number) => ({ x: d > 0 ? 32 : -32, opacity: 0 }),
@@ -336,8 +347,8 @@ function CardSection({
     <div className="space-y-3">
       {(title || hint) && (
         <div>
-          {title && <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{title}</p>}
-          {hint && <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-400">{hint}</p>}
+          {title && <p className="text-sm font-bold text-ink-700 dark:text-cream-100">{title}</p>}
+          {hint && <p className="text-xs text-ink-400 mt-0.5 dark:text-ink-400">{hint}</p>}
         </div>
       )}
       {children}
@@ -349,7 +360,7 @@ function ChipButton({
   active,
   onClick,
   children,
-  activeClassName = 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/60 dark:text-indigo-200',
+  activeClassName = 'border-pine-500 bg-pine-50 text-pine-700 dark:border-pine-400 dark:bg-pine-950/60 dark:text-pine-200',
 }: {
   active: boolean;
   onClick: () => void;
@@ -361,7 +372,7 @@ function ChipButton({
       type="button"
       onClick={onClick}
       className={`min-h-11 rounded-xl border px-3 py-2 text-sm font-bold transition-all active:scale-[.98] ${
-        active ? activeClassName : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900'
+        active ? activeClassName : 'border-cream-200 bg-white text-ink-500 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-200 dark:hover:bg-ink-800'
       }`}
     >
       {children}
@@ -379,7 +390,7 @@ function CheckList({
   onToggle: (tag: string) => void;
 }) {
   return (
-    <div className="max-h-56 space-y-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+    <div className="max-h-56 space-y-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-cream-200 dark:scrollbar-thumb-ink-600">
       {options.map((option) => {
         const isActive = currentValueString.includes(option);
         return (
@@ -389,15 +400,15 @@ function CheckList({
             onClick={() => onToggle(option)}
             className={`flex min-h-11 w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-all active:scale-[.98] ${
               isActive 
-                ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-bold dark:border-indigo-400 dark:bg-indigo-950/40 dark:text-indigo-200' 
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900'
+                ? 'border-pine-500 bg-pine-50 text-pine-700 font-bold dark:border-pine-400 dark:bg-pine-950/40 dark:text-pine-200'
+                : 'border-cream-200 bg-white text-ink-500 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-300 dark:hover:bg-ink-800'
             }`}
           >
             <span className="text-[13px] leading-tight pr-2">{option}</span>
             <div className={`w-5 h-5 flex-shrink-0 rounded-md flex items-center justify-center border transition-all ${
               isActive
-                ? 'bg-indigo-600 border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500'
-                : 'border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-900'
+                ? 'bg-pine-600 border-pine-600 dark:bg-pine-500 dark:border-pine-500'
+                : 'border-cream-300 bg-cream-50 dark:border-ink-500 dark:bg-ink-800'
             }`}>
               {isActive && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
             </div>
@@ -419,7 +430,7 @@ function QuickTag({
     <button
       type="button"
       onClick={onClick}
-      className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
+      className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-cream-200 bg-white text-ink-500 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-200 dark:hover:bg-ink-800"
     >
       {children}
     </button>
@@ -457,10 +468,10 @@ function NumField({
   };
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-2xl border border-slate-200 bg-white p-3 transition-colors focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:focus-within:border-indigo-600 dark:focus-within:ring-indigo-900/50">
-      <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase dark:text-slate-400">
+    <div className="flex flex-col gap-1.5 rounded-2xl border border-cream-200 bg-white p-3 transition-colors focus-within:border-pine-300 focus-within:ring-2 focus-within:ring-pine-100 dark:border-ink-600 dark:bg-ink-900 dark:focus-within:border-pine-600 dark:focus-within:ring-pine-900/50">
+      <div className="flex items-center justify-between text-[11px] font-bold text-ink-400 uppercase dark:text-ink-400">
         <label>
-          {label} {required && <span className="text-rose-400 ml-0.5">*</span>}
+          {label} {required && <span className="text-coral-400 ml-0.5">*</span>}
         </label>
         <span className="opacity-70 font-black">{unit}</span>
       </div>
@@ -474,7 +485,7 @@ function NumField({
           value={value}
           placeholder={unit}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full text-base font-black text-slate-800 bg-transparent outline-none dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 text-center"
+          className="w-full text-base font-black text-ink-700 bg-transparent outline-none dark:text-cream-100 placeholder:text-cream-300 dark:placeholder:text-ink-600 text-center"
         />
       </div>
     </div>
@@ -569,21 +580,21 @@ function TimeWheelPicker({
 
   return (
     <div className="space-y-4">
-      <p className="text-center text-sm font-semibold text-slate-700 dark:text-slate-100">{title}</p>
+      <p className="text-center text-sm font-semibold text-ink-600 dark:text-cream-100">{title}</p>
 
-      <div className="rounded-[24px] border border-indigo-100 bg-gradient-to-br from-indigo-50 to-violet-50 p-4 shadow-sm dark:border-indigo-900/60 dark:from-slate-950 dark:to-indigo-950/60">
+      <div className="rounded-[24px] border border-pine-100 bg-gradient-to-br from-pine-50 to-pine-50 p-4 shadow-sm dark:border-pine-900/60 dark:from-ink-900 dark:to-pine-950/60">
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+          <div className="rounded-2xl border border-cream-200 bg-white p-3 shadow-sm dark:border-ink-600 dark:bg-ink-900">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">Hora</div>
-              <div className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">1-12</div>
+              <div className="text-sm font-semibold text-ink-600 dark:text-cream-100">Hora</div>
+              <div className="text-xs font-semibold uppercase text-ink-400 dark:text-ink-400">1-12</div>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => changeHour(-1)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-cream-200 bg-cream-50 text-ink-600 active:scale-95 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100"
                 aria-label="Reducir hora"
               >
                 <Minus className="h-4 w-4" />
@@ -597,13 +608,13 @@ function TimeWheelPicker({
                 value={value.hour12}
                 onChange={(e) => onChange({ ...value, hour12: normalizeHour(e.target.value) })}
                 onBlur={() => onChange({ ...value, hour12: normalizeHour(value.hour12 || '7') || '7' })}
-                className="h-10 flex-1 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50 dark:focus:ring-slate-700"
+                className="h-10 flex-1 rounded-xl border border-cream-200 bg-white text-center text-base font-black text-ink-700 outline-none focus:ring-2 focus:ring-cream-300 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-50 dark:focus:ring-ink-600"
               />
 
               <button
                 type="button"
                 onClick={() => changeHour(1)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-cream-200 bg-cream-50 text-ink-600 active:scale-95 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100"
                 aria-label="Aumentar hora"
               >
                 <Plus className="h-4 w-4" />
@@ -611,17 +622,17 @@ function TimeWheelPicker({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+          <div className="rounded-2xl border border-cream-200 bg-white p-3 shadow-sm dark:border-ink-600 dark:bg-ink-900">
             <div className="mb-2 flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold text-slate-700 dark:text-slate-100">Min</div>
-              <div className="text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">00-59</div>
+              <div className="text-sm font-semibold text-ink-600 dark:text-cream-100">Min</div>
+              <div className="text-xs font-semibold uppercase text-ink-400 dark:text-ink-400">00-59</div>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => changeMinute(-1)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-cream-200 bg-cream-50 text-ink-600 active:scale-95 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100"
                 aria-label="Reducir minutos"
               >
                 <Minus className="h-4 w-4" />
@@ -635,13 +646,13 @@ function TimeWheelPicker({
                 value={value.minute}
                 onChange={(e) => onChange({ ...value, minute: normalizeMinute(e.target.value) })}
                 onBlur={() => onChange({ ...value, minute: normalizeMinute(value.minute || '00') || '00' })}
-                className="h-10 flex-1 rounded-xl border border-slate-200 bg-white text-center text-base font-black text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-50 dark:focus:ring-slate-700"
+                className="h-10 flex-1 rounded-xl border border-cream-200 bg-white text-center text-base font-black text-ink-700 outline-none focus:ring-2 focus:ring-cream-300 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-50 dark:focus:ring-ink-600"
               />
 
               <button
                 type="button"
                 onClick={() => changeMinute(1)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-cream-200 bg-cream-50 text-ink-600 active:scale-95 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100"
                 aria-label="Aumentar minutos"
               >
                 <Plus className="h-4 w-4" />
@@ -650,8 +661,8 @@ function TimeWheelPicker({
           </div>
         </div>
 
-        <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950">
-          <div className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-100">Formato</div>
+        <div className="mt-3 rounded-2xl border border-cream-200 bg-white p-3 shadow-sm dark:border-ink-600 dark:bg-ink-900">
+          <div className="mb-2 text-sm font-semibold text-ink-600 dark:text-cream-100">Formato</div>
           <div className="grid grid-cols-2 gap-2">
             {(['AM', 'PM'] as const).map((period) => {
               const active = value.meridiem === period;
@@ -662,8 +673,8 @@ function TimeWheelPicker({
                   onClick={() => onChange({ ...value, meridiem: period })}
                   className={`rounded-2xl border px-4 py-3 text-sm font-black transition-all active:scale-[0.98] ${
                     active
-                      ? 'border-indigo-500 bg-indigo-600 text-white shadow-sm dark:border-indigo-400 dark:bg-indigo-500'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                      ? 'border-pine-500 bg-pine-600 text-white shadow-sm dark:border-pine-400 dark:bg-pine-500'
+                      : 'border-cream-200 bg-cream-50 text-ink-600 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-200'
                   }`}
                 >
                   {period}
@@ -674,7 +685,7 @@ function TimeWheelPicker({
         </div>
       </div>
 
-      <p className="text-center text-xs text-indigo-500 font-semibold dark:text-indigo-300">
+      <p className="text-center text-xs text-pine-500 font-semibold dark:text-pine-300">
         Hora seleccionada: {previewLabel}
       </p>
     </div>
@@ -799,7 +810,7 @@ export default function NutritionQuestionnaire({
   const fallbackPreviewLabel = fallbackPreview.map((model) => getAiModelLabel(model)).join(', ');
   const currentStep = steps[stepIdx] ?? steps[0];
   const progress = steps.length > 1 ? stepIdx / (steps.length - 1) : 0;
-  const stepsLeft = Math.max(steps.length - (stepIdx + 1), 0);
+  const sectionMeta = getWizardSection(currentStep, targetProfile);
   const tc = THEME[currentStep.profile ?? targetProfile];
   const labelEl = getProfileLabel(profileLabels, 'el');
   const labelElla = getProfileLabel(profileLabels, 'ella');
@@ -1168,7 +1179,7 @@ export default function NutritionQuestionnaire({
     if (type === 'who') {
       return (
         <div className="space-y-3">
-          <p className="text-center text-slate-500 text-sm">
+          <p className="text-center text-ink-400 text-sm">
             Selecciona para quién generas el plan
           </p>
 
@@ -1194,18 +1205,18 @@ export default function NutritionQuestionnaire({
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 font-semibold text-left transition-all duration-200 active:scale-[.98] ${
                   active
                     ? `${t.border} ${t.light} shadow-sm`
-                    : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
+                    : 'border-cream-200 bg-white hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:hover:bg-ink-800'
                 } ${profileButtonDisabled ? 'cursor-not-allowed opacity-55' : ''}`}
               >
-                <span className="text-2xl w-11 h-11 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center flex-shrink-0 dark:bg-slate-900 dark:border-slate-700">
+                <span className="text-2xl w-11 h-11 rounded-2xl bg-white shadow-sm border border-cream-100 flex items-center justify-center flex-shrink-0 dark:bg-ink-800 dark:border-ink-600">
                   {emoji}
                 </span>
 
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-slate-800 dark:text-slate-100'}`}>
+                  <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-ink-700 dark:text-cream-100'}`}>
                     {titleLabel}
                   </p>
-                  <p className={`text-[11px] mt-0.5 ${active ? `${t.text} opacity-70` : 'text-slate-400'}`}>
+                  <p className={`text-[11px] mt-0.5 ${active ? `${t.text} opacity-70` : 'text-ink-400'}`}>
                     {sub}
                   </p>
                 </div>
@@ -1215,9 +1226,9 @@ export default function NutritionQuestionnaire({
             );
           })}
 
-          <div className="grid grid-cols-1 gap-3 rounded-[24px] border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 rounded-[24px] border border-cream-200 bg-white p-3 dark:border-ink-600 dark:bg-ink-900 sm:grid-cols-2">
             <label className="space-y-1.5">
-              <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+              <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-ink-400 dark:text-ink-400">
                 Nombre visual de El
               </span>
               <input
@@ -1228,13 +1239,13 @@ export default function NutritionQuestionnaire({
                 onKeyDown={(event) => handleProfileLabelKeyDown(event, 'el')}
                 maxLength={24}
                 data-testid="questionnaire-label-el"
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:ring-indigo-950"
+                className="h-11 w-full rounded-2xl border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
                 placeholder="El"
               />
             </label>
 
             <label className="space-y-1.5">
-              <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+              <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-ink-400 dark:text-ink-400">
                 Nombre visual de Ella
               </span>
               <input
@@ -1245,7 +1256,7 @@ export default function NutritionQuestionnaire({
                 onKeyDown={(event) => handleProfileLabelKeyDown(event, 'ella')}
                 maxLength={24}
                 data-testid="questionnaire-label-ella"
-                className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-800 outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-indigo-500 dark:focus:ring-indigo-950"
+                className="h-11 w-full rounded-2xl border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
                 placeholder="Ella"
               />
             </label>
@@ -1319,7 +1330,7 @@ export default function NutritionQuestionnaire({
         <div className="space-y-4">
           {/* ── Objetivos: grid 3 col compacto ── */}
           <div>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Objetivos</p>
+            <p className="text-sm font-bold text-ink-700 dark:text-cream-100 mb-2">Objetivos</p>
             <div className="grid grid-cols-3 gap-2">
               {OBJECTIVES.map((obj) => {
                 const isSelected = p.objectives.includes(obj.val);
@@ -1341,7 +1352,7 @@ export default function NutritionQuestionnaire({
                       transition-all duration-150 active:scale-[.96] select-none
                       ${isSelected
                         ? `${tc.border} ${tc.light} ${tc.text} shadow-sm`
-                        : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
+                        : 'border-cream-200 bg-white text-ink-400 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-ink-400 dark:hover:bg-ink-800'
                       }
                     `}
                   >
@@ -1355,7 +1366,7 @@ export default function NutritionQuestionnaire({
                       </span>
                     )}
                     <span className="text-[22px] leading-none">{obj.emoji}</span>
-                    <span className={`text-[10px] font-bold leading-tight ${isSelected ? '' : 'text-slate-600 dark:text-slate-300'}`}>
+                    <span className={`text-[10px] font-bold leading-tight ${isSelected ? '' : 'text-ink-500 dark:text-cream-300'}`}>
                       {obj.val}
                     </span>
                   </button>
@@ -1366,7 +1377,7 @@ export default function NutritionQuestionnaire({
 
           {/* ── Tiempo objetivo: grid 3×2 ── */}
           <div>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Tiempo objetivo</p>
+            <p className="text-sm font-bold text-ink-700 dark:text-cream-100 mb-2">Tiempo objetivo</p>
             <div className="grid grid-cols-3 gap-2">
               {TIMELINE_OPTIONS.map((tl) => {
                 const active = p.objectiveTimeline === tl.val;
@@ -1380,7 +1391,7 @@ export default function NutritionQuestionnaire({
                       rounded-2xl border-2 py-2.5 transition-all active:scale-[.97]
                       ${active
                         ? `${tc.border} ${tc.light} ${tc.text} shadow-sm`
-                        : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400 dark:hover:bg-slate-900'
+                        : 'border-cream-200 bg-white text-ink-400 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-ink-400 dark:hover:bg-ink-800'
                       }
                     `}
                   >
@@ -1400,7 +1411,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
+          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
             💡 Esta sección es opcional. Puedes saltar si no aplica.
           </p>
 
@@ -1420,7 +1431,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
+          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
             💡 Esta sección es opcional.
           </p>
 
@@ -1459,7 +1470,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
+          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
             💡 Este paso es opcional. Puedes adjuntar un PDF de báscula corporal o capturar medidas manuales.
           </p>
 
@@ -1467,16 +1478,16 @@ export default function NutritionQuestionnaire({
             title="Reporte corporal en PDF"
             hint={`Ejemplo: un resumen tipo Renpho con grasa, músculo, agua corporal o métricas similares. Máximo ${MAX_ASSESSMENT_PDF_MB} MB.`}
           >
-            <label className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm cursor-pointer active:scale-[.99] transition dark:border-slate-700 dark:bg-slate-950">
+            <label className="flex flex-col gap-3 rounded-3xl border border-cream-200 bg-white p-4 shadow-sm cursor-pointer active:scale-[.99] transition dark:border-ink-600 dark:bg-ink-900">
               <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 dark:bg-indigo-950/50 dark:text-indigo-200">
+                <div className="w-11 h-11 rounded-2xl bg-pine-50 text-pine-600 flex items-center justify-center flex-shrink-0 dark:bg-pine-950/50 dark:text-pine-200">
                   <FileUp className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  <p className="text-sm font-bold text-ink-700 dark:text-cream-100">
                     {p.assessmentReportPdf ? 'Cambiar PDF adjunto' : 'Adjuntar PDF opcional'}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed dark:text-slate-300">
+                  <p className="text-xs text-ink-400 mt-1 leading-relaxed dark:text-cream-300">
                     La IA lo toma como contexto adicional. Tus respuestas manuales siguen teniendo prioridad.
                   </p>
                 </div>
@@ -1489,7 +1500,7 @@ export default function NutritionQuestionnaire({
                 onChange={(event) => void handleAssessmentPdfUpload(profile, event)}
               />
 
-              <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/70 px-4 py-3 text-xs font-semibold text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/50 dark:text-indigo-200">
+              <div className="rounded-2xl border border-dashed border-pine-200 bg-pine-50/70 px-4 py-3 text-xs font-semibold text-pine-700 dark:border-pine-900/60 dark:bg-pine-950/50 dark:text-pine-200">
                 {p.assessmentReportPdf ? p.assessmentReportPdf.name : 'Toca aquí para seleccionar un PDF'}
               </div>
             </label>
@@ -1498,7 +1509,7 @@ export default function NutritionQuestionnaire({
               <button
                 type="button"
                 onClick={() => clearAssessmentPdf(profile)}
-                className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 flex items-center justify-center gap-2 active:scale-[.98] dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200"
+                className="w-full rounded-2xl border border-coral-200 bg-coral-50 px-4 py-3 text-sm font-bold text-coral-600 flex items-center justify-center gap-2 active:scale-[.98] dark:border-coral-800/60 dark:bg-coral-950/40 dark:text-coral-200"
               >
                 <Trash className="w-4 h-4" />
                 Quitar PDF
@@ -1570,7 +1581,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
+          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
             💡 Esta sección es opcional.
           </p>
 
@@ -1586,7 +1597,7 @@ export default function NutritionQuestionnaire({
             <CardSection title="Favoritos" hint="Sugerencia: separa cada elemento por coma.">
               <input
                 placeholder="Ej. Pollo, atún, arroz"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
+                className="w-full rounded-2xl border border-cream-200 bg-cream-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-200 focus:border-ocean-300 transition dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:bg-ink-900 dark:focus:ring-ocean-800 dark:focus:border-ocean-700"
                 value={p.favoriteFoods}
                 onChange={(e) => setPerson(profile, { favoriteFoods: e.target.value })}
               />
@@ -1602,7 +1613,7 @@ export default function NutritionQuestionnaire({
             <CardSection title="Jamás incluir" hint="Sugerencia: separa cada elemento por coma.">
               <input
                 placeholder="Ej. Hígado, coliflor, yogurt"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-blue-900 dark:focus:border-blue-800"
+                className="w-full rounded-2xl border border-cream-200 bg-cream-50 px-4 py-3 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-ocean-200 focus:border-ocean-300 transition dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:bg-ink-900 dark:focus:ring-ocean-800 dark:focus:border-ocean-700"
                 value={p.dislikedFoods}
                 onChange={(e) => setPerson(profile, { dislikedFoods: e.target.value })}
               />
@@ -1647,16 +1658,16 @@ export default function NutritionQuestionnaire({
                     className={`flex flex-col items-start gap-0.5 p-3 rounded-2xl border-2 transition-all active:scale-[.97] ${
                       active
                         ? `${tc.border} ${tc.light} shadow-sm border-[2.5px]`
-                        : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
+                        : 'border-cream-200 bg-white hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:hover:bg-ink-800'
                     }`}
                   >
-                    <span className="text-xl mb-0.5 w-9 h-9 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center dark:bg-slate-900 dark:border-slate-700">
+                    <span className="text-xl mb-0.5 w-9 h-9 rounded-full bg-white shadow-sm border border-cream-100 flex items-center justify-center dark:bg-ink-800 dark:border-ink-600">
                       {al.emoji}
                     </span>
-                    <span className={`text-xs font-bold leading-tight ${active ? tc.text : 'text-slate-700 dark:text-slate-100'}`}>
+                    <span className={`text-xs font-bold leading-tight ${active ? tc.text : 'text-ink-600 dark:text-cream-100'}`}>
                       {al.val}
                     </span>
-                    <span className={`text-[10px] leading-tight ${active ? `${tc.text} opacity-60` : 'text-slate-400'}`}>
+                    <span className={`text-[10px] leading-tight ${active ? `${tc.text} opacity-60` : 'text-ink-400'}`}>
                       {al.desc}
                     </span>
                   </button>
@@ -1669,10 +1680,10 @@ export default function NutritionQuestionnaire({
               <button
                 type="button"
                 onClick={() => openTimePicker(profile, 'wakeTime', p.wakeTime)}
-                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-indigo-800 transition shadow-sm hover:bg-slate-50"
+                className="flex w-full items-center justify-between rounded-2xl border border-cream-200 bg-white px-4 py-3 text-sm font-bold text-ink-600 focus:outline-none focus:ring-2 focus:ring-pine-300 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-200 dark:focus:ring-pine-800 transition shadow-sm hover:bg-cream-50"
               >
                 <span>{formatTimeForDisplay(p.wakeTime, '07:00')}</span>
-                <Clock className="w-4 h-4 text-slate-400" />
+                <Clock className="w-4 h-4 text-ink-400" />
               </button>
             </CardSection>
 
@@ -1680,10 +1691,10 @@ export default function NutritionQuestionnaire({
               <button
                 type="button"
                 onClick={() => openTimePicker(profile, 'sleepTime', p.sleepTime)}
-                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-indigo-800 transition shadow-sm hover:bg-slate-50"
+                className="flex w-full items-center justify-between rounded-2xl border border-cream-200 bg-white px-4 py-3 text-sm font-bold text-ink-600 focus:outline-none focus:ring-2 focus:ring-pine-300 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-200 dark:focus:ring-pine-800 transition shadow-sm hover:bg-cream-50"
               >
                 <span>{formatTimeForDisplay(p.sleepTime, '22:00')}</span>
-                <Clock className="w-4 h-4 text-slate-400" />
+                <Clock className="w-4 h-4 text-ink-400" />
               </button>
             </CardSection>
           </div>
@@ -1693,19 +1704,19 @@ export default function NutritionQuestionnaire({
 
     if (type === 'portions') {
       const foodGroups = [
-        { key: 'frutas', label: 'Frutas', icon: Apple, color: 'text-rose-300', activeColor: 'text-rose-500 dark:text-rose-300', bg: 'bg-rose-50 dark:bg-rose-950/40' },
-        { key: 'verduras', label: 'Verduras', icon: Leaf, color: 'text-emerald-300', activeColor: 'text-emerald-500 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
-        { key: 'cereales', label: 'Cereales', icon: Wheat, color: 'text-amber-300', activeColor: 'text-amber-500 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/40' },
+        { key: 'frutas', label: 'Frutas', icon: Apple, color: 'text-coral-300', activeColor: 'text-coral-500 dark:text-coral-300', bg: 'bg-coral-50 dark:bg-coral-950/40' },
+        { key: 'verduras', label: 'Verduras', icon: Leaf, color: 'text-pine-300', activeColor: 'text-pine-500 dark:text-pine-300', bg: 'bg-pine-50 dark:bg-pine-950/40' },
+        { key: 'cereales', label: 'Cereales', icon: Wheat, color: 'text-apricot-300', activeColor: 'text-apricot-500 dark:text-apricot-300', bg: 'bg-apricot-50 dark:bg-apricot-950/40' },
         { key: 'proteina', label: 'Proteína', icon: Beef, color: 'text-red-300', activeColor: 'text-red-500 dark:text-red-300', bg: 'bg-red-50 dark:bg-red-950/35' },
         { key: 'grasas', label: 'Grasas', icon: Droplets, color: 'text-lime-300', activeColor: 'text-lime-500 dark:text-lime-300', bg: 'bg-lime-50 dark:bg-lime-950/35' },
-        { key: 'lacteos', label: 'Lácteos', icon: Milk, color: 'text-blue-300', activeColor: 'text-blue-500 dark:text-blue-300', bg: 'bg-blue-50 dark:bg-blue-950/40' },
-        { key: 'leguminosas', label: 'Leguminosas', icon: Bean, color: 'text-amber-300', activeColor: 'text-amber-700 dark:text-amber-300', bg: 'bg-amber-100 dark:bg-amber-950/50' },
+        { key: 'lacteos', label: 'Lácteos', icon: Milk, color: 'text-ocean-300', activeColor: 'text-ocean-500 dark:text-ocean-300', bg: 'bg-ocean-50 dark:bg-ocean-800/40' },
+        { key: 'leguminosas', label: 'Leguminosas', icon: Bean, color: 'text-apricot-300', activeColor: 'text-apricot-700 dark:text-apricot-300', bg: 'bg-apricot-100 dark:bg-apricot-950/50' },
       ];
 
       const macroGroups = [
-        { key: 'carbs', label: 'Carbohidratos', foodKeys: ['frutas', 'cereales', 'leguminosas'], tone: 'border-amber-100 bg-amber-50/60' },
+        { key: 'carbs', label: 'Carbohidratos', foodKeys: ['frutas', 'cereales', 'leguminosas'], tone: 'border-apricot-100 bg-apricot-50/60' },
         { key: 'protein', label: 'Proteínas', foodKeys: ['proteina', 'lacteos'], tone: 'border-red-100 bg-red-50/60' },
-        { key: 'fat-veggie', label: 'Fibra y grasas', foodKeys: ['verduras', 'grasas'], tone: 'border-emerald-100 bg-emerald-50/60' },
+        { key: 'fat-veggie', label: 'Fibra y grasas', foodKeys: ['verduras', 'grasas'], tone: 'border-pine-100 bg-pine-50/60' },
       ];
 
       const mKeys = ['desayuno', 'colacion_am', 'comida', 'colacion_pm', 'cena'];
@@ -1724,7 +1735,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
+          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
             💡 Este paso es opcional. Puedes saltar si prefieres que la IA calcule las porciones automáticamente.
           </p>
 
@@ -1739,8 +1750,8 @@ export default function NutritionQuestionnaire({
                   onClick={() => setPortionMode(val)}
                   className={`relative flex flex-col gap-0.5 p-3.5 rounded-2xl border-2 text-left transition-all active:scale-[.97] ${
                     portionMode === val
-                      ? 'border-[2.5px] border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100 dark:border-indigo-400 dark:bg-indigo-950/55 dark:shadow-black/30'
-                      : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900'
+                      ? 'border-[2.5px] border-pine-600 bg-pine-50 shadow-md shadow-pine-100 dark:border-pine-400 dark:bg-pine-950/55 dark:shadow-black/30'
+                      : 'border-cream-200 bg-white hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:hover:bg-ink-800'
                   }`}
                 >
                   <motion.span
@@ -1749,16 +1760,16 @@ export default function NutritionQuestionnaire({
                       scale: portionMode === val ? 1 : 0.6,
                       opacity: portionMode === val ? 1 : 0,
                     }}
-                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow"
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-pine-600 text-white flex items-center justify-center shadow"
                   >
                     <Check className="w-3.5 h-3.5" />
                   </motion.span>
 
                   <span className="text-xl">{emoji}</span>
-                  <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}>
+                  <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-pine-700 dark:text-pine-200' : 'text-ink-700 dark:text-cream-100'}`}>
                     {title}
                   </span>
-                  <span className={`text-[10px] ${portionMode === val ? 'text-indigo-500' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] ${portionMode === val ? 'text-pine-500' : 'text-ink-400'}`}>
                     {sub}
                   </span>
                 </button>
@@ -1768,19 +1779,19 @@ export default function NutritionQuestionnaire({
 
           {portionMode === 'manual' && (
             <div className="space-y-3">
-              <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3 dark:border-indigo-900/60 dark:from-slate-950 dark:to-indigo-950/60">
+              <div className="rounded-2xl border border-pine-100 bg-gradient-to-r from-pine-50 to-pine-50 px-4 py-3 dark:border-pine-900/60 dark:from-ink-900 dark:to-pine-950/60">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-100">Total de porciones</p>
-                  <span className="text-sm font-black text-indigo-700 tabular-nums dark:text-indigo-200">{totalPortions}</span>
+                  <p className="text-sm font-semibold text-pine-800 dark:text-pine-100">Total de porciones</p>
+                  <span className="text-sm font-black text-pine-700 tabular-nums dark:text-pine-200">{totalPortions}</span>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-white/80 overflow-hidden dark:bg-slate-900">
+                <div className="mt-2 h-2 rounded-full bg-white/80 overflow-hidden dark:bg-ink-800">
                   <motion.div
                     animate={{ width: `${progressPercent}%` }}
                     transition={{ type: 'spring', stiffness: 140, damping: 20 }}
-                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                    className="h-full rounded-full bg-gradient-to-r from-pine-500 to-pine-500"
                   />
                 </div>
-                <p className="mt-1 text-[11px] text-indigo-600 dark:text-indigo-300">Completado: {progressPercent}%</p>
+                <p className="mt-1 text-[11px] text-pine-600 dark:text-pine-300">Completado: {progressPercent}%</p>
               </div>
 
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -1792,8 +1803,8 @@ export default function NutritionQuestionnaire({
                       onClick={() => setActivePortionMoment(momento)}
                       className={`px-3 py-2 rounded-xl whitespace-nowrap text-xs font-bold border transition ${
                         active
-                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:border-indigo-400 dark:bg-indigo-950/55 dark:text-indigo-200'
-                          : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
+                          ? 'border-pine-500 bg-pine-50 text-pine-700 dark:border-pine-400 dark:bg-pine-950/55 dark:text-pine-200'
+                          : 'border-cream-200 bg-white text-ink-500 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-200'
                       }`}
                     >
                       {mLabels[idx]}
@@ -1805,7 +1816,7 @@ export default function NutritionQuestionnaire({
               <div className="space-y-2">
                 {macroGroups.map((macro) => (
                   <div key={macro.key} className={`rounded-xl border p-2 ${macro.tone}`}>
-                    <p className="text-[11px] font-bold text-slate-600 uppercase mb-1 dark:text-slate-300">{macro.label}</p>
+                    <p className="text-[11px] font-bold text-ink-500 uppercase mb-1 dark:text-cream-300">{macro.label}</p>
 
                     <div className="space-y-2">
                       {macro.foodKeys.map((foodKey) => {
@@ -1817,17 +1828,17 @@ export default function NutritionQuestionnaire({
                         const iconClass = value === 0 ? `${group.color} opacity-50 grayscale` : group.activeColor;
 
                         return (
-                          <div key={group.key} className="rounded-lg border border-white/80 bg-white px-2 py-2 dark:border-slate-700 dark:bg-slate-950">
+                          <div key={group.key} className="rounded-lg border border-white/80 bg-white px-2 py-2 dark:border-ink-600 dark:bg-ink-900">
                             <div className="flex items-center gap-2">
                               <Icon className={`w-4 h-4 ${iconClass}`} />
-                              <span className="text-xs font-semibold text-slate-700 flex-1 dark:text-slate-100">
+                              <span className="text-xs font-semibold text-ink-600 flex-1 dark:text-cream-100">
                                 {group.label}
                               </span>
 
                               <div className="flex items-center gap-2">
                                 <button
                                   onClick={() => updatePortionValue(group.key, activePortionMoment, (n) => n - 1)}
-                                  className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                                  className="w-9 h-9 rounded-lg border border-cream-200 bg-white flex items-center justify-center text-ink-500 active:scale-95 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100"
                                   aria-label={`Reducir ${group.label}`}
                                 >
                                   <Minus className="w-4 h-4" />
@@ -1847,13 +1858,13 @@ export default function NutritionQuestionnaire({
                                       () => (Number.isFinite(parsed) ? parsed : 0)
                                     );
                                   }}
-                                  className={`w-14 h-9 rounded-lg border border-slate-200 text-center text-sm font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-300 ${group.bg} dark:border-slate-700 dark:text-slate-100 dark:focus:ring-indigo-900`}
+                                  className={`w-14 h-9 rounded-lg border border-cream-200 text-center text-sm font-black tabular-nums focus:outline-none focus:ring-2 focus:ring-pine-300 ${group.bg} dark:border-ink-600 dark:text-cream-100 dark:focus:ring-pine-900`}
                                   aria-label={`Porciones de ${group.label}`}
                                 />
 
                                 <button
                                   onClick={() => updatePortionValue(group.key, activePortionMoment, (n) => n + 1)}
-                                  className="w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 active:scale-95 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                                  className="w-9 h-9 rounded-lg border border-cream-200 bg-white flex items-center justify-center text-ink-500 active:scale-95 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100"
                                   aria-label={`Aumentar ${group.label}`}
                                 >
                                   <Plus className="w-4 h-4" />
@@ -1872,7 +1883,7 @@ export default function NutritionQuestionnaire({
                                   Number.parseInt(e.target.value, 10)
                                 )
                               }
-                              className="w-full mt-2 accent-indigo-500"
+                              className="w-full mt-2 accent-pine-500"
                               aria-label={`Slider porciones ${group.label}`}
                             />
                           </div>
@@ -1891,7 +1902,7 @@ export default function NutritionQuestionnaire({
     if (type === 'cocina') {
       return (
         <div className="space-y-4">
-          <p className="text-xs text-slate-400 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-200">
+          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
             💡 Esta sección es opcional.
           </p>
 
@@ -1935,7 +1946,7 @@ export default function NutritionQuestionnaire({
                 target.style.height = 'auto';
                 target.style.height = `${target.scrollHeight}px`;
               }}
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm resize-none overflow-hidden focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:bg-slate-950 dark:focus:ring-slate-700"
+              className="w-full rounded-2xl border border-cream-200 bg-cream-50 px-4 py-3 text-sm resize-none overflow-hidden focus:bg-white focus:outline-none focus:ring-1 focus:ring-cream-300 transition dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:bg-ink-900 dark:focus:ring-ink-600"
               value={additionalNotes}
               onChange={(e) => setAdditionalNotes(e.target.value)}
             />
@@ -1968,32 +1979,32 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-3">
-          <p className="text-center text-sm font-semibold text-slate-500 dark:text-slate-400">Revisa los puntos clave antes de generar.</p>
+          <p className="text-center text-sm font-semibold text-ink-400 dark:text-ink-400">Revisa los puntos clave antes de generar.</p>
 
-          <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
-            <p className="text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">
+          <div className="space-y-2 rounded-2xl border border-cream-200 bg-cream-50 p-3 dark:border-ink-600 dark:bg-ink-800">
+            <p className="text-[11px] font-black uppercase tracking-wider text-ink-500 dark:text-cream-300">
               Configuración
             </p>
 
-            <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-200">
+            <div className="grid grid-cols-2 gap-2 text-xs text-ink-500 dark:text-cream-200">
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-wide text-slate-400">Perfil</span>
+                <span className="block text-[10px] font-black uppercase tracking-wide text-ink-400">Perfil</span>
                 <strong>{targetLabel}</strong>
               </div>
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-wide text-slate-400">Porciones</span>
+                <span className="block text-[10px] font-black uppercase tracking-wide text-ink-400">Porciones</span>
                 <strong>{portionMode === 'auto' ? 'IA decide' : 'Manual'}</strong>
               </div>
-              {portionSummary ? <p className="col-span-2 text-slate-500 dark:text-slate-400">Porciones: {portionSummary}</p> : null}
-              {el.favoriteCuisineStyles ? <p className="col-span-2 text-slate-500 dark:text-slate-400">Cocina: {el.favoriteCuisineStyles}</p> : null}
-              {el.cookingTime ? <p className="col-span-2 text-slate-500 dark:text-slate-400">Tiempo cocina: {el.cookingTime}</p> : null}
-              {additionalNotes ? <p className="col-span-2 text-slate-500 dark:text-slate-400">Notas: {additionalNotes}</p> : null}
+              {portionSummary ? <p className="col-span-2 text-ink-400 dark:text-ink-400">Porciones: {portionSummary}</p> : null}
+              {el.favoriteCuisineStyles ? <p className="col-span-2 text-ink-400 dark:text-ink-400">Cocina: {el.favoriteCuisineStyles}</p> : null}
+              {el.cookingTime ? <p className="col-span-2 text-ink-400 dark:text-ink-400">Tiempo cocina: {el.cookingTime}</p> : null}
+              {additionalNotes ? <p className="col-span-2 text-ink-400 dark:text-ink-400">Notas: {additionalNotes}</p> : null}
             </div>
           </div>
 
           <div
             data-testid="questionnaire-model-preview"
-            className="rounded-2xl border border-indigo-100 bg-indigo-50/70 px-3 py-2.5 text-xs text-indigo-900 dark:border-indigo-900/60 dark:bg-indigo-950/30 dark:text-indigo-100"
+            className="rounded-2xl border border-pine-100 bg-pine-50/70 px-3 py-2.5 text-xs text-pine-900 dark:border-pine-900/60 dark:bg-pine-950/30 dark:text-pine-100"
           >
             <p className="font-bold">Modelo previsto: {plannedModelLabel}</p>
             <p className="mt-1 opacity-90">
@@ -2037,7 +2048,7 @@ export default function NutritionQuestionnaire({
                   {p === 'el' ? `Perfil ${labelEl}` : `Perfil ${labelElla}`}
                 </p>
 
-                <div className="space-y-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                <div className="space-y-1.5 text-xs leading-relaxed text-ink-500 dark:text-cream-300">
                   <p><strong>Perfil:</strong> {compactValue(profileStats)}</p>
                   <p><strong>Objetivos:</strong> {data.objectives.join(', ') || 'Ninguno'}</p>
                   {healthSummary ? <p><strong>Salud/restricciones:</strong> {healthSummary}</p> : null}
@@ -2049,13 +2060,13 @@ export default function NutritionQuestionnaire({
           })}
 
           {errorMessage && (
-            <div className="space-y-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs leading-relaxed text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
+            <div className="space-y-3 rounded-xl border border-coral-200 bg-coral-50 p-3 text-xs leading-relaxed text-coral-600 dark:border-coral-800/60 dark:bg-coral-950/40 dark:text-coral-200">
               <p>{errorMessage}</p>
               {aiErrorLog ? (
                 <button
                   type="button"
                   onClick={() => downloadAiDebugLog(aiErrorLog)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-rose-300 bg-white px-3 py-2 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100 dark:border-rose-800 dark:bg-slate-950 dark:text-rose-100 dark:hover:bg-rose-950/60"
+                  className="inline-flex items-center gap-2 rounded-xl border border-coral-300 bg-white px-3 py-2 text-[11px] font-bold text-coral-600 transition hover:bg-coral-100 dark:border-coral-700 dark:bg-ink-900 dark:text-coral-100 dark:hover:bg-coral-950/60"
                 >
                   <Download className="h-3.5 w-3.5" />
                   Descargar logs detallados
@@ -2091,17 +2102,17 @@ export default function NutritionQuestionnaire({
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-slate-200 border-t-indigo-500 border-r-indigo-500"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-cream-200 border-t-pine-500 border-r-pine-500"
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Hourglass className="w-7 h-7 sm:w-8 sm:h-8 text-indigo-600" />
+                  <Hourglass className="w-7 h-7 sm:w-8 sm:h-8 text-pine-600" />
                 </div>
               </div>
 
               <div className="text-center space-y-1 px-4">
-                <p className="text-sm font-bold text-slate-700 dark:text-slate-100">La IA está creando tu plan</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Esto puede tomar 30 a 60 segundos.</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                <p className="text-sm font-bold text-ink-600 dark:text-cream-100">La IA está creando tu plan</p>
+                <p className="text-xs text-ink-400 dark:text-ink-400">Esto puede tomar 30 a 60 segundos.</p>
+                <p className="text-[11px] text-ink-400 dark:text-ink-400">
                   Modelo previsto: {plannedModelLabel}
                 </p>
               </div>
@@ -2112,7 +2123,7 @@ export default function NutritionQuestionnaire({
                     key={i}
                     animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
                     transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.2 }}
-                    className="w-2 h-2 rounded-full bg-indigo-500"
+                    className="w-2 h-2 rounded-full bg-pine-500"
                   />
                 ))}
               </div>
@@ -2139,16 +2150,16 @@ export default function NutritionQuestionnaire({
               transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
               className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] ${
                 loading
-                  ? 'bg-slate-800 opacity-70 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-[length:200%_200%] hover:brightness-110'
+                  ? 'bg-ink-700 opacity-70 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-pine-600 via-pine-500 to-pine-400 bg-[length:200%_200%] hover:brightness-110'
               } text-white`}
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-amber-300" />}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-apricot-300" />}
               {loading ? 'Generando plan...' : '✨ Generar plan con IA'}
             </motion.button>
           )}
 
-          <p className="mt-3 text-[10px] text-slate-300 text-center leading-relaxed">
+          <p className="mt-3 text-[10px] text-cream-300 text-center leading-relaxed">
             Las recomendaciones de IA no sustituyen valoración profesional.
           </p>
         </div>
@@ -2176,8 +2187,8 @@ export default function NutritionQuestionnaire({
 
   return (
     <>
-      <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-        <div className="h-1.5 bg-slate-100 dark:bg-slate-900">
+      <div className="mt-4 overflow-hidden rounded-[24px] border border-cream-200 bg-white shadow-sm dark:border-ink-700 dark:bg-ink-900">
+        <div className="h-1.5 bg-cream-100 dark:bg-ink-800">
           <motion.div
             className={`h-full bg-gradient-to-r ${tc.grad}`}
             animate={{ width: `${progress * 100}%` }}
@@ -2185,7 +2196,7 @@ export default function NutritionQuestionnaire({
           />
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        <div className="flex items-center justify-between gap-3 border-b border-cream-100 px-4 py-3 dark:border-ink-700">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`h-8 w-1.5 flex-shrink-0 rounded-full bg-gradient-to-b ${tc.grad}`} aria-hidden="true" />
             <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl ${tc.light} ${tc.text}`}>
@@ -2193,22 +2204,16 @@ export default function NutritionQuestionnaire({
             </div>
 
             <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-800 leading-tight truncate dark:text-slate-100">
+              <p className="text-sm font-bold text-ink-700 leading-tight truncate dark:text-cream-100">
                 {stepLabel}
                 {visualProfileSuffix}
               </p>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Paso {stepIdx + 1} de {steps.length} · {stepsLeft <= 3 ? 'Ya casi terminamos' : `Solo ${stepsLeft} pasos más`}
+              <p className="text-xs font-medium text-ink-400 dark:text-ink-400">
+                Sección {sectionMeta.current} de {sectionMeta.total} · {sectionMeta.label}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onCancel}
-            className="flex-shrink-0 rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-500 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-          >
-            Cerrar
-          </button>
         </div>
 
         <div className="px-4 py-4 sm:px-5 sm:py-5">
@@ -2229,12 +2234,12 @@ export default function NutritionQuestionnaire({
         </div>
 
         {(showBack || showNext) && (
-          <div className="flex items-center gap-2 border-t border-slate-100 px-4 pb-4 pt-3 dark:border-slate-800">
+          <div className="flex items-center gap-2 border-t border-cream-100 px-4 pb-4 pt-3 dark:border-ink-700">
             {showBack && (
               <button
                 onClick={goBack}
                 data-testid="questionnaire-back"
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 transition active:scale-95 flex-shrink-0 dark:text-slate-300 dark:hover:bg-slate-900"
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-ink-400 hover:bg-cream-50 transition active:scale-95 flex-shrink-0 dark:text-cream-300 dark:hover:bg-ink-800"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Atrás
@@ -2247,10 +2252,10 @@ export default function NutritionQuestionnaire({
                 <button
                   onClick={advance}
                   data-testid="questionnaire-skip"
-                  className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-slate-400 underline underline-offset-2 hover:text-slate-600 transition active:scale-95 dark:text-slate-500 dark:hover:text-slate-300"
+                  className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-ink-400 underline underline-offset-2 hover:text-ink-500 transition active:scale-95 dark:text-ink-400 dark:hover:text-cream-300"
                 >
                     <SkipForward className="w-3.5 h-3.5" />
-                    Saltar
+                    Ahora no
                   </button>
                 )}
 
@@ -2261,7 +2266,7 @@ export default function NutritionQuestionnaire({
                   className={`ml-auto flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold transition-all active:scale-[.98] ${
                     canContinue()
                       ? `bg-gradient-to-r ${tc.grad} text-white shadow-sm`
-                      : 'bg-slate-100 text-slate-300 cursor-not-allowed dark:bg-slate-900 dark:text-slate-600'
+                      : 'bg-cream-100 text-cream-300 cursor-not-allowed dark:bg-ink-800 dark:text-ink-500'
                   }`}
                 >
                   {isLastNav ? 'Confirmar' : 'Siguiente'}
@@ -2279,7 +2284,7 @@ export default function NutritionQuestionnaire({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[80] bg-slate-900/45 backdrop-blur-sm p-4 flex items-end sm:items-center justify-center"
+            className="fixed inset-0 z-[80] bg-ink-800/45 backdrop-blur-sm p-4 flex items-end sm:items-center justify-center"
             onClick={closeTimePicker}
           >
             <motion.div
@@ -2288,7 +2293,7 @@ export default function NutritionQuestionnaire({
               exit={{ opacity: 0, y: 24, scale: 0.98 }}
               transition={{ type: 'spring', stiffness: 320, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-[28px] bg-white border border-slate-200 shadow-2xl p-4 sm:p-5 dark:bg-slate-950 dark:border-slate-800"
+              className="w-full max-w-sm rounded-[28px] bg-white border border-cream-200 shadow-2xl p-4 sm:p-5 dark:bg-ink-900 dark:border-ink-700"
             >
               <TimeWheelPicker
                 title={timePickerState.field === 'wakeTime' ? 'Hora de despertar' : 'Hora de dormir'}
@@ -2300,14 +2305,14 @@ export default function NutritionQuestionnaire({
                 <button
                   type="button"
                   onClick={closeTimePicker}
-                  className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-600 font-semibold dark:bg-slate-900 dark:text-slate-200"
+                  className="flex-1 py-3 rounded-2xl bg-cream-100 text-ink-500 font-semibold dark:bg-ink-800 dark:text-cream-200"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={confirmTimePicker}
-                  className="flex-1 py-3 rounded-2xl bg-indigo-600 text-white font-bold"
+                  className="flex-1 py-3 rounded-2xl bg-pine-600 text-white font-bold"
                 >
                   Confirmar
                 </button>

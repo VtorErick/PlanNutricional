@@ -109,38 +109,22 @@ export default function DailyProgress() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-      className={`sm:sticky sm:top-[56px] z-40 overflow-hidden backdrop-blur-xl ${
+      className={`sm:sticky sm:top-[64px] z-40 overflow-hidden backdrop-blur-xl ${
         isDarkMode
-          ? 'bg-slate-950/96 shadow-[0_10px_30px_rgba(2,6,23,0.42)]'
-          : 'bg-white/96 shadow-[0_10px_30px_rgba(15,23,42,0.08)]'
+          ? 'bg-ink-950/92'
+          : 'bg-cream-50/92'
       }`}
     >
-      <div aria-hidden="true" className="absolute inset-0 z-0 hidden pointer-events-none sm:block">
-        <div className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-r ${accentColors.bgGradient} opacity-[0.12] dark:opacity-[0.18]`} />
-        <div className={`absolute -left-6 top-2 h-16 w-16 rounded-full bg-gradient-to-br ${accentColors.bgGradient} blur-2xl opacity-[0.18] dark:opacity-[0.24]`} />
-        <div className={`absolute right-6 top-3 h-14 w-14 rounded-full bg-gradient-to-br ${accentColors.bgGradient} blur-2xl opacity-[0.12] dark:opacity-[0.18]`} />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/18 via-white/90 to-white/96 dark:from-slate-950/16 dark:via-slate-950/86 dark:to-slate-950/96" />
-      </div>
-
       {/* Mobile compact strip */}
       <div className="relative z-10 mx-auto max-w-md px-3 pb-3 pt-3 sm:hidden">
         <div
-          role="button"
-          tabIndex={0}
-          onClick={() => setProgressExpanded((expanded) => !expanded)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              setProgressExpanded((expanded) => !expanded);
-            }
-          }}
-          className={`w-full flex items-center gap-3 rounded-[20px] border px-3 py-2.5 text-left shadow-[0_8px_20px_rgba(15,23,42,0.06)] ${
-            isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-white'
+          className={`w-full flex items-center gap-3 rounded-[22px] border px-3 py-2.5 text-left shadow-soft ${
+            isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'
           }`}
         >
           {/* Day pills */}
           <div className="flex-1 overflow-x-auto scrollbar-none snap-x" ref={mobileDayScrollerRef}>
-            <div className="inline-flex items-center gap-1.5 min-w-max">
+            <div className="inline-flex items-center gap-1 min-w-max">
               {availableDays.map((day) => {
                 const active = activeDay === day;
                 return (
@@ -151,12 +135,14 @@ export default function DailyProgress() {
                       event.stopPropagation();
                       setActiveDay(day);
                     }}
-                    className={`h-[32px] min-w-[44px] rounded-xl px-2 text-[11px] font-extrabold transition-all active:scale-95 snap-start ${
+                    aria-label={`Ver ${day}`}
+                    aria-pressed={active}
+                    className={`h-[34px] min-w-[42px] rounded-full px-2 text-[11px] font-extrabold transition-all active:scale-90 snap-start ${
                       active
                         ? `${accentColors.btnActive} shadow-sm`
                         : isDarkMode
-                          ? 'bg-slate-900 text-slate-400'
-                          : 'bg-slate-100 text-slate-500'
+                          ? 'bg-ink-800 text-ink-300'
+                          : 'bg-cream-100 text-ink-400'
                     }`}
                   >
                     {day.slice(0, 3)}
@@ -168,16 +154,16 @@ export default function DailyProgress() {
 
           {/* Kcal + mini bar + percent */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="min-w-[120px]">
-              <p className={`text-[11px] font-bold tabular-nums ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+            <div className="min-w-[110px]">
+              <p className={`text-[10px] font-bold tabular-nums ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
                 {isAmbos
                   ? `${profileDayStats.el.kcal}/${profileDayStats.el.target} · ${profileDayStats.ella.kcal}/${profileDayStats.ella.target}`
                   : `${activeStats.kcal}/${activeStats.target} kcal`
                 }
               </p>
-              <div className={`mt-1 h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
+              <div className={`mt-1 h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}>
                 <motion.div
-                  className={`h-full rounded-full bg-gradient-to-r ${accentColors.progressFill}`}
+                  className={`progress-shine h-full rounded-full bg-gradient-to-r ${accentColors.progressFill}`}
                   animate={{ width: `${dailyProgressPercent}%` }}
                   transition={{ type: 'spring', stiffness: 80, damping: 15 }}
                 />
@@ -186,6 +172,17 @@ export default function DailyProgress() {
             <span className={`text-sm font-black tabular-nums ${accentColors.text}`}>
               {dailyProgressPercent}%
             </span>
+            <button
+              type="button"
+              onClick={() => setProgressExpanded((expanded) => !expanded)}
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition active:scale-90 ${
+                isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-cream-100 text-ink-500'
+              }`}
+              aria-label={progressExpanded ? 'Ocultar detalle del día' : 'Ver detalle del día'}
+              aria-expanded={progressExpanded}
+            >
+              {progressExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
           </div>
         </div>
       </div>
@@ -196,7 +193,7 @@ export default function DailyProgress() {
             ref={desktopDayScrollerRef}
             className="flex-1 overflow-x-auto snap-x scrollbar-none"
           >
-            <div className="inline-flex gap-2 items-center min-w-max">
+            <div className="inline-flex gap-1.5 items-center min-w-max">
               {availableDays.map((day) => {
                 const active = activeDay === day;
 
@@ -210,12 +207,12 @@ export default function DailyProgress() {
                       event.stopPropagation();
                       setActiveDay(day);
                     }}
-                    className={`py-2 px-3.5 rounded-2xl font-bold transition-all duration-300 text-xs whitespace-nowrap snap-start flex-shrink-0 ${
+                    className={`py-2 px-4 rounded-full font-bold transition-all duration-300 text-xs whitespace-nowrap snap-start flex-shrink-0 ${
                       active
                         ? `${accentColors.btnActive} shadow-sm scale-[1.02]`
                         : isDarkMode
-                          ? 'bg-slate-900 text-slate-200 hover:bg-slate-800'
-                          : 'bg-slate-100/85 hover:bg-slate-200 text-slate-600'
+                          ? 'bg-ink-900 text-ink-200 hover:bg-ink-800'
+                          : 'bg-white text-ink-500 hover:bg-cream-100 border border-cream-200'
                     }`}
                   >
                     <span className="sm:hidden">{day.slice(0, 3)}</span>
@@ -227,8 +224,8 @@ export default function DailyProgress() {
           </div>
 
           <div
-            className={`flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold whitespace-nowrap ${
-              isDarkMode ? 'bg-slate-900/90 text-slate-400' : 'bg-slate-100/90 text-slate-500'
+            className={`flex-shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold whitespace-nowrap ${
+              isDarkMode ? 'bg-ink-900 text-ink-300' : 'bg-white text-ink-500 border border-cream-200'
             }`}
           >
             {isAmbos
@@ -275,16 +272,12 @@ export default function DailyProgress() {
 
         <div className="flex-1 min-w-0">
           <div
-            className={`h-2.5 bg-gradient-to-r ${accentColors.progressBg} rounded-full overflow-hidden shadow-inner ${
-              isDarkMode ? 'shadow-black/40' : 'shadow-slate-200/70'
+            className={`h-2.5 rounded-full overflow-hidden ${
+              isDarkMode ? 'bg-ink-800' : 'bg-cream-200'
             }`}
           >
             <motion.div
-              className={`h-full bg-gradient-to-r ${accentColors.progressFill} rounded-full ${
-                isDarkMode
-                  ? 'shadow-[0_0_18px_rgba(255,255,255,0.12)]'
-                  : 'shadow-[0_0_12px_rgba(15,23,42,0.25)]'
-              }`}
+              className={`progress-shine h-full bg-gradient-to-r ${accentColors.progressFill} rounded-full`}
               animate={{ width: `${dailyProgressPercent}%` }}
               transition={{ type: 'spring', stiffness: 80, damping: 15 }}
             />
@@ -296,8 +289,8 @@ export default function DailyProgress() {
             className={`text-[11px] sm:text-xs font-black ${
               dailyProgressPercent === 100
                 ? isDarkMode
-                  ? 'text-emerald-300'
-                  : 'text-emerald-600'
+                  ? 'text-pine-300'
+                  : 'text-pine-600'
                 : accentColors.text
             } tabular-nums w-8 sm:w-9 text-right`}
           >
@@ -306,7 +299,7 @@ export default function DailyProgress() {
 
           <button
             className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${
-              isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'
+              isDarkMode ? 'hover:bg-ink-800' : 'hover:bg-cream-100'
             }`}
             onClick={(event) => {
               event.stopPropagation();
@@ -335,12 +328,12 @@ export default function DailyProgress() {
           >
             <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 pb-4 pt-1">
               <div className="flex items-center justify-between gap-3 mb-3">
-                <p className={`text-[11px] sm:text-xs font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`text-[11px] sm:text-xs font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
                   {completadosCount} de {totalMomentCount} momentos completados
                 </p>
 
                 {dailyProgressPercent === 100 && (
-                  <span className={`text-[11px] font-semibold flex items-center gap-1 whitespace-nowrap ${isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}`}>
+                  <span className={`text-[11px] font-semibold flex items-center gap-1 whitespace-nowrap ${isDarkMode ? 'text-pine-300' : 'text-pine-600'}`}>
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     Dia completo
                   </span>
@@ -367,10 +360,10 @@ export default function DailyProgress() {
                         event.stopPropagation();
                         scrollToMoment(moment.key, true);
                       }}
-                      className={`relative rounded-2xl p-3 sm:p-3.5 flex flex-col items-center gap-1.5 shadow-sm transition-all duration-300 cursor-pointer text-left w-full ${
+                      className={`relative rounded-2xl p-3 sm:p-3.5 flex flex-col items-center gap-1.5 shadow-soft transition-all duration-300 cursor-pointer text-left w-full ${
                         done
                           ? accentColors.cardDone
-                          : `${accentColors.cardPending} hover:shadow-md`
+                          : `${accentColors.cardPending} hover:shadow-lift`
                       }`}
                     >
                       <div
@@ -389,15 +382,15 @@ export default function DailyProgress() {
 
                       <span
                         className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight ${
-                          done ? 'text-white' : isDarkMode ? 'text-slate-100' : 'text-slate-700'
+                          done ? 'text-white' : isDarkMode ? 'text-ink-100' : 'text-ink-600'
                         }`}
                       >
                         {shortLabel}
                       </span>
 
                       <span
-                        className={`text-[9px] sm:text-[10px] text-center leading-tight ${
-                          done ? 'text-white/75' : 'text-slate-400'
+                        className={`text-[9px] sm:text-[10px] text-center leading-tight tabular-nums ${
+                          done ? 'text-white/75' : 'text-ink-400'
                         }`}
                       >
                         {moment.hora}
@@ -407,7 +400,7 @@ export default function DailyProgress() {
                         <motion.span
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full flex items-center justify-center shadow"
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-pine-400 rounded-full flex items-center justify-center shadow"
                         >
                           <CheckCircle2 className="w-2.5 h-2.5 text-white" />
                         </motion.span>
