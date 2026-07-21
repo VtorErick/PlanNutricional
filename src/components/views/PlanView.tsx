@@ -10,6 +10,7 @@ import {
   Pill,
   Plus,
   SlidersHorizontal,
+  Sparkles,
   Moon,
   Sun,
   UtensilsCrossed,
@@ -34,7 +35,6 @@ import {
 } from '../../data';
 import { buildSerializableProfileSnapshot } from '../../utils/planAiUtils';
 import { getProfileLabel } from '../../utils/profileLabels';
-import { sanitizeMealPortionsText } from '../../utils/mealPortions';
 import {
   estimateDailyCaloriesFromObjectives,
   sumSelectedMealCalories,
@@ -131,6 +131,7 @@ export default function PlanView() {
   const [isSupplementsSheetOpen, setIsSupplementsSheetOpen] = React.useState(false);
   const [isEquivalenciasSheetOpen, setIsEquivalenciasSheetOpen] = React.useState(false);
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
+  const [arePlanToolsOpen, setArePlanToolsOpen] = React.useState(false);
   const [swapSheet, setSwapSheet] = React.useState<SwapSheetState | null>(null);
   const [logSheet, setLogSheet] = React.useState<LogSheetState | null>(null);
   const isAnySheetOpen = Boolean(swapSheet) || Boolean(logSheet) || isSupplementsSheetOpen || isEquivalenciasSheetOpen || isPlanAiSheetOpen;
@@ -339,37 +340,29 @@ export default function PlanView() {
       role="button"
       tabIndex={0}
       data-testid={dataTestId}
-      className={`group rounded-[20px] border p-3.5 ${
+      className={`group rounded-[18px] border p-3 ${
         isDarkMode
           ? 'border-ink-700 bg-ink-800/50'
           : 'border-cream-200 bg-cream-50'
       } cursor-pointer transition-all hover:shadow-soft active:scale-[0.99]`}
     >
-      <div className="flex items-start gap-3">
-        <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl text-2xl ${isDarkMode ? 'bg-ink-900' : 'bg-white shadow-soft'}`}>
+      <div className="flex items-center gap-3">
+        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xl ${isDarkMode ? 'bg-ink-900' : 'bg-white shadow-soft'}`}>
           {getMealEmoji(meal.nombre)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h4 className={`min-w-0 font-display text-[16px] font-semibold leading-snug ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
-              {meal.nombre}
-            </h4>
-            <span className={`mt-0.5 inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-extrabold tabular-nums ${accent.tagBg} ${accent.tagText}`}>
-              {meal.caloriasKcal || 0} kcal
-            </span>
-          </div>
-          <p className={`mt-1 line-clamp-2 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-            {meal.detalle}
-          </p>
-          <p className={`mt-1.5 line-clamp-1 text-[11px] font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-            {typeof meal.proteinaG === 'number' ? `${meal.proteinaG}g proteína` : ''}
-            {typeof meal.grasasG === 'number' ? ` · ${meal.grasasG}g grasa` : ''}
-            {' · '}{sanitizeMealPortionsText(meal.porciones)}
-          </p>
+          <h4 className={`line-clamp-2 font-display text-[15px] font-semibold leading-snug ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
+            {meal.nombre}
+          </h4>
         </div>
-        <span className={`mt-1 flex-shrink-0 text-[10px] font-extrabold uppercase tracking-[0.12em] ${isDarkMode ? 'text-ink-500 group-hover:text-ink-300' : 'text-ink-400 group-hover:text-ink-500'}`}>
-          Cambiar
-        </span>
+        <div className="flex flex-shrink-0 flex-col items-end gap-1">
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-extrabold tabular-nums ${accent.tagBg} ${accent.tagText}`}>
+            {meal.caloriasKcal || 0} kcal
+          </span>
+          <span className={`text-[9px] font-extrabold uppercase tracking-[0.1em] ${isDarkMode ? 'text-ink-500 group-hover:text-ink-300' : 'text-ink-400 group-hover:text-ink-500'}`}>
+            Cambiar
+          </span>
+        </div>
       </div>
     </div>
   ), [isDarkMode]);
@@ -412,7 +405,7 @@ export default function PlanView() {
       data-testid={`meal-log-open-${profileId}-${diaActivo}-${momentoKey}`}
       className={`flex w-full items-center justify-center rounded-[20px] border font-extrabold transition hover:shadow-soft active:scale-[0.97] ${
         compact
-          ? 'min-h-11 flex-row gap-2 px-3 text-xs'
+          ? 'min-h-9 flex-row gap-1.5 px-3 text-[11px]'
           : 'min-h-[74px] flex-col gap-1 px-2 text-[11px]'
       } ${
         isDarkMode
@@ -421,8 +414,8 @@ export default function PlanView() {
       }`}
       aria-label={`Registrar ${momentoLabel} con foto o texto`}
     >
-      <span className={`flex h-8 w-8 items-center justify-center rounded-full ${accent.tagBg} ${accent.text}`}>
-        <Camera className="h-4 w-4" />
+      <span className={`flex items-center justify-center rounded-full ${compact ? 'h-6 w-6' : 'h-8 w-8'} ${accent.tagBg} ${accent.text}`}>
+        <Camera className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
       </span>
       <span>{compact ? 'Registrar lo que comí' : 'Con foto'}</span>
     </button>
@@ -440,29 +433,25 @@ export default function PlanView() {
       >
         <div className="space-y-4">
           <div className="px-1">
-            <div className="flex items-end justify-between gap-3">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <p className={`text-[11px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
-                  Semana actual
-                </p>
-                <h2 className={`mt-0.5 font-display text-[28px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+                <h2 className={`font-display text-[27px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                   Mi plan
                 </h2>
+                <p className={`mt-0.5 text-[11px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                  {diaActivo}
+                </p>
               </div>
 
-              <div className={`min-w-0 rounded-2xl border px-3 py-2 text-right ${
-                isDarkMode
-                  ? 'border-ink-700 bg-ink-900'
-                  : 'border-cream-200 bg-white shadow-soft'
-              }`}>
-                <p className={`text-[9px] font-extrabold uppercase tracking-[0.12em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                  Seleccionado
-                </p>
-                <p className={`mt-0.5 whitespace-nowrap text-sm font-black tabular-nums ${ac.text}`}>
+              <div className="min-w-0 text-right">
+                <p className={`whitespace-nowrap text-sm font-black tabular-nums ${ac.text}`}>
                   {activeDayStats.kcal}
-                  <span className={`ml-1 text-[11px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                    / {activeDayStats.target} kcal
+                  <span className={`ml-1 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                    de {activeDayStats.target} kcal
                   </span>
+                </p>
+                <p className={`mt-0.5 text-[9px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
+                  Total del día
                 </p>
               </div>
             </div>
@@ -500,49 +489,75 @@ export default function PlanView() {
               />
             </div>
 
-            <div className="mt-3 grid w-full grid-cols-3 gap-2 sm:flex sm:justify-end sm:gap-1.5">
+            <div className="mt-2 flex justify-end">
               <button
                 type="button"
-                onClick={() => setIsSupplementsSheetOpen(true)}
-                data-testid="plan-suplementos-nav"
-                aria-label="Suplementos"
-                title="Suplementos"
-                className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[11px] font-bold transition active:scale-90 ${
-                  isDarkMode
-                    ? 'border-ink-700 bg-ink-900 text-ink-200 hover:bg-ink-800'
-                    : 'border-cream-200 bg-white text-ink-500 shadow-soft hover:bg-cream-100'
+                onClick={() => setArePlanToolsOpen((open) => !open)}
+                data-testid="plan-tools-toggle"
+                aria-expanded={arePlanToolsOpen}
+                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3 text-[11px] font-bold transition active:scale-90 ${
+                  isDarkMode ? 'bg-ink-900 text-ink-300' : 'bg-white text-ink-500 shadow-soft'
                 }`}
-                >
-                  <Pill className="h-4 w-4" />
-                  <span>Extras</span>
-                </button>
-              <button
-                type="button"
-                onClick={() => setIsEquivalenciasSheetOpen(true)}
-                data-testid="plan-equivalencias-open"
-                aria-label="Guia"
-                title="Guia"
-                className={`inline-flex h-10 flex-shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-[11px] font-bold transition active:scale-90 ${
-                  isDarkMode
-                    ? 'border-ink-700 bg-ink-900 text-ink-200 hover:bg-ink-800'
-                    : 'border-cream-200 bg-white text-ink-500 shadow-soft hover:bg-cream-100'
-                }`}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span>Guía</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsPlanAiSheetOpen(true)}
-                data-testid="plan-ai-open"
-                aria-label="Ajustar"
-                title="Ajustar"
-                className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-3.5 text-xs font-bold text-white transition active:scale-90 bg-gradient-to-r ${ac.bgGradient} shadow-[0_8px_18px_-6px_rgba(234,65,9,0.4)]`}
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
-                <span>Ajustar</span>
+                <span>Opciones</span>
+                <ChevronUp className={`h-3.5 w-3.5 transition-transform ${arePlanToolsOpen ? '' : 'rotate-180'}`} />
               </button>
             </div>
+
+            <AnimatePresence initial={false}>
+              {arePlanToolsOpen ? (
+                <motion.div
+                  initial={{ height: 0, opacity: 0, y: -4 }}
+                  animate={{ height: 'auto', opacity: 1, y: 0 }}
+                  exit={{ height: 0, opacity: 0, y: -4 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setArePlanToolsOpen(false);
+                        setIsSupplementsSheetOpen(true);
+                      }}
+                      data-testid="plan-suplementos-nav"
+                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full text-[11px] font-bold transition active:scale-90 ${
+                        isDarkMode ? 'bg-ink-900 text-ink-200' : 'bg-white text-ink-500 shadow-soft'
+                      }`}
+                    >
+                      <Pill className="h-4 w-4" />
+                      Extras
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setArePlanToolsOpen(false);
+                        setIsEquivalenciasSheetOpen(true);
+                      }}
+                      data-testid="plan-equivalencias-open"
+                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full text-[11px] font-bold transition active:scale-90 ${
+                        isDarkMode ? 'bg-ink-900 text-ink-200' : 'bg-white text-ink-500 shadow-soft'
+                      }`}
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      Guía
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setArePlanToolsOpen(false);
+                        setIsPlanAiSheetOpen(true);
+                      }}
+                      data-testid="plan-ai-open"
+                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r px-3 text-[11px] font-bold text-white transition active:scale-90 ${ac.bgGradient}`}
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Ajustar IA
+                    </button>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
 
           {perfilBase.momentos.map((momento) => {

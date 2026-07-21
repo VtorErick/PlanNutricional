@@ -88,6 +88,13 @@ async function selectMobileTab(page: Page, tab: string) {
   await page.getByTestId(`mobile-tab-${tab}`).click();
 }
 
+async function openPlanTools(page: Page) {
+  const toggle = page.getByTestId('plan-tools-toggle');
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+    await toggle.click();
+  }
+}
+
 test('single-profile plan flow supports selecting meals and downloading PDF on mobile', async ({
   page,
 }) => {
@@ -280,6 +287,7 @@ test('mobile flow supports AI plan adjustment without recreating the whole plan'
   await page.goto('/miplan?profile=el');
 
   await expect(page.getByText(originalBreakfast)).toBeVisible();
+  await openPlanTools(page);
   await page.getByTestId('plan-ai-open').click();
   await expect(page.getByTestId('plan-ai-mode-adjust')).toBeVisible();
   await page.getByTestId('plan-ai-mode-adjust').click();
@@ -354,6 +362,7 @@ test('AI regenerate tolerates patch-shaped responses and still refreshes the vis
   });
 
   await page.goto('/miplan?profile=el');
+  await openPlanTools(page);
   await page.getByTestId('plan-ai-open').click();
   await page.getByTestId('plan-ai-mode-regenerate').click();
   await page.getByTestId('plan-ai-instruction').fill('Rehaz el plan con desayunos mas ligeros.');
@@ -376,11 +385,13 @@ test('combined mobile navigation renders every major view with populated data', 
   expect(download.suggestedFilename()).toBe('Plan_Nutricional_Ambos.pdf');
 
   await selectMobileTab(page, 'plan');
+  await openPlanTools(page);
   await page.getByTestId('plan-equivalencias-open').click();
   await expect(page.getByRole('heading', { name: /Equivalencias/i })).toBeVisible();
   await saveDocScreenshot(page, 'equivalencias-mobile.png');
   await page.getByLabel(/Cerrar gu.a de equivalencias/i).click();
 
+  await openPlanTools(page);
   await page.getByTestId('plan-suplementos-nav').click();
   await expect(page.getByRole('heading', { name: 'Suplementos', exact: true })).toBeVisible();
   await saveDocScreenshot(page, 'supplements-mobile.png');
