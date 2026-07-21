@@ -24,7 +24,7 @@ export default function SupplementsView() {
       className="space-y-4"
     >
       <section
-        className={`rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-slate-950/92' : 'bg-white'}`}
+        className={`rounded-[28px] p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] ${isDarkMode ? 'bg-ink-900/92' : 'bg-white'}`}
       >
         <div className="flex items-start gap-3 min-w-0">
           <div className={`flex h-11 w-11 items-center justify-center rounded-[18px] bg-gradient-to-br ${ac.bgGradient} shadow-sm`}>
@@ -33,15 +33,15 @@ export default function SupplementsView() {
 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <h2 className={`text-xl font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+              <h2 className={`text-xl font-black ${isDarkMode ? 'text-cream-50' : 'text-ink-800'}`}>
                 Suplementos
               </h2>
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-300">
+              <span className="text-sm font-bold text-pine-600 dark:text-pine-300">
                 Opcional
               </span>
             </div>
 
-            <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+            <p className={`mt-1 text-sm ${isDarkMode ? 'text-cream-300' : 'text-ink-400'}`}>
               Opcionales. Consulta el detalle solo si quieres usarlos.
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -66,12 +66,12 @@ export default function SupplementsView() {
           return (
             <div key={profileId} className="space-y-3">
               {isAmbos ? (
-                <div className={`flex items-center justify-between rounded-[22px] border p-3 ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-100 bg-white'}`}>
+                <div className={`flex items-center justify-between rounded-[22px] border p-3 ${isDarkMode ? 'border-ink-700 bg-ink-900/92' : 'border-cream-100 bg-white'}`}>
                   <div>
                     <p className={`text-[11px] font-black uppercase tracking-[0.16em] ${profileAccent.text}`}>
                       {getProfileLabel(profileLabels, profileId)}
                     </p>
-                    <h3 className={`text-base font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                    <h3 className={`text-base font-black ${isDarkMode ? 'text-cream-50' : 'text-ink-800'}`}>
                       Suplementos sugeridos
                     </h3>
                   </div>
@@ -88,7 +88,7 @@ export default function SupplementsView() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.06 + itemIndex * 0.04 }}
-                    className={`rounded-[24px] border p-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)] ${isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-100 bg-white'}`}
+                    className={`rounded-[24px] border p-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)] ${isDarkMode ? 'border-ink-700 bg-ink-900/92' : 'border-cream-100 bg-white'}`}
                   >
                     <button
                       type="button"
@@ -103,10 +103,10 @@ export default function SupplementsView() {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h4 className={`text-base font-black ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                        <h4 className={`text-base font-black ${isDarkMode ? 'text-cream-50' : 'text-ink-800'}`}>
                           {supplement.name}
                         </h4>
-                        <p className={`mt-1 text-sm font-semibold leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                        <p className={`mt-1 text-sm font-semibold leading-snug ${isDarkMode ? 'text-cream-300' : 'text-ink-500'}`}>
                           {supplement.goalSupport}
                         </p>
                         <span className={`mt-2 inline-flex items-center rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${profileAccent.tagBg} ${profileAccent.tagText}`}>
@@ -114,43 +114,43 @@ export default function SupplementsView() {
                         </span>
                       </div>
 
-                      <ChevronDown className={`mt-2 h-5 w-5 flex-shrink-0 transition-transform ${expandedSupplement === `${profileId}-${supplement.name}` ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                      <ChevronDown className={`mt-2 h-5 w-5 flex-shrink-0 transition-transform ${expandedSupplement === `${profileId}-${supplement.name}` ? 'rotate-180' : ''} ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`} />
                     </button>
 
                     {expandedSupplement === `${profileId}-${supplement.name}` ? (
-                      <div className="mt-4 space-y-3 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
+                      <div className="mt-4 space-y-3 border-t border-cream-100 pt-3 text-sm dark:border-ink-700">
                         <div>
-                          <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                             Por que podria ayudar
                           </p>
-                          <p className={`mt-1.5 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                          <p className={`mt-1.5 ${isDarkMode ? 'text-cream-200' : 'text-ink-600'}`}>
                             {supplement.whyItMayHelp}
                           </p>
                         </div>
                         <div>
-                          <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                          <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                             Como usarlo
                           </p>
-                          <p className={`mt-1.5 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                          <p className={`mt-1.5 ${isDarkMode ? 'text-cream-200' : 'text-ink-600'}`}>
                             {supplement.howToUse}
                           </p>
                         </div>
-                        <div className="rounded-2xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
-                          <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
+                        <div className="rounded-2xl bg-pine-50 p-3 dark:bg-pine-950/30">
+                          <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-pine-700 dark:text-pine-300">
                             <Clock3 className="h-3.5 w-3.5" />
                             Nota
                           </p>
-                          <p className="mt-1.5 text-emerald-900 dark:text-emerald-100">
+                          <p className="mt-1.5 text-pine-800 dark:text-pine-100">
                             {supplement.notes}
                           </p>
                         </div>
                         {supplement.caution ? (
-                          <div className="rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/30">
-                            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                          <div className="rounded-2xl bg-apricot-50 p-3 dark:bg-apricot-950/30">
+                            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-apricot-700 dark:text-apricot-300">
                               <ShieldAlert className="h-3.5 w-3.5" />
                               Precaucion
                             </p>
-                            <p className="mt-1.5 text-amber-900 dark:text-amber-100">
+                            <p className="mt-1.5 text-apricot-700 dark:text-apricot-100">
                               {supplement.caution}
                             </p>
                           </div>

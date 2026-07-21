@@ -51,10 +51,10 @@ export default class AppErrorBoundary extends React.Component<Props, State> {
     }
 
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
-          <h1 className="text-xl font-black text-slate-900">La app tuvo un problema</h1>
-          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+      <div className="min-h-screen bg-cream-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-3xl border border-cream-200 bg-white p-6 shadow-xl">
+          <h1 className="text-xl font-black text-ink-800">La app tuvo un problema</h1>
+          <p className="mt-2 text-sm text-ink-500 leading-relaxed">
             Intentamos evitar una pantalla en blanco. Puedes recargar o limpiar
             los datos guardados del navegador si el problema vino de almacenamiento local.
           </p>
@@ -68,14 +68,14 @@ export default class AppErrorBoundary extends React.Component<Props, State> {
             <button
               type="button"
               onClick={this.handleReload}
-              className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+              className="w-full rounded-2xl bg-ink-800 px-4 py-3 text-sm font-bold text-white transition hover:bg-ink-700"
             >
               Recargar app
             </button>
             <button
               type="button"
               onClick={this.handleResetStorage}
-              className="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 transition hover:bg-rose-100"
+              className="w-full rounded-2xl border border-coral-200 bg-coral-50 px-4 py-3 text-sm font-bold text-coral-600 transition hover:bg-coral-100"
             >
               Limpiar almacenamiento y recargar
             </button>

@@ -124,31 +124,31 @@ export default function AdminPanel({
     }
   };
 
-  const accentBorder = themeColor === 'blue' ? 'border-l-blue-500' : 'border-l-rose-500';
-  const titleColor = themeColor === 'blue' ? 'text-blue-900 dark:text-blue-100' : 'text-rose-900 dark:text-rose-100';
-  const softBadgeColor = themeColor === 'blue' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-rose-50 text-rose-700 border-rose-100';
-  const activeColor = themeColor === 'blue' ? 'bg-blue-600 text-white border-blue-600' : 'bg-rose-600 text-white border-rose-600';
+  const accentBorder = themeColor === 'blue' ? 'border-l-ocean-500' : 'border-l-coral-500';
+  const titleColor = themeColor === 'blue' ? 'text-ocean-700 dark:text-ocean-200' : 'text-coral-600 dark:text-coral-200';
+  const softBadgeColor = themeColor === 'blue' ? 'bg-ocean-50 text-ocean-600 border-ocean-100' : 'bg-coral-50 text-coral-600 border-coral-100';
+  const activeColor = themeColor === 'blue' ? 'bg-ocean-600 text-white border-ocean-600' : 'bg-coral-500 text-white border-coral-500';
 
   return (
     <div
-      className={`p-4 rounded-2xl border border-l-4 ${accentBorder} border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 shadow-sm flex flex-col gap-4`}
+      className={`p-4 rounded-[22px] border border-l-4 ${accentBorder} border-cream-200 bg-white dark:border-ink-700 dark:bg-ink-900 shadow-soft flex flex-col gap-4`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className={`font-black text-lg ${titleColor} leading-tight`}>
+            <h3 className={`font-display text-xl font-semibold ${titleColor} leading-tight`}>
               {title}
             </h3>
 
             {isCustomAvailable && dataVersion === 'custom' && (
-              <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900/50 dark:text-emerald-300 font-bold tracking-wide uppercase">
+              <span className="inline-flex items-center gap-1 text-[10px] bg-pine-50 border border-pine-100 px-2 py-1 rounded-full text-pine-700 dark:bg-pine-950/40 dark:border-pine-900/50 dark:text-pine-300 font-bold tracking-wide uppercase">
                 <CheckCircle2 className="w-3 h-3" />
                 Personalizado
               </span>
             )}
           </div>
 
-          <p className="text-xs sm:text-sm mt-1 text-slate-500 dark:text-slate-400">
+          <p className="text-xs sm:text-sm mt-1 text-ink-400 dark:text-ink-400">
             Administra la version original o personalizada de este plan.
           </p>
         </div>
@@ -164,7 +164,7 @@ export default function AdminPanel({
         />
 
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500 mb-2">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400 mb-2">
             Respaldo
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -173,10 +173,10 @@ export default function AdminPanel({
                 void handlePdfDownload();
               }}
               data-testid={`admin-export-pdf-${perfilId}`}
-              className="flex items-center justify-center gap-2 py-2.5 px-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-100 transition active:scale-95"
+              className="flex items-center justify-center gap-2 py-2.5 px-2 bg-cream-100 hover:bg-cream-200 dark:bg-ink-800 dark:hover:bg-ink-700 border border-cream-200 dark:border-ink-700 rounded-2xl text-ink-600 dark:text-cream-100 transition active:scale-95"
             >
               <FileText className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm leading-tight text-center font-semibold">
+              <span className="text-sm leading-tight text-center font-bold">
                 PDF
               </span>
             </button>
@@ -184,10 +184,10 @@ export default function AdminPanel({
             <button
               onClick={handleJsonDownload}
               data-testid={`admin-export-json-${perfilId}`}
-              className="flex items-center justify-center gap-2 py-2.5 px-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-100 transition active:scale-95"
+              className="flex items-center justify-center gap-2 py-2.5 px-2 bg-cream-100 hover:bg-cream-200 dark:bg-ink-800 dark:hover:bg-ink-700 border border-cream-200 dark:border-ink-700 rounded-2xl text-ink-600 dark:text-cream-100 transition active:scale-95"
             >
               <FileJson className="w-4 h-4 flex-shrink-0" />
-              <span className="text-sm leading-tight text-center font-semibold">
+              <span className="text-sm leading-tight text-center font-bold">
                 JSON
               </span>
             </button>
@@ -195,12 +195,12 @@ export default function AdminPanel({
         </div>
 
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500 mb-2">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400 mb-2">
             Importacion
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition shadow-sm active:scale-95 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-200"
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-ink-900 hover:bg-ink-800 text-cream-50 rounded-full font-bold transition shadow-sm active:scale-95 dark:bg-cream-100 dark:text-ink-900 dark:hover:bg-cream-200"
           >
             <Upload className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm leading-tight text-center">Importar archivo personalizado</span>
@@ -208,25 +208,25 @@ export default function AdminPanel({
         </div>
 
         {isCustomAvailable ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-2xl border border-cream-200 bg-cream-50 p-3 dark:border-ink-700 dark:bg-ink-800/60">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-slate-700 dark:text-slate-100">Version activa</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Cambia la fuente usada en la app.</p>
+                <p className="text-xs font-bold text-ink-700 dark:text-cream-100">Version activa</p>
+                <p className="text-[11px] text-ink-400 dark:text-ink-400 mt-0.5">Cambia la fuente usada en la app.</p>
               </div>
               <span className={`inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${softBadgeColor}`}>
                 Archivo listo
               </span>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-white p-1 border border-slate-200 dark:bg-slate-950 dark:border-slate-800">
+            <div className="mt-3 grid grid-cols-2 gap-1.5 rounded-full bg-white p-1 border border-cream-200 dark:bg-ink-900 dark:border-ink-700">
               <button
                 type="button"
                 onClick={() => setDataVersion('original')}
-                className={`rounded-lg px-3 py-2 text-sm font-bold transition active:scale-[0.98] ${
+                className={`rounded-full px-3 py-2 text-sm font-bold transition active:scale-[0.98] ${
                   dataVersion === 'original'
                     ? activeColor
-                    : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900'
+                    : 'text-ink-400 hover:bg-cream-100 dark:text-ink-300 dark:hover:bg-ink-800'
                 }`}
               >
                 Original
@@ -234,10 +234,10 @@ export default function AdminPanel({
               <button
                 type="button"
                 onClick={() => setDataVersion('custom')}
-                className={`rounded-lg px-3 py-2 text-sm font-bold transition active:scale-[0.98] ${
+                className={`rounded-full px-3 py-2 text-sm font-bold transition active:scale-[0.98] ${
                   dataVersion === 'custom'
                     ? activeColor
-                    : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900'
+                    : 'text-ink-400 hover:bg-cream-100 dark:text-ink-300 dark:hover:bg-ink-800'
                 }`}
               >
                 Personalizada
@@ -246,7 +246,7 @@ export default function AdminPanel({
 
             <button
               onClick={handleDelete}
-              className="mt-3 w-full flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-3 py-2.5 text-sm font-bold text-rose-600 transition hover:bg-rose-50 active:scale-95 dark:border-rose-900/60 dark:bg-slate-950 dark:text-rose-300 dark:hover:bg-rose-950/20"
+              className="mt-3 w-full flex items-center justify-center gap-2 rounded-full border border-coral-200 bg-white px-3 py-2.5 text-sm font-bold text-coral-600 transition hover:bg-coral-50 active:scale-95 dark:border-coral-900/60 dark:bg-ink-900 dark:text-coral-300 dark:hover:bg-coral-950/20"
               title="Eliminar version personalizada"
             >
               <Trash2 className="w-4 h-4" />

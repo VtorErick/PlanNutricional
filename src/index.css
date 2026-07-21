@@ -1,10 +1,83 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+
+  /* Mist — cool neutral surfaces */
+  --color-cream-50: #f7f7f8;
+  --color-cream-100: #efeff1;
+  --color-cream-200: #e4e4e8;
+  --color-cream-300: #d2d2d9;
+
+  /* Ink — near-black scale */
+  --color-ink-400: #8a8a93;
+  --color-ink-500: #6b6b74;
+  --color-ink-600: #515158;
+  --color-ink-700: #3a3a41;
+  --color-ink-800: #26262b;
+  --color-ink-900: #17171b;
+  --color-ink-950: #0b0b0e;
+
+  /* Ember — brand accent (hot orange) */
+  --color-pine-50: #fff4ed;
+  --color-pine-100: #ffe6d5;
+  --color-pine-200: #feccaa;
+  --color-pine-300: #fda674;
+  --color-pine-400: #fb7736;
+  --color-pine-500: #f9541a;
+  --color-pine-600: #ea4109;
+  --color-pine-700: #c23207;
+  --color-pine-800: #9a2a0c;
+  --color-pine-900: #7c250d;
+  --color-pine-950: #431206;
+
+  /* Ocean — perfil Él (electric blue) */
+  --color-ocean-50: #eef3ff;
+  --color-ocean-100: #dce7ff;
+  --color-ocean-200: #b9ccff;
+  --color-ocean-300: #8aa6ff;
+  --color-ocean-400: #5c82ff;
+  --color-ocean-500: #2f6bff;
+  --color-ocean-600: #1f53e6;
+  --color-ocean-700: #1a43b8;
+  --color-ocean-800: #17378f;
+  --color-ocean-900: #122c70;
+  --color-ocean-950: #0a1a45;
+
+  /* Coral — perfil Ella (hot pink) */
+  --color-coral-50: #fff0f5;
+  --color-coral-100: #ffdde9;
+  --color-coral-200: #ffb9d2;
+  --color-coral-300: #ff8ab4;
+  --color-coral-400: #ff5c9a;
+  --color-coral-500: #f92f7c;
+  --color-coral-600: #e01b68;
+  --color-coral-700: #bc1455;
+  --color-coral-800: #971144;
+  --color-coral-900: #7a0f38;
+  --color-coral-950: #4a0721;
+
+  /* Apricot — warnings */
+  --color-apricot-50: #fdf6e9;
+  --color-apricot-100: #f9e8c8;
+  --color-apricot-200: #f2d194;
+  --color-apricot-300: #e9b45c;
+  --color-apricot-400: #dd9936;
+  --color-apricot-500: #c97f21;
+  --color-apricot-600: #a6641a;
+  --color-apricot-700: #854e17;
+  --color-apricot-800: #683c12;
+  --color-apricot-900: #542f10;
+  --color-apricot-950: #331c08;
+}
 
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 html {
@@ -20,34 +93,34 @@ html {
 
 /* Profile color themes */
 [data-profile="el"] {
-  --accent-50: #eff6ff;
-  --accent-100: #dbeafe;
-  --accent-200: #bfdbfe;
-  --accent-300: #93c5fd;
-  --accent-400: #60a5fa;
-  --accent-500: #3b82f6;
-  --accent-600: #2563eb;
-  --accent-700: #1d4ed8;
-  --accent-800: #1e40af;
-  --accent-900: #1e3a8a;
-  --accent-gradient: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  --accent-gradient-dark: linear-gradient(135deg, #1e3a5f, #1e40af);
+  --accent-50: #eef3ff;
+  --accent-100: #dce7ff;
+  --accent-200: #b9ccff;
+  --accent-300: #8aa6ff;
+  --accent-400: #5c82ff;
+  --accent-500: #2f6bff;
+  --accent-600: #1f53e6;
+  --accent-700: #1a43b8;
+  --accent-800: #17378f;
+  --accent-900: #122c70;
+  --accent-gradient: linear-gradient(135deg, #2f6bff, #1a43b8);
+  --accent-gradient-dark: linear-gradient(135deg, #122c70, #1a43b8);
 }
 
 [data-profile="ella"] {
-  --accent-50: #fff1f2;
-  --accent-100: #ffe4e6;
-  --accent-200: #fecdd3;
-  --accent-300: #fda4af;
-  --accent-400: #fb7185;
-  --accent-500: #f43f5e;
-  --accent-600: #e11d48;
-  --accent-700: #be123c;
-  --accent-800: #9f1239;
-  --accent-900: #4c0519;
-  --accent-gradient: linear-gradient(135deg, #f43f5e, #e11d48);
-  --accent-gradient-soft: linear-gradient(135deg, #fff1f2, #ffe4e6);
-  --accent-gradient-dark: linear-gradient(135deg, #4c0519, #9f1239);
+  --accent-50: #fff0f5;
+  --accent-100: #ffdde9;
+  --accent-200: #ffb9d2;
+  --accent-300: #ff8ab4;
+  --accent-400: #ff5c9a;
+  --accent-500: #f92f7c;
+  --accent-600: #e01b68;
+  --accent-700: #bc1455;
+  --accent-800: #971144;
+  --accent-900: #5c0a2a;
+  --accent-gradient: linear-gradient(135deg, #f92f7c, #bc1455);
+  --accent-gradient-soft: linear-gradient(135deg, #fff0f5, #ffdde9);
+  --accent-gradient-dark: linear-gradient(135deg, #5c0a2a, #bc1455);
 }
 
 body {
@@ -57,8 +130,8 @@ body {
   max-width: 100%;
   overflow-x: hidden;
   overscroll-behavior-x: none;
-  background: #f8fafc;
-  color: #0f172a;
+  background: #f7f7f8;
+  color: #17171b;
 }
 
 #root {
@@ -76,8 +149,8 @@ body {
 }
 
 .dark body {
-  background: #020617;
-  color: #e2e8f0;
+  background: #0b0b0e;
+  color: #f1f1f3;
 }
 
 /* Smooth transitions between profiles and themes */
@@ -103,11 +176,11 @@ body {
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--accent-300); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-400); }
+::-webkit-scrollbar-thumb { background: var(--accent-300, #d2d2d9); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-400, #b8b8c2); }
 
-.dark ::-webkit-scrollbar-thumb { background: #475569; }
-.dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+.dark ::-webkit-scrollbar-thumb { background: #3a3a41; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #515158; }
 
 /* Hide scrollbar on horizontal scroll areas (day selector) */
 .overflow-x-auto {
@@ -129,3 +202,16 @@ body {
   animation: shimmer 2.5s infinite;
 }
 
+/* Minimal elevation used across cards */
+.shadow-soft {
+  box-shadow: 0 1px 2px rgba(12, 12, 15, 0.05), 0 10px 28px -18px rgba(12, 12, 15, 0.18);
+}
+.shadow-lift {
+  box-shadow: 0 2px 4px rgba(12, 12, 15, 0.06), 0 18px 40px -18px rgba(12, 12, 15, 0.28);
+}
+.dark .shadow-soft {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 30px -16px rgba(0, 0, 0, 0.6);
+}
+.dark .shadow-lift {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45), 0 20px 44px -18px rgba(0, 0, 0, 0.7);
+}

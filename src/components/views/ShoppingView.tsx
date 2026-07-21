@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ShoppingCart,
-  CheckCircle2,
-  ClipboardList,
+  Check,
   ChevronDown,
   ChevronUp,
   Share2,
@@ -61,7 +60,7 @@ const SUPERMARKET_SECTIONS = [
 ] as const;
 
 function getSupermarketSection(ingredient: string) {
-  const value = ingredient.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const value = ingredient.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
   if (/(manzana|pera|platano|banana|fresa|fruta|naranja|limon|aguacate|tomate|jitomate|lechuga|espinaca|brocoli|pepino|zanahoria|calabaza|cebolla|pimiento|verdura|champi|cilantro|berries|arandano)/.test(value)) {
     return 'frutas_verduras';
@@ -173,6 +172,7 @@ export default function ShoppingView() {
 
   const checkedCount = shoppingList.filter((item) => comprasCheck[item.ingrediente]).length;
   const pendingCount = shoppingList.length - checkedCount;
+  const progressPercent = shoppingList.length > 0 ? Math.round((checkedCount / shoppingList.length) * 100) : 0;
   const groupedShoppingList = useMemo(() => {
     return SUPERMARKET_SECTIONS.map((section) => ({
       ...section,
@@ -255,91 +255,98 @@ export default function ShoppingView() {
       className="space-y-3"
     >
       <div
-        className={`relative overflow-hidden rounded-[24px] p-3 sm:p-5 ${
+        className={`relative overflow-hidden rounded-[26px] border p-4 sm:p-5 shadow-soft ${
           isDarkMode
-            ? 'bg-slate-950/92 shadow-[0_10px_26px_rgba(2,6,23,0.38)]'
-            : 'bg-white shadow-[0_8px_24px_rgb(0,0,0,0.04)]'
+            ? 'border-ink-700 bg-ink-900'
+            : 'border-cream-200 bg-white'
         }`}
       >
-        <div
-          className={`pointer-events-none absolute right-0 top-0 -z-10 h-28 w-28 rounded-full blur-3xl sm:h-40 sm:w-40 ${
-            isDarkMode ? 'bg-emerald-900/30' : 'bg-emerald-50'
-          }`}
-        />
-
         <div className="relative z-10">
-        <div className="relative mb-3 flex items-start gap-3 sm:gap-4">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm">
-            <ShoppingCart className="h-5 w-5 text-white" />
-          </div>
-
+        <div className="relative mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-pine-600 dark:text-pine-300">
+              Lista semanal
+            </p>
             <h2
-              className={`text-lg font-black tracking-tight leading-tight sm:text-2xl ${
-                isDarkMode ? 'text-slate-50' : 'text-slate-900'
+              className={`mt-0.5 font-display text-[26px] font-semibold tracking-tight leading-tight ${
+                isDarkMode ? 'text-cream-50' : 'text-ink-900'
               }`}
             >
               Supermercado
             </h2>
             <p
-              className={`mt-0.5 max-w-xl text-xs font-medium leading-snug sm:text-sm ${
-                isDarkMode ? 'text-slate-300' : 'text-slate-500'
+              className={`mt-1 max-w-xl text-xs font-medium leading-snug sm:text-sm ${
+                isDarkMode ? 'text-ink-300' : 'text-ink-500'
               }`}
             >
               {' '}
-              <strong className={isDarkMode ? 'text-emerald-300' : 'text-emerald-600'}>
+              <strong className={isDarkMode ? 'text-pine-300' : 'text-pine-700'}>
                 {shoppingList.length} ingredientes
               </strong>{' '}
               de tus comidas seleccionadas.
             </p>
           </div>
-        </div>
 
-        {shoppingList.length > 0 && (
-          <div className={`relative mb-3 flex items-center justify-between gap-3 rounded-2xl px-3 py-2.5 ${isDarkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
-            <div className="flex min-w-0 items-center gap-2">
-              <ClipboardList className="h-4 w-4 flex-shrink-0 text-emerald-600" />
-              <span className={`truncate text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
-                {pendingCount} pendientes
-              </span>
-            </div>
+          {shoppingList.length > 0 ? (
             <button
               type="button"
               onClick={() => void handleShareList()}
-              className={`ml-auto inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-bold transition active:scale-95 ${
-                isDarkMode ? 'bg-slate-800 text-slate-200 hover:bg-slate-700' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition active:scale-95 ${
+                isDarkMode ? 'bg-ink-800 text-cream-200 hover:bg-ink-700 border border-ink-700' : 'bg-pine-700 text-white hover:bg-pine-800 shadow-sm'
               }`}
             >
               <Share2 className="h-3.5 w-3.5" />
               Compartir
             </button>
+          ) : null}
+        </div>
+
+        {shoppingList.length > 0 && (
+          <div className={`relative mb-4 rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-ink-800/70' : 'bg-cream-100'}`}>
+            <div className="flex items-center justify-between gap-3">
+              <span className={`text-xs font-bold ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
+                {pendingCount} pendientes · {checkedCount} comprados
+              </span>
+              <span className={`text-xs font-extrabold tabular-nums ${isDarkMode ? 'text-pine-300' : 'text-pine-700'}`}>
+                {progressPercent}%
+              </span>
+            </div>
+            <div className={`mt-2 h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}>
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-pine-400 to-pine-600"
+                animate={{ width: `${progressPercent}%` }}
+                transition={{ type: 'spring', stiffness: 80, damping: 15 }}
+              />
+            </div>
           </div>
         )}
 
         {shoppingList.length === 0 ? (
           <div
-            className={`rounded-[20px] py-10 sm:py-12 text-center ${
-              isDarkMode ? 'bg-slate-900 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]' : 'bg-slate-50 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]'
+            className={`rounded-[22px] py-12 text-center border border-dashed ${
+              isDarkMode ? 'border-ink-600 bg-ink-800/40' : 'border-cream-300 bg-cream-50'
             }`}
           >
-            <ShoppingCart
-              className={`mx-auto mb-3 w-10 h-10 ${
-                isDarkMode ? 'text-slate-500' : 'text-slate-300'
-              }`}
-            />
-            <p className={`font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-500'}`}>
+            <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full ${isDarkMode ? 'bg-ink-800' : 'bg-cream-100'}`}>
+              <ShoppingCart
+                className={`w-6 h-6 ${
+                  isDarkMode ? 'text-ink-400' : 'text-ink-400'
+                }`}
+              />
+            </div>
+            <p className={`font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
               Carrito vacío
             </p>
-            <p className={`mt-1 px-4 text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>
+            <p className={`mt-1 px-6 text-sm ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
               Ve a &quot;Mi Plan&quot; y selecciona comidas para agregar ingredientes automáticamente.
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {groupedShoppingList.map((section) => (
               <section key={section.key} className="space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <h3 className={`flex items-center gap-2 text-sm font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}>
+                  <h3 className={`flex items-center gap-2 font-display text-base font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>
                     <span aria-hidden="true">{section.icon}</span>
                     {section.label}
                   </h3>
@@ -348,18 +355,18 @@ export default function ShoppingView() {
                       <motion.span
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'bg-emerald-900/60 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}
+                        className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.12em] ${isDarkMode ? 'bg-pine-950/60 text-pine-300' : 'bg-pine-100 text-pine-700'}`}
                       >
                         ✓ Completo
                       </motion.span>
                     ) : null}
-                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isDarkMode ? 'bg-slate-900 text-slate-400' : 'bg-slate-100 text-slate-500'}`}>
+                    <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold tabular-nums ${isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-cream-100 text-ink-500'}`}>
                       {section.items.length}
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
             {section.items.map((item) => {
               const isChecked = comprasCheck[item.ingrediente];
               const displayUsos = getDisplayUsos(item.usos);
@@ -368,24 +375,16 @@ export default function ShoppingView() {
                 <motion.div
                   whileTap={{ scale: 0.985 }}
                   key={item.ingrediente}
-                  className={`group flex cursor-pointer items-stretch overflow-hidden rounded-[18px] border transition-all duration-200 ${
+                  className={`group flex cursor-pointer items-stretch overflow-hidden rounded-[20px] border transition-all duration-200 ${
                     isChecked
                       ? isDarkMode
-                        ? 'border-slate-800 bg-slate-900 opacity-85'
-                        : 'border-slate-100 bg-slate-50 opacity-70'
+                        ? 'border-ink-700 bg-ink-800/50 opacity-70'
+                        : 'border-cream-200 bg-cream-50 opacity-70'
                       : isDarkMode
-                        ? 'border-slate-800 bg-slate-950 shadow-[0_8px_18px_rgba(2,6,23,0.32)] hover:shadow-[0_10px_22px_rgba(2,6,23,0.42)]'
-                        : 'border-slate-100 bg-white shadow-sm hover:shadow-md'
+                        ? 'border-ink-700 bg-ink-900 hover:border-ink-600'
+                        : 'border-cream-200 bg-white shadow-soft hover:shadow-lift'
                   }`}
                 >
-                  <div
-                    className={`w-1 transition-colors ${
-                      isChecked
-                        ? 'bg-emerald-400'
-                        : 'bg-gradient-to-b from-slate-200 to-transparent group-hover:from-emerald-400 group-hover:to-teal-500'
-                    }`}
-                  />
-
                   <div className="min-w-0 flex-1 p-3">
                     <div className={`${expandedIngredients[item.ingrediente] ? 'mb-2.5' : ''} flex items-start gap-3`}>
                       <motion.button
@@ -396,43 +395,43 @@ export default function ShoppingView() {
                             [item.ingrediente]: !prev[item.ingrediente],
                           }))
                         }
-                        animate={isChecked ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                        animate={isChecked ? { scale: [1, 1.18, 1] } : { scale: 1 }}
                         transition={{ duration: 0.3 }}
                         className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                           isChecked
-                            ? 'scale-105 border-emerald-500 bg-emerald-500'
+                            ? 'border-pine-500 bg-pine-500'
                             : isDarkMode
-                              ? 'border-slate-700 bg-slate-900 group-hover:border-emerald-400'
-                              : 'border-slate-200 bg-white group-hover:border-emerald-500'
+                              ? 'border-ink-600 bg-ink-800 group-hover:border-pine-400'
+                              : 'border-cream-300 bg-white group-hover:border-pine-500'
                         }`}
                         aria-label={`${
                           isChecked ? 'Desmarcar' : 'Marcar'
                         } ingrediente ${item.ingrediente}`}
                       >
-                        {isChecked ? <CheckCircle2 className="h-4 w-4 text-white" /> : null}
+                        {isChecked ? <Check className="h-4 w-4 text-white" strokeWidth={3} /> : null}
                       </motion.button>
 
                       <div className="min-w-0 flex-1">
                         <h3
-                          className={`text-[15px] font-black tracking-tight leading-snug break-words capitalize sm:text-base ${
+                          className={`text-[15px] font-bold tracking-tight leading-snug break-words capitalize ${
                             isChecked
-                              ? 'text-slate-500 line-through'
+                              ? 'text-ink-400 line-through'
                               : isDarkMode
-                                ? 'text-slate-100'
-                                : 'text-slate-800'
+                                ? 'text-cream-100'
+                                : 'text-ink-800'
                           }`}
                         >
                           {item.ingrediente}
                         </h3>
 
                         <p
-                          className={`mt-0.5 text-[11px] font-medium sm:text-xs ${
-                            isDarkMode ? 'text-slate-400' : 'text-slate-400'
+                          className={`mt-0.5 text-[11px] font-medium ${
+                            isDarkMode ? 'text-ink-400' : 'text-ink-400'
                           }`}
                         >
                           Aparece en {displayUsos.length} comida{displayUsos.length > 1 ? 's' : ''} seleccionada{displayUsos.length > 1 ? 's' : ''}
                         </p>
-                        <p className={`mt-1 text-[11px] font-black ${isChecked ? 'text-emerald-600' : isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <p className={`mt-1 text-[11px] font-extrabold ${isChecked ? (isDarkMode ? 'text-pine-300' : 'text-pine-600') : isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                           {isChecked ? 'Comprado' : 'Pendiente'}{isAmbos ? ` · ${displayUsos.some((uso) => uso.perfiles.length === 2) ? 'Compartido' : 'Uso individual'}` : ''}
                         </p>
                       </div>
@@ -445,10 +444,10 @@ export default function ShoppingView() {
                             [item.ingrediente]: !prev[item.ingrediente],
                           }))
                         }
-                        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-[10px] font-bold active:scale-95 ${
+                        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold active:scale-90 ${
                           isDarkMode
-                            ? 'text-slate-200 bg-slate-900'
-                            : 'text-slate-500 bg-slate-100'
+                            ? 'text-ink-200 bg-ink-800'
+                            : 'text-ink-400 bg-cream-100'
                         }`}
                         aria-label={`${
                           expandedIngredients[item.ingrediente] ? 'Colapsar' : 'Expandir'
@@ -467,14 +466,14 @@ export default function ShoppingView() {
                         {displayUsos.map((uso) => (
                           <div
                             key={uso.id}
-                            className={`flex items-start gap-2 rounded-xl px-2.5 py-2 ${
+                            className={`flex items-start gap-2 rounded-2xl px-3 py-2 ${
                               isChecked
                                 ? isDarkMode
-                                  ? 'bg-slate-800/90'
-                                  : 'bg-slate-100/70'
+                                  ? 'bg-ink-800/80'
+                                  : 'bg-cream-100/70'
                                 : isDarkMode
-                                  ? 'bg-slate-900'
-                                  : 'bg-slate-50'
+                                  ? 'bg-ink-800'
+                                  : 'bg-cream-100'
                             }`}
                           >
                             {isAmbos ? (
@@ -482,7 +481,7 @@ export default function ShoppingView() {
                                 {uso.perfiles.map((perfil) => (
                                   <span
                                     key={`${uso.id}-${perfil}`}
-                                    className={`rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                                    className={`rounded-md px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider ${
                                       perfil === 'el'
                                         ? `${elAccent.tagBg} ${elAccent.tagText}`
                                         : `${ellaAccent.tagBg} ${ellaAccent.tagText}`
@@ -495,12 +494,12 @@ export default function ShoppingView() {
                             ) : null}
 
                             <span
-                              className={`text-[11px] font-medium leading-snug break-words sm:text-xs ${
+                              className={`text-[11px] font-medium leading-snug break-words ${
                                 isChecked
-                                  ? 'text-slate-400'
+                                  ? 'text-ink-400'
                                   : isDarkMode
-                                    ? 'text-slate-100'
-                                    : 'text-slate-600'
+                                    ? 'text-ink-100'
+                                    : 'text-ink-600'
                               }`}
                             >
                               {uso.texto}

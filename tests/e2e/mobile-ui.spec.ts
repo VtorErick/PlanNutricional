@@ -140,6 +140,77 @@ test('single-profile plan flow supports selecting meals and downloading PDF on m
   expect(originalDownload.suggestedFilename()).toBe('perfil-el.json');
 });
 
+test('usuario puede registrar con foto, corregir la estimacion y actualizar su plan', async ({ page }) => {
+  const originalBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
+  const analyzedMealName = 'Tacos de pollo con aguacate';
+
+  await seedGeneratedPlans(page, { selectedDays: ['Lunes'] });
+  await page.route('**/api/analyze-food', async (route) => {
+    const body = JSON.parse(route.request().postData() || '{}');
+    expect(body.imageBase64).toBeTruthy();
+    expect(body.imageMimeType).toBe('image/jpeg');
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        source: 'image',
+        providerUsed: 'qwen',
+        modelUsed: 'qwen3-vl-flash',
+        analysis: {
+          nombre: analyzedMealName,
+          detalle: 'Tres tacos de pollo con aguacate y salsa verde.',
+          porciones: '3 tacos medianos (320 g)',
+          caloriasKcal: 510,
+          proteinaG: 32,
+          grasasG: 19,
+          carbohidratosG: 54,
+          confianza: 'media',
+          necesitaRevision: false,
+          supuestos: ['Se estimo una cucharadita de aceite.'],
+          super: ['pollo', 'tortilla', 'aguacate', 'salsa verde'],
+          tags: ['foto', 'casero'],
+        },
+      }),
+    });
+  });
+
+  await page.goto('/miplan?profile=el');
+  await page.getByTestId('meal-log-open-el-Lunes-desayuno').click();
+  await expect(page.getByRole('heading', { name: /Registra lo que comiste/i })).toBeVisible();
+
+  await page.getByTestId('meal-log-photo-input').setInputFiles({
+    name: 'comida.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WlX2ioAAAAASUVORK5CYII=',
+      'base64'
+    ),
+  });
+  await page.getByTestId('meal-log-analyze').click();
+  await expect(page.getByRole('heading', { name: analyzedMealName, exact: true })).toBeVisible();
+
+  await page.getByTestId('meal-log-edit-toggle').click();
+  await page.getByTestId('meal-log-edit-caloriasKcal').fill('495');
+  await page.getByTestId('meal-log-use').click();
+
+  await expect(page.getByText(/Comida registrada/i)).toBeVisible();
+  await page.getByRole('button', { name: /Aceptar/i }).click();
+  await expect(page.getByRole('heading', { name: analyzedMealName, exact: true })).toBeVisible();
+  await expect(page.getByText(originalBreakfast)).toHaveCount(0);
+
+  const persisted = await page.evaluate(() => ({
+    customData: JSON.parse(window.localStorage.getItem('customData') || '{}'),
+    selections: JSON.parse(window.localStorage.getItem('seleccionesDieta') || '{}'),
+  }));
+  const loggedMeal = persisted.customData.el.planEL.Lunes.desayuno[0];
+  expect(loggedMeal.nombre).toBe(analyzedMealName);
+  expect(loggedMeal.caloriasKcal).toBe(495);
+  expect(loggedMeal.aiMeta.analyzedSource).toBe('image');
+  expect(persisted.selections[`el-Lunes-desayuno-${analyzedMealName}`]).toBe(true);
+});
+
 test('mobile flow supports AI plan adjustment without recreating the whole plan', async ({ page }) => {
   const originalBreakfast = getFirstMealName('el', 'Lunes', 'desayuno');
   const untouchedTuesdayBreakfast = getFirstMealName('el', 'Martes', 'desayuno');

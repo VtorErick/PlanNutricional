@@ -39,10 +39,14 @@ Puedes:
 - Cambiar de dia desde la barra superior.
 - Elegir un platillo cuando un momento esta vacio.
 - Tocar un platillo para cambiarlo por otra opcion del mismo tiempo.
+- Pulsar `Registrar lo que comí` para tomar una foto o escribir una descripción.
+- Revisar y, si hace falta, corregir porción, kcal, proteína y grasas antes de guardar.
 - Editar una receta o restaurar su version original.
 - Exportar PDF desde el boton de imprimir del encabezado.
 
 En `Ambos`, un tiempo cuenta como completo cuando los dos perfiles tienen comida elegida.
+
+Los datos obtenidos de una foto son una estimación: la app muestra cuándo conviene revisar la porción y nunca guarda el resultado sin confirmación del usuario.
 
 ![Mi Plan movil](docs/screenshots/mobile/plan-mobile.png)
 

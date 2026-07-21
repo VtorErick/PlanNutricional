@@ -24,7 +24,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[80] bg-slate-950/50 backdrop-blur-[2px]"
+        className="fixed inset-0 z-[80] bg-ink-950/50 backdrop-blur-[3px]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -36,29 +36,30 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-[28px] border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-[28px] ${
+            className={`flex h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-[30px] border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-[30px] ${
               isDarkMode
-                ? 'border-slate-700 bg-slate-900 shadow-[0_20px_60px_rgba(2,6,23,0.55)]'
-                : 'border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.16)]'
+                ? 'border-ink-700 bg-ink-900 shadow-lift'
+                : 'border-cream-200 bg-white shadow-lift'
             }`}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className={`border-b px-4 py-3 sm:px-6 ${
-              isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'
+            <div className={`border-b px-4 py-4 sm:px-6 ${
+              isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'
             }`}>
+              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cream-300 dark:bg-ink-600 sm:hidden" />
               <div className="flex items-start gap-3">
-                <div className={`mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${ac.bgLight}`}>
-                  <Pill className={`h-4 w-4 ${ac.text}`} />
+                <div className={`mt-0.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ${ac.bgLight}`}>
+                  <Pill className={`h-4.5 w-4.5 ${ac.text}`} />
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${ac.text}`}>
+                  <p className={`text-[10px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
                     Opcional
                   </p>
-                  <h3 className={`text-lg font-black leading-tight tracking-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                  <h3 className={`font-display text-xl font-semibold leading-tight tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                     Suplementos
                   </h3>
-                  <p className={`mt-1 text-xs leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
+                  <p className={`mt-1 text-xs leading-snug ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                     Revisa dosis sugeridas, notas y precauciones.
                   </p>
                 </div>
@@ -66,10 +67,10 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl border transition active:scale-95 ${
+                  className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 ${
                     isDarkMode
-                      ? 'border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-800'
-                      : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
+                      ? 'border-ink-700 bg-ink-900 text-ink-200 hover:bg-ink-800'
+                      : 'border-cream-200 bg-white text-ink-500 hover:bg-cream-100'
                   }`}
                   aria-label="Cerrar suplementos"
                 >
@@ -88,10 +89,10 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                     <section key={profileId} className="space-y-2.5">
                       {isAmbos ? (
                         <div className="flex items-center justify-between px-1">
-                          <p className={`text-[11px] font-black uppercase tracking-[0.16em] ${profileAccent.text}`}>
+                          <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${profileAccent.text}`}>
                             {getProfileLabel(profileLabels, profileId)} · Opcional
                           </p>
-                          <p className={`text-[11px] font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                          <p className={`text-[11px] font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                             {items.length} opciones
                           </p>
                         </div>
@@ -105,8 +106,8 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                           return (
                             <article
                               key={key}
-                              className={`rounded-[18px] border px-3 py-2.5 shadow-[0_6px_16px_rgba(15,23,42,0.04)] ${
-                                isDarkMode ? 'border-slate-800 bg-slate-950/92' : 'border-slate-100 bg-white'
+                              className={`rounded-[20px] border px-3.5 py-3 shadow-soft ${
+                                isDarkMode ? 'border-ink-700 bg-ink-800/50' : 'border-cream-200 bg-white'
                               }`}
                             >
                               <button
@@ -114,60 +115,60 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                                 onClick={() => setExpandedSupplement((current) => current === key ? null : key)}
                                 className="flex w-full items-start gap-3 text-left active:scale-[0.99]"
                               >
-                                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${profileAccent.bgGradientLight}`}>
+                                <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${profileAccent.bgGradientLight}`}>
                                   <Pill className={`h-4.5 w-4.5 ${profileAccent.text}`} />
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                  <h4 className={`line-clamp-2 text-[15px] font-black leading-tight ${isDarkMode ? 'text-slate-50' : 'text-slate-900'}`}>
+                                  <h4 className={`line-clamp-2 font-display text-[16px] font-semibold leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
                                     {supplement.name}
                                   </h4>
-                                  <p className={`mt-1 line-clamp-2 text-[13px] font-semibold leading-snug ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                                  <p className={`mt-1 line-clamp-2 text-[13px] font-medium leading-snug ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                                     {supplement.goalSupport}
                                   </p>
-                                  <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold leading-snug ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold leading-snug ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                                     <Clock3 className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 ${profileAccent.text}`} />
                                     <span className="min-w-0">{supplement.timing}</span>
                                   </p>
                                 </div>
 
-                                <ChevronDown className={`mt-2 h-4.5 w-4.5 flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''} ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                                <ChevronDown className={`mt-2 h-4.5 w-4.5 flex-shrink-0 transition-transform ${expanded ? 'rotate-180' : ''} ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`} />
                               </button>
 
                               {expanded ? (
-                                <div className="mt-3 space-y-3 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
+                                <div className="mt-3 space-y-3 border-t border-cream-200 pt-3 text-sm dark:border-ink-700">
                                   <div>
-                                    <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                                       Por que podria ayudar
                                     </p>
-                                    <p className={`mt-1.5 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                                    <p className={`mt-1.5 ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
                                       {supplement.whyItMayHelp}
                                     </p>
                                   </div>
                                   <div>
-                                    <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                                       Como usarlo
                                     </p>
-                                    <p className={`mt-1.5 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                                    <p className={`mt-1.5 ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
                                       {supplement.howToUse}
                                     </p>
                                   </div>
-                                  <div className="rounded-2xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
-                                    <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
+                                  <div className="rounded-2xl bg-pine-50 p-3.5 dark:bg-pine-950/40">
+                                    <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-pine-700 dark:text-pine-300">
                                       <Clock3 className="h-3.5 w-3.5" />
                                       Nota
                                     </p>
-                                    <p className="mt-1.5 text-emerald-900 dark:text-emerald-100">
+                                    <p className="mt-1.5 text-pine-800 dark:text-pine-100">
                                       {supplement.notes}
                                     </p>
                                   </div>
                                   {supplement.caution ? (
-                                    <div className="rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/30">
-                                      <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                                    <div className="rounded-2xl bg-apricot-50 p-3.5 dark:bg-apricot-950/30">
+                                      <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-apricot-700 dark:text-apricot-300">
                                         <ShieldAlert className="h-3.5 w-3.5" />
                                         Precaucion
                                       </p>
-                                      <p className="mt-1.5 text-amber-900 dark:text-amber-100">
+                                      <p className="mt-1.5 text-apricot-700 dark:text-apricot-200">
                                         {supplement.caution}
                                       </p>
                                     </div>

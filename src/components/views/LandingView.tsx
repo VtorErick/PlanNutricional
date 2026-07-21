@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type TouchEvent, type WheelEvent } from 'react';
 import { motion } from 'framer-motion';
 import {
+  ArrowRight,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -37,6 +38,12 @@ function formatMinutesAsTime(value: number) {
   const hour = Math.floor(value / 60);
   const minute = value % 60;
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function getGreeting(currentMinutes: number) {
+  if (currentMinutes < 12 * 60) return 'Buenos días';
+  if (currentMinutes < 19 * 60) return 'Buenas tardes';
+  return 'Buenas noches';
 }
 
 function getRelevantMoment(moments: MealTime[], currentMinutes: number) {
@@ -311,29 +318,29 @@ export default function LandingView() {
   };
 
   const renderMealSummary = (card: (typeof homeReel.cards)[number]) => (
-    <div className="mt-4 space-y-3 max-[340px]:mt-3">
+    <div className="mt-4 space-y-3">
       {card.selectedMealGroups.slice(0, 2).map(({ labels, meal }) => {
         const groupLabel = labels.length > 1 ? 'Para ambos' : labels[0];
 
         return (
           <div
             key={`${card.moment.key}-${labels.join('-')}-${meal.nombre}`}
-            className={`border-l-2 pl-3 ${isDarkMode ? 'border-slate-700' : accent.border}`}
+            className={`rounded-2xl px-3.5 py-3 ${isDarkMode ? 'bg-ink-800/60' : 'bg-cream-100/80'}`}
           >
-            <p className={`text-[10px] font-black uppercase tracking-[0.12em] ${isDarkMode ? 'text-slate-500' : accent.text}`}>
+            <p className={`text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-pine-300' : accent.text}`}>
               {groupLabel}
             </p>
-            <p className={`mt-1 text-[15px] font-black leading-snug ${isDarkMode ? 'text-slate-50' : 'text-slate-950'}`}>
+            <p className={`mt-1 text-[15px] font-bold leading-snug ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
               {meal.nombre}
             </p>
-            <p className={`mt-1 text-xs font-semibold leading-relaxed ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+            <p className={`mt-1 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
               {meal.detalle || meal.porciones}
             </p>
           </div>
         );
       })}
       {card.missingLabels.length > 0 && card.selectedMealGroups.length > 0 ? (
-        <p className={`px-1 text-xs font-bold ${isDarkMode ? 'text-slate-500' : accent.text}`}>
+        <p className={`px-1 text-xs font-bold ${isDarkMode ? 'text-ink-400' : accent.text}`}>
           Falta elegir para {card.missingLabels.join(' y ')}.
         </p>
       ) : null}
@@ -341,43 +348,43 @@ export default function LandingView() {
   );
 
   return (
-    <div className={`relative flex min-h-0 flex-1 overflow-hidden overscroll-none bg-gradient-to-br ${accent.bgGradientLight} text-slate-950 dark:text-slate-50`}>
-      <img
-        src="/images/home-food-bg.png"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-90 saturate-[1.05] dark:opacity-34"
-      />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/18 via-white/46 to-white/72 dark:from-slate-950/78 dark:via-slate-950/50 dark:to-slate-950/82" />
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${accent.bgGradientLight} opacity-[0.12] dark:opacity-12`} />
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-[88px] pt-3 max-[340px]:px-3 max-[340px]:pb-[78px] max-[340px]:pt-2 sm:px-6 sm:pb-10 sm:pt-6">
-        <main className="flex min-h-0 flex-1 flex-col justify-center gap-3 py-2 max-[340px]:py-1 sm:gap-4 sm:py-12">
+    <div className="relative flex min-h-0 flex-1 overflow-hidden overscroll-none bg-cream-50 text-ink-900 dark:bg-ink-950 dark:text-cream-100">
+      {/* Decorative background */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className={`absolute -top-32 -right-24 h-96 w-96 rounded-full blur-3xl ${isDarkMode ? 'bg-pine-900/30' : 'bg-pine-100/80'}`} />
+        <div className={`absolute -bottom-40 -left-28 h-[28rem] w-[28rem] rounded-full blur-3xl ${isDarkMode ? 'bg-ocean-900/15' : 'bg-ocean-100/50'}`} />
+        <div className={`absolute inset-0 bg-gradient-to-b ${isDarkMode ? 'from-ink-950/60 via-transparent to-ink-950/80' : 'from-cream-50/40 via-transparent to-cream-50/90'}`} />
+      </div>
+
+      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-[96px] pt-4 max-[340px]:px-3 sm:px-6 sm:pb-10 sm:pt-8">
+        <main className="flex min-h-0 flex-1 flex-col justify-center gap-4 py-2 sm:gap-6 sm:py-10">
+          {/* Greeting */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 32 }}
+            className="px-1"
+          >
+            <p className={`text-[11px] font-extrabold uppercase tracking-[0.2em] ${isDarkMode ? 'text-pine-300' : accent.text}`}>
+              {currentDayOfWeek} · {formatMinutesAsTime(currentMinutes)}
+            </p>
+            <h1 className="mt-1 font-display text-[34px] leading-[1.05] font-semibold tracking-tight text-ink-900 dark:text-cream-50 max-[340px]:text-[28px] sm:text-5xl">
+              {getGreeting(currentMinutes)}
+            </h1>
+          </motion.div>
+
           <motion.section
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 360, damping: 32 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 32, delay: 0.05 }}
             data-testid="landing-profile-ambos-card"
-            className={`relative overflow-hidden rounded-[30px] border p-3.5 shadow-[0_18px_45px_rgba(15,23,42,0.14)] backdrop-blur-[3px] max-[340px]:rounded-[24px] max-[340px]:p-3 sm:p-6 ${
+            className={`relative overflow-hidden rounded-[32px] border p-4 shadow-lift max-[340px]:rounded-[26px] max-[340px]:p-3.5 sm:p-6 ${
               isDarkMode
-                ? `border-slate-800 bg-slate-950/90`
-                : `${accent.borderLight} bg-white/78`
+                ? 'border-ink-700 bg-ink-900/95'
+                : 'border-cream-200 bg-white/95'
             }`}
           >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/40 to-transparent dark:from-slate-900/40" />
-            <div className="relative z-10 mb-2.5 flex items-start justify-between gap-3 max-[340px]:mb-1.5 max-[340px]:gap-2.5">
-              <div className="min-w-0 flex-1">
-                <p className={`text-[11px] font-black uppercase tracking-[0.18em] max-[340px]:text-[10px] ${accent.text}`}>
-                  Hoy - {currentDayOfWeek}
-                </p>
-                <p className={`mt-0.5 truncate text-xs font-black uppercase tracking-[0.14em] max-[340px]:text-[10px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Plan diario
-                </p>
-              </div>
-              <div className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-black max-[340px]:px-2.5 max-[340px]:py-1.5 ${isDarkMode ? 'border-slate-800 bg-slate-900 text-slate-200' : `${accent.borderLight} bg-white ${accent.text}`}`}>
-                <Clock className="h-3.5 w-3.5" />
-                {formatMinutesAsTime(currentMinutes)}
-              </div>
-            </div>
+            <div className={`pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accent.bgGradient}`} />
 
             <div
               className="relative z-10 touch-none overscroll-contain"
@@ -399,25 +406,25 @@ export default function LandingView() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-                  className={`rounded-[26px] border p-4 shadow-[0_16px_32px_rgba(15,23,42,0.13)] max-[340px]:rounded-[22px] max-[340px]:p-3 sm:p-5 ${
-                    isDarkMode
-                      ? 'border-slate-700 bg-slate-900/94'
-                      : `${accent.border} bg-white/94`
-                  }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isDarkMode ? 'text-slate-500' : accent.text}`}>
-                        Tiempo actual
+                      <p className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                        Tu siguiente momento
                       </p>
-                      <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-950 max-[340px]:text-[26px] dark:text-slate-50 sm:text-4xl">
+                      <h2 className="mt-1 font-display text-4xl font-semibold tracking-tight text-ink-900 max-[340px]:text-[32px] dark:text-cream-50 sm:text-5xl">
                         {activeCard.moment.label}
                       </h2>
-                      <p className={`mt-1.5 text-sm font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <p className={`mt-2 text-sm font-medium ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                         {activeCard.preparationMessage}
                       </p>
                     </div>
-                    <div className={`flex flex-shrink-0 items-center gap-1 rounded-2xl border px-3 py-2 text-xs font-black ${isDarkMode ? 'border-slate-800 bg-slate-950/70 text-slate-300' : `${accent.borderLight} bg-white ${accent.text}`}`}>
+                    <div className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-extrabold tabular-nums ${
+                      isDarkMode
+                        ? 'border-ink-700 bg-ink-800 text-cream-200'
+                        : 'border-cream-200 bg-cream-100 text-ink-700'
+                    }`}>
+                      <Clock className={`h-3.5 w-3.5 ${isDarkMode ? 'text-pine-300' : accent.text}`} />
                       {activeCard.moment.hora}
                     </div>
                   </div>
@@ -425,8 +432,12 @@ export default function LandingView() {
                   {activeCard.selectedMealGroups.length > 0 ? (
                     renderMealSummary(activeCard)
                   ) : (
-                    <div className={`mt-4 rounded-2xl border px-3 py-3 ${isDarkMode ? 'border-slate-800 bg-slate-950/50 text-slate-300' : `${accent.borderLight} bg-slate-50/80 text-slate-600`}`}>
-                      <p className="text-xs font-bold leading-relaxed">
+                    <div className={`mt-4 rounded-2xl border border-dashed px-4 py-4 ${
+                      isDarkMode
+                        ? 'border-ink-600 bg-ink-800/40 text-ink-300'
+                        : `${accent.border} bg-cream-100/60 text-ink-500`
+                    }`}>
+                      <p className="text-[13px] font-medium leading-relaxed">
                         Elige una opcion para dejar listo este momento del dia.
                       </p>
                     </div>
@@ -434,21 +445,26 @@ export default function LandingView() {
                 </motion.article>
               ) : null}
 
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              {/* Prev / next moments timeline */}
+              <div className="mt-4 grid grid-cols-2 gap-2">
                 {previousCard ? (
                   <button
                     type="button"
                     onClick={() => moveReel(-1)}
-                    className={`min-w-0 rounded-2xl border px-3 py-2.5 text-left transition active:scale-[0.98] ${isDarkMode ? 'border-slate-800 bg-slate-900/72 text-slate-300 hover:bg-slate-900' : 'border-white/70 bg-white/68 text-slate-600 shadow-[0_6px_16px_rgba(15,23,42,0.07)] hover:bg-white/82'}`}
+                    className={`min-w-0 rounded-2xl border px-3.5 py-2.5 text-left transition active:scale-[0.97] ${
+                      isDarkMode
+                        ? 'border-ink-700 bg-ink-800/60 text-ink-200 hover:bg-ink-800'
+                        : 'border-cream-200 bg-cream-100/70 text-ink-600 hover:bg-cream-100'
+                    }`}
                     aria-label={`Ver momento anterior: ${previousCard.moment.label}`}
                   >
-                    <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.14em]">
+                    <span className={`flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                       <ChevronUp className="h-3 w-3" />
                       Anterior
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-black">{previousCard.moment.label}</span>
-                      <span className="text-[11px] font-black opacity-70">{previousCard.moment.hora}</span>
+                      <span className="truncate text-sm font-bold">{previousCard.moment.label}</span>
+                      <span className="text-[11px] font-bold tabular-nums opacity-60">{previousCard.moment.hora}</span>
                     </span>
                   </button>
                 ) : null}
@@ -457,38 +473,59 @@ export default function LandingView() {
                   <button
                     type="button"
                     onClick={() => moveReel(1)}
-                    className={`min-w-0 rounded-2xl border px-3 py-2.5 text-left transition active:scale-[0.98] ${isDarkMode ? 'border-slate-800 bg-slate-900/72 text-slate-300 hover:bg-slate-900' : 'border-white/70 bg-white/68 text-slate-600 shadow-[0_6px_16px_rgba(15,23,42,0.07)] hover:bg-white/82'}`}
+                    className={`min-w-0 rounded-2xl border px-3.5 py-2.5 text-left transition active:scale-[0.97] ${
+                      isDarkMode
+                        ? 'border-ink-700 bg-ink-800/60 text-ink-200 hover:bg-ink-800'
+                        : 'border-cream-200 bg-cream-100/70 text-ink-600 hover:bg-cream-100'
+                    }`}
                     aria-label={`Ver siguiente momento: ${nextCard.moment.label}`}
                   >
-                    <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.14em]">
+                    <span className={`flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                       <ChevronDown className="h-3 w-3" />
                       Siguiente
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-black">{nextCard.moment.label}</span>
-                      <span className="text-[11px] font-black opacity-70">{nextCard.moment.hora}</span>
+                      <span className="truncate text-sm font-bold">{nextCard.moment.label}</span>
+                      <span className="text-[11px] font-bold tabular-nums opacity-60">{nextCard.moment.hora}</span>
                     </span>
                   </button>
                 ) : null}
               </div>
+
+              {/* Reel position dots */}
+              {reelCount > 1 ? (
+                <div className="mt-3 flex items-center justify-center gap-1.5" aria-hidden="true">
+                  {homeReel.cards.map((card, index) => (
+                    <span
+                      key={card.moment.key}
+                      className={`h-1 rounded-full transition-all duration-300 ${
+                        index === activeReelIndex
+                          ? `w-5 ${accent.dot}`
+                          : `w-1 ${isDarkMode ? 'bg-ink-600' : 'bg-cream-300'}`
+                      }`}
+                    />
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <button
               type="button"
               onClick={handlePrimaryAction}
               data-testid="landing-customize-ambos"
-              className={`relative z-10 mt-2 inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br ${accent.bgGradient} px-4 py-3 text-sm font-black text-white shadow-[0_12px_26px_rgba(15,23,42,0.16)] transition hover:brightness-105 active:scale-[0.98] max-[340px]:min-h-[42px] max-[340px]:py-2.5`}
+              className={`group relative z-10 mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r ${accent.bgGradient} px-5 py-3.5 text-[15px] font-bold text-white shadow-[0_14px_30px_-10px_rgba(234,65,9,0.45)] transition hover:brightness-105 active:scale-[0.98] max-[340px]:min-h-[46px]`}
             >
               {!hasPersonalizedPlan ? <Sparkles className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}
               <span>{primaryActionLabel}</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </button>
             {hasPersonalizedPlan ? (
               <button
                 type="button"
                 onClick={openQuestionnaire}
                 data-testid="landing-ai-adjust"
-                className={`relative z-10 mx-auto mt-3 flex min-h-[34px] items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-opacity hover:opacity-75 active:scale-[0.98] ${
-                  isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                className={`relative z-10 mx-auto mt-3 flex min-h-[34px] items-center justify-center gap-1.5 rounded-full px-4 text-xs font-bold transition-opacity hover:opacity-70 active:scale-[0.98] ${
+                  isDarkMode ? 'text-ink-300' : 'text-ink-500'
                 }`}
               >
                 <Sparkles className="h-3.5 w-3.5" />

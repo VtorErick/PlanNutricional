@@ -682,6 +682,12 @@ interface DietContextType {
     affectedCount: number;
     affectedLabels: string[];
   };
+  logAnalyzedMeal: (
+    perfilId: 'el' | 'ella',
+    dia: string,
+    momentoKey: string,
+    meal: MealItem
+  ) => void;
   comprasCheck: Record<string, boolean>;
   setComprasCheck: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 
@@ -1245,6 +1251,76 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         (occurrence) => `${occurrence.dia} - ${occurrence.momentoLabel}`
       ),
     };
+  }, [getDefaultCustomBucket, perfilesData, setCustomData, setDataVersions, setSelecciones]);
+
+  // ─── AI-analyzed meal logging (photo / description) ─────────────────
+  const logAnalyzedMeal = useCallback((
+    perfilId: 'el' | 'ella',
+    dia: string,
+    momentoKey: string,
+    meal: MealItem
+  ) => {
+    const profileData = perfilesData[perfilId];
+    if (!profileData?.plan) return;
+
+    const nextPlan: Record<string, Record<string, MealItem[]>> = { ...profileData.plan };
+    const dayPlan: Record<string, MealItem[]> = { ...(nextPlan[dia] || {}) };
+    const currentOptions = [...(dayPlan[momentoKey] || [])];
+    const existingIdx = currentOptions.findIndex((item) => item.nombre === meal.nombre);
+
+    const stampedMeal: MealItem = {
+      ...meal,
+      tags: Array.from(new Set([...(meal.tags || []), 'registro'])).slice(0, 6),
+    };
+
+    if (existingIdx >= 0) {
+      currentOptions[existingIdx] = stampedMeal;
+    } else {
+      currentOptions.unshift(stampedMeal);
+    }
+
+    dayPlan[momentoKey] = currentOptions;
+    nextPlan[dia] = dayPlan;
+
+    const planKey = perfilId === 'ella' ? 'planELLA' : 'planEL';
+    const profileKey = perfilId === 'ella' ? 'perfilELLA' : 'perfilEL';
+    const equivalenciasKey = perfilId === 'ella' ? 'equivalenciasELLA' : 'equivalenciasEL';
+    const supplementsKey = perfilId === 'ella' ? 'suplementosELLA' : 'suplementosEL';
+    const defaultBucket = getDefaultCustomBucket(perfilId);
+
+    setCustomData((prev: any) => {
+      const previousBucket =
+        isPlainObject(prev?.[perfilId]) ? { ...prev[perfilId] } : {};
+
+      return {
+        ...prev,
+        [perfilId]: {
+          [profileKey]: previousBucket[profileKey] || defaultBucket[profileKey],
+          [equivalenciasKey]:
+            previousBucket[equivalenciasKey] || defaultBucket[equivalenciasKey],
+          [supplementsKey]:
+            previousBucket[supplementsKey] || defaultBucket[supplementsKey],
+          ...previousBucket,
+          [planKey]: nextPlan,
+        },
+      };
+    });
+
+    setDataVersions((prev) => ({
+      ...prev,
+      [perfilId]: 'custom',
+    }));
+
+    // Select the logged meal, replacing any other selection for that moment.
+    setSelecciones((prev) => {
+      const next = { ...prev };
+      currentOptions.forEach((item) => {
+        const key = `${perfilId}-${dia}-${momentoKey}-${item.nombre}`;
+        if (item.nombre !== meal.nombre && next[key]) delete next[key];
+      });
+      next[`${perfilId}-${dia}-${momentoKey}-${meal.nombre}`] = true;
+      return next;
+    });
   }, [getDefaultCustomBucket, perfilesData, setCustomData, setDataVersions, setSelecciones]);
 
   // ─── Scroll logic ──────────────────────────────────────────────────
@@ -2083,7 +2159,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     showAdmin, setShowAdmin,
     showQuestionnaire, setShowQuestionnaire,
     diaActivo, setDiaActivo, diasDisponibles,
-    selecciones, setSelecciones, toggleSeleccion, editMealRecipe, restoreMealRecipe,
+    selecciones, setSelecciones, toggleSeleccion, editMealRecipe, restoreMealRecipe, logAnalyzedMeal,
     comprasCheck, setComprasCheck,
     dataVersions, setDataVersions,
     customData, setCustomData,
