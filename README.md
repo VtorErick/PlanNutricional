@@ -67,19 +67,45 @@ npm run preview
 
 Usa `.env.local` en local y variables del proyecto en Vercel. No se versionan archivos `.env`.
 
-| Variable | Uso |
-| --- | --- |
-| `AI_PROVIDER` | Proveedor de texto: `deepseek` (default) o `gemini` |
-| `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL` | Generación y análisis por descripción con DeepSeek |
-| `GEMINI_API_KEY` / `GEMINI_MODEL` | Alternativa para generación y análisis por texto |
-| `ZHIPU_API_KEY` | Análisis gratuito de una foto con `glm-4.6v-flash` |
-| `QWEN_API_KEY` | Análisis de foto con Qwen; si existe, se prefiere automáticamente |
-| `VISION_PROVIDER` | Opcional: fuerza `qwen` o `zhipu` |
-| `VISION_API_KEY`, `VISION_API_BASE_URL`, `VISION_MODEL` | Overrides para un proveedor de visión OpenAI-compatible |
-| `APP_URL` / `SITE_URL` | Opcional para validar orígenes confiables en API |
+La app separa la IA de **texto** (crear o ajustar planes y analizar descripciones) de la IA de **visión** (analizar fotos). Para habilitar todas las funciones necesitas una key de cada grupo.
 
-El cliente puede guardar una API key personalizada en `localStorage` (`geminiCustomApiKey`) para probar desde la UI, pero la key default vive en servidor.
-Si DeepSeek no está configurado o se queda sin saldo, una key de Qwen o Zhipu también funciona automáticamente como respaldo para el análisis por descripción.
+### Configuración recomendada
+
+```dotenv
+# Texto: DeepSeek
+AI_PROVIDER=deepseek
+DEEPSEEK_API_KEY=tu_key_de_deepseek
+DEEPSEEK_MODEL=deepseek-v4-flash
+
+# Fotos: Zhipu BigModel / GLM Vision
+VISION_PROVIDER=zhipu
+ZHIPU_API_KEY=tu_key_de_zhipu
+ZHIPU_VISION_MODEL=glm-4.6v-flash
+```
+
+En Vercel, guarda estas variables al menos en **Production** y vuelve a desplegar. Añádelas también a **Preview** si quieres probar despliegues de ramas o pull requests.
+
+### Variables disponibles
+
+| Función | Variable | Uso |
+| --- | --- | --- |
+| Texto | `AI_PROVIDER` | Proveedor activo: `deepseek` (default) o `gemini` |
+| Texto | `DEEPSEEK_API_KEY` | Key de DeepSeek para crear/ajustar planes y analizar descripciones |
+| Texto | `DEEPSEEK_MODEL` | Modelo de DeepSeek; el default del código es `deepseek-v4-flash` |
+| Texto | `GEMINI_API_KEY` | Alternativa a DeepSeek cuando `AI_PROVIDER=gemini` |
+| Texto | `GEMINI_MODEL` | Modelo de Gemini usado para generar o ajustar planes |
+| Fotos | `VISION_PROVIDER` | Proveedor de visión: `zhipu` o `qwen` |
+| Fotos | `ZHIPU_API_KEY` | Key de Zhipu BigModel para analizar imágenes |
+| Fotos | `ZHIPU_VISION_MODEL` | Modelo Zhipu; el default es `glm-4.6v-flash` |
+| Fotos | `QWEN_API_KEY` | Alternativa de Alibaba Cloud DashScope para analizar imágenes |
+| Fotos | `QWEN_VISION_MODEL` | Modelo Qwen; el default es `qwen3-vl-flash` |
+| Avanzado | `VISION_API_KEY` | Key genérica para un proveedor de visión OpenAI-compatible |
+| Avanzado | `VISION_API_BASE_URL` / `VISION_MODEL` | Sobrescriben la URL y el modelo del proveedor de visión |
+| Seguridad | `APP_URL` / `SITE_URL` | Opcionales; agregan un origen permitido para las funciones API |
+
+Solo configura **uno** de los proveedores de texto y **uno** de visión. Si no defines `VISION_PROVIDER`, la app elige Qwen cuando existe `QWEN_API_KEY`; en otro caso intenta usar Zhipu. Una key de visión también puede respaldar el análisis por descripción cuando DeepSeek no está disponible, pero no reemplaza la key de texto para crear o ajustar planes completos.
+
+Las keys son secretos de servidor: no deben llevar el prefijo `VITE_`, incluirse en el repositorio ni exponerse en el frontend. El cliente permite probar una key personalizada de Gemini desde la interfaz, pero la configuración normal de producción vive en Vercel. `VERCEL_OIDC_TOKEN` es administrada por Vercel y no necesitas crearla manualmente para estas funciones.
 
 ## API
 
