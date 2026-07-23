@@ -443,16 +443,33 @@ export default function PlanView() {
                 </p>
               </div>
 
-              <div className="min-w-0 text-right">
-                <p className={`whitespace-nowrap text-sm font-black tabular-nums ${ac.text}`}>
-                  {activeDayStats.kcal}
-                  <span className={`ml-1 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                    de {activeDayStats.target} kcal
-                  </span>
-                </p>
-                <p className={`mt-0.5 text-[9px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
-                  Total del día
-                </p>
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="min-w-0 text-right">
+                  <p className={`whitespace-nowrap text-sm font-black tabular-nums ${ac.text}`}>
+                    {activeDayStats.kcal}
+                    <span className={`ml-1 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                      de {activeDayStats.target} kcal
+                    </span>
+                  </p>
+                  <p className={`mt-0.5 text-[9px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
+                    Total del día
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setArePlanToolsOpen((open) => !open)}
+                  data-testid="plan-tools-toggle"
+                  aria-expanded={arePlanToolsOpen}
+                  aria-label="Opciones del plan"
+                  title="Opciones del plan"
+                  className={`inline-flex h-8 flex-shrink-0 items-center justify-center gap-0.5 rounded-full px-2 transition active:scale-90 ${
+                    isDarkMode ? 'bg-ink-900 text-ink-300' : 'bg-white text-ink-500 shadow-soft'
+                  }`}
+                >
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  <ChevronUp className={`h-3 w-3 transition-transform ${arePlanToolsOpen ? '' : 'rotate-180'}`} />
+                </button>
               </div>
             </div>
 
@@ -487,22 +504,6 @@ export default function PlanView() {
                 animate={{ width: `${calorieProgress}%` }}
                 transition={{ type: 'spring', stiffness: 100, damping: 18 }}
               />
-            </div>
-
-            <div className="mt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setArePlanToolsOpen((open) => !open)}
-                data-testid="plan-tools-toggle"
-                aria-expanded={arePlanToolsOpen}
-                className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3 text-[11px] font-bold transition active:scale-90 ${
-                  isDarkMode ? 'bg-ink-900 text-ink-300' : 'bg-white text-ink-500 shadow-soft'
-                }`}
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                <span>Opciones</span>
-                <ChevronUp className={`h-3.5 w-3.5 transition-transform ${arePlanToolsOpen ? '' : 'rotate-180'}`} />
-              </button>
             </div>
 
             <AnimatePresence initial={false}>
