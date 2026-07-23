@@ -422,7 +422,7 @@ export default function LandingView() {
                     key={card.moment.key}
                     data-testid={`landing-meal-slide-${card.moment.key}`}
                     aria-label={`${card.moment.label}, ${card.moment.hora}`}
-                    className={`min-h-[210px] snap-center rounded-[26px] border bg-gradient-to-br p-4 shadow-soft max-[340px]:min-h-[198px] max-[340px]:rounded-[23px] ${momentStyle.surface} ${
+                    className={`flex min-h-[210px] snap-center flex-col rounded-[26px] border bg-gradient-to-br p-4 shadow-soft max-[340px]:min-h-[198px] max-[340px]:rounded-[23px] ${momentStyle.surface} ${
                       isDarkMode ? 'border-ink-700' : 'border-cream-200'
                     }`}
                   >
@@ -451,7 +451,7 @@ export default function LandingView() {
                     {card.selectedMealGroups.length > 0 ? (
                       renderMealSummary(card)
                     ) : (
-                      <div className={`mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 ${
+                      <div className={`mt-4 flex flex-1 items-center gap-3 rounded-2xl px-3 py-3 ${
                         isDarkMode ? 'bg-ink-800/70 text-ink-300' : 'bg-white/75 text-ink-500'
                       }`}>
                         <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${momentStyle.iconSurface}`}>
