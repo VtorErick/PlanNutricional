@@ -25,7 +25,7 @@ async function completeProfileQuestionnaire(page: Page, profile: 'el' | 'ella', 
   await page.getByRole('button', { name: /Perder grasa/i }).click();
   await page.getByTestId('questionnaire-next').click();
 
-  await skipOptionalSteps(page, 4);
+  await skipOptionalSteps(page, 3);
 
   await expect(page.getByTestId(`questionnaire-step-lifestyle-${profile}`)).toBeVisible();
   await page.getByTestId('questionnaire-next').click();
@@ -52,6 +52,7 @@ test('landing, admin, and questionnaire generation flow work on mobile', async (
   await page.getByTestId('landing-customize-ambos').click();
   await expect(page.getByTestId('questionnaire-step-who')).toBeVisible();
   await page.getByTestId('questionnaire-target-ambos').click();
+  await expect(page.getByTestId('questionnaire-step-fisica-el')).toBeVisible();
 
   await completeProfileQuestionnaire(page, 'el', '33');
   await completeProfileQuestionnaire(page, 'ella', '32');
@@ -138,6 +139,23 @@ test('single-profile plan flow supports selecting meals and downloading PDF on m
   await page.getByTestId('admin-export-json-el').click();
   const originalDownload = await originalJsonDownload;
   expect(originalDownload.suggestedFilename()).toBe('perfil-el.json');
+});
+
+test('comida libre domingo se muestra y se selecciona una sola vez', async ({ page }) => {
+  await seedGeneratedPlans(page);
+  await page.goto('/miplan?profile=el');
+
+  await openDayPickerAndSelectDay(page, 'Dom');
+  await page.getByTestId('moment-empty-comida-single').click();
+
+  const freeMealOption = page.getByTestId('meal-swap-option-el-Domingo-comida-0');
+  await expect(freeMealOption).toHaveCount(1);
+  await freeMealOption.click();
+
+  await expect(
+    page.locator('[data-testid^="selected-meal-el-Domingo-comida-"]')
+  ).toHaveCount(1);
+  await expect(page.getByText('Comida Libre de Restricciones', { exact: true })).toHaveCount(1);
 });
 
 test('usuario puede registrar con foto, corregir la estimacion y actualizar su plan', async ({ page }) => {

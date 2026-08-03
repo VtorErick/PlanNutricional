@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bot,
   CheckCircle2,
-  Download,
   MessageSquareText,
   RefreshCcw,
   Sparkles,
@@ -13,7 +12,7 @@ import {
 } from 'lucide-react';
 import type { AccentColors } from '../utils/theme';
 import type { PlanRevisionMode } from '../services/aiService';
-import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
+import { getAiErrorReason, type AiDebugLog } from '../utils/aiDiagnostics';
 
 type TargetProfile = 'el' | 'ella' | 'ambos';
 
@@ -46,6 +45,7 @@ export default function PlanAiRefreshSheet({
   const [mode, setMode] = React.useState<PlanRevisionMode>('adjust');
   const [targetProfile, setTargetProfile] = React.useState<TargetProfile>(defaultTarget);
   const [instruction, setInstruction] = React.useState('');
+  const [showAiErrorReason, setShowAiErrorReason] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -264,20 +264,29 @@ export default function PlanAiRefreshSheet({
                       ? 'border-coral-900/60 bg-coral-950/30 text-coral-100'
                       : 'border-coral-200 bg-coral-50 text-coral-600'
                   }`}>
-                    <p>{errorMessage}</p>
+                    <div>
+                      <p className="font-bold">No pudimos actualizar tu plan</p>
+                      <p className="mt-1">{errorMessage}</p>
+                    </div>
                     {aiErrorLog ? (
-                      <button
-                        type="button"
-                        onClick={() => downloadAiDebugLog(aiErrorLog)}
-                        className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold transition active:scale-[0.98] ${
-                          isDarkMode
-                            ? 'border-coral-800 bg-ink-900 text-coral-100 hover:bg-coral-950/40'
-                            : 'border-coral-300 bg-white text-coral-600 hover:bg-coral-100'
-                        }`}
-                      >
-                        <Download className="h-4 w-4" />
-                        Descargar logs detallados
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowAiErrorReason((visible) => !visible)}
+                          className={`inline-flex items-center rounded-full border px-3.5 py-2 text-xs font-bold transition active:scale-[0.98] ${
+                            isDarkMode
+                              ? 'border-coral-800 bg-ink-900 text-coral-100 hover:bg-coral-950/40'
+                              : 'border-coral-300 bg-white text-coral-600 hover:bg-coral-100'
+                          }`}
+                        >
+                          {showAiErrorReason ? 'Ocultar motivo' : 'Ver motivo'}
+                        </button>
+                        {showAiErrorReason && getAiErrorReason(aiErrorLog) ? (
+                          <p className={`rounded-2xl px-3 py-2 text-xs ${isDarkMode ? 'bg-ink-900/70' : 'bg-white/70'}`}>
+                            {getAiErrorReason(aiErrorLog)}
+                          </p>
+                        ) : null}
+                      </>
                     ) : null}
                   </div>
                 ) : null}

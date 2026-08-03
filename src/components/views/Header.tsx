@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChefHat, ChevronDown, FileText, Moon, Settings, Sun } from 'lucide-react';
+import { Check, ChevronDown, FileText, Home, Leaf, Moon, Settings, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getProfileLabel } from '../../utils/profileLabels';
 
@@ -12,6 +12,7 @@ export default function Header() {
 
   const {
     setPerfilActivo: setActiveProfile,
+    setTab,
     perfilActivo: activeProfile,
     tab: activeTab,
     perfilesData: profilesData,
@@ -134,9 +135,17 @@ export default function Header() {
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             {/* Logo */}
             <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-              <div className="flex h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-ink-900 text-cream-50 shadow-[0_6px_16px_-6px_rgba(23,23,27,0.35)] dark:bg-cream-100 dark:text-ink-900">
-                <ChefHat className="w-4 h-4" />
-              </div>
+              <button
+                type="button"
+                onClick={() => setTab('inicio')}
+                data-testid="header-home-button"
+                aria-label="Ir a Inicio"
+                title="Ir a Inicio"
+                className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pine-600 via-pine-500 to-apricot-400 text-white shadow-[0_9px_20px_-8px_rgba(234,65,9,0.75)] transition hover:brightness-110 active:scale-90 sm:h-10 sm:w-10"
+              >
+                <Home className="h-[18px] w-[18px]" strokeWidth={2.5} />
+                <Leaf className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 -rotate-12 text-apricot-100" strokeWidth={2.5} />
+              </button>
               <div className="min-w-0 hidden min-[420px]:block">
                 <p className="font-display text-[15px] sm:text-base font-bold leading-none text-ink-900 dark:text-cream-100">
                   Plan Nutricional

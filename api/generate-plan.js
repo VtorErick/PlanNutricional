@@ -68,7 +68,7 @@ const MAX_ASSESSMENT_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_ASSESSMENT_PDF_MB = Math.round(MAX_ASSESSMENT_PDF_BYTES / (1024 * 1024));
 const GEMINI_SEQUENTIAL_REQUEST_DELAY_MS = 1500;
 const AI_GENERIC_ERROR_MESSAGE =
-  'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
+  'No se pudo completar la solicitud con IA. Inténtalo de nuevo en unos segundos.';
 
 function resolvePreferredGeminiModel(payloadPreferredModel, envModel) {
   const requestedModel =

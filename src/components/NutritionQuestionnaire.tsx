@@ -35,7 +35,7 @@ import {
   Trash,
 } from 'lucide-react';
 import { buildExportData, downloadJsonFile } from '../dataManager';
-import { downloadAiDebugLog, type AiDebugLog } from '../utils/aiDiagnostics';
+import { getAiErrorReason, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
 import { DEFAULT_AI_FALLBACK_MODELS, DEFAULT_AI_MODEL, getAiModelLabel } from '../utils/aiModels';
 import { getQuestionnaireTheme } from '../utils/theme';
@@ -216,7 +216,6 @@ function buildSteps(tp: TargetProfile): WizardStep[] {
     { type: 'objetivo', profile: p },
     { type: 'salud', profile: p },
     { type: 'medicos', profile: p },
-    { type: 'assessment', profile: p },
     { type: 'preferencias', profile: p },
     { type: 'lifestyle', profile: p },
   ];
@@ -736,7 +735,7 @@ export default function NutritionQuestionnaire({
   const [activePortionMoment, setActivePortionMoment] = useState('desayuno');
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const wakeLockReleaseTimeoutRef = useRef<number | null>(null);
-  const selectProfileTimeoutRef = useRef<number | null>(null);
+  const [showAiErrorReason, setShowAiErrorReason] = useState(false);
 
   const releaseScreenWakeLock = useCallback(async () => {
     if (!wakeLockRef.current) return;
@@ -793,9 +792,6 @@ export default function NutritionQuestionnaire({
 
   useEffect(() => {
     return () => {
-      if (selectProfileTimeoutRef.current) {
-        window.clearTimeout(selectProfileTimeoutRef.current);
-      }
       if (wakeLockReleaseTimeoutRef.current) {
         window.clearTimeout(wakeLockReleaseTimeoutRef.current);
       }
@@ -852,13 +848,7 @@ export default function NutritionQuestionnaire({
   const selectProfile = (p: TargetProfile) => {
     setTargetProfile(p);
     setDirection(1);
-    if (selectProfileTimeoutRef.current) {
-      window.clearTimeout(selectProfileTimeoutRef.current);
-    }
-    selectProfileTimeoutRef.current = window.setTimeout(() => {
-      setStepIdx(1);
-      selectProfileTimeoutRef.current = null;
-    }, 220);
+    setStepIdx(1);
   };
 
   const updateProfileLabel = (profileId: 'el' | 'ella', value: string) => {
@@ -1177,23 +1167,28 @@ export default function NutritionQuestionnaire({
     const { type, profile } = currentStep;
 
     if (type === 'who') {
+      const nameFields: Array<'el' | 'ella'> = targetProfile === 'ambos'
+        ? ['el', 'ella']
+        : [targetProfile];
+
       return (
         <div className="space-y-3">
-          <p className="text-center text-ink-400 text-sm">
-            Selecciona para quién generas el plan
-          </p>
+          <div className="rounded-3xl border border-pine-200 bg-pine-50/80 px-4 py-3 dark:border-pine-900/60 dark:bg-pine-950/40">
+            <p className="text-sm font-extrabold text-pine-800 dark:text-pine-100">
+              Primero elige a quién va dirigido
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-pine-700/80 dark:text-pine-200/80">
+              Puedes cambiar esta opción después. Los nombres son opcionales y solo sirven para identificar cada plan.
+            </p>
+          </div>
 
           {([
-            ['el', '👨', 'Perfil El', 'Plan individual masculino'],
-            ['ella', '👩', 'Perfil Ella', 'Plan individual femenino'],
-            ['ambos', '👫', 'Ambos perfiles', 'Plan completo para los dos'],
+            ['el', '👤', `Para ${labelEl}`, 'Un plan para una persona'],
+            ['ella', '👤', `Para ${labelElla}`, 'Un plan para una persona'],
+            ['ambos', '👥', 'Para ambos', 'Un plan para las dos personas'],
           ] as const).map(([val, emoji, title, sub]) => {
             const t = THEME[val];
             const active = targetProfile === val;
-            const titleLabel =
-              val === 'el' ? `Perfil ${labelEl}` : val === 'ella' ? `Perfil ${labelElla}` : labelAmbos;
-            // Only disable buttons for OTHER profiles that haven't been started
-            // The currently active profile is always clickable
             const profileButtonDisabled = loading;
 
             return (
@@ -1214,7 +1209,7 @@ export default function NutritionQuestionnaire({
 
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-ink-700 dark:text-cream-100'}`}>
-                    {titleLabel}
+                    {title}
                   </p>
                   <p className={`text-[11px] mt-0.5 ${active ? `${t.text} opacity-70` : 'text-ink-400'}`}>
                     {sub}
@@ -1226,40 +1221,37 @@ export default function NutritionQuestionnaire({
             );
           })}
 
-          <div className="grid grid-cols-1 gap-3 rounded-[24px] border border-cream-200 bg-white p-3 dark:border-ink-600 dark:bg-ink-900 sm:grid-cols-2">
-            <label className="space-y-1.5">
-              <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-ink-400 dark:text-ink-400">
-                Nombre visual de El
-              </span>
-              <input
-                value={profileLabelDrafts.el}
-                onFocus={() => setEditingProfileLabel('el')}
-                onChange={(event) => updateProfileLabel('el', event.target.value)}
-                onBlur={() => commitProfileLabel('el')}
-                onKeyDown={(event) => handleProfileLabelKeyDown(event, 'el')}
-                maxLength={24}
-                data-testid="questionnaire-label-el"
-                className="h-11 w-full rounded-2xl border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
-                placeholder="El"
-              />
-            </label>
+          <div className="rounded-[24px] border border-cream-200 bg-white p-3 dark:border-ink-600 dark:bg-ink-900">
+            <div className="mb-3">
+              <p className="text-sm font-bold text-ink-700 dark:text-cream-100">¿Cómo quieres identificar este plan?</p>
+              <p className="mt-1 text-xs text-ink-400">Opcional. Puedes usar un nombre, apodo o dejar el sugerido.</p>
+            </div>
 
-            <label className="space-y-1.5">
-              <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-ink-400 dark:text-ink-400">
-                Nombre visual de Ella
-              </span>
-              <input
-                value={profileLabelDrafts.ella}
-                onFocus={() => setEditingProfileLabel('ella')}
-                onChange={(event) => updateProfileLabel('ella', event.target.value)}
-                onBlur={() => commitProfileLabel('ella')}
-                onKeyDown={(event) => handleProfileLabelKeyDown(event, 'ella')}
-                maxLength={24}
-                data-testid="questionnaire-label-ella"
-                className="h-11 w-full rounded-2xl border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
-                placeholder="Ella"
-              />
-            </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {nameFields.map((profileId) => {
+                const isEl = profileId === 'el';
+                const fallbackLabel = isEl ? 'El' : 'Ella';
+                return (
+                  <label key={profileId} className="space-y-1.5">
+                    <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-ink-400 dark:text-ink-400">
+                      {isEl ? 'Primer perfil' : 'Segundo perfil'}
+                    </span>
+                    <input
+                      value={profileLabelDrafts[profileId]}
+                      onFocus={() => setEditingProfileLabel(profileId)}
+                      onChange={(event) => updateProfileLabel(profileId, event.target.value)}
+                      onBlur={() => commitProfileLabel(profileId)}
+                      onKeyDown={(event) => handleProfileLabelKeyDown(event, profileId)}
+                      maxLength={24}
+                      data-testid={`questionnaire-label-${profileId}`}
+                      aria-label={`Nombre del ${isEl ? 'primer' : 'segundo'} perfil`}
+                      className="h-11 w-full rounded-2xl border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
+                      placeholder={fallbackLabel}
+                    />
+                  </label>
+                );
+              })}
+            </div>
           </div>
         </div>
       );
@@ -2060,17 +2052,24 @@ export default function NutritionQuestionnaire({
           })}
 
           {errorMessage && (
-            <div className="space-y-3 rounded-xl border border-coral-200 bg-coral-50 p-3 text-xs leading-relaxed text-coral-600 dark:border-coral-800/60 dark:bg-coral-950/40 dark:text-coral-200">
+            <div className="space-y-2 rounded-2xl border border-coral-200 bg-coral-50 p-3 text-xs leading-relaxed text-coral-700 dark:border-coral-800/60 dark:bg-coral-950/40 dark:text-coral-200">
+              <p className="font-bold">No pudimos generar tu plan</p>
               <p>{errorMessage}</p>
               {aiErrorLog ? (
-                <button
-                  type="button"
-                  onClick={() => downloadAiDebugLog(aiErrorLog)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-coral-300 bg-white px-3 py-2 text-[11px] font-bold text-coral-600 transition hover:bg-coral-100 dark:border-coral-700 dark:bg-ink-900 dark:text-coral-100 dark:hover:bg-coral-950/60"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Descargar logs detallados
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowAiErrorReason((visible) => !visible)}
+                    className="inline-flex items-center rounded-xl border border-coral-300 bg-white px-3 py-2 text-[11px] font-bold text-coral-700 transition hover:bg-coral-100 dark:border-coral-700 dark:bg-ink-900 dark:text-coral-100 dark:hover:bg-coral-950/60"
+                  >
+                    {showAiErrorReason ? 'Ocultar motivo' : 'Ver motivo'}
+                  </button>
+                  {showAiErrorReason && getAiErrorReason(aiErrorLog) ? (
+                    <p className="rounded-xl border border-coral-200/80 bg-white/70 px-3 py-2 text-[11px] dark:border-coral-800/60 dark:bg-ink-900/70">
+                      {getAiErrorReason(aiErrorLog)}
+                    </p>
+                  ) : null}
+                </>
               ) : null}
             </div>
           )}

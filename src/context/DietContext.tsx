@@ -47,6 +47,7 @@ import {
 } from '../utils/planAiUtils';
 import { repairBrokenText } from '../utils/text';
 import { sanitizeMealPortionsText } from '../utils/mealPortions';
+import { deduplicateMealOptions } from '../utils/mealPlan';
 import { remapFoodGroupRow, resolveFoodGroupKey } from '../utils/foodGroupKeys';
 import {
   DEFAULT_PROFILE_LABELS,
@@ -389,14 +390,14 @@ function normalizePlanData(
       const sourceMeals =
         sourceDay && Array.isArray(sourceDay[momentKey]) ? sourceDay[momentKey] : fallbackMeals;
 
-      const normalizedMeals = (sourceMeals as unknown[])
+      const normalizedMeals = deduplicateMealOptions((sourceMeals as unknown[])
         .map((meal, index) => normalizeMealItem(meal, fallbackMeals[index]))
-        .filter((meal): meal is MealItem => Boolean(meal));
+        .filter((meal): meal is MealItem => Boolean(meal)));
 
       normalizedPlan[dayKey][momentKey] =
         normalizedMeals.length > 0
           ? normalizedMeals
-          : fallbackMeals.map((meal) => ({ ...meal }));
+          : deduplicateMealOptions(fallbackMeals.map((meal) => ({ ...meal })));
     });
   });
 

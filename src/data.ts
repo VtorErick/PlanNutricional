@@ -15,6 +15,7 @@ import defaultElSource from './data/defaults/perfil-el.json';
 import defaultEllaSource from './data/defaults/perfil-ella.json';
 import { defaultSupplements } from './data/defaultSupplements';
 import { enrichPlanWithNutrition } from './utils/nutrition';
+import { deduplicateMealPlan } from './utils/mealPlan';
 
 import { Equivalencia, Profile, SupplementRecommendation } from './types';
 
@@ -58,8 +59,8 @@ const equivalenciasELLA = (defaultEllaData.equivalenciasELLA || []) as Array<
 const planELLA = defaultEllaData.planELLA || {};
 
 export const perfilesData: Record<'el' | 'ella', Profile> = {
-  el: { ...perfilEL, plan: enrichPlanWithNutrition(planEL) } as Profile,
-  ella: { ...perfilELLA, plan: enrichPlanWithNutrition(planELLA) } as Profile,
+  el: { ...perfilEL, plan: enrichPlanWithNutrition(deduplicateMealPlan(planEL)) } as Profile,
+  ella: { ...perfilELLA, plan: enrichPlanWithNutrition(deduplicateMealPlan(planELLA)) } as Profile,
 };
 
 export const equivalenciasData: Record<'el' | 'ella', Equivalencia[]> = {
@@ -78,7 +79,7 @@ export function getRawDataText(profileId: 'el' | 'ella') {
       {
         perfilEL,
         equivalenciasEL,
-        planEL,
+        planEL: deduplicateMealPlan(planEL),
         suplementosEL: defaultSupplements.el,
       },
       null,
@@ -90,7 +91,7 @@ export function getRawDataText(profileId: 'el' | 'ella') {
     {
       perfilELLA,
       equivalenciasELLA,
-      planELLA,
+      planELLA: deduplicateMealPlan(planELLA),
       suplementosELLA: defaultSupplements.ella,
     },
     null,

@@ -1,7 +1,7 @@
 import { downloadJsonFile } from '../dataManager';
 
 export const AI_GENERIC_ERROR_MESSAGE =
-  'No se pudo completar la solicitud con IA. Descarga los logs para revisar el detalle.';
+  'No se pudo completar la solicitud con IA. Inténtalo de nuevo en unos segundos.';
 
 export interface AiDebugAttempt {
   order: number;
@@ -64,6 +64,34 @@ function createAiLogId(flow: AiDebugLog['flow']) {
 
 export function downloadAiDebugLog(log: AiDebugLog) {
   downloadJsonFile(buildAiLogFileName(log), JSON.stringify(log, null, 2));
+}
+
+export function getAiErrorReason(log: AiDebugLog | null | undefined) {
+  const rawMessage = log?.error?.rawMessage?.trim();
+  if (!rawMessage) return null;
+
+  const normalized = rawMessage.toLowerCase();
+  if (normalized.includes('429') || normalized.includes('rate limit') || normalized.includes('quota')) {
+    return 'El proveedor de IA alcanzó su límite de uso. Espera un momento y vuelve a intentarlo.';
+  }
+  if (
+    normalized.includes('401') ||
+    normalized.includes('403') ||
+    normalized.includes('api key') ||
+    normalized.includes('apikey') ||
+    normalized.includes('unauthorized')
+  ) {
+    return 'La configuración de la IA no está disponible o la clave no es válida.';
+  }
+  if (normalized.includes('timeout') || normalized.includes('timed out') || normalized.includes('aborted')) {
+    return 'La IA tardó demasiado en responder. Inténtalo de nuevo.';
+  }
+  if (normalized.includes('parse') || normalized.includes('json') || normalized.includes('estructura')) {
+    return 'La IA respondió en un formato que la app no pudo leer.';
+  }
+
+  const compact = rawMessage.replace(/\s+/g, ' ').replace(/^error\s*:?\s*/i, '').trim();
+  return compact.length > 180 ? `${compact.slice(0, 177).trimEnd()}…` : compact;
 }
 
 export function extractAiDebugLog(error: unknown): AiDebugLog | null {
