@@ -131,7 +131,9 @@ export default function PlanView() {
   const [isSupplementsSheetOpen, setIsSupplementsSheetOpen] = React.useState(false);
   const [isEquivalenciasSheetOpen, setIsEquivalenciasSheetOpen] = React.useState(false);
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
-  const [arePlanToolsOpen, setArePlanToolsOpen] = React.useState(false);
+  // Las acciones útiles deben estar a la vista en móvil; el usuario aún puede
+  // plegarlas si quiere concentrarse solo en sus comidas.
+  const [arePlanToolsOpen, setArePlanToolsOpen] = React.useState(true);
   const [swapSheet, setSwapSheet] = React.useState<SwapSheetState | null>(null);
   const [logSheet, setLogSheet] = React.useState<LogSheetState | null>(null);
   const isAnySheetOpen = Boolean(swapSheet) || Boolean(logSheet) || isSupplementsSheetOpen || isEquivalenciasSheetOpen || isPlanAiSheetOpen;

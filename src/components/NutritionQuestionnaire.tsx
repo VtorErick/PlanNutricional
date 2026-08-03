@@ -103,7 +103,7 @@ interface Props {
   targetProfile: TargetProfile;
   setTargetProfile: (p: TargetProfile) => void;
   stepIdx: number;
-  setStepIdx: (i: number | ((prev: number) => number)) => void;
+  setStepIdx: (i: number | ((prev: number) => number), targetOverride?: TargetProfile) => void;
   el: any;
   setEl: (v: any | ((prev: any) => any)) => void;
   ella: any;
@@ -848,7 +848,7 @@ export default function NutritionQuestionnaire({
   const selectProfile = (p: TargetProfile) => {
     setTargetProfile(p);
     setDirection(1);
-    setStepIdx(1);
+    setStepIdx(1, p);
   };
 
   const updateProfileLabel = (profileId: 'el' | 'ella', value: string) => {
