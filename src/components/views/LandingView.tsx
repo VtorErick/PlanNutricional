@@ -280,7 +280,14 @@ export default function LandingView() {
       ? dataVersions.el === 'custom'
       : perfilActivo === 'ella'
         ? dataVersions.ella === 'custom'
-        : dataVersions.el === 'custom' && dataVersions.ella === 'custom';
+        : dataVersions.el === 'custom' || dataVersions.ella === 'custom';
+  const missingPlanProfile =
+    perfilActivo === 'ambos' && dataVersions.el === 'custom' && dataVersions.ella !== 'custom'
+      ? 'ella'
+      : perfilActivo === 'ambos' && dataVersions.ella === 'custom' && dataVersions.el !== 'custom'
+        ? 'el'
+        : null;
+  const missingPlanLabel = missingPlanProfile ? getProfileLabel(profileLabels, missingPlanProfile) : '';
   const primaryActionLabel = !hasPersonalizedPlan
     ? 'Crear mi plan con IA'
     : activeCard?.selectedCount
@@ -309,9 +316,9 @@ export default function LandingView() {
     }, 120);
   };
 
-  const openQuestionnaire = () => {
-    setQuestionnaireTargetProfile('ambos');
-    setQuestionnaireStepIdx(0, 'ambos');
+  const openQuestionnaire = (target: 'el' | 'ella' | 'ambos' = 'ambos') => {
+    setQuestionnaireTargetProfile(target);
+    setQuestionnaireStepIdx(0, target);
     setQuestionnaireEl((prev: any) =>
       prev && (prev.currentWeightKg || prev.age)
         ? prev
@@ -329,7 +336,7 @@ export default function LandingView() {
   };
 
   const renderMealSummary = (card: (typeof homeReel.cards)[number]) => (
-    <div className="mt-4 space-y-2">
+    <div className="mt-4 flex flex-1 flex-col justify-center space-y-2">
       {card.selectedMealGroups.slice(0, 2).map(({ labels, meal }) => {
         const groupLabel = labels.length > 1 ? 'Para ambos' : labels[0];
 
@@ -422,7 +429,7 @@ export default function LandingView() {
                     key={card.moment.key}
                     data-testid={`landing-meal-slide-${card.moment.key}`}
                     aria-label={`${card.moment.label}, ${card.moment.hora}`}
-                    className={`min-h-[210px] snap-center rounded-[26px] border bg-gradient-to-br p-4 shadow-soft max-[340px]:min-h-[198px] max-[340px]:rounded-[23px] ${momentStyle.surface} ${
+                    className={`flex min-h-[210px] snap-center flex-col rounded-[26px] border bg-gradient-to-br p-4 shadow-soft max-[340px]:min-h-[198px] max-[340px]:rounded-[23px] ${momentStyle.surface} ${
                       isDarkMode ? 'border-ink-700' : 'border-cream-200'
                     }`}
                   >
@@ -451,7 +458,7 @@ export default function LandingView() {
                     {card.selectedMealGroups.length > 0 ? (
                       renderMealSummary(card)
                     ) : (
-                      <div className={`mt-4 flex items-center gap-3 rounded-2xl px-3 py-3 ${
+                      <div className={`mt-4 flex flex-1 items-center gap-3 rounded-2xl px-3 py-3 ${
                         isDarkMode ? 'bg-ink-800/70 text-ink-300' : 'bg-white/75 text-ink-500'
                       }`}>
                         <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${momentStyle.iconSurface}`}>
@@ -530,15 +537,31 @@ export default function LandingView() {
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </button>
               {hasPersonalizedPlan ? (
-                <button
-                  type="button"
-                  onClick={handleRegisterAction}
-                  className={`mx-auto mt-1.5 flex min-h-9 items-center justify-center gap-1.5 rounded-full px-4 text-[11px] font-bold transition active:scale-[0.97] ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}
-                  aria-label={`Registrar ${activeMomentName}`}
-                >
-                  <Camera className="h-3.5 w-3.5" />
-                  Registrar lo que comí
-                </button>
+                <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
+                  <button
+                    type="button"
+                    onClick={handleRegisterAction}
+                    className={`flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 text-[11px] font-bold transition active:scale-[0.97] ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}
+                    aria-label={`Registrar ${activeMomentName}`}
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                    Registrar lo que comí
+                  </button>
+                  {missingPlanProfile ? (
+                    <>
+                      <span aria-hidden="true" className={isDarkMode ? 'text-ink-600' : 'text-ink-300'}>·</span>
+                      <button
+                        type="button"
+                        onClick={() => openQuestionnaire(missingPlanProfile)}
+                        data-testid="landing-create-missing-plan"
+                        className={`flex min-h-9 items-center justify-center gap-1.5 rounded-full px-3 text-[11px] font-bold transition active:scale-[0.97] ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Crear plan para {missingPlanLabel}
+                      </button>
+                    </>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           </motion.section>

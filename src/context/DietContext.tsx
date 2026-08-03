@@ -1696,8 +1696,8 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       });
 
       setDataVersions((prev) => ({
-        el: json.elData ? 'custom' : prev.el,
-        ella: json.ellaData ? 'custom' : prev.ella,
+        el: parsedElData ? 'custom' : prev.el,
+        ella: parsedEllaData ? 'custom' : prev.ella,
       }));
 
       setGenerationErrorLog(null);
