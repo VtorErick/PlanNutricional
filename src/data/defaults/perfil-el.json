@@ -127,7 +127,7 @@
       "Énfasis en cocina Mexicana, Italiana y Casera, con opciones vegetarianas.",
       "Comidas balanceadas con porciones controladas de frutas, verduras, cereales integrales, proteínas magras y grasas saludables.",
       "Todas las preparaciones están diseñadas para ser realizadas en menos de 1 hora.",
-      "Se incluye una comida libre de restricciones los domingos para mayor flexibilidad."
+      "Se incluye una comida flexible los domingos para mayor flexibilidad y adherencia."
     ],
     "notaSalud": "Este plan está diseñado considerando tu intolerancia a la lactosa, por lo que no se incluyen productos lácteos tradicionales. Se recomienda prestar atención a cualquier otro alimento que pueda causar malestar digestivo y ajustar según sea necesario. Mantente bien hidratado y consulta a tu médico si tienes alguna preocupación de salud adicional."
   },
@@ -2149,7 +2149,7 @@
       ],
       "comida": [
         {
-          "nombre": "Comida Libre de Restricciones",
+          "nombre": "Comida Flexible",
           "porciones": "Porción moderada",
           "detalle": "Disfruta de tu comida favorita sin restricciones, manteniendo la moderación en las porciones. Se recomienda elegir una opción que te guste y que hayas estado deseando durante la semana.",
           "tags": [
@@ -2164,7 +2164,7 @@
           "grasasG": 40
         },
         {
-          "nombre": "Comida Libre de Restricciones",
+          "nombre": "Comida Flexible",
           "porciones": "Porción moderada",
           "detalle": "Disfruta de tu comida favorita sin restricciones, manteniendo la moderación en las porciones. Se recomienda elegir una opción que te guste y que hayas estado deseando durante la semana.",
           "tags": [
@@ -2179,7 +2179,7 @@
           "grasasG": 45
         },
         {
-          "nombre": "Comida Libre de Restricciones",
+          "nombre": "Comida Flexible",
           "porciones": "Porción moderada",
           "detalle": "Disfruta de tu comida favorita sin restricciones, manteniendo la moderación en las porciones. Se recomienda elegir una opción que te guste y que hayas estado deseando durante la semana.",
           "tags": [

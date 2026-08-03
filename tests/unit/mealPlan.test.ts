@@ -18,8 +18,8 @@ function meal(nombre: string, caloriasKcal: number): MealItem {
 
 test('deduplicateMealOptions conserva una sola opcion por nombre', () => {
   const result = deduplicateMealOptions([
-    meal('Comida Libre de Restricciones', 700),
-    meal(' comida   libre de restricciones ', 750),
+    meal('Comida Flexible', 700),
+    meal(' comida   flexible ', 750),
     meal('Ensalada de pollo', 350),
   ]);
 
@@ -28,11 +28,11 @@ test('deduplicateMealOptions conserva una sola opcion por nombre', () => {
   assert.equal(result[1].nombre, 'Ensalada de pollo');
 });
 
-test('los planes por defecto no exponen opciones duplicadas en comida libre', () => {
+test('los planes por defecto no exponen opciones duplicadas en comida flexible', () => {
   for (const profileId of ['el', 'ella'] as const) {
     const freeMealOptions = perfilesData[profileId].plan.Domingo.comida;
 
     assert.equal(freeMealOptions.length, 1);
-    assert.equal(freeMealOptions[0].nombre, 'Comida Libre de Restricciones');
+  assert.equal(freeMealOptions[0].nombre, 'Comida Flexible');
   }
 });

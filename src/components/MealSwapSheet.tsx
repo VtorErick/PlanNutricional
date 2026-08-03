@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Clock3, X } from 'lucide-react';
+import { Check, Clock3, Star, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import type { MealItem } from '../types';
 import { sanitizeMealPortionsText } from '../utils/mealPortions';
@@ -16,6 +16,8 @@ interface MealSwapSheetProps {
   momentoHora: string;
   selecciones: Record<string, boolean>;
   onToggle: (perfil: string, dia: string, momento: string, nombre: string) => void;
+  isFavorite: (perfil: string, mealName: string) => boolean;
+  onToggleFavorite: (perfil: string, mealName: string) => void;
   onClose: () => void;
   porciones: { key: string; label: string; icon: string; cantidad: number }[];
   accentClasses: Record<string, string>;
@@ -33,6 +35,8 @@ export default function MealSwapSheet({
   momentoHora,
   selecciones,
   onToggle,
+  isFavorite,
+  onToggleFavorite,
   onClose,
   accentClasses,
   isDarkMode,
@@ -106,9 +110,10 @@ export default function MealSwapSheet({
                   const esSeleccionada = selecciones[`${profileId}-${dia}-${momentoKey}-${comida.nombre}`];
 
                   return (
-                    <motion.button
+                    <motion.div
                       key={`${comida.nombre}-${idx}`}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       data-testid={`meal-swap-option-${profileId}-${dia}-${momentoKey}-${idx}`}
                       initial={{ opacity: 0, y: 8, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -117,6 +122,13 @@ export default function MealSwapSheet({
                       onClick={() => {
                         onToggle(profileId, dia, momentoKey, comida.nombre);
                         onClose();
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onToggle(profileId, dia, momentoKey, comida.nombre);
+                          onClose();
+                        }
                       }}
                       className={`relative w-full cursor-pointer overflow-hidden rounded-[20px] text-left transition-all duration-300 group ${
                         esSeleccionada
@@ -143,6 +155,18 @@ export default function MealSwapSheet({
                             {' · '}{sanitizeMealPortionsText(comida.porciones)}
                           </p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onToggleFavorite(profileId, comida.nombre);
+                          }}
+                          className={`absolute right-11 top-3.5 flex h-7 w-7 items-center justify-center rounded-full transition active:scale-90 ${isDarkMode ? 'text-apricot-200 hover:bg-ink-700' : 'text-apricot-600 hover:bg-apricot-50'}`}
+                          aria-label={isFavorite(profileId, comida.nombre) ? `Quitar ${comida.nombre} de favoritos` : `Guardar ${comida.nombre} en favoritos`}
+                          title={isFavorite(profileId, comida.nombre) ? 'Quitar de favoritos' : 'Guardar favorito'}
+                        >
+                          <Star className="h-4 w-4" fill={isFavorite(profileId, comida.nombre) ? 'currentColor' : 'none'} />
+                        </button>
                         <div className={`absolute right-3.5 top-3.5 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all ${
                           esSeleccionada
                             ? `${accentClasses.bg} ${accentClasses.borderAccent}`
@@ -151,7 +175,7 @@ export default function MealSwapSheet({
                           {esSeleccionada ? <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} /> : null}
                         </div>
                       </div>
-                    </motion.button>
+                    </motion.div>
                   );
                 })}
               </div>

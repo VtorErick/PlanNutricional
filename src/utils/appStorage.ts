@@ -2,6 +2,8 @@ export const APP_STORAGE_KEYS = [
   'darkMode',
   'diaActivo',
   'seleccionesDieta',
+  'comidasCompletadas',
+  'favoritosComidas',
   'comprasCheck',
   'dataVersions',
   'customData',
@@ -9,6 +11,15 @@ export const APP_STORAGE_KEYS = [
   'geminiApiKey',
   'geminiModel',
   'perfilActivo',
+  'questionnaireTargetProfile',
+  'questionnaireStepsByProfile',
+  'questionnaireEl',
+  'questionnaireElla',
+  'questionnairePortionMode',
+  'questionnaireManualPortions',
+  'questionnaireAdditionalNotes',
+  'lastQuestionnaireContexts',
+  'recordatoriosActivos',
 ] as const;
 
 function clearStorageKeys(storage: Storage) {

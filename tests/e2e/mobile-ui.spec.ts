@@ -148,7 +148,7 @@ test('single-profile plan flow supports selecting meals and downloading PDF on m
   expect(originalDownload.suggestedFilename()).toBe('perfil-el.json');
 });
 
-test('comida libre domingo se muestra y se selecciona una sola vez', async ({ page }) => {
+test('comida flexible domingo se muestra y se selecciona una sola vez', async ({ page }) => {
   await seedGeneratedPlans(page);
   await page.goto('/miplan?profile=el');
 
@@ -162,7 +162,7 @@ test('comida libre domingo se muestra y se selecciona una sola vez', async ({ pa
   await expect(
     page.locator('[data-testid^="selected-meal-el-Domingo-comida-"]')
   ).toHaveCount(1);
-  await expect(page.getByText('Comida Libre de Restricciones', { exact: true })).toHaveCount(1);
+  await expect(page.getByText('Comida Flexible', { exact: true })).toHaveCount(1);
 });
 
 test('usuario puede registrar con foto, corregir la estimacion y actualizar su plan', async ({ page }) => {

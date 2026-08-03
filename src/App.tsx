@@ -6,10 +6,13 @@ import {
   Flame,
   Home,
   Lightbulb,
+  MoreHorizontal,
   Moon,
   ShoppingCart,
   Sparkles,
+  Settings,
   Sun,
+  UserRound,
   X,
 } from 'lucide-react';
 
@@ -59,6 +62,7 @@ function getTodayPlanDay() {
 export default function App() {
   const [isPlanAdjustOpen, setIsPlanAdjustOpen] = useState(false);
   const [isAppOverlayOpen, setIsAppOverlayOpen] = useState(false);
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const mobileNavRef = useRef<HTMLElement | null>(null);
   const lastProfileRef = useRef(getStoredProfileFromLocalStorage());
   const {
@@ -66,6 +70,7 @@ export default function App() {
     tab: activeTab,
     setTab: setActiveTab,
     showAdmin: isAdminOpen,
+    setShowAdmin: setIsAdminOpen,
     showQuestionnaire: isQuestionnaireOpen,
     setShowQuestionnaire: setIsQuestionnaireOpen,
     setPerfilActivo: setActiveProfile,
@@ -163,7 +168,20 @@ export default function App() {
     { key: 'plan' as const, label: 'Mi Plan', shortLabel: 'Plan', icon: Calendar },
     { key: 'calorias' as const, label: 'Calorías', shortLabel: 'Kcal', icon: Flame },
     { key: 'compras' as const, label: 'Compras', shortLabel: 'Compras', icon: ShoppingCart },
-    { key: 'resumen' as const, label: 'Resumen', shortLabel: 'Resumen', icon: Lightbulb },
+    { key: 'resumen' as const, label: 'Perfil', shortLabel: 'Perfil', icon: UserRound },
+  ];
+
+  const mobileTabItems = [
+    tabItems[0],
+    tabItems[1],
+    tabItems[3],
+    tabItems[4],
+  ];
+
+  const mobileMoreItems = [
+    { key: 'calorias' as const, label: 'Calorías', icon: Flame },
+    { key: 'equivalencias' as const, label: 'Guía de intercambios', icon: Lightbulb },
+    { key: 'suplementos' as const, label: 'Suplementos', icon: Sparkles },
   ];
 
   // ── Mobile nav active tint by active profile ──
@@ -187,15 +205,57 @@ export default function App() {
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 10px)' }}
       aria-label="Navegación principal móvil"
     >
-      <div className="mx-auto w-full max-w-md px-4">
+      <div className="relative mx-auto w-full max-w-md px-4">
+        {isMobileMoreOpen ? (
+          <div className="absolute inset-x-4 bottom-[calc(100%+10px)] rounded-[24px] border border-white/80 bg-white/95 p-2 shadow-lift backdrop-blur-2xl dark:border-ink-700/80 dark:bg-ink-900/95">
+            <div className="mb-1 flex items-center justify-between px-2 py-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-ink-400 dark:text-ink-400">Más herramientas</p>
+              <button type="button" onClick={() => setIsMobileMoreOpen(false)} className="rounded-full p-1 text-ink-400 hover:bg-cream-100 dark:hover:bg-ink-800" aria-label="Cerrar más herramientas">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-1">
+              {mobileMoreItems.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  data-testid={`mobile-tab-${item.key}`}
+                  onClick={() => {
+                    setActiveTab(item.key);
+                    setIsMobileMoreOpen(false);
+                  }}
+                  className="flex min-h-11 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-ink-600 transition hover:bg-cream-100 dark:text-cream-200 dark:hover:bg-ink-800"
+                >
+                  <item.icon className="h-4 w-4 text-pine-600 dark:text-pine-300" />
+                  {item.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                data-testid="mobile-more-settings"
+                onClick={() => {
+                  setIsAdminOpen(true);
+                  setIsMobileMoreOpen(false);
+                }}
+                className="flex min-h-11 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-ink-600 transition hover:bg-cream-100 dark:text-cream-200 dark:hover:bg-ink-800"
+              >
+                <Settings className="h-4 w-4 text-pine-600 dark:text-pine-300" />
+                Ajustes
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="grid grid-cols-5 gap-1 rounded-[26px] border border-white/80 bg-white/88 p-1.5 shadow-[0_18px_50px_-22px_rgba(15,23,42,0.42)] backdrop-blur-2xl dark:border-ink-700/80 dark:bg-ink-900/90">
-          {tabItems.map((tabItem) => {
+          {mobileTabItems.map((tabItem) => {
             const isActive = activeTab === tabItem.key;
             return (
               <motion.button
                 key={tabItem.key}
                 type="button"
-                onClick={() => setActiveTab(tabItem.key)}
+                onClick={() => {
+                  setActiveTab(tabItem.key);
+                  setIsMobileMoreOpen(false);
+                }}
                 data-testid={`mobile-tab-${tabItem.key}`}
                 whileTap={{ scale: 0.9 }}
                 className={`relative isolate flex min-h-[54px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[20px] transition-colors duration-200 ${
@@ -218,6 +278,18 @@ export default function App() {
               </motion.button>
             );
           })}
+          <motion.button
+            type="button"
+            onClick={() => setIsMobileMoreOpen((open) => !open)}
+            data-testid="mobile-more-button"
+            whileTap={{ scale: 0.9 }}
+            className={`relative flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[20px] transition-colors duration-200 ${isMobileMoreOpen ? 'bg-ink-900 text-white dark:bg-cream-100 dark:text-ink-900' : 'text-ink-400 hover:text-ink-600 dark:text-ink-400 dark:hover:text-ink-200'}`}
+            aria-expanded={isMobileMoreOpen}
+            aria-label="Más herramientas"
+          >
+            <MoreHorizontal className="h-[19px] w-[19px]" strokeWidth={2.2} />
+            <span className={`text-[10px] leading-none ${isMobileMoreOpen ? 'font-black' : 'font-semibold'}`}>Más</span>
+          </motion.button>
         </div>
       </div>
     </nav>
@@ -236,8 +308,10 @@ export default function App() {
               <h1 className="font-display text-base font-bold leading-tight text-ink-900 dark:text-cream-100">
                 Generar plan con IA
               </h1>
-              <p className="hidden text-[11px] text-ink-400 dark:text-ink-400 sm:block">
-                Completa el formulario para crear y aplicar un plan personalizado.
+              <p className="text-[10px] text-ink-400 dark:text-ink-400 sm:text-[11px]">
+                {questionnaireStepIndex > 0
+                  ? `Guardado automaticamente Â· continua en el paso ${questionnaireStepIndex + 1}`
+                  : 'Solo lo esencial Â· puedes continuar despues'}
               </p>
             </div>
           </div>

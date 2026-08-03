@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, BarChart3, ChevronDown, Clock3, Heart, Shield, TrendingDown, UserRound } from 'lucide-react';
+import { AlertTriangle, BarChart3, BellRing, ChevronDown, Clock3, Heart, Shield, TrendingDown, UserRound } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
 import { getProfileLabel } from '../../utils/profileLabels';
@@ -36,7 +36,7 @@ function compactSchedule(value: string | null | undefined) {
 }
 
 export default function SummaryView() {
-  const { perfilActivo, perfilesData, profileLabels, ac, isDarkMode } = useDiet();
+  const { perfilActivo, perfilesData, profileLabels, ac, isDarkMode, recordatoriosActivos, toggleRecordatorios } = useDiet();
   const [expandedSummaryPoint, setExpandedSummaryPoint] = useState<string | null>(null);
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
@@ -58,11 +58,33 @@ export default function SummaryView() {
     >
       <section className="mb-3 px-1">
         <p className={`text-[11px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
-          Tu plan en contexto
+          Tu perfil y preferencias
         </p>
         <h2 className={`mt-0.5 font-display text-[28px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
           Resumen
         </h2>
+      </section>
+
+      <section className={`mb-3 flex items-center gap-3 rounded-[24px] border p-3.5 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${ac.tagBg}`}>
+          <BellRing className={`h-4 w-4 ${ac.text}`} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>Recordatorios opcionales</p>
+          <p className={`mt-0.5 text-[11px] leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+            Te avisamos cuando se acerque tu siguiente comida. Puedes apagarlos cuando quieras.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void toggleRecordatorios()}
+          data-testid="reminders-toggle"
+          aria-pressed={recordatoriosActivos}
+          className={`relative h-7 w-12 flex-shrink-0 rounded-full p-1 transition ${recordatoriosActivos ? `bg-gradient-to-r ${ac.bgGradient}` : isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}
+          aria-label={recordatoriosActivos ? 'Desactivar recordatorios' : 'Activar recordatorios'}
+        >
+          <span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${recordatoriosActivos ? 'translate-x-5' : ''}`} />
+        </button>
       </section>
 
       <div className={isAmbos ? 'grid gap-4 lg:grid-cols-2' : 'space-y-6'}>

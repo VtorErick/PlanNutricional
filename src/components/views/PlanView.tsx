@@ -9,8 +9,10 @@ import {
   FileText,
   Pill,
   Plus,
+  Repeat2,
   SlidersHorizontal,
   Sparkles,
+  Star,
   Moon,
   Sun,
   UtensilsCrossed,
@@ -109,6 +111,11 @@ export default function PlanView() {
     isAmbos,
     selecciones,
     toggleSeleccion,
+    comidasCompletadas,
+    toggleComidaCompletada,
+    isComidaFavorita,
+    toggleFavoritoComida,
+    repetirComida,
     momentosColapsados,
     setMomentosColapsados,
     momentoCompletado,
@@ -199,6 +206,20 @@ export default function PlanView() {
 
     return profileDayStats[perfilActivo === 'ella' ? 'ella' : 'el'];
   }, [perfilActivo, profileDayStats]);
+
+  const activeDayPlannedCount = React.useMemo(() => {
+    const countForProfile = (profileId: ProfileId) => perfilesData[profileId].momentos.filter((moment) => (
+      (perfilesData[profileId].plan[diaActivo]?.[moment.key] || []).some(
+        (meal) => selecciones[`${profileId}-${diaActivo}-${moment.key}-${meal.nombre}`]
+      )
+    )).length;
+
+    return perfilActivo === 'ambos'
+      ? countForProfile('el') + countForProfile('ella')
+      : countForProfile(perfilActivo === 'ella' ? 'ella' : 'el');
+  }, [diaActivo, perfilActivo, perfilesData, selecciones]);
+
+  const nextPendingMoment = perfilBase.momentos.find((moment) => !momentoCompletado[moment.key]);
 
   const calorieProgress = activeDayStats.target > 0
     ? Math.min(100, Math.round((activeDayStats.kcal / activeDayStats.target) * 100))
@@ -337,12 +358,14 @@ export default function PlanView() {
   const renderSelectedMealCard = React.useCallback((
     meal: MealItem,
     accent: AccentColors,
+    profileId: ProfileId,
+    momentoKey: string,
+    onChange: () => void,
     dataTestId?: string
   ) => (
     <div
       key={`${meal.nombre}-${meal.detalle}`}
-      role="button"
-      tabIndex={0}
+      role="article"
       data-testid={dataTestId}
       className={`group rounded-[18px] border p-3 ${
         isDarkMode
@@ -350,7 +373,7 @@ export default function PlanView() {
           : 'border-cream-200 bg-cream-50'
       } cursor-pointer transition-all hover:shadow-soft active:scale-[0.99]`}
     >
-      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3">
         <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xl ${isDarkMode ? 'bg-ink-900' : 'bg-white shadow-soft'}`}>
           {getMealEmoji(meal.nombre)}
         </div>
@@ -367,9 +390,70 @@ export default function PlanView() {
             Cambiar
           </span>
         </div>
+        </div>
+        <p className={`mt-2 pl-[52px] text-[11px] font-medium leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+          {meal.porciones}
+        </p>
+      <div className={`mt-2.5 flex items-center gap-1.5 border-t pt-2 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleFavoritoComida(profileId, meal.nombre);
+          }}
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition active:scale-90 ${isDarkMode ? 'text-apricot-200 hover:bg-ink-700' : 'text-apricot-600 hover:bg-apricot-50'}`}
+          aria-label={isComidaFavorita(profileId, meal.nombre) ? `Quitar ${meal.nombre} de favoritos` : `Guardar ${meal.nombre} en favoritos`}
+          title={isComidaFavorita(profileId, meal.nombre) ? 'Quitar de favoritos' : 'Guardar favorito'}
+        >
+          <Star className="h-4 w-4" fill={isComidaFavorita(profileId, meal.nombre) ? 'currentColor' : 'none'} />
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            const targetDay = repetirComida(profileId, diaActivo, momentoKey, meal);
+            void notify(
+              targetDay ? 'Comida repetida' : 'No encontramos esa opción',
+              targetDay
+                ? `La dejamos planeada también para ${targetDay}.`
+                : 'Esta opción no está disponible en otro día de este plan.'
+            );
+          }}
+          className={`inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold transition active:scale-95 ${isDarkMode ? 'bg-ink-900 text-ink-200 hover:bg-ink-700' : 'bg-cream-100 text-ink-600 hover:bg-cream-200'}`}
+          aria-label={`Repetir ${meal.nombre} en otro día`}
+        >
+          <Repeat2 className="h-3.5 w-3.5" />
+          Repetir
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleComidaCompletada(profileId, diaActivo, momentoKey);
+          }}
+          className={`ml-auto inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold transition active:scale-95 ${
+            comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`]
+              ? isDarkMode ? 'bg-pine-950/50 text-pine-200' : 'bg-pine-100 text-pine-700'
+              : isDarkMode ? 'bg-ink-900 text-ink-300 hover:bg-ink-700' : 'bg-white text-ink-600 shadow-sm hover:bg-cream-100'
+          }`}
+          aria-pressed={Boolean(comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`])}
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          {comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`] ? 'Completada' : 'Marcar completada'}
+        </button>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onChange();
+          }}
+          className={`inline-flex min-h-8 items-center rounded-full px-2.5 text-[10px] font-extrabold transition active:scale-95 ${isDarkMode ? 'text-ink-300 hover:bg-ink-700' : 'text-ink-500 hover:bg-cream-100'}`}
+        >
+          Cambiar
+        </button>
       </div>
     </div>
-  ), [isDarkMode]);
+  ), [comidasCompletadas, diaActivo, isComidaFavorita, isDarkMode, notify, repetirComida, toggleComidaCompletada, toggleFavoritoComida]);
 
   const renderEmptyMealState = React.useCallback((
     accent: AccentColors,
@@ -445,6 +529,13 @@ export default function PlanView() {
                 <p className={`mt-0.5 text-[11px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                   {diaActivo}
                 </p>
+                {nextPendingMoment ? (
+                  <p className={`mt-1 text-[10px] font-extrabold ${ac.text}`}>
+                    Siguiente: {nextPendingMoment.label} · {nextPendingMoment.hora}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-[10px] font-extrabold text-pine-600 dark:text-pine-300">Día completado</p>
+                )}
               </div>
 
               <div className="flex min-w-0 items-center gap-2">
@@ -510,8 +601,9 @@ export default function PlanView() {
               />
             </div>
 
-            <div className={`mt-1.5 flex items-center justify-between gap-3 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-              <span>{completadosCount} de {totalMomentosProgress} comidas elegidas</span>
+            <div className={`mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+              <span>{activeDayPlannedCount} de {totalMomentosProgress} planeadas</span>
+              <span>{completadosCount} completadas</span>
               <span className="tabular-nums">{calorieProgress}% de kcal</span>
             </div>
 
@@ -562,7 +654,7 @@ export default function PlanView() {
                       className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r px-3 text-[11px] font-bold text-white transition active:scale-90 ${ac.bgGradient}`}
                     >
                       <Sparkles className="h-3.5 w-3.5" />
-                      Ajustar IA
+                      Cambiar mi plan
                     </button>
                   </div>
                 </motion.div>
@@ -708,6 +800,9 @@ export default function PlanView() {
                                   {mealsSingleSeleccionadas.map((meal) => renderSelectedMealCard(
                                     meal,
                                     singleEmptyAccent,
+                                    singleProfileId,
+                                    momento.key,
+                                    () => openSwapSheet(singleProfileId, momento.key, momento.label, momento.hora, mealsSingleAll, porcionesSingleMomento, singleEmptyAccent),
                                     `selected-meal-${perfilActivo}-${diaActivo}-${momento.key}-${meal.nombre}`
                                   ))}
                                 </div>
@@ -734,6 +829,9 @@ export default function PlanView() {
                                   mealsElSeleccionadas.map((meal) => renderSelectedMealCard(
                                     meal,
                                     elAccent,
+                                    'el',
+                                    momento.key,
+                                    () => openSwapSheet('el', momento.key, momento.label, momento.hora, mealsElAll, porcionesElMomento, elAccent),
                                     `selected-meal-el-${diaActivo}-${momento.key}-${meal.nombre}`
                                   ))
                                 ) : (
@@ -765,6 +863,9 @@ export default function PlanView() {
                                   mealsEllaSeleccionadas.map((meal) => renderSelectedMealCard(
                                     meal,
                                     ellaAccent,
+                                    'ella',
+                                    momento.key,
+                                    () => openSwapSheet('ella', momento.key, momento.label, momento.hora, mealsEllaAll, porcionesEllaMomento, ellaAccent),
                                     `selected-meal-ella-${diaActivo}-${momento.key}-${meal.nombre}`
                                   ))
                                 ) : (
@@ -806,10 +907,10 @@ export default function PlanView() {
 
               <div>
                 <h3 className="font-display text-xl sm:text-2xl font-semibold mb-1">
-                  Dia completado
+                  Día completado
                 </h3>
                 <p className="text-white/85 text-sm max-w-sm">
-                  Has registrado todas tus comidas planeadas para hoy.
+                  Marcaste todas tus comidas planeadas como completadas.
                 </p>
               </div>
             </div>
@@ -839,6 +940,8 @@ export default function PlanView() {
           momentoHora={swapSheet.momentoHora}
           selecciones={selecciones}
           onToggle={handleSwapToggle}
+          isFavorite={isComidaFavorita}
+          onToggleFavorite={toggleFavoritoComida}
           onClose={closeSwapSheet}
           porciones={swapSheet.portions}
           accentClasses={swapSheet.accent}

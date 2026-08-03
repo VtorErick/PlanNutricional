@@ -61,8 +61,8 @@ export default function PlanAiRefreshSheet({
     : 'w-full rounded-[20px] border border-cream-200 bg-cream-50 px-4 py-3.5 text-sm text-ink-800 placeholder:text-ink-400 focus:border-pine-500 focus:bg-white focus:outline-none';
 
   const submitLabel = mode === 'regenerate'
-    ? 'Recrear plan con IA'
-    : 'Actualizar plan con IA';
+    ? 'Crear otra versión'
+    : 'Aplicar cambios';
   const canSubmit = loading
     ? false
     : mode === 'regenerate'
@@ -110,7 +110,7 @@ export default function PlanAiRefreshSheet({
                     Cambios con IA
                   </p>
                   <h3 className={`font-display text-xl font-semibold tracking-tight leading-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
-                    Ajustar plan
+                    Cambiar mi plan
                   </h3>
                   <p className={`mt-1 text-xs leading-snug ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                     Pide cambios puntuales o recrea el plan con nuevas indicaciones.
@@ -149,11 +149,11 @@ export default function PlanAiRefreshSheet({
                       {([
                         {
                           id: 'adjust' as const,
-                          title: 'Ajustar',
+                          title: 'Cambiar una parte',
                         },
                         {
                           id: 'regenerate' as const,
-                          title: 'Recrear',
+                          title: 'Crear otra versión',
                         },
                       ]).map((item) => (
                         <button

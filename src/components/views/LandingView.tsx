@@ -158,6 +158,10 @@ export default function LandingView() {
     setQuestionnairePortionMode,
     setQuestionnaireManualPortions,
     setQuestionnaireAdditionalNotes,
+    questionnaireStepIdx,
+    questionnaireTargetProfile,
+    completadosCount,
+    totalMomentosProgress,
     isDarkMode,
   } = useDiet();
 
@@ -288,11 +292,7 @@ export default function LandingView() {
         ? 'el'
         : null;
   const missingPlanLabel = missingPlanProfile ? getProfileLabel(profileLabels, missingPlanProfile) : '';
-  const primaryActionLabel = !hasPersonalizedPlan
-    ? 'Crear mi plan con IA'
-    : activeCard?.selectedCount
-      ? `Ver ${activeMomentName}`
-      : `Elegir ${activeMomentName}`;
+  const pendingMealCount = Math.max(0, totalMomentosProgress - completadosCount);
 
   const openMealMoment = (momentKey: string) => {
     setDiaActivo(currentDayOfWeek);
@@ -316,9 +316,12 @@ export default function LandingView() {
     openMealMoment(activeCard.moment.key);
   };
 
-  const openQuestionnaire = (target: 'el' | 'ella' | 'ambos' = 'ambos') => {
+  const openQuestionnaire = (target: 'el' | 'ella' | 'ambos' = (perfilActivo === 'ella' ? 'ella' : 'el')) => {
+    const shouldResume = questionnaireStepIdx > 0 && questionnaireTargetProfile === target;
     setQuestionnaireTargetProfile(target);
-    setQuestionnaireStepIdx(0, target);
+    if (!shouldResume) {
+      setQuestionnaireStepIdx(0, target);
+    }
     setQuestionnaireEl((prev: any) =>
       prev && (prev.currentWeightKg || prev.age)
         ? prev
@@ -329,9 +332,11 @@ export default function LandingView() {
         ? prev
         : createDefaultQuestionnairePerson('65', '162', '28', '57')
     );
-    setQuestionnairePortionMode('auto');
-    setQuestionnaireManualPortions({});
-    setQuestionnaireAdditionalNotes('');
+    if (!shouldResume) {
+      setQuestionnairePortionMode('auto');
+      setQuestionnaireManualPortions({});
+      setQuestionnaireAdditionalNotes('');
+    }
     setIsQuestionnaireOpen(true);
   };
 
@@ -396,6 +401,47 @@ export default function LandingView() {
               </h1>
             </div>
           </motion.div>
+
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 32, delay: 0.03 }}
+            data-testid="landing-daily-focus"
+            className={`rounded-[24px] border p-3.5 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900/90' : 'border-cream-200 bg-white/90'}`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${accent.bgGradient} text-white`}>
+                <UtensilsCrossed className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`text-[10px] font-extrabold uppercase tracking-[0.16em] ${accent.text}`}>
+                  Tu día
+                </p>
+                <h2 className={`mt-0.5 font-display text-lg font-semibold leading-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+                  {hasPersonalizedPlan ? `${pendingMealCount} comidas pendientes` : 'Crea tu plan en unos minutos'}
+                </h2>
+                <p className={`mt-1 text-[11px] font-medium leading-snug ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+                  {hasPersonalizedPlan
+                    ? `${completadosCount} de ${totalMomentosProgress} completadas. Tú decides cuándo marcar cada una.`
+                    : 'Te preguntaremos solo lo esencial y guardaremos tu avance automáticamente.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handlePrimaryAction}
+              data-testid="landing-customize-ambos"
+              className={`mt-3 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r ${accent.bgGradient} px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:brightness-105 active:scale-[0.98]`}
+            >
+              {hasPersonalizedPlan ? 'Elegir mi siguiente comida' : 'Crear mi plan con IA'}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            {questionnaireStepIdx > 0 ? (
+              <p className={`mt-2 text-center text-[10px] font-bold ${isDarkMode ? 'text-pine-300' : 'text-pine-700'}`}>
+                Tienes un cuestionario guardado en el paso {questionnaireStepIdx + 1}.
+              </p>
+            ) : null}
+          </motion.section>
 
           <motion.section
             initial={{ opacity: 0, y: 14 }}
@@ -515,16 +561,6 @@ export default function LandingView() {
             </div>
 
             <div className="mt-3">
-              <button
-                type="button"
-                onClick={handlePrimaryAction}
-                data-testid="landing-customize-ambos"
-                className={`group inline-flex min-h-[50px] w-full items-center justify-center gap-2 overflow-hidden rounded-[17px] bg-gradient-to-r ${accent.bgGradient} px-4 py-3 text-sm font-bold text-white shadow-[0_12px_26px_-10px_rgba(234,65,9,0.45)] transition hover:brightness-105 active:scale-[0.98]`}
-              >
-                {!hasPersonalizedPlan ? <Sparkles className="h-4 w-4" /> : <UtensilsCrossed className="h-4 w-4" />}
-                <span>{primaryActionLabel}</span>
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </button>
               {hasPersonalizedPlan ? (
                 <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
                   <button

@@ -125,7 +125,7 @@
       "Énfasis en alimentos ricos en fibra (frutas, verduras, cereales integrales, leguminosas) para combatir el estreñimiento.",
       "Todas las opciones lácteas son de origen vegetal debido a la intolerancia a la lactosa.",
       "Variedad de platillos inspirados en la cocina Mexicana, Italiana, Casera y Vegetariana, con tiempo de preparación menor a 1 hora.",
-      "Inclusión de una 'comida libre' los domingos para flexibilidad y adherencia.",
+      "Inclusión de una comida flexible los domingos para flexibilidad y adherencia.",
       "Alto contenido de proteína para mantener la masa muscular y promover la saciedad, beneficioso para el SOP."
     ],
     "notaSalud": "Este plan está diseñado considerando tu diagnóstico de SOP, intolerancia a la lactosa y estreñimiento. Se priorizan alimentos integrales, vegetales, proteínas magras y grasas saludables para ayudar a regular los niveles hormonales, mejorar la digestión y reducir la inflamación. Es fundamental mantener una buena hidratación y consultar a tu médico sobre cualquier ajuste en tu medicación o síntomas."
@@ -2148,7 +2148,7 @@
       ],
       "comida": [
         {
-          "nombre": "Comida Libre de Restricciones",
+          "nombre": "Comida Flexible",
           "porciones": "Porción moderada",
           "detalle": "Disfruta de tu comida favorita sin restricciones, manteniendo la moderación en las porciones. Se recomienda elegir una opción que te guste y que hayas estado deseando durante la semana.",
           "tags": [
@@ -2163,7 +2163,7 @@
           "grasasG": 40
         },
         {
-          "nombre": "Comida Libre de Restricciones",
+          "nombre": "Comida Flexible",
           "porciones": "Porción moderada",
           "detalle": "Disfruta de tu comida favorita sin restricciones, manteniendo la moderación en las porciones. Se recomienda elegir una opción que te guste y que hayas estado deseando durante la semana.",
           "tags": [
@@ -2178,7 +2178,7 @@
           "grasasG": 45
         },
         {
-          "nombre": "Comida Libre de Restricciones",
+          "nombre": "Comida Flexible",
           "porciones": "Porción moderada",
           "detalle": "Disfruta de tu comida favorita sin restricciones, manteniendo la moderación en las porciones. Se recomienda elegir una opción que te guste y que hayas estado deseando durante la semana.",
           "tags": [

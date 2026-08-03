@@ -113,6 +113,19 @@ function sanitizeBooleanValue(value: unknown): boolean {
   return value === true;
 }
 
+function normalizeMealNameForStorage(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getFavoriteMealKey(profileId: string, mealName: string) {
+  return `${profileId}:${normalizeMealNameForStorage(mealName)}`;
+}
+
 function sanitizeDataVersions(
   value: unknown
 ): { el: 'original' | 'custom'; ella: 'original' | 'custom' } {
@@ -664,6 +677,12 @@ interface DietContextType {
   selecciones: Record<string, boolean>;
   setSelecciones: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   toggleSeleccion: (perfilId: string, dia: string, momentoKey: string, nombre: string) => void;
+  comidasCompletadas: Record<string, boolean>;
+  toggleComidaCompletada: (perfilId: string, dia: string, momentoKey: string) => void;
+  favoritosComidas: Record<string, boolean>;
+  toggleFavoritoComida: (perfilId: string, mealName: string) => void;
+  isComidaFavorita: (perfilId: string, mealName: string) => boolean;
+  repetirComida: (perfilId: string, dia: string, momentoKey: string, meal: MealItem) => string | null;
   editMealRecipe: (
     perfilId: 'el' | 'ella',
     meal: MealItem,
@@ -746,6 +765,8 @@ interface DietContextType {
   setQuestionnaireManualPortions: React.Dispatch<React.SetStateAction<Record<string, Record<string, number>>>>;
   questionnaireAdditionalNotes: string;
   setQuestionnaireAdditionalNotes: React.Dispatch<React.SetStateAction<string>>;
+  recordatoriosActivos: boolean;
+  toggleRecordatorios: () => Promise<void>;
 
   // UI States
   isDarkMode: boolean;
@@ -830,6 +851,16 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     {},
     sanitizeBooleanRecord
   );
+  const [comidasCompletadas, setComidasCompletadas] = useLocalStorage<Record<string, boolean>>(
+    'comidasCompletadas',
+    {},
+    sanitizeBooleanRecord
+  );
+  const [favoritosComidas, setFavoritosComidas] = useLocalStorage<Record<string, boolean>>(
+    'favoritosComidas',
+    {},
+    sanitizeBooleanRecord
+  );
   const [comprasCheck, setComprasCheck] = useLocalStorage<Record<string, boolean>>(
     'comprasCheck',
     {},
@@ -888,7 +919,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
   // 6. Questionnaire state
   const [questionnaireTargetProfile, setQuestionnaireTargetProfile] = useLocalStorage<TargetProfile>("questionnaireTargetProfile", 
-    initialRoute.view === 'questionnaire' ? initialRoute.target : 'ambos'
+    initialRoute.view === 'questionnaire' ? initialRoute.target : 'el'
   );
   const [questionnaireStepsByProfile, setQuestionnaireStepsByProfile] = useLocalStorage<QuestionnaireStepsByProfile>(
     'questionnaireStepsByProfile',
@@ -910,13 +941,31 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   );
   const [questionnaireEl, setQuestionnaireEl] = useLocalStorage<any>("questionnaireEl", defaultQuestionnaireData("80", "170", "30", "70"), sanitizeNullableObject);
   const [questionnaireElla, setQuestionnaireElla] = useLocalStorage<any>("questionnaireElla", defaultQuestionnaireData("60", "160", "28", "55"), sanitizeNullableObject);
-  const [questionnairePortionMode, setQuestionnairePortionMode] = useState<'auto' | 'manual'>('auto');
-  const [questionnaireManualPortions, setQuestionnaireManualPortions] = useState<Record<string, Record<string, number>>>({});
-  const [questionnaireAdditionalNotes, setQuestionnaireAdditionalNotes] = useState('');
+  const [questionnairePortionMode, setQuestionnairePortionMode] = useLocalStorage<'auto' | 'manual'>(
+    'questionnairePortionMode',
+    'auto',
+    (value) => value === 'manual' ? 'manual' : 'auto'
+  );
+  const [questionnaireManualPortions, setQuestionnaireManualPortions] = useLocalStorage<Record<string, Record<string, number>>>(
+    'questionnaireManualPortions',
+    {},
+    (value) => isPlainObject(value) ? value as Record<string, Record<string, number>> : {}
+  );
+  const [questionnaireAdditionalNotes, setQuestionnaireAdditionalNotes] = useLocalStorage<string>(
+    'questionnaireAdditionalNotes',
+    '',
+    (value) => typeof value === 'string' ? value : ''
+  );
+  const [recordatoriosActivos, setRecordatoriosActivos] = useLocalStorage<boolean>(
+    'recordatoriosActivos',
+    false,
+    sanitizeBooleanValue
+  );
 
   // 7. Scroll refs
   const mealSectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [pendingAutoScrollMomento, setPendingAutoScrollMomento] = useState<string | null>(null);
+  const reminderNotifiedRef = useRef<Record<string, boolean>>({});
   const hasInitializedRouteRef = useRef(false);
   const lastStorageErrorRef = useRef<Record<string, number>>({});
   const lastGeminiStatusCheckTime = useRef<number>(0);
@@ -925,6 +974,31 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   // ─── Utilities ─────────────────────────────────────────────────────
   const notify = useCallback(async (title: string, message: string) => { await showAppAlert({ title, message }); }, []);
   const confirmAction = useCallback(async (title: string, message: string) => showAppConfirm({ title, message }), []);
+  const toggleRecordatorios = useCallback(async () => {
+    if (recordatoriosActivos) {
+      setRecordatoriosActivos(false);
+      await notify('Recordatorios apagados', 'Ya no recibirás avisos de tus momentos de comida.');
+      return;
+    }
+
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      await notify('Recordatorios no disponibles', 'Este navegador no permite notificaciones. Puedes seguir usando el plan normalmente.');
+      return;
+    }
+
+    let permission = window.Notification.permission;
+    if (permission === 'default') {
+      permission = await window.Notification.requestPermission();
+    }
+
+    if (permission !== 'granted') {
+      await notify('Permiso no concedido', 'Activa las notificaciones del navegador si quieres recibir recordatorios.');
+      return;
+    }
+
+    setRecordatoriosActivos(true);
+    await notify('Recordatorios activados', 'Te avisaremos cuando se acerque tu siguiente momento de comida.');
+  }, [notify, recordatoriosActivos, setRecordatoriosActivos]);
 
   // ─── Computed: Profiles & Equivalences ─────────────────────────────
   const perfilesData: Record<string, Profile> = useMemo(() => {
@@ -1111,10 +1185,80 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       return next;
     });
 
+    setComidasCompletadas((prev) => {
+      const completionKey = `${perfilId}-${dia}-${momento}`;
+      if (!prev[completionKey]) return prev;
+      const next = { ...prev };
+      delete next[completionKey];
+      return next;
+    });
+
     if (shouldAutoScroll) {
       setPendingAutoScrollMomento(nextMomento);
     }
-  }, [getNextMomentoKey, perfilActivo, perfilesData.ella, perfilesData.el, selecciones]);
+  }, [getNextMomentoKey, perfilActivo, perfilesData.ella, perfilesData.el, selecciones, setComidasCompletadas]);
+
+  const toggleComidaCompletada = useCallback((perfilId: string, dia: string, momentoKey: string) => {
+    const selected = (perfilesData[perfilId]?.plan?.[dia]?.[momentoKey] || []).some(
+      (meal) => selecciones[`${perfilId}-${dia}-${momentoKey}-${meal.nombre}`]
+    );
+    if (!selected) return;
+
+    const key = `${perfilId}-${dia}-${momentoKey}`;
+    setComidasCompletadas((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }, [perfilesData, selecciones, setComidasCompletadas]);
+
+  const toggleFavoritoComida = useCallback((perfilId: string, mealName: string) => {
+    const key = getFavoriteMealKey(perfilId, mealName);
+    setFavoritosComidas((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  }, [setFavoritosComidas]);
+
+  const isComidaFavorita = useCallback((perfilId: string, mealName: string) => (
+    Boolean(favoritosComidas[getFavoriteMealKey(perfilId, mealName)])
+  ), [favoritosComidas]);
+
+  const repetirComida = useCallback((perfilId: string, dia: string, momentoKey: string, meal: MealItem) => {
+    const profile = perfilesData[perfilId];
+    if (!profile) return null;
+
+    const currentDayIndex = AVAILABLE_DAYS.indexOf(dia as typeof AVAILABLE_DAYS[number]);
+    const futureDays = AVAILABLE_DAYS.slice(currentDayIndex + 1);
+    const targetDay = futureDays.find((day) => (
+      (profile.plan?.[day]?.[momentoKey] || []).some(
+        (candidate) => normalizeMealNameForStorage(candidate.nombre) === normalizeMealNameForStorage(meal.nombre)
+      )
+    ));
+
+    if (!targetDay) return null;
+
+    const targetMeals = profile.plan?.[targetDay]?.[momentoKey] || [];
+    const targetMeal = targetMeals.find(
+      (candidate) => normalizeMealNameForStorage(candidate.nombre) === normalizeMealNameForStorage(meal.nombre)
+    );
+    if (!targetMeal) return null;
+
+    setSelecciones((prev) => {
+      const next = { ...prev };
+      targetMeals.forEach((candidate) => {
+        delete next[`${perfilId}-${targetDay}-${momentoKey}-${candidate.nombre}`];
+      });
+      next[`${perfilId}-${targetDay}-${momentoKey}-${targetMeal.nombre}`] = true;
+      return next;
+    });
+    setComidasCompletadas((prev) => {
+      const next = { ...prev };
+      delete next[`${perfilId}-${targetDay}-${momentoKey}`];
+      return next;
+    });
+
+    return targetDay;
+  }, [perfilesData, setComidasCompletadas, setSelecciones]);
 
   const editMealRecipe = useCallback((
     perfilId: 'el' | 'ella',
@@ -1351,23 +1495,21 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     const result: Record<string, boolean> = {};
     if (perfilesData.el?.momentos) {
       perfilesData.el.momentos.forEach((m) => {
-        const comidas = perfilesData.el.plan[diaActivo]?.[m.key] || [];
-        result[m.key] = comidas.some((item) => selecciones[`el-${diaActivo}-${m.key}-${item.nombre}`]);
+        result[m.key] = Boolean(comidasCompletadas[`el-${diaActivo}-${m.key}`]);
       });
     }
     return result;
-  }, [diaActivo, perfilesData, selecciones]);
+  }, [comidasCompletadas, diaActivo, perfilesData]);
 
   const momentoCompletadoElla = useMemo(() => {
     const result: Record<string, boolean> = {};
     if (perfilesData.ella?.momentos) {
       perfilesData.ella.momentos.forEach((m) => {
-        const comidas = perfilesData.ella.plan[diaActivo]?.[m.key] || [];
-        result[m.key] = comidas.some((item) => selecciones[`ella-${diaActivo}-${m.key}-${item.nombre}`]);
+        result[m.key] = Boolean(comidasCompletadas[`ella-${diaActivo}-${m.key}`]);
       });
     }
     return result;
-  }, [diaActivo, perfilesData, selecciones]);
+  }, [comidasCompletadas, diaActivo, perfilesData]);
 
   const momentoCompletado = useMemo(() => {
     if (!perfilActivo) return {} as Record<string, boolean>;
@@ -2067,6 +2209,45 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   }, [isDarkMode]);
 
   useEffect(() => {
+    if (
+      !recordatoriosActivos ||
+      typeof window === 'undefined' ||
+      !('Notification' in window) ||
+      window.Notification.permission !== 'granted'
+    ) {
+      return;
+    }
+
+    const checkUpcomingMeal = () => {
+      const now = new Date();
+      const today = getTodayPlanDay();
+      if (diaActivo !== today) return;
+
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const nextMoment = perfilBase.momentos.find((moment) => {
+        if (momentoCompletado[moment.key]) return false;
+        const [hours, minutes] = moment.hora.split(':').map((part) => Number.parseInt(part, 10));
+        const momentMinutes = (Number.isFinite(hours) ? hours : 0) * 60 + (Number.isFinite(minutes) ? minutes : 0);
+        const reminderKey = `${today}-${moment.key}-${now.toISOString().slice(0, 10)}`;
+        return momentMinutes >= nowMinutes && momentMinutes - nowMinutes <= 15 && !reminderNotifiedRef.current[reminderKey];
+      });
+
+      if (!nextMoment) return;
+      const reminderKey = `${today}-${nextMoment.key}-${now.toISOString().slice(0, 10)}`;
+      if (reminderNotifiedRef.current[reminderKey]) return;
+      reminderNotifiedRef.current[reminderKey] = true;
+      new window.Notification(`Hora de ${nextMoment.label.toLowerCase()}`, {
+        body: `Tu siguiente comida está programada a las ${nextMoment.hora}.`,
+        tag: reminderKey,
+      });
+    };
+
+    checkUpcomingMeal();
+    const interval = window.setInterval(checkUpcomingMeal, 60_000);
+    return () => window.clearInterval(interval);
+  }, [diaActivo, momentoCompletado, perfilBase.momentos, recordatoriosActivos]);
+
+  useEffect(() => {
     setSelecciones((prev) => {
       let changed = false;
       const next = Object.fromEntries(
@@ -2160,7 +2341,9 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     showAdmin, setShowAdmin,
     showQuestionnaire, setShowQuestionnaire,
     diaActivo, setDiaActivo, diasDisponibles,
-    selecciones, setSelecciones, toggleSeleccion, editMealRecipe, restoreMealRecipe, logAnalyzedMeal,
+    selecciones, setSelecciones, toggleSeleccion, comidasCompletadas, toggleComidaCompletada,
+    favoritosComidas, toggleFavoritoComida, isComidaFavorita, repetirComida,
+    editMealRecipe, restoreMealRecipe, logAnalyzedMeal,
     comprasCheck, setComprasCheck,
     dataVersions, setDataVersions,
     customData, setCustomData,
@@ -2185,6 +2368,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     questionnairePortionMode, setQuestionnairePortionMode,
     questionnaireManualPortions, setQuestionnaireManualPortions,
     questionnaireAdditionalNotes, setQuestionnaireAdditionalNotes,
+    recordatoriosActivos, toggleRecordatorios,
     isDarkMode, setIsDarkMode,
     momentosColapsados, setMomentosColapsados,
     progressExpanded, setProgressExpanded,

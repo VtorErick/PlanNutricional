@@ -13,7 +13,6 @@ import {
   Activity,
   Settings2,
   SkipForward,
-  Download,
   Hourglass,
   Pill,
   Heart,
@@ -34,7 +33,6 @@ import {
   ScanLine,
   Trash,
 } from 'lucide-react';
-import { buildExportData, downloadJsonFile } from '../dataManager';
 import { getAiErrorReason, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
 import { DEFAULT_AI_FALLBACK_MODELS, DEFAULT_AI_MODEL, getAiModelLabel } from '../utils/aiModels';
@@ -274,6 +272,7 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
 const QUICK_TAGS = {
   diagnostics: [
     'Ninguna', 
+    'No sÃ© / prefiero no responder',
     'Diabetes / Resistencia a la insulina', 
     'Hipertensión', 
     'Enfermedad renal', 
@@ -286,6 +285,7 @@ const QUICK_TAGS = {
   ],
   medications: [
     'Ninguno', 
+    'No sÃ© / prefiero no responder',
     'Metformina', 
     'Levotiroxina', 
     'Antihipertensivos', 
@@ -296,6 +296,7 @@ const QUICK_TAGS = {
   ],
   allergies: [
     'Ninguna', 
+    'No sÃ© / prefiero no responder',
     'Lácteos', 
     'Gluten (Celiaquía)', 
     'Cacahuates', 
@@ -306,6 +307,7 @@ const QUICK_TAGS = {
   ],
   intolerances: [
     'Ninguna', 
+    'No sÃ© / prefiero no responder',
     'Lactosa', 
     'Fructosa', 
     'Sorbitol', 
@@ -315,6 +317,7 @@ const QUICK_TAGS = {
   ],
   digestive: [
     'Ninguno', 
+    'No sÃ© / prefiero no responder',
     'Reflujo / Acidez', 
     'Gastritis', 
     'Inflamación / Gases', 
@@ -915,10 +918,11 @@ export default function NutritionQuestionnaire({
       .map((v) => v.trim())
       .filter(Boolean);
 
-    if (tag === 'Ninguna' || tag === 'Ninguno') {
+    const unknownTag = 'No sé / prefiero no responder';
+    if (tag === 'Ninguna' || tag === 'Ninguno' || tag === unknownTag) {
       values = [tag];
     } else {
-      values = values.filter((v) => v !== 'Ninguna' && v !== 'Ninguno');
+      values = values.filter((v) => v !== 'Ninguna' && v !== 'Ninguno' && v !== unknownTag);
       if (values.includes(tag)) {
         values = values.filter((v) => v !== tag);
       } else {
@@ -1182,10 +1186,24 @@ export default function NutritionQuestionnaire({
             </p>
           </div>
 
+          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-cream-200 bg-white p-3 dark:border-ink-600 dark:bg-ink-900">
+            {[
+              ['1', 'Elige a quien'],
+              ['2', 'Responde lo esencial'],
+              ['3', 'Recibe tu plan'],
+            ].map(([number, label]) => (
+              <div key={number} className="text-center">
+                <span className="mx-auto flex h-7 w-7 items-center justify-center rounded-full bg-pine-100 text-xs font-black text-pine-700 dark:bg-pine-950/60 dark:text-pine-200">
+                  {number}
+                </span>
+                <p className="mt-1.5 text-[10px] font-bold leading-tight text-ink-500 dark:text-cream-300">{label}</p>
+              </div>
+            ))}
+          </div>
+
           {([
             ['el', '👤', `Persona 1 · ${labelEl}`, 'Un plan para una persona'],
             ['ella', '👤', `Persona 2 · ${labelElla}`, 'Un plan para una persona'],
-            ['ambos', '👥', 'Para ambos', 'Un plan para las dos personas'],
           ] as const).map(([val, emoji, title, sub]) => {
             const t = THEME[val];
             const active = targetProfile === val;
@@ -1221,6 +1239,20 @@ export default function NutritionQuestionnaire({
             );
           })}
 
+          <button
+            type="button"
+            onClick={() => selectProfile('ambos')}
+            data-testid="questionnaire-target-ambos"
+            disabled={loading}
+            className="flex w-full items-center justify-between rounded-2xl border border-dashed border-pine-200 bg-pine-50/60 px-3.5 py-3 text-left transition hover:bg-pine-50 active:scale-[.98] disabled:opacity-50 dark:border-pine-900/70 dark:bg-pine-950/30 dark:hover:bg-pine-950/50"
+          >
+            <span>
+              <span className="block text-xs font-extrabold text-pine-800 dark:text-pine-100">Tambien quieres crear otro plan?</span>
+              <span className="mt-0.5 block text-[11px] text-pine-700/75 dark:text-pine-200/75">Puedes configurarlo para dos personas despues.</span>
+            </span>
+            <ChevronRight className="h-4 w-4 flex-shrink-0 text-pine-600 dark:text-pine-200" />
+          </button>
+
           <div className="rounded-[24px] border border-cream-200 bg-white p-3 dark:border-ink-600 dark:bg-ink-900">
             <div className="mb-3">
               <p className="text-sm font-bold text-ink-700 dark:text-cream-100">¿Cómo quieres identificar este plan?</p>
@@ -1253,6 +1285,11 @@ export default function NutritionQuestionnaire({
               })}
             </div>
           </div>
+
+          <p className="flex items-start gap-2 rounded-2xl bg-cream-100 px-3 py-2.5 text-[10px] leading-relaxed text-ink-500 dark:bg-ink-800 dark:text-ink-300">
+            <Shield className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-pine-600 dark:text-pine-300" />
+            Comparte solo la informacion necesaria para personalizar tu plan. No incluyas nombres completos ni datos identificables en las notas.
+          </p>
         </div>
       );
     }
@@ -2073,28 +2110,6 @@ export default function NutritionQuestionnaire({
               ) : null}
             </div>
           )}
-          {lastGeneratedData && (
-            <button
-              onClick={() => {
-                const rawFormat: any = {};
-
-                if (lastGeneratedData.elData) {
-                  Object.assign(rawFormat, buildExportData(lastGeneratedData.elData, 'EL'));
-                }
-
-                if (lastGeneratedData.ellaData) {
-                  Object.assign(rawFormat, buildExportData(lastGeneratedData.ellaData, 'ELLA'));
-                }
-
-                downloadJsonFile('plan_generado.json', JSON.stringify(rawFormat, null, 2));
-              }}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold border-2 transition-all active:scale-[.98] ${tc.border} ${tc.light} ${tc.text} hover:brightness-[0.98]`}
-            >
-              <Download className="w-4 h-4" />
-              Descargar JSON generado
-            </button>
-          )}
-
           {loading && (
             <div className="py-8 flex flex-col items-center justify-center space-y-4">
               <div className="relative">

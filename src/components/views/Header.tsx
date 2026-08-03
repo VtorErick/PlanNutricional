@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChevronDown, FileText, Home, Leaf, Moon, Settings, Sun } from 'lucide-react';
+import { Check, ChevronDown, FileText, Leaf, Moon, Settings, Sparkles, Sun } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getProfileLabel } from '../../utils/profileLabels';
 
@@ -141,10 +141,10 @@ export default function Header() {
                 data-testid="header-home-button"
                 aria-label="Ir a Inicio"
                 title="Ir a Inicio"
-                className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pine-600 via-pine-500 to-apricot-400 text-white shadow-[0_9px_20px_-8px_rgba(234,65,9,0.75)] transition hover:brightness-110 active:scale-90 sm:h-10 sm:w-10"
-              >
-                <Home className="h-[18px] w-[18px]" strokeWidth={2.5} />
-                <Leaf className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 -rotate-12 text-apricot-100" strokeWidth={2.5} />
+              className="group relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-[17px] bg-ink-950 text-white shadow-[0_10px_22px_-8px_rgba(15,23,42,0.7)] transition hover:-translate-y-0.5 hover:bg-ink-800 active:scale-90 sm:h-11 sm:w-11"
+            >
+                <Leaf className="h-5 w-5 -rotate-12 text-apricot-300 transition-transform group-hover:rotate-0" strokeWidth={2.4} />
+                <Sparkles className="absolute right-1.5 top-1.5 h-2.5 w-2.5 text-white/85" strokeWidth={2.5} />
               </button>
               <div className="min-w-0 hidden min-[420px]:block">
                 <p className="font-display text-[15px] sm:text-base font-bold leading-none text-ink-900 dark:text-cream-100">
