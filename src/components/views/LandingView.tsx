@@ -4,8 +4,6 @@ import {
   Apple,
   ArrowRight,
   Camera,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   Coffee,
   Moon,
@@ -275,6 +273,8 @@ export default function LandingView() {
 
   const activeCard = homeReel.cards[activeReelIndex] || homeReel.cards[0] || null;
   const activeMomentName = activeCard ? getMomentActionName(activeCard.moment.label) : 'comida';
+  const plannedMealTarget = homeReel.cards.length * (perfilActivo === 'el' || perfilActivo === 'ella' ? 1 : 2);
+  const plannedMealCount = homeReel.cards.reduce((total, card) => total + card.selectedCount, 0);
   const hasPersonalizedPlan =
     perfilActivo === 'el'
       ? dataVersions.el === 'custom'
@@ -294,26 +294,26 @@ export default function LandingView() {
       ? `Ver ${activeMomentName}`
       : `Elegir ${activeMomentName}`;
 
+  const openMealMoment = (momentKey: string) => {
+    setDiaActivo(currentDayOfWeek);
+    setTab('plan');
+    window.setTimeout(() => {
+      scrollToMomento(momentKey, false);
+    }, 120);
+  };
+
   const handlePrimaryAction = () => {
     if (!hasPersonalizedPlan) {
       openQuestionnaire();
       return;
     }
     if (!activeCard) return;
-    setDiaActivo(currentDayOfWeek);
-    setTab('plan');
-    window.setTimeout(() => {
-      scrollToMomento(activeCard.moment.key, false);
-    }, 120);
+    openMealMoment(activeCard.moment.key);
   };
 
   const handleRegisterAction = () => {
     if (!activeCard) return;
-    setDiaActivo(currentDayOfWeek);
-    setTab('plan');
-    window.setTimeout(() => {
-      scrollToMomento(activeCard.moment.key, false);
-    }, 120);
+    openMealMoment(activeCard.moment.key);
   };
 
   const openQuestionnaire = (target: 'el' | 'ella' | 'ambos' = 'ambos') => {
@@ -380,7 +380,7 @@ export default function LandingView() {
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 pb-[96px] pt-4 max-[340px]:px-3 sm:px-6 sm:pb-10 sm:pt-8">
-        <main className="flex min-h-0 flex-1 flex-col justify-center gap-3 py-1 sm:gap-5 sm:py-8">
+        <main className="flex min-h-0 flex-1 flex-col justify-start gap-4 py-1 sm:gap-5 sm:py-4">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -408,8 +408,10 @@ export default function LandingView() {
               <p className={`text-xs font-extrabold ${isDarkMode ? 'text-cream-200' : 'text-ink-700'}`}>
                 Comidas de hoy
               </p>
-              <p className={`text-[10px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
-                Desliza
+              <p className={`text-right text-[10px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
+                <span className="block tabular-nums">{plannedMealCount} de {plannedMealTarget} elegidas</span>
+                <span className="mt-0.5 block font-medium">Desliza para cambiar
+                </span>
               </p>
             </div>
 
@@ -472,24 +474,23 @@ export default function LandingView() {
                         </div>
                       </div>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => openMealMoment(card.moment.key)}
+                      className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl text-xs font-extrabold transition active:scale-[0.98] ${isDarkMode
+                        ? 'bg-ink-800 text-cream-100 hover:bg-ink-700'
+                        : 'bg-white/90 text-ink-700 shadow-sm hover:bg-white'}`}
+                    >
+                      {card.selectedMealGroups.length > 0 ? 'Ver opciones' : 'Elegir comida'}
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
                   </article>
                 );
               })}
             </div>
 
-            <div className="mt-1 flex items-center justify-between px-1">
-              <button
-                type="button"
-                onClick={() => goToReelIndex(activeReelIndex - 1)}
-                disabled={activeReelIndex === 0}
-                aria-label="Comida anterior"
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:opacity-25 ${
-                  isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-white text-ink-500 shadow-soft'
-                }`}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-
+            <div className="mt-1 flex items-center justify-center px-1">
               <div className="flex flex-col items-center gap-1.5">
                 <span className={`text-[10px] font-extrabold tabular-nums ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
                   {activeReelIndex + 1} de {homeReel.cards.length}
@@ -511,18 +512,6 @@ export default function LandingView() {
                   ))}
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => goToReelIndex(activeReelIndex + 1)}
-                disabled={activeReelIndex >= homeReel.cards.length - 1}
-                aria-label="Siguiente comida"
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:opacity-25 ${
-                  isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-white text-ink-500 shadow-soft'
-                }`}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
             </div>
 
             <div className="mt-3">

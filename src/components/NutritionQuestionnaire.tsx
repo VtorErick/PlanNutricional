@@ -1178,13 +1178,13 @@ export default function NutritionQuestionnaire({
               Primero elige a quién va dirigido
             </p>
             <p className="mt-1 text-xs leading-relaxed text-pine-700/80 dark:text-pine-200/80">
-              Puedes cambiar esta opción después. Los nombres son opcionales y solo sirven para identificar cada plan.
+              Toma aproximadamente 3 minutos. Puedes cambiar esta opción después; los nombres solo sirven para identificar cada plan.
             </p>
           </div>
 
           {([
-            ['el', '👤', `Para ${labelEl}`, 'Un plan para una persona'],
-            ['ella', '👤', `Para ${labelElla}`, 'Un plan para una persona'],
+            ['el', '👤', `Persona 1 · ${labelEl}`, 'Un plan para una persona'],
+            ['ella', '👤', `Persona 2 · ${labelElla}`, 'Un plan para una persona'],
             ['ambos', '👥', 'Para ambos', 'Un plan para las dos personas'],
           ] as const).map(([val, emoji, title, sub]) => {
             const t = THEME[val];
@@ -2208,7 +2208,7 @@ export default function NutritionQuestionnaire({
                 {visualProfileSuffix}
               </p>
               <p className="text-xs font-medium text-ink-400 dark:text-ink-400">
-                Sección {sectionMeta.current} de {sectionMeta.total} · {sectionMeta.label}
+                Paso {stepIdx + 1} de {steps.length} · {sectionMeta.label}
               </p>
             </div>
           </div>

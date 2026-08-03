@@ -112,6 +112,8 @@ export default function PlanView() {
     momentosColapsados,
     setMomentosColapsados,
     momentoCompletado,
+    completadosCount,
+    totalMomentosProgress,
     progresoDia,
     ac,
     mealSectionRefs,
@@ -506,6 +508,11 @@ export default function PlanView() {
                 animate={{ width: `${calorieProgress}%` }}
                 transition={{ type: 'spring', stiffness: 100, damping: 18 }}
               />
+            </div>
+
+            <div className={`mt-1.5 flex items-center justify-between gap-3 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+              <span>{completadosCount} de {totalMomentosProgress} comidas elegidas</span>
+              <span className="tabular-nums">{calorieProgress}% de kcal</span>
             </div>
 
             <AnimatePresence initial={false}>

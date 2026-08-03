@@ -238,25 +238,28 @@ export default function SummaryView() {
               {p.objetivosPorMomento && (
                 <div className={`relative w-full overflow-hidden rounded-[26px] border p-4 shadow-soft sm:p-5 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
                   {p.detallesPerfil && (
-                    <div
+                    <details
                       className={`mb-3 rounded-2xl p-3.5 ${
                         isDarkMode
                           ? 'bg-ink-800/70'
                           : 'bg-cream-100'
                       }`}
                     >
-                      <h3
-                        className={`mb-1.5 flex items-center gap-2 text-xs font-extrabold sm:text-sm ${
+                      <summary
+                        className={`flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-extrabold sm:text-sm [&::-webkit-details-marker]:hidden ${
                           isDarkMode ? 'text-cream-100' : 'text-ink-800'
                         }`}
                       >
-                        <Shield className={`w-3.5 h-3.5 ${dynamicAc.text}`} />
-                        Detalles del perfil
-                      </h3>
-                      <p className={`text-xs sm:text-sm leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+                        <span className="flex items-center gap-2">
+                          <Shield className={`w-3.5 h-3.5 ${dynamicAc.text}`} />
+                          Detalles del perfil
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-ink-400" />
+                      </summary>
+                      <p className={`mt-2.5 text-xs leading-relaxed sm:text-sm ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                         {p.detallesPerfil}
                       </p>
-                    </div>
+                    </details>
                   )}
 
                   {p.notaSalud && (

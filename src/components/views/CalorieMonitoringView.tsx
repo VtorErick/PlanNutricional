@@ -92,24 +92,6 @@ export default function CalorieMonitoringView() {
 
   const palette = getMonitoringPalette(perfilActivo ?? (isAmbos ? 'ambos' : 'el'), isDarkMode);
   const getLabel = React.useCallback((profileId: ProfileId) => getProfileLabel(profileLabels, profileId), [profileLabels]);
-  const dayScrollerRef = React.useRef<HTMLDivElement | null>(null);
-  const dayButtonRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
-
-  React.useEffect(() => {
-    const container = dayScrollerRef.current;
-    const activeButton = dayButtonRefs.current[diaActivo];
-
-    if (!container || !activeButton) return;
-
-    const nextScrollLeft =
-      activeButton.offsetLeft - container.clientWidth / 2 + activeButton.clientWidth / 2;
-
-    container.scrollTo({
-      left: Math.max(0, nextScrollLeft),
-      behavior: 'smooth',
-    });
-  }, [diaActivo]);
-
   const getProfileMetrics = React.useCallback((profileId: ProfileId) => {
     const profile = perfilesData[profileId];
     const calorieTarget = profile.metaCaloricaKcalDia ?? estimateDailyCaloriesFromObjectives(profile);
@@ -355,21 +337,15 @@ export default function CalorieMonitoringView() {
           </div>
         </div>
 
-        <div
-          ref={dayScrollerRef}
-          className="mt-3 flex gap-1.5 overflow-x-auto pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
+        <div className="mt-3 grid grid-cols-7 gap-1">
           {diasDisponibles.map((dia) => {
             const active = dia === diaActivo;
             return (
               <button
                 key={dia}
-                ref={(element) => {
-                  dayButtonRefs.current[dia] = element;
-                }}
                 type="button"
                 onClick={() => setDiaActivo(dia)}
-                className={`inline-flex min-w-[64px] items-center justify-center rounded-full px-4 py-2 text-xs font-extrabold transition active:scale-95 snap-start ${
+                className={`inline-flex min-w-0 items-center justify-center rounded-xl px-1 py-2 text-[10px] font-extrabold transition active:scale-95 sm:text-xs ${
                   active
                     ? `${palette.activeCard} shadow-sm`
                     : isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-cream-100 text-ink-500'
