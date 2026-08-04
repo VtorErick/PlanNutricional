@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
+  CheckCheck,
   ShoppingCart,
   Check,
   ChevronDown,
   ChevronUp,
+  ListFilter,
   Share2,
 } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
@@ -94,6 +96,7 @@ export default function ShoppingView() {
     isDarkMode,
   } = useDiet();
   const [expandedIngredients, setExpandedIngredients] = useState<Record<string, boolean>>({});
+  const [showOnlyPending, setShowOnlyPending] = useState(false);
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
   const isAmbos = perfilActivo === 'ambos';
@@ -178,9 +181,24 @@ export default function ShoppingView() {
   const groupedShoppingList = useMemo(() => {
     return SUPERMARKET_SECTIONS.map((section) => ({
       ...section,
-      items: shoppingList.filter((item) => getSupermarketSection(item.ingrediente) === section.key),
+      items: shoppingList
+        .filter((item) => getSupermarketSection(item.ingrediente) === section.key)
+        .filter((item) => !showOnlyPending || !comprasCheck[item.ingrediente]),
     })).filter((section) => section.items.length > 0);
-  }, [shoppingList]);
+  }, [comprasCheck, shoppingList, showOnlyPending]);
+
+  const visibleShoppingCount = shoppingList.filter((item) => !showOnlyPending || !comprasCheck[item.ingrediente]).length;
+
+  const toggleSection = React.useCallback((items: Array<{ ingrediente: string }>) => {
+    const shouldCheck = items.some((item) => !comprasCheck[item.ingrediente]);
+    setComprasCheck((prev) => {
+      const next = { ...prev };
+      items.forEach((item) => {
+        next[item.ingrediente] = shouldCheck;
+      });
+      return next;
+    });
+  }, [comprasCheck, setComprasCheck]);
 
   const handleShareList = React.useCallback(async () => {
     const lines: string[] = ['🛒 Lista de compras'];
@@ -320,6 +338,22 @@ export default function ShoppingView() {
                 transition={{ type: 'spring', stiffness: 80, damping: 15 }}
               />
             </div>
+            {checkedCount > 0 ? (
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowOnlyPending((visible) => !visible)}
+                  className={`inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 text-[11px] font-extrabold transition active:scale-95 ${showOnlyPending ? isDarkMode ? 'bg-pine-950/60 text-pine-200' : 'bg-pine-100 text-pine-700' : isDarkMode ? 'bg-ink-900 text-ink-200' : 'bg-white text-ink-600'}`}
+                  aria-pressed={showOnlyPending}
+                >
+                  <ListFilter className="h-3.5 w-3.5" />
+                  {showOnlyPending ? 'Ver todo' : 'Ver pendientes'}
+                </button>
+                <span className={`text-[10px] font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                  {showOnlyPending ? `${visibleShoppingCount} por comprar` : 'Toca un ingrediente para marcarlo'}
+                </span>
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -351,6 +385,25 @@ export default function ShoppingView() {
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>
+        ) : visibleShoppingCount === 0 ? (
+          <div className={`rounded-[22px] border border-dashed py-10 text-center ${isDarkMode ? 'border-ink-600 bg-ink-800/40' : 'border-pine-200 bg-pine-50/60'}`}>
+            <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full ${isDarkMode ? 'bg-pine-950/50' : 'bg-pine-100'}`}>
+              <CheckCheck className={`h-6 w-6 ${isDarkMode ? 'text-pine-300' : 'text-pine-600'}`} />
+            </div>
+            <p className={`font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-pine-800'}`}>
+              Ya tienes todo lo pendiente
+            </p>
+            <p className={`mt-1 px-6 text-sm ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
+              Puedes volver a ver la lista completa cuando quieras.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowOnlyPending(false)}
+              className="mx-auto mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-ink-900 px-5 text-sm font-bold text-white transition hover:bg-ink-800 active:scale-[0.97] dark:bg-cream-100 dark:text-ink-900"
+            >
+              Ver lista completa
+            </button>
+          </div>
         ) : (
           <div className="space-y-4">
             {groupedShoppingList.map((section) => (
@@ -361,6 +414,13 @@ export default function ShoppingView() {
                     {section.label}
                   </h3>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(section.items)}
+                      className={`hidden min-h-8 items-center rounded-full px-2.5 text-[10px] font-extrabold sm:inline-flex ${isDarkMode ? 'bg-ink-800 text-ink-200 hover:bg-ink-700' : 'bg-cream-100 text-ink-600 hover:bg-cream-200'}`}
+                    >
+                      {section.items.every((item) => comprasCheck[item.ingrediente]) ? 'Desmarcar' : 'Marcar todo'}
+                    </button>
                     {section.items.every((item) => comprasCheck[item.ingrediente]) ? (
                       <motion.span
                         initial={{ opacity: 0, scale: 0.8 }}

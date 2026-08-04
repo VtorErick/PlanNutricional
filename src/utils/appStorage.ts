@@ -7,6 +7,7 @@ export const APP_STORAGE_KEYS = [
   'comprasCheck',
   'dataVersions',
   'customData',
+  'lastValidPlanBackup',
   'profileLabels',
   'geminiApiKey',
   'geminiModel',

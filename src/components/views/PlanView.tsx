@@ -128,6 +128,8 @@ export default function PlanView() {
     planRevisionLoading,
     planRevisionError,
     planRevisionErrorLog,
+    lastValidPlanBackup,
+    restoreLastValidPlan,
     lastQuestionnaireContexts,
     handleRevisePlanWithAi,
     geminiModel,
@@ -142,7 +144,7 @@ export default function PlanView() {
   const [isPlanAiSheetOpen, setIsPlanAiSheetOpen] = React.useState(false);
   // Las acciones útiles deben estar a la vista en móvil; el usuario aún puede
   // plegarlas si quiere concentrarse solo en sus comidas.
-  const [arePlanToolsOpen, setArePlanToolsOpen] = React.useState(true);
+  const [arePlanToolsOpen, setArePlanToolsOpen] = React.useState(false);
   const [swapSheet, setSwapSheet] = React.useState<SwapSheetState | null>(null);
   const [logSheet, setLogSheet] = React.useState<LogSheetState | null>(null);
   const isAnySheetOpen = Boolean(swapSheet) || Boolean(logSheet) || isSupplementsSheetOpen || isEquivalenciasSheetOpen || isPlanAiSheetOpen;
@@ -386,12 +388,14 @@ export default function PlanView() {
           <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-extrabold tabular-nums ${accent.tagBg} ${accent.tagText}`}>
             {meal.caloriasKcal || 0} kcal
           </span>
-          <span className={`text-[9px] font-extrabold uppercase tracking-[0.1em] ${isDarkMode ? 'text-ink-500 group-hover:text-ink-300' : 'text-ink-400 group-hover:text-ink-500'}`}>
-            Cambiar
-          </span>
         </div>
         </div>
-        <p className={`mt-2 pl-[52px] text-[11px] font-medium leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+        {meal.detalle ? (
+          <p className={`mt-2 pl-[52px] line-clamp-2 text-[11px] font-medium leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+            {meal.detalle}
+          </p>
+        ) : null}
+        <p className={`mt-1.5 pl-[52px] text-[11px] font-medium leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
           {meal.porciones}
         </p>
       <div className={`mt-2.5 flex items-center gap-1.5 border-t pt-2 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
@@ -988,10 +992,18 @@ export default function PlanView() {
         onSubmit={(payload) => handlePlanAiSubmit(payload)}
         isDarkMode={isDarkMode}
         accentClasses={ac}
-        loading={planRevisionLoading}
-        errorMessage={planRevisionError}
-        aiErrorLog={planRevisionErrorLog}
-        defaultTarget={defaultPlanAiTarget}
+          loading={planRevisionLoading}
+          errorMessage={planRevisionError}
+          aiErrorLog={planRevisionErrorLog}
+          hasPreviousPlan={Boolean(lastValidPlanBackup)}
+          onRestorePreviousPlan={() => {
+            if (!restoreLastValidPlan()) return;
+            setIsPlanAiSheetOpen(false);
+            window.dispatchEvent(new CustomEvent('plan-adjust-open', { detail: false }));
+            notifyOverlayClosed();
+            void notify('Plan anterior recuperado', 'Volvimos al último plan válido.');
+          }}
+          defaultTarget={defaultPlanAiTarget}
         geminiModel={geminiModel}
         geminiRecommendedModel={geminiRecommendedModel}
         geminiFallbackModels={geminiFallbackModels}

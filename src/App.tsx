@@ -201,7 +201,7 @@ export default function App() {
   const mobileNavigationBar = (
     <nav
       ref={mobileNavRef}
-      className="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-x-clip sm:hidden"
+      className="relative z-50 w-full max-w-full shrink-0 overflow-x-clip sm:hidden"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 10px)' }}
       aria-label="Navegación principal móvil"
     >
@@ -402,12 +402,12 @@ export default function App() {
 
   return (
       <div
-        className="min-h-[100svh] w-full overflow-x-hidden overscroll-x-none bg-cream-50 transition-colors duration-200 dark:bg-ink-950"
+        className="flex h-[100svh] w-full flex-col overflow-hidden overscroll-x-none bg-cream-50 transition-colors duration-200 dark:bg-ink-950 sm:block sm:min-h-[100svh] sm:h-auto sm:overflow-x-hidden"
         data-profile={activeProfile}
       >
       {!isChromeHidden && <Header />}
 
-      <main className="relative z-0 mx-auto w-full max-w-5xl min-w-0 px-4 py-4 pb-[calc(96px+env(safe-area-inset-bottom))] sm:px-6 sm:pb-8 space-y-4">
+      <main className="relative z-0 mx-auto flex min-h-0 w-full max-w-5xl min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-x-none px-4 py-4 pb-4 sm:block sm:min-h-0 sm:flex-none sm:overflow-visible sm:px-6 sm:pb-8 space-y-4">
         {desktopTabBackdrop ? (
           <div
             aria-hidden="true"

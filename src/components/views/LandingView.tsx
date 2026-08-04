@@ -456,8 +456,6 @@ export default function LandingView() {
               </p>
               <p className={`text-right text-[10px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
                 <span className="block tabular-nums">{plannedMealCount} de {plannedMealTarget} elegidas</span>
-                <span className="mt-0.5 block font-medium">Desliza para cambiar
-                </span>
               </p>
             </div>
 
@@ -471,6 +469,8 @@ export default function LandingView() {
                 const momentStyle = MOMENT_STYLES[card.moment.key] || MOMENT_STYLES.comida;
                 const MomentIcon = momentStyle.icon;
                 const isNextMeal = index === homeReel.initialIndex;
+                const isActiveCard = index === activeReelIndex;
+                const showCardAction = !hasPersonalizedPlan || !isActiveCard;
 
                 return (
                   <article
@@ -521,16 +521,22 @@ export default function LandingView() {
                       </div>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={() => openMealMoment(card.moment.key)}
-                      className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl text-xs font-extrabold transition active:scale-[0.98] ${isDarkMode
-                        ? 'bg-ink-800 text-cream-100 hover:bg-ink-700'
-                        : 'bg-white/90 text-ink-700 shadow-sm hover:bg-white'}`}
-                    >
-                      {card.selectedMealGroups.length > 0 ? 'Ver opciones' : 'Elegir comida'}
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
+                    {showCardAction ? (
+                      <button
+                        type="button"
+                        onClick={() => openMealMoment(card.moment.key)}
+                        className={`mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-2xl text-xs font-extrabold transition active:scale-[0.98] ${isDarkMode
+                          ? 'bg-ink-800 text-cream-100 hover:bg-ink-700'
+                          : 'bg-white/90 text-ink-700 shadow-sm hover:bg-white'}`}
+                      >
+                        {card.selectedMealGroups.length > 0 ? 'Ver opciones' : 'Elegir comida'}
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    ) : (
+                      <p className={`mt-3 text-center text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                        Usa el botón de arriba para elegirla
+                      </p>
+                    )}
                   </article>
                 );
               })}

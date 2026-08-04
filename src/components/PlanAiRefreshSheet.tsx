@@ -25,6 +25,8 @@ interface PlanAiRefreshSheetProps {
   loading?: boolean;
   errorMessage?: string;
   aiErrorLog?: AiDebugLog | null;
+  hasPreviousPlan?: boolean;
+  onRestorePreviousPlan?: () => void;
   defaultTarget: TargetProfile;
   geminiModel: string;
   geminiRecommendedModel: string;
@@ -40,6 +42,8 @@ export default function PlanAiRefreshSheet({
   loading = false,
   errorMessage = '',
   aiErrorLog,
+  hasPreviousPlan = false,
+  onRestorePreviousPlan,
   defaultTarget,
 }: PlanAiRefreshSheetProps) {
   const [mode, setMode] = React.useState<PlanRevisionMode>('adjust');
@@ -68,6 +72,13 @@ export default function PlanAiRefreshSheet({
     : mode === 'regenerate'
       ? true
       : instruction.trim().length >= 8;
+  const submitCurrentRequest = () => {
+    void onSubmit({
+      requestMode: mode,
+      targetProfile,
+      instruction: instruction.trim(),
+    });
+  };
   const targetOptions: Array<{ id: TargetProfile; title: string; helper: string }> = [
     { id: 'el', title: 'El', helper: 'Solo su plan' },
     { id: 'ella', title: 'Ella', helper: 'Solo su plan' },
@@ -299,7 +310,7 @@ export default function PlanAiRefreshSheet({
               <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={errorMessage && hasPreviousPlan && onRestorePreviousPlan ? onRestorePreviousPlan : onClose}
                   data-testid="plan-ai-cancel"
                   className={`rounded-full px-5 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
                     isDarkMode
@@ -307,24 +318,18 @@ export default function PlanAiRefreshSheet({
                       : 'border border-cream-200 bg-white text-ink-500 hover:bg-cream-100'
                   }`}
                 >
-                  Cancelar
+                  {errorMessage ? (hasPreviousPlan ? 'Volver al plan anterior' : 'Volver al plan') : 'Cancelar'}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    void onSubmit({
-                      requestMode: mode,
-                      targetProfile,
-                      instruction: instruction.trim(),
-                    });
-                  }}
+                  onClick={submitCurrentRequest}
                   data-testid="plan-ai-submit"
                   disabled={!canSubmit}
                   className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white bg-gradient-to-r ${accentClasses.bgGradient} disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] shadow-sm`}
                 >
-                  <Sparkles className="h-4 w-4" />
-                  {loading ? 'Consultando IA...' : submitLabel}
+                  {loading ? <Sparkles className="h-4 w-4" /> : errorMessage ? <RefreshCcw className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                  {loading ? 'Consultando IA...' : errorMessage ? 'Reintentar' : submitLabel}
                 </button>
               </div>
             </div>

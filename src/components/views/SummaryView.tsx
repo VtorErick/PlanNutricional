@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, BarChart3, BellRing, ChevronDown, Clock3, Heart, Shield, TrendingDown, UserRound } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BarChart3, BellRing, ChevronDown, Clock3, Heart, Pencil, Shield, TrendingDown, UserRound } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { getAccentColors } from '../../utils/theme';
 import { getProfileLabel } from '../../utils/profileLabels';
@@ -36,8 +36,20 @@ function compactSchedule(value: string | null | undefined) {
 }
 
 export default function SummaryView() {
-  const { perfilActivo, perfilesData, profileLabels, ac, isDarkMode, recordatoriosActivos, toggleRecordatorios } = useDiet();
+  const {
+    perfilActivo,
+    perfilesData,
+    profileLabels,
+    ac,
+    isDarkMode,
+    recordatoriosActivos,
+    toggleRecordatorios,
+    setShowQuestionnaire,
+    setQuestionnaireTargetProfile,
+    setQuestionnaireStepIdx,
+  } = useDiet();
   const [expandedSummaryPoint, setExpandedSummaryPoint] = useState<string | null>(null);
+  const [summaryProfile, setSummaryProfile] = useState<'el' | 'ella'>('el');
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
 
@@ -46,6 +58,12 @@ export default function SummaryView() {
     perfilActivo && perfilActivo !== 'ambos'
       ? perfilesData[perfilActivo]
       : perfilesData.el;
+
+  const openProfileEditor = (profileId: 'el' | 'ella') => {
+    setQuestionnaireTargetProfile(profileId);
+    setQuestionnaireStepIdx(0, profileId);
+    setShowQuestionnaire(true);
+  };
 
   return (
     <motion.div
@@ -87,8 +105,77 @@ export default function SummaryView() {
         </button>
       </section>
 
-      <div className={isAmbos ? 'grid gap-4 lg:grid-cols-2' : 'space-y-6'}>
-        {(isAmbos ? [perfilesData.el, perfilesData.ella] : [perfil]).map((p, pIdx) => {
+      <section className={`mb-4 rounded-[24px] border p-3.5 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+        <div className="flex items-start gap-3">
+          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${isDarkMode ? 'bg-ink-800' : 'bg-cream-100'}`}>
+            <Pencil className={`h-4 w-4 ${ac.text}`} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>¿Cambió algo?</p>
+            <p className={`mt-0.5 text-[11px] leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+              Actualiza tus respuestas. Tus datos se conservan y no tienes que empezar de nuevo.
+            </p>
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => openProfileEditor('el')}
+                data-testid="summary-edit-el"
+                className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-extrabold transition active:scale-95 ${isDarkMode ? 'bg-ink-800 text-cream-100 hover:bg-ink-700' : 'bg-cream-100 text-ink-700 hover:bg-cream-200'}`}
+              >
+                Editar {getProfileLabel(profileLabels, 'el')}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+              {isAmbos ? (
+                <button
+                  type="button"
+                  onClick={() => openProfileEditor('ella')}
+                  data-testid="summary-edit-ella"
+                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-extrabold transition active:scale-95 ${isDarkMode ? 'bg-ink-800 text-cream-100 hover:bg-ink-700' : 'bg-cream-100 text-ink-700 hover:bg-cream-200'}`}
+                >
+                  Editar {getProfileLabel(profileLabels, 'ella')}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {isAmbos ? (
+        <section className={`mb-4 rounded-[22px] border p-2 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+          <p className={`px-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+            Ver detalles de
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {(['el', 'ella'] as const).map((profileId) => {
+              const active = summaryProfile === profileId;
+              return (
+                <button
+                  key={profileId}
+                  type="button"
+                  onClick={() => setSummaryProfile(profileId)}
+                  data-testid={`summary-profile-${profileId}`}
+                  aria-pressed={active}
+                  className={`min-h-10 rounded-2xl px-3 text-left text-xs font-extrabold transition active:scale-[0.98] ${
+                    active
+                      ? profileId === 'ella'
+                        ? `${ellaAccent.tagBg} ${ellaAccent.tagText}`
+                        : `${elAccent.tagBg} ${elAccent.tagText}`
+                      : isDarkMode
+                        ? 'text-ink-300 hover:bg-ink-800'
+                        : 'text-ink-500 hover:bg-cream-100'
+                  }`}
+                >
+                  {getProfileLabel(profileLabels, profileId)}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      <div className="space-y-6">
+        {(isAmbos ? [perfilesData[summaryProfile]] : [perfil]).map((p, pIdx) => {
           if (!p) return null;
           const profileLabel = getProfileLabel(profileLabels, p.id === 'ella' ? 'ella' : 'el');
 
@@ -115,7 +202,7 @@ export default function SummaryView() {
             return linea;
           });
 
-          const isFirst = pIdx === 0;
+          const isFirst = p.id !== 'ella' && pIdx === 0;
           const hiddenClass = 'block';
 
           const dynamicAc = isAmbos

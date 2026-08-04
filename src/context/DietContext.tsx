@@ -151,6 +151,34 @@ function sanitizeNullableObject(value: unknown) {
   return isPlainObject(value) ? value : null;
 }
 
+function sanitizeLastValidPlanBackup(value: unknown): LastValidPlanBackup | null {
+  if (!isPlainObject(value)) return null;
+  if (!isPlainObject(value.dataVersions) || !isPlainObject(value.selecciones)) return null;
+  if (typeof value.savedAt !== 'number') return null;
+
+  return {
+    customData: isPlainObject(value.customData) ? value.customData : {},
+    dataVersions: sanitizeDataVersions(value.dataVersions),
+    selecciones: sanitizeBooleanRecord(value.selecciones),
+    savedAt: value.savedAt,
+  };
+}
+
+function cloneJsonValue<T>(value: T): T {
+  try {
+    return JSON.parse(JSON.stringify(value)) as T;
+  } catch {
+    return value;
+  }
+}
+
+type LastValidPlanBackup = {
+  customData: any;
+  dataVersions: { el: 'original' | 'custom'; ella: 'original' | 'custom' };
+  selecciones: Record<string, boolean>;
+  savedAt: number;
+};
+
 type StoredQuestionnaireContexts = {
   el: any | null;
   ella: any | null;
@@ -743,6 +771,8 @@ interface DietContextType {
   generationError: string;
   generationErrorLog: AiDebugLog | null;
   lastGeneratedData: any;
+  lastValidPlanBackup: LastValidPlanBackup | null;
+  restoreLastValidPlan: () => boolean;
   planRevisionLoading: boolean;
   planRevisionError: string;
   planRevisionErrorLog: AiDebugLog | null;
@@ -874,6 +904,11 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     ella: 'original' | 'custom';
   }>('dataVersions', { el: 'original', ella: 'original' }, sanitizeDataVersions);
   const [customData, setCustomData] = useLocalStorage<any>('customData', {}, sanitizeCustomData);
+  const [lastValidPlanBackup, setLastValidPlanBackup] = useLocalStorage<LastValidPlanBackup | null>(
+    'lastValidPlanBackup',
+    null,
+    sanitizeLastValidPlanBackup
+  );
   const [profileLabels, setProfileLabels] = useLocalStorage<ProfileLabels>(
     'profileLabels',
     DEFAULT_PROFILE_LABELS,
@@ -973,6 +1008,25 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
 
   // ─── Utilities ─────────────────────────────────────────────────────
   const notify = useCallback(async (title: string, message: string) => { await showAppAlert({ title, message }); }, []);
+
+  const backupCurrentPlan = useCallback(() => {
+    setLastValidPlanBackup({
+      customData: cloneJsonValue(customData),
+      dataVersions: cloneJsonValue(dataVersions),
+      selecciones: cloneJsonValue(selecciones),
+      savedAt: Date.now(),
+    });
+  }, [customData, dataVersions, selecciones, setLastValidPlanBackup]);
+
+  const restoreLastValidPlan = useCallback(() => {
+    if (!lastValidPlanBackup) return false;
+
+    setCustomData(cloneJsonValue(lastValidPlanBackup.customData));
+    setDataVersions(cloneJsonValue(lastValidPlanBackup.dataVersions));
+    setSelecciones(cloneJsonValue(lastValidPlanBackup.selecciones));
+    setLastValidPlanBackup(null);
+    return true;
+  }, [lastValidPlanBackup, setCustomData, setDataVersions, setLastValidPlanBackup, setSelecciones]);
   const confirmAction = useCallback(async (title: string, message: string) => showAppConfirm({ title, message }), []);
   const toggleRecordatorios = useCallback(async () => {
     if (recordatoriosActivos) {
@@ -1830,6 +1884,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
         [payload.targetProfile]: 0,
       }));
 
+      backupCurrentPlan();
       setCustomData((prev: any) => {
         const updated = { ...prev };
         if (parsedElData) updated.el = parsedElData;
@@ -1858,7 +1913,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setGenerationLoading(false);
     }
-  }, [buildAttemptHistoryFromModelUsed, formatModelUsedLabel, geminiModel, notify, requestAiResponse, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContexts, setQuestionnaireStepsByProfile]);
+  }, [backupCurrentPlan, buildAttemptHistoryFromModelUsed, formatModelUsedLabel, geminiModel, notify, requestAiResponse, sanitizeQuestionnairePayloadForMemory, setLastQuestionnaireContexts, setQuestionnaireStepsByProfile]);
 
   const handleRevisePlanWithAi = useCallback(async (payload: PlanRevisionRequest) => {
     setPlanRevisionError('');
@@ -1901,6 +1956,9 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       const updatedBuckets: Partial<Record<'el' | 'ella', any>> = {};
       const versionUpdates: Partial<Record<'el' | 'ella', 'custom'>> = {};
       const summaries: string[] = [];
+
+      // Guardar el plan visible antes de sincronizar selecciones o aplicar cambios.
+      backupCurrentPlan();
 
       (['el', 'ella'] as const).forEach((perfilId) => {
         const responseData = json?.[perfilId === 'el' ? 'elData' : 'ellaData'];
@@ -2002,6 +2060,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (Object.keys(updatedBuckets).length === 0) {
+        setLastValidPlanBackup(null);
         const summaryMessage = summaries.join('\n');
         await notify(
           'Sin cambios',
@@ -2045,11 +2104,13 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
   }, [
     buildAttemptHistoryFromModelUsed,
     buildCurrentRawBucket,
+    backupCurrentPlan,
     formatModelUsedLabel,
     getAllPlanSlots,
     notify,
     perfilesData,
     requestAiResponse,
+    setLastValidPlanBackup,
     syncSelectionsForUpdatedSlots,
   ]);
 
@@ -2359,6 +2420,7 @@ export const DietProvider = ({ children }: { children: ReactNode }) => {
     setGeminiCustomApiKey,
     refreshGeminiAvailability,
     generationLoading, generationError, generationErrorLog, lastGeneratedData,
+    lastValidPlanBackup, restoreLastValidPlan,
     planRevisionLoading, planRevisionError, planRevisionErrorLog, lastQuestionnaireContexts,
     handleGenerateWithAi, handleRevisePlanWithAi,
     questionnaireTargetProfile, setQuestionnaireTargetProfile,
