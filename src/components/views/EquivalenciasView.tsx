@@ -39,7 +39,7 @@ export default function EquivalenciasView() {
             <h2 className={`truncate text-lg sm:text-xl font-extrabold ${ac.textDark}`}>
               Diccionario de Intercambios
             </h2>
-            <p className={`mt-0.5 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
+            <p className={`mt-0.5 text-xs font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
               Vista Bento: explora en grid y toca para ver el detalle completo.
             </p>
           </div>
@@ -91,10 +91,10 @@ export default function EquivalenciasView() {
                   <h3 className={`line-clamp-2 text-sm font-black leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>
                     {eq.titulo}
                   </h3>
-                  <p className={`mt-1 text-[11px] sm:text-xs font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                  <p className="mt-1 text-xs font-semibold text-ink-400">
                     {eq.items.length} opciones
                   </p>
-                  <p className={`mt-2 text-[11px] font-bold ${ac.text}`}>
+                  <p className={`mt-2 text-xs font-bold ${ac.text}`}>
                     Toca para ver detalle
                   </p>
                 </div>

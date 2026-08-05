@@ -75,7 +75,7 @@ export default function SummaryView() {
       className="w-full flex flex-col"
     >
       <section className="mb-3 px-1">
-        <p className={`text-xs font-extrabold uppercase tracking-[0.15em] ${ac.text}`}>
+        <p className="eyebrow-label">
           Tu perfil y preferencias
         </p>
         <h2 className={`mt-0.5 font-display text-[28px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
@@ -98,7 +98,7 @@ export default function SummaryView() {
           onClick={() => void toggleRecordatorios()}
           data-testid="reminders-toggle"
           aria-pressed={recordatoriosActivos}
-          className={`relative h-7 w-12 flex-shrink-0 rounded-full p-1 transition ${recordatoriosActivos ? `bg-gradient-to-r ${ac.bgGradient}` : isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}
+          className={`relative h-7 w-12 flex-shrink-0 rounded-full p-1 transition ${recordatoriosActivos ? 'bg-[var(--ui-success)]' : isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}
           aria-label={recordatoriosActivos ? 'Desactivar recordatorios' : 'Activar recordatorios'}
         >
           <span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${recordatoriosActivos ? 'translate-x-5' : ''}`} />
@@ -142,8 +142,8 @@ export default function SummaryView() {
       </section>
 
       {isAmbos ? (
-        <section className={`mb-4 rounded-[16px] border p-2 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
-          <p className={`px-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+        <section className="surface-card mb-4 p-2">
+          <p className="px-2 pb-1 text-xs font-extrabold uppercase tracking-[0.16em] text-ink-400">
             Ver detalles de
           </p>
           <div className="grid grid-cols-2 gap-1.5">
@@ -208,7 +208,7 @@ export default function SummaryView() {
           const dynamicAc = isAmbos
             ? {
                 ...(isFirst ? elAccent : ellaAccent),
-                color500: isFirst ? '#3568d8' : '#d93a56',
+                color500: isFirst ? '#315fc3' : '#b33f68',
               }
             : ac;
 
@@ -235,31 +235,29 @@ export default function SummaryView() {
                 </h3>
               )}
 
-              <div className={`rounded-[18px] border p-4 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+              <div className="surface-card p-4">
                 <div>
                   <div className="border-b border-cream-200 pb-4 dark:border-ink-700">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className={`flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.16em] ${dynamicAc.text}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className={`flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.16em] ${dynamicAc.text}`}>
                           <TrendingDown className="h-3.5 w-3.5" />
                           Objetivo
-                        </p>
-                        <p className={`mt-2 text-sm font-medium leading-relaxed ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
-                          {goalSummary}
-                        </p>
-                      </div>
-                      <div className="flex-shrink-0 text-right">
+                      </p>
+                      <div className="flex flex-shrink-0 items-baseline gap-1.5 text-right">
                         <p className={`font-display text-3xl font-semibold leading-none ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                           {p.metaCaloricaKcalDia || '-'}
                         </p>
-                        <p className="mt-1 text-xs font-bold text-ink-400">kcal/día</p>
+                        <p className="text-xs font-bold text-ink-400">kcal/día</p>
                       </div>
                     </div>
+                    <p className={`mt-3 text-sm font-medium leading-relaxed ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
+                      {goalSummary}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-cream-200 dark:sm:divide-ink-700">
                     <div className="py-3.5 sm:pr-3.5">
-                      <p className={`flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                      <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-ink-400">
                         <UserRound className="h-3.5 w-3.5" />
                         Perfil
                       </p>
@@ -269,7 +267,7 @@ export default function SummaryView() {
                     </div>
 
                     <div className="border-t border-cream-200 py-3.5 dark:border-ink-700 sm:border-t-0 sm:pl-3.5">
-                      <p className={`flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                      <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-ink-400">
                         <Clock3 className="h-3.5 w-3.5" />
                         Horarios
                       </p>
@@ -291,15 +289,16 @@ export default function SummaryView() {
                 </div>
               </div>
 
-              <div className={`rounded-[18px] border p-4 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
-                <div className="mb-2.5 flex items-center justify-between gap-3">
-                  <h3 className={`flex items-center gap-2 font-display text-base font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+              <details className="group surface-card p-4">
+                <summary className={`flex cursor-pointer list-none items-center justify-between gap-3 font-display text-base font-semibold [&::-webkit-details-marker]:hidden ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+                  <span className="flex items-center gap-2">
                     <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
                     {isAmbos ? `Puntos clave de ${profileLabel}` : 'Puntos clave de tu plan'}
-                  </h3>
-                </div>
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-ink-400 transition-transform group-open:rotate-180" />
+                </summary>
 
-                <div className="space-y-1.5">
+                <div className="mt-3 space-y-1.5">
                   {summaryPoints.map((linea, idx) => {
                     const pointKey = `${p.perfil}-${idx}`;
                     const compactText = compactSummaryPoints[idx];
@@ -320,7 +319,7 @@ export default function SummaryView() {
                         } : undefined}
                         className={`flex w-full items-start gap-2.5 border-b px-1 py-2.5 text-left transition-colors last:border-b-0 ${canExpand ? 'active:scale-[0.99]' : ''} ${isDarkMode ? 'border-ink-700 hover:bg-ink-800/50' : 'border-cream-200 hover:bg-cream-50'}`}
                       >
-                        <span className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
+                        <span className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-xs font-extrabold ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
                           {idx + 1}
                         </span>
                         <span className="min-w-0 flex-1">
@@ -328,7 +327,7 @@ export default function SummaryView() {
                             {content}
                           </span>
                           {canExpand ? (
-                            <span className={`mt-0.5 block text-[10px] font-extrabold ${dynamicAc.text}`}>
+                            <span className={`mt-0.5 block text-xs font-extrabold ${dynamicAc.text}`}>
                               {isExpanded ? 'Ocultar detalle' : 'Ver detalle'}
                             </span>
                           ) : null}
@@ -342,10 +341,10 @@ export default function SummaryView() {
                     );
                   })}
                 </div>
-              </div>
+              </details>
 
               {p.objetivosPorMomento && (
-                <details className={`group relative w-full overflow-hidden rounded-[18px] border p-4 sm:p-5 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+                <details className="group surface-card relative w-full overflow-hidden p-4 sm:p-5">
                   <summary className={`flex cursor-pointer list-none items-center justify-between gap-3 font-display text-base font-semibold [&::-webkit-details-marker]:hidden ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                     <span className="flex items-center gap-2">
                       <BarChart3 className={`h-4 w-4 ${dynamicAc.text}`} />
@@ -414,7 +413,7 @@ export default function SummaryView() {
                             </div>
 
                             <div className="flex items-center gap-2">
-                              <span className={`text-[10px] uppercase tracking-wide font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                              <span className="text-xs font-bold uppercase tracking-wide text-ink-400">
                                 Total
                               </span>
                               <span
@@ -444,7 +443,7 @@ export default function SummaryView() {
                                   }`}
                                 >
                                   <div
-                                    className={`text-[9px] font-extrabold uppercase tracking-wide ${
+                                    className={`text-xs font-extrabold uppercase tracking-wide ${
                                       active
                                         ? isDarkMode ? 'text-ink-400' : 'text-ink-400'
                                         : isDarkMode ? 'text-ink-500' : 'text-cream-300'
@@ -475,7 +474,7 @@ export default function SummaryView() {
                     <table className="w-full text-left text-sm min-w-max">
                       <thead>
                         <tr
-                          className={`font-bold uppercase tracking-wider text-[11px] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}
+                          className="text-xs font-bold uppercase tracking-wider text-ink-400"
                         >
                           <th className={`p-3 pb-3 sticky left-0 backdrop-blur-md z-10 w-32 ${isDarkMode ? 'bg-ink-900/95' : 'bg-white/95'}`}>
                             Grupo

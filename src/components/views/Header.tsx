@@ -150,7 +150,7 @@ export default function Header() {
                 <p className="font-display text-[15px] sm:text-base font-bold leading-none text-ink-900 dark:text-cream-100">
                   Plan Nutricional
                 </p>
-                <p className="mt-1 hidden sm:block text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400 dark:text-ink-400">
+                <p className="mt-1 hidden text-xs font-semibold uppercase tracking-[0.16em] text-ink-400 dark:text-ink-400 sm:block">
                   Tu plan diario
                 </p>
               </div>
@@ -181,11 +181,7 @@ export default function Header() {
 
             {showProfileMenu ? (
               <div
-                className={`absolute left-0 top-12 z-[80] w-44 rounded-3xl border p-1.5 shadow-lift ${
-                  isDarkMode
-                    ? 'border-ink-700 bg-ink-900'
-                    : 'border-cream-200 bg-white'
-                }`}
+                className="surface-raised absolute left-0 top-12 z-[80] w-44 border border-[var(--ui-border)] p-1.5"
               >
                 {profileOptions.map((profile) => {
                   const isActive = activeProfile === profile.id;
@@ -247,11 +243,7 @@ export default function Header() {
 
               {showPdfMenu && (
                 <div
-                  className={`absolute top-11 right-0 z-50 w-48 rounded-3xl border p-1.5 shadow-lift ${
-                    isDarkMode
-                      ? 'border-ink-700 bg-ink-900'
-                      : 'border-cream-200 bg-white'
-                  }`}
+                  className="surface-raised absolute right-0 top-11 z-50 w-48 border border-[var(--ui-border)] p-1.5"
                 >
                   <button
                     onClick={() => {

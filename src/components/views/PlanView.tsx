@@ -369,10 +369,10 @@ export default function PlanView() {
       key={`${meal.nombre}-${meal.detalle}`}
       role="article"
       data-testid={dataTestId}
-      className={`group rounded-[16px] border p-3 ${
+      className={`group surface-card p-3 ${
         isDarkMode
-          ? 'border-ink-700 bg-ink-800/50'
-          : 'border-cream-200 bg-white'
+          ? 'bg-ink-800/50'
+          : 'bg-white'
       } cursor-pointer transition-colors hover:border-cream-300 active:scale-[0.99]`}
     >
         <div className="flex items-center gap-3">
@@ -386,7 +386,7 @@ export default function PlanView() {
           </h4>
         </div>
         <div className="flex flex-shrink-0 flex-col items-end gap-1">
-          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-extrabold tabular-nums ${accent.tagBg} ${accent.tagText}`}>
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-extrabold tabular-nums ${accent.tagBg} ${accent.tagText}`}>
             {meal.caloriasKcal || 0} kcal
           </span>
         </div>
@@ -434,7 +434,7 @@ export default function PlanView() {
           }}
           className={`ml-auto inline-flex min-h-8 items-center gap-1 rounded-full px-3 text-xs font-bold transition active:scale-95 ${
             comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`]
-              ? isDarkMode ? 'bg-pine-950/50 text-pine-200' : 'bg-pine-100 text-pine-700'
+              ? 'status-success'
               : isDarkMode ? 'bg-ink-900 text-ink-300 hover:bg-ink-700' : 'bg-white text-ink-600 shadow-sm hover:bg-cream-100'
           }`}
           aria-pressed={Boolean(comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`])}
@@ -522,6 +522,7 @@ export default function PlanView() {
       >
         <div className="space-y-4">
           <div className="px-1">
+            <p className="eyebrow-label">Tu semana</p>
             <div className="flex items-center justify-between gap-3">
               <div>
                  <h2 className={`font-display text-[30px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
@@ -530,24 +531,20 @@ export default function PlanView() {
                  <p className={`mt-0.5 text-sm font-semibold ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                   {diaActivo}
                 </p>
-                {nextPendingMoment ? (
-                   <p className={`mt-1 text-xs font-bold ${ac.text}`}>
-                    Siguiente: {nextPendingMoment.label} · {nextPendingMoment.hora}
-                  </p>
-                ) : (
-                   <p className="mt-1 text-xs font-bold text-pine-600 dark:text-pine-300">Día completado</p>
-                )}
+                {!nextPendingMoment ? (
+                   <p className="mt-1 text-xs font-bold text-[var(--ui-success)]">Día completado</p>
+                ) : null}
               </div>
 
               <div className="flex min-w-0 items-center gap-2">
                 <div className="min-w-0 text-right">
                   <p className={`whitespace-nowrap text-sm font-black tabular-nums ${ac.text}`}>
                     {activeDayStats.kcal}
-                    <span className={`ml-1 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                    <span className="ml-1 text-xs font-bold text-ink-400">
                       / {activeDayStats.target} kcal
                     </span>
                   </p>
-                  <p className={`mt-0.5 text-[9px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
+                  <p className={`mt-0.5 text-xs font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                     Seleccionadas hoy
                   </p>
                 </div>
@@ -596,7 +593,7 @@ export default function PlanView() {
 
             <div className={`mt-2 h-1.5 overflow-hidden rounded-full ${isDarkMode ? 'bg-ink-800' : 'bg-cream-200'}`}>
               <motion.div
-                className={`h-full rounded-full bg-gradient-to-r ${ac.progressFill}`}
+                className="h-full rounded-full bg-[var(--ui-brand)]"
                 animate={{ width: `${calorieProgress}%` }}
                 transition={{ type: 'spring', stiffness: 100, damping: 18 }}
               />
@@ -667,6 +664,7 @@ export default function PlanView() {
             const Icon = momentoIcons[momento.key] || UtensilsCrossed;
             const momentoTheme = momentoThemes[momento.key] || momentoThemes.comida;
             const done = momentoCompletado[momento.key];
+            const isNext = nextPendingMoment?.key === momento.key;
 
             const mealsSingleAll = perfilBase.plan[diaActivo]?.[momento.key] || [];
             const mealsElAll = perfilesData.el.plan[diaActivo]?.[momento.key] || [];
@@ -705,11 +703,7 @@ export default function PlanView() {
                 }}
                 id={`momento-${momento.key}`}
                 data-testid={`moment-section-${momento.key}`}
-                className={`overflow-hidden rounded-[18px] border transition-colors ${
-                  isDarkMode
-                    ? 'border-ink-700 bg-ink-900'
-                    : 'border-cream-200 bg-white'
-                }`}
+                className={`surface-card overflow-hidden transition-colors ${isNext ? 'ring-2 ring-[var(--ui-brand)]/20' : ''}`}
               >
                 <div className={`h-px w-full ${momentoTheme.strip}`} aria-hidden="true" />
                 <button
@@ -729,7 +723,7 @@ export default function PlanView() {
                     <div
                       className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[13px] ${
                         done
-                          ? `bg-gradient-to-br ${ac.bgGradient} text-white shadow-sm`
+                          ? 'bg-[var(--ui-success)] text-white'
                           : momentoTheme.tile
                       }`}
                     >
@@ -741,8 +735,9 @@ export default function PlanView() {
                     </div>
 
                     <div className="min-w-0">
-                       <h3 className={`truncate font-display text-base font-semibold leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
-                        {momento.label}
+                       <h3 className={`flex items-center gap-2 truncate font-display text-base font-semibold leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
+                        <span className="truncate">{momento.label}</span>
+                        {isNext ? <span className="eyebrow-label rounded-full bg-pine-50 px-2 py-0.5 normal-case tracking-normal dark:bg-pine-950/40">Siguiente</span> : null}
                       </h3>
                        <p className={`mt-0.5 text-xs font-semibold tabular-nums ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                         {momento.hora}
@@ -753,7 +748,7 @@ export default function PlanView() {
 
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {done ? (
-                      <CheckCircle2 className={`w-4 h-4 ${isDarkMode ? 'text-pine-300' : 'text-pine-600'}`} />
+                      <CheckCircle2 className="h-4 w-4 text-[var(--ui-success)]" />
                     ) : null}
                     <motion.div
                       animate={{ rotate: momentosColapsados[momento.key] ? -180 : 0 }}
@@ -813,7 +808,7 @@ export default function PlanView() {
                           </div>
                         ) : (
                           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                            <div className={mealsElSeleccionadas.length === 0 ? 'grid grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'space-y-2.5'}>
+                            <div className={mealsElSeleccionadas.length === 0 ? 'grid self-start grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'self-start space-y-2.5'}>
                               <div
                                 onClick={() => openSwapSheet(
                                   'el',
@@ -847,7 +842,7 @@ export default function PlanView() {
                               {renderLogMealButton('el', momento.key, momento.label, elAccent, true)}
                             </div>
 
-                            <div className={mealsEllaSeleccionadas.length === 0 ? 'grid grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'space-y-2.5'}>
+                            <div className={mealsEllaSeleccionadas.length === 0 ? 'grid self-start grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'self-start space-y-2.5'}>
                               <div
                                 onClick={() => openSwapSheet(
                                   'ella',
@@ -896,10 +891,10 @@ export default function PlanView() {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="mt-6 flex flex-col items-center justify-between gap-4 rounded-[20px] border border-pine-200 bg-pine-50 p-5 text-pine-950 sm:flex-row dark:border-pine-900 dark:bg-pine-950/50 dark:text-pine-100"
+            className="status-success mt-6 flex flex-col items-center justify-between gap-4 rounded-2xl border p-5 sm:flex-row"
           >
             <div className="flex items-center gap-4 text-center sm:text-left">
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-pine-600 text-white">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-[var(--ui-success)] text-white">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
 
@@ -907,7 +902,7 @@ export default function PlanView() {
                 <h3 className="font-display text-xl sm:text-2xl font-semibold mb-1">
                   Día completado
                 </h3>
-                <p className="max-w-sm text-sm text-pine-800 dark:text-pine-200">
+                <p className="max-w-sm text-sm opacity-80">
                   Marcaste todas tus comidas planeadas como completadas.
                 </p>
               </div>
@@ -917,7 +912,7 @@ export default function PlanView() {
               onClick={() => {
                 void handleDownloadDayPdf();
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-pine-200 bg-white px-5 py-3 text-sm font-bold text-ink-800 transition active:scale-[0.98] sm:w-auto dark:border-pine-800 dark:bg-ink-900 dark:text-cream-100"
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-[var(--ui-border)] bg-[var(--ui-surface)] px-5 py-3 text-sm font-bold text-[var(--ui-text)] transition active:scale-[0.98] sm:w-auto"
             >
               <FileText className={`w-5 h-5 ${ac.text}`} />
               <span>Descargar menu</span>

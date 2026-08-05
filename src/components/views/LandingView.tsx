@@ -253,7 +253,7 @@ export default function LandingView() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-5"
         >
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-pine-700 dark:text-pine-300">
+          <p className="eyebrow-label">
             {currentDayOfWeek} · {formatMinutesAsTime(currentMinutes)}
           </p>
           <h1 className="mt-1 font-display text-[34px] font-semibold leading-none tracking-tight text-ink-900 dark:text-cream-50 sm:text-5xl">
@@ -266,7 +266,7 @@ export default function LandingView() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             data-testid="landing-daily-focus"
-            className="max-w-3xl rounded-[24px] border border-cream-200 bg-white p-5 shadow-soft dark:border-ink-700 dark:bg-ink-900 sm:p-7"
+            className="surface-raised max-w-3xl border border-[var(--ui-border)] p-5 sm:p-7"
           >
             <div className="flex items-start gap-4">
               <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[14px] bg-pine-600 text-white">
@@ -308,7 +308,7 @@ export default function LandingView() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               data-testid="landing-profile-ambos-card"
-              className="overflow-hidden rounded-[26px] border border-cream-200 bg-white shadow-soft dark:border-ink-700 dark:bg-ink-900"
+              className="surface-raised overflow-hidden border border-[var(--ui-border)]"
             >
               <div className="flex items-start justify-between gap-4 border-b border-cream-200 p-5 dark:border-ink-700 sm:p-6">
                 <div className="flex min-w-0 items-start gap-3">
@@ -383,7 +383,7 @@ export default function LandingView() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.04 }}
-              className="rounded-[24px] border border-cream-200 bg-white p-5 dark:border-ink-700 dark:bg-ink-900"
+              className="surface-card p-5"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -395,7 +395,7 @@ export default function LandingView() {
                 <span className={`text-2xl font-semibold tabular-nums ${accent.text}`}>{completionProgress}%</span>
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-cream-200 dark:bg-ink-700">
-                <motion.div className="h-full rounded-full bg-pine-600" animate={{ width: `${completionProgress}%` }} />
+                <motion.div className="h-full rounded-full bg-[var(--ui-success)]" animate={{ width: `${completionProgress}%` }} />
               </div>
               <p className="mt-3 text-sm text-ink-500 dark:text-ink-300">
                 {plannedMealCount} de {plannedMealTarget} comidas elegidas · {dayPlanningProgress}% del día planeado.
