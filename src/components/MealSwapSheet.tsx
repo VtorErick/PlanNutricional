@@ -132,10 +132,10 @@ export default function MealSwapSheet({
                       }}
                       className={`relative w-full cursor-pointer overflow-hidden rounded-[20px] text-left transition-all duration-300 group ${
                         esSeleccionada
-                          ? `${accentClasses.bgLight} border-2 ${accentClasses.borderAccent} shadow-soft`
+                          ? `${accentClasses.bgLight} border-2 ${accentClasses.borderAccent}`
                           : isDarkMode
                             ? 'bg-ink-800/60 border border-ink-700 hover:border-ink-600'
-                            : 'bg-white border border-cream-200 shadow-soft hover:shadow-lift'
+                            : 'bg-white border border-cream-200 hover:border-cream-300'
                       }`}
                     >
                       <div className="relative flex items-start gap-3 p-3.5">
@@ -143,13 +143,13 @@ export default function MealSwapSheet({
                           {getMealEmoji(comida.nombre)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className={`pr-7 font-display text-[15px] font-semibold leading-snug ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>
+                          <h4 className={`pr-16 font-display text-[15px] font-semibold leading-snug ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>
                             {comida.nombre}
                           </h4>
                           <p className={`mt-1 line-clamp-2 text-[11px] font-medium leading-[1.45] ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                             {comida.detalle}
                           </p>
-                          <p className={`mt-2 line-clamp-1 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                          <p className={`mt-2 line-clamp-1 text-xs font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                             {comida.caloriasKcal || 0} kcal
                             {typeof comida.proteinaG === 'number' ? ` · ${comida.proteinaG}g proteína` : ''}
                             {' · '}{sanitizeMealPortionsText(comida.porciones)}

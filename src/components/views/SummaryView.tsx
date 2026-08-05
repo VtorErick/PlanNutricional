@@ -75,7 +75,7 @@ export default function SummaryView() {
       className="w-full flex flex-col"
     >
       <section className="mb-3 px-1">
-        <p className={`text-[11px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
+        <p className={`text-xs font-extrabold uppercase tracking-[0.15em] ${ac.text}`}>
           Tu perfil y preferencias
         </p>
         <h2 className={`mt-0.5 font-display text-[28px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
@@ -83,14 +83,14 @@ export default function SummaryView() {
         </h2>
       </section>
 
-      <section className={`mb-3 flex items-center gap-3 rounded-[24px] border p-3.5 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+      <section className={`flex items-center gap-3 border-b px-1 py-3 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
         <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${ac.tagBg}`}>
           <BellRing className={`h-4 w-4 ${ac.text}`} />
         </div>
         <div className="min-w-0 flex-1">
           <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>Recordatorios opcionales</p>
-          <p className={`mt-0.5 text-[11px] leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-            Te avisamos cuando se acerque tu siguiente comida. Puedes apagarlos cuando quieras.
+          <p className={`mt-0.5 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+            Recibe un aviso antes de tu siguiente comida.
           </p>
         </div>
         <button
@@ -105,14 +105,14 @@ export default function SummaryView() {
         </button>
       </section>
 
-      <section className={`mb-4 rounded-[24px] border p-3.5 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+      <section className={`mb-4 border-b px-1 py-3 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
         <div className="flex items-start gap-3">
           <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${isDarkMode ? 'bg-ink-800' : 'bg-cream-100'}`}>
             <Pencil className={`h-4 w-4 ${ac.text}`} />
           </div>
           <div className="min-w-0 flex-1">
             <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>¿Cambió algo?</p>
-            <p className={`mt-0.5 text-[11px] leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+            <p className={`mt-0.5 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
               Actualiza tus respuestas. Tus datos se conservan y no tienes que empezar de nuevo.
             </p>
             <div className="mt-2.5 flex flex-wrap gap-2">
@@ -142,7 +142,7 @@ export default function SummaryView() {
       </section>
 
       {isAmbos ? (
-        <section className={`mb-4 rounded-[22px] border p-2 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+        <section className={`mb-4 rounded-[16px] border p-2 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
           <p className={`px-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
             Ver detalles de
           </p>
@@ -188,7 +188,7 @@ export default function SummaryView() {
           ].filter(Boolean) as string[];
           const compactSummaryPoints = summaryPoints.map((linea, idx) => {
             if (idx === 0) {
-              return 'Plan diseñado para pérdida de grasa y manejo de intolerancia a la lactosa.';
+              return firstSentence(linea, 'Plan adaptado a este perfil.');
             }
             if (idx === 1 && p.metaCaloricaKcalDia) {
               return `Meta diaria personalizada: ${p.metaCaloricaKcalDia} kcal.`;
@@ -235,30 +235,30 @@ export default function SummaryView() {
                 </h3>
               )}
 
-              <div className={`rounded-[26px] border p-4 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
-                <div className="space-y-2.5">
-                  <div className={`rounded-2xl p-4 bg-gradient-to-br ${dynamicAc.bgGradient} text-white`}>
+              <div className={`rounded-[18px] border p-4 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+                <div>
+                  <div className="border-b border-cream-200 pb-4 dark:border-ink-700">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/85">
+                        <p className={`flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.16em] ${dynamicAc.text}`}>
                           <TrendingDown className="h-3.5 w-3.5" />
                           Objetivo
                         </p>
-                        <p className="mt-1.5 text-[13px] font-medium leading-snug text-white/95">
+                        <p className={`mt-2 text-sm font-medium leading-relaxed ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
                           {goalSummary}
                         </p>
                       </div>
                       <div className="flex-shrink-0 text-right">
-                        <p className="font-display text-3xl font-semibold leading-none">
+                        <p className={`font-display text-3xl font-semibold leading-none ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                           {p.metaCaloricaKcalDia || '-'}
                         </p>
-                        <p className="mt-1 text-[10px] font-bold text-white/75">kcal/día</p>
+                        <p className="mt-1 text-xs font-bold text-ink-400">kcal/día</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                    <div className={`rounded-2xl p-3.5 ${isDarkMode ? 'bg-ink-800/70' : 'bg-cream-100'}`}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-cream-200 dark:sm:divide-ink-700">
+                    <div className="py-3.5 sm:pr-3.5">
                       <p className={`flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                         <UserRound className="h-3.5 w-3.5" />
                         Perfil
@@ -268,7 +268,7 @@ export default function SummaryView() {
                       </p>
                     </div>
 
-                    <div className={`rounded-2xl p-3.5 ${isDarkMode ? 'bg-ink-800/70' : 'bg-cream-100'}`}>
+                    <div className="border-t border-cream-200 py-3.5 dark:border-ink-700 sm:border-t-0 sm:pl-3.5">
                       <p className={`flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                         <Clock3 className="h-3.5 w-3.5" />
                         Horarios
@@ -279,19 +279,19 @@ export default function SummaryView() {
                     </div>
                   </div>
 
-                  <div className={`rounded-2xl p-3.5 ${isDarkMode ? 'bg-apricot-950/30' : 'bg-apricot-50'}`}>
-                    <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-apricot-700 dark:text-apricot-300">
+                  <div className="border-t border-cream-200 pt-3.5 dark:border-ink-700">
+                    <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-apricot-700 dark:text-apricot-300">
                       <Shield className="h-3.5 w-3.5" />
                       Restricciones
                     </p>
-                    <p className="mt-1.5 text-xs font-semibold leading-snug text-apricot-700 dark:text-apricot-200">
+                    <p className={`mt-1.5 text-xs font-semibold leading-relaxed ${isDarkMode ? 'text-cream-200' : 'text-ink-600'}`}>
                       {restrictionsSummary}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className={`rounded-[26px] border p-4 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+              <div className={`rounded-[18px] border p-4 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
                 <div className="mb-2.5 flex items-center justify-between gap-3">
                   <h3 className={`flex items-center gap-2 font-display text-base font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                     <Heart className={`w-4 h-4 ${dynamicAc.text}`} />
@@ -318,7 +318,7 @@ export default function SummaryView() {
                         onClick={canExpand ? () => {
                           setExpandedSummaryPoint((current) => current === pointKey ? null : pointKey);
                         } : undefined}
-                        className={`flex w-full items-start gap-2.5 rounded-2xl p-3 text-left transition-all ${canExpand ? 'active:scale-[0.99]' : ''} ${isDarkMode ? 'bg-ink-800/70 hover:bg-ink-800' : 'bg-cream-100 hover:bg-cream-200/70'}`}
+                        className={`flex w-full items-start gap-2.5 border-b px-1 py-2.5 text-left transition-colors last:border-b-0 ${canExpand ? 'active:scale-[0.99]' : ''} ${isDarkMode ? 'border-ink-700 hover:bg-ink-800/50' : 'border-cream-200 hover:bg-cream-50'}`}
                       >
                         <span className={`inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold ${dynamicAc.tagBg} ${dynamicAc.tagText}`}>
                           {idx + 1}
@@ -345,7 +345,15 @@ export default function SummaryView() {
               </div>
 
               {p.objetivosPorMomento && (
-                <div className={`relative w-full overflow-hidden rounded-[26px] border p-4 shadow-soft sm:p-5 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+                <details className={`group relative w-full overflow-hidden rounded-[18px] border p-4 sm:p-5 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+                  <summary className={`flex cursor-pointer list-none items-center justify-between gap-3 font-display text-base font-semibold [&::-webkit-details-marker]:hidden ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+                    <span className="flex items-center gap-2">
+                      <BarChart3 className={`h-4 w-4 ${dynamicAc.text}`} />
+                      Tabla de macros y porciones
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-ink-400 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-4">
                   {p.detallesPerfil && (
                     <details
                       className={`mb-3 rounded-2xl p-3.5 ${
@@ -383,11 +391,6 @@ export default function SummaryView() {
                       </p>
                     </motion.div>
                   )}
-
-                  <h3 className={`mb-2.5 flex items-center gap-2 font-display text-base font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
-                    <BarChart3 className={`w-4 h-4 ${dynamicAc.text}`} />
-                    Tabla de macros y porciones
-                  </h3>
 
                   {/* Mobile layout */}
                   <div className="sm:hidden space-y-3 mt-4">
@@ -534,7 +537,8 @@ export default function SummaryView() {
                       </tbody>
                     </table>
                   </div>
-                </div>
+                  </div>
+                </details>
               )}
             </div>
           );

@@ -86,7 +86,7 @@ export default function Header() {
         selections
       );
     } catch (error: any) {
-      await notify('Error al exportar PDF', error?.message || 'No fue posible generar el PDF del dia.');
+      await notify('Error al exportar PDF', error?.message || 'No fue posible generar el PDF del día.');
     }
   }, [activeProfile, activeDay, notify, profilesData, selections]);
 
@@ -129,7 +129,7 @@ export default function Header() {
           : 'border-cream-200/70 bg-cream-50/85'
       }`}
     >
-      <div className="max-w-5xl mx-auto px-3 min-[380px]:px-4 sm:px-6 py-2.5 sm:py-3">
+      <div className="mx-auto max-w-7xl px-3 py-2.5 min-[380px]:px-4 sm:px-6 sm:py-3">
         <div className="flex min-w-0 items-center justify-between gap-2">
           {/* Left: Logo and Profile */}
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -141,7 +141,7 @@ export default function Header() {
                 data-testid="header-home-button"
                 aria-label="Ir a Inicio"
                 title="Ir a Inicio"
-              className="group relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-[17px] bg-ink-950 text-white shadow-[0_10px_22px_-8px_rgba(15,23,42,0.7)] transition hover:-translate-y-0.5 hover:bg-ink-800 active:scale-90 sm:h-11 sm:w-11"
+              className="group relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-ink-950 text-white shadow-sm transition hover:bg-ink-800 active:scale-95 sm:h-11 sm:w-11"
             >
                 <Leaf className="h-5 w-5 -rotate-12 text-apricot-300 transition-transform group-hover:rotate-0" strokeWidth={2.4} />
                 <Sparkles className="absolute right-1.5 top-1.5 h-2.5 w-2.5 text-white/85" strokeWidth={2.5} />
@@ -231,8 +231,8 @@ export default function Header() {
               {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
 
-            {/* PDF button */}
-            <div className="relative flex flex-shrink-0 items-center" ref={pdfMenuRef}>
+            {/* La descarga sólo aparece donde el plan es el contexto principal. */}
+            {activeTab === 'plan' ? <div className="relative flex flex-shrink-0 items-center" ref={pdfMenuRef}>
               <button
                 onClick={() => {
                   setShowPdfMenu((value) => !value);
@@ -258,13 +258,14 @@ export default function Header() {
                       void handleDownloadDayPdf();
                       setShowPdfMenu(false);
                     }}
+                    aria-label="Menu de hoy"
                     className={`w-full text-left px-3 py-2.5 rounded-2xl text-xs font-bold ${
                       isDarkMode
                         ? 'text-cream-100 hover:bg-ink-800'
                         : 'text-ink-600 hover:bg-cream-100'
                     }`}
                   >
-                    Menu de hoy
+                    Menú de hoy
                   </button>
                   <button
                     onClick={() => {
@@ -281,21 +282,18 @@ export default function Header() {
                   </button>
                 </div>
               )}
-            </div>
+            </div> : null}
 
-            {/* Settings button (solo en Inicio) */}
-            {activeTab === 'inicio' && (
-              <button
-                type="button"
-                onClick={() => setIsAdminOpen(true)}
-                data-testid="header-settings-button"
-                className={iconButtonClass}
-                aria-label="Configuracion"
-                title="Configuracion"
-              >
-                <Settings className="h-4 w-4" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setIsAdminOpen(true)}
+              data-testid="header-settings-button"
+              className={iconButtonClass}
+              aria-label="Configuración"
+              title="Configuración"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>

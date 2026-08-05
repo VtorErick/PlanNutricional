@@ -272,7 +272,7 @@ const STEP_META: Record<StepType, { label: string; Icon: any }> = {
 const QUICK_TAGS = {
   diagnostics: [
     'Ninguna', 
-    'No sÃ© / prefiero no responder',
+    'No sé / prefiero no responder',
     'Diabetes / Resistencia a la insulina', 
     'Hipertensión', 
     'Enfermedad renal', 
@@ -285,7 +285,7 @@ const QUICK_TAGS = {
   ],
   medications: [
     'Ninguno', 
-    'No sÃ© / prefiero no responder',
+    'No sé / prefiero no responder',
     'Metformina', 
     'Levotiroxina', 
     'Antihipertensivos', 
@@ -296,7 +296,7 @@ const QUICK_TAGS = {
   ],
   allergies: [
     'Ninguna', 
-    'No sÃ© / prefiero no responder',
+    'No sé / prefiero no responder',
     'Lácteos', 
     'Gluten (Celiaquía)', 
     'Cacahuates', 
@@ -307,7 +307,7 @@ const QUICK_TAGS = {
   ],
   intolerances: [
     'Ninguna', 
-    'No sÃ© / prefiero no responder',
+    'No sé / prefiero no responder',
     'Lactosa', 
     'Fructosa', 
     'Sorbitol', 
@@ -317,7 +317,7 @@ const QUICK_TAGS = {
   ],
   digestive: [
     'Ninguno', 
-    'No sÃ© / prefiero no responder',
+    'No sé / prefiero no responder',
     'Reflujo / Acidez', 
     'Gastritis', 
     'Inflamación / Gases', 
@@ -392,7 +392,7 @@ function CheckList({
   onToggle: (tag: string) => void;
 }) {
   return (
-    <div className="max-h-56 space-y-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-cream-200 dark:scrollbar-thumb-ink-600">
+    <div className="max-h-64 overflow-y-auto rounded-2xl border border-cream-200 bg-white scrollbar-thin scrollbar-thumb-cream-200 dark:border-ink-600 dark:bg-ink-900 dark:scrollbar-thumb-ink-600">
       {options.map((option) => {
         const isActive = currentValueString.includes(option);
         return (
@@ -400,10 +400,10 @@ function CheckList({
             type="button"
             key={option}
             onClick={() => onToggle(option)}
-            className={`flex min-h-11 w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-all active:scale-[.98] ${
+            className={`flex min-h-11 w-full items-center justify-between border-b border-cream-100 px-3 py-2.5 text-left transition-colors last:border-b-0 dark:border-ink-700 ${
               isActive 
-                ? 'border-pine-500 bg-pine-50 text-pine-700 font-bold dark:border-pine-400 dark:bg-pine-950/40 dark:text-pine-200'
-                : 'border-cream-200 bg-white text-ink-500 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-300 dark:hover:bg-ink-800'
+                ? 'bg-pine-50 text-pine-700 font-bold dark:bg-pine-950/40 dark:text-pine-200'
+                : 'bg-white text-ink-500 hover:bg-cream-50 dark:bg-ink-900 dark:text-cream-300 dark:hover:bg-ink-800'
             }`}
           >
             <span className="text-[13px] leading-tight pr-2">{option}</span>
@@ -470,7 +470,7 @@ function NumField({
   };
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-2xl border border-cream-200 bg-white p-3 transition-colors focus-within:border-pine-300 focus-within:ring-2 focus-within:ring-pine-100 dark:border-ink-600 dark:bg-ink-900 dark:focus-within:border-pine-600 dark:focus-within:ring-pine-900/50">
+    <div className="flex flex-col gap-1.5 rounded-[14px] border border-cream-200 bg-white p-3 transition-colors focus-within:border-pine-400 focus-within:ring-2 focus-within:ring-pine-100 dark:border-ink-600 dark:bg-ink-900 dark:focus-within:border-pine-600 dark:focus-within:ring-pine-900/50">
       <div className="flex items-center justify-between text-[11px] font-bold text-ink-400 uppercase dark:text-ink-400">
         <label>
           {label} {required && <span className="text-coral-400 ml-0.5">*</span>}
@@ -1176,84 +1176,69 @@ export default function NutritionQuestionnaire({
         : [targetProfile];
 
       return (
-        <div className="space-y-3">
-          <div className="rounded-3xl border border-pine-200 bg-pine-50/80 px-4 py-3 dark:border-pine-900/60 dark:bg-pine-950/40">
-            <p className="text-sm font-extrabold text-pine-800 dark:text-pine-100">
-              Primero elige a quién va dirigido
+        <div className="space-y-4">
+          <div>
+            <p className="text-base font-extrabold text-ink-800 dark:text-cream-100">
+              Elige para quién es este plan
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-pine-700/80 dark:text-pine-200/80">
+            <p className="mt-1 text-sm leading-relaxed text-ink-500 dark:text-ink-300">
               Toma aproximadamente 3 minutos. Puedes cambiar esta opción después; los nombres solo sirven para identificar cada plan.
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-cream-200 bg-white p-3 dark:border-ink-600 dark:bg-ink-900">
-            {[
-              ['1', 'Elige a quien'],
-              ['2', 'Responde lo esencial'],
-              ['3', 'Recibe tu plan'],
-            ].map(([number, label]) => (
-              <div key={number} className="text-center">
-                <span className="mx-auto flex h-7 w-7 items-center justify-center rounded-full bg-pine-100 text-xs font-black text-pine-700 dark:bg-pine-950/60 dark:text-pine-200">
-                  {number}
-                </span>
-                <p className="mt-1.5 text-[10px] font-bold leading-tight text-ink-500 dark:text-cream-300">{label}</p>
-              </div>
-            ))}
+          <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white dark:border-ink-600 dark:bg-ink-900">
+            {([
+              ['el', `Persona 1 · ${labelEl}`, 'Un plan para una persona'],
+              ['ella', `Persona 2 · ${labelElla}`, 'Un plan para una persona'],
+            ] as const).map(([val, title, sub]) => {
+              const t = THEME[val];
+              const active = targetProfile === val || targetProfile === 'ambos';
+              const profileButtonDisabled = loading;
+
+              return (
+                <button
+                  key={val}
+                  onClick={() => !profileButtonDisabled && selectProfile(val)}
+                  data-testid={`questionnaire-target-${val}`}
+                  disabled={profileButtonDisabled}
+                  className={`flex min-h-16 w-full items-center gap-3 border-b border-cream-100 px-4 py-3 text-left font-semibold transition-colors last:border-b-0 dark:border-ink-700 ${
+                    active
+                      ? t.light
+                      : 'bg-white hover:bg-cream-50 dark:bg-ink-900 dark:hover:bg-ink-800'
+                  } ${profileButtonDisabled ? 'cursor-not-allowed opacity-55' : ''}`}
+                >
+                  <span className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border ${active ? `${t.border} ${t.text}` : 'border-cream-300 dark:border-ink-500'}`}>
+                    {active && <Check className="h-3 w-3" strokeWidth={3} />}
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-ink-700 dark:text-cream-100'}`}>
+                      {title}
+                    </p>
+                    <p className="mt-1 text-xs text-ink-400">{sub}</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-
-          {([
-            ['el', '👤', `Persona 1 · ${labelEl}`, 'Un plan para una persona'],
-            ['ella', '👤', `Persona 2 · ${labelElla}`, 'Un plan para una persona'],
-          ] as const).map(([val, emoji, title, sub]) => {
-            const t = THEME[val];
-            const active = targetProfile === val;
-            const profileButtonDisabled = loading;
-
-            return (
-              <button
-                key={val}
-                onClick={() => !profileButtonDisabled && selectProfile(val)}
-                data-testid={`questionnaire-target-${val}`}
-                disabled={profileButtonDisabled}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 font-semibold text-left transition-all duration-200 active:scale-[.98] ${
-                  active
-                    ? `${t.border} ${t.light} shadow-sm`
-                    : 'border-cream-200 bg-white hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:hover:bg-ink-800'
-                } ${profileButtonDisabled ? 'cursor-not-allowed opacity-55' : ''}`}
-              >
-                <span className="text-2xl w-11 h-11 rounded-2xl bg-white shadow-sm border border-cream-100 flex items-center justify-center flex-shrink-0 dark:bg-ink-800 dark:border-ink-600">
-                  {emoji}
-                </span>
-
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-bold leading-tight ${active ? t.text : 'text-ink-700 dark:text-cream-100'}`}>
-                    {title}
-                  </p>
-                  <p className={`text-[11px] mt-0.5 ${active ? `${t.text} opacity-70` : 'text-ink-400'}`}>
-                    {sub}
-                  </p>
-                </div>
-
-                {active && <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${t.text}`} />}
-              </button>
-            );
-          })}
 
           <button
             type="button"
             onClick={() => selectProfile('ambos')}
             data-testid="questionnaire-target-ambos"
             disabled={loading}
-            className="flex w-full items-center justify-between rounded-2xl border border-dashed border-pine-200 bg-pine-50/60 px-3.5 py-3 text-left transition hover:bg-pine-50 active:scale-[.98] disabled:opacity-50 dark:border-pine-900/70 dark:bg-pine-950/30 dark:hover:bg-pine-950/50"
+            className={`flex w-full items-center justify-between border-y px-1 py-3 text-left transition active:scale-[.99] disabled:opacity-50 ${targetProfile === 'ambos' ? 'border-pine-200 text-pine-800 dark:border-pine-900 dark:text-pine-200' : 'border-cream-200 hover:text-pine-700 dark:border-ink-700 dark:hover:text-pine-200'}`}
           >
             <span>
-              <span className="block text-xs font-extrabold text-pine-800 dark:text-pine-100">Tambien quieres crear otro plan?</span>
-              <span className="mt-0.5 block text-[11px] text-pine-700/75 dark:text-pine-200/75">Puedes configurarlo para dos personas despues.</span>
+              <span className="block text-sm font-extrabold text-ink-700 dark:text-cream-100">¿También quieres crear otro plan?</span>
+              <span className="mt-0.5 block text-xs text-ink-400">Configúralo para dos personas.</span>
             </span>
-            <ChevronRight className="h-4 w-4 flex-shrink-0 text-pine-600 dark:text-pine-200" />
+            {targetProfile === 'ambos'
+              ? <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-pine-600 dark:text-pine-300" />
+              : <ChevronRight className="h-4 w-4 flex-shrink-0 text-ink-400" />}
           </button>
 
-          <div className="rounded-[24px] border border-cream-200 bg-white p-3 dark:border-ink-600 dark:bg-ink-900">
+          <div>
             <div className="mb-3">
               <p className="text-sm font-bold text-ink-700 dark:text-cream-100">¿Cómo quieres identificar este plan?</p>
               <p className="mt-1 text-xs text-ink-400">Opcional. Puedes usar un nombre, apodo o dejar el sugerido.</p>
@@ -1277,7 +1262,7 @@ export default function NutritionQuestionnaire({
                       maxLength={24}
                       data-testid={`questionnaire-label-${profileId}`}
                       aria-label={`Nombre del ${isEl ? 'primer' : 'segundo'} perfil`}
-                      className="h-11 w-full rounded-2xl border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
+                      className="h-11 w-full rounded-[14px] border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
                       placeholder={fallbackLabel}
                     />
                   </label>
@@ -1286,9 +1271,9 @@ export default function NutritionQuestionnaire({
             </div>
           </div>
 
-          <p className="flex items-start gap-2 rounded-2xl bg-cream-100 px-3 py-2.5 text-[10px] leading-relaxed text-ink-500 dark:bg-ink-800 dark:text-ink-300">
+          <p className="flex items-start gap-2 text-xs leading-relaxed text-ink-400 dark:text-ink-400">
             <Shield className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-pine-600 dark:text-pine-300" />
-            Comparte solo la informacion necesaria para personalizar tu plan. No incluyas nombres completos ni datos identificables en las notas.
+            Comparte sólo la información necesaria. Evita nombres completos o datos identificables en las notas.
           </p>
         </div>
       );
@@ -1360,7 +1345,7 @@ export default function NutritionQuestionnaire({
           {/* ── Objetivos: grid 3 col compacto ── */}
           <div>
             <p className="text-sm font-bold text-ink-700 dark:text-cream-100 mb-2">Objetivos</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {OBJECTIVES.map((obj) => {
                 const isSelected = p.objectives.includes(obj.val);
                 const toggleObjective = () => {
@@ -1376,11 +1361,11 @@ export default function NutritionQuestionnaire({
                     type="button"
                     onClick={toggleObjective}
                     className={`
-                      relative flex flex-col items-center justify-center gap-1
-                      rounded-2xl border-2 py-2.5 px-1 text-center
+                      relative flex min-h-12 items-center gap-2
+                      rounded-[14px] border px-3 py-2.5 text-left
                       transition-all duration-150 active:scale-[.96] select-none
                       ${isSelected
-                        ? `${tc.border} ${tc.light} ${tc.text} shadow-sm`
+                        ? `${tc.border} ${tc.light} ${tc.text}`
                         : 'border-cream-200 bg-white text-ink-400 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-ink-400 dark:hover:bg-ink-800'
                       }
                     `}
@@ -1388,14 +1373,14 @@ export default function NutritionQuestionnaire({
                     {/* Check badge */}
                     {isSelected && (
                       <span
-                        className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full"
+                        className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full"
                         style={{ backgroundColor: tc.accent }}
                       >
                         <Check className="h-2.5 w-2.5 text-white" />
                       </span>
                     )}
-                    <span className="text-[22px] leading-none">{obj.emoji}</span>
-                    <span className={`text-[10px] font-bold leading-tight ${isSelected ? '' : 'text-ink-500 dark:text-cream-300'}`}>
+                    {!isSelected && <span className="h-4 w-4 flex-shrink-0 rounded-full border border-cream-300 dark:border-ink-500" />}
+                    <span className={`text-xs font-bold leading-tight ${isSelected ? '' : 'text-ink-500 dark:text-cream-300'}`}>
                       {obj.val}
                     </span>
                   </button>
@@ -1416,16 +1401,15 @@ export default function NutritionQuestionnaire({
                     type="button"
                     onClick={() => setPerson(profile, { objectiveTimeline: tl.val })}
                     className={`
-                      flex flex-col items-center justify-center gap-0.5
-                      rounded-2xl border-2 py-2.5 transition-all active:scale-[.97]
+                      flex min-h-11 items-center justify-center
+                      rounded-[14px] border px-2 py-2.5 transition-all active:scale-[.97]
                       ${active
-                        ? `${tc.border} ${tc.light} ${tc.text} shadow-sm`
+                        ? `${tc.border} ${tc.light} ${tc.text}`
                         : 'border-cream-200 bg-white text-ink-400 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-ink-400 dark:hover:bg-ink-800'
                       }
                     `}
                   >
-                    <span className="text-lg leading-none">{tl.emoji}</span>
-                    <span className="text-[10px] font-bold">{tl.val}</span>
+                    <span className="text-xs font-bold">{tl.val}</span>
                   </button>
                 );
               })}
@@ -2038,7 +2022,7 @@ export default function NutritionQuestionnaire({
             <p className="font-bold">Modelo previsto: {plannedModelLabel}</p>
             <p className="mt-1 opacity-90">
               {fallbackPreviewLabel
-                ? `Fallback automatico: ${fallbackPreviewLabel}.`
+                ? `Alternativa automática: ${fallbackPreviewLabel}.`
                 : 'No hay otro fallback validado en este momento.'}
             </p>
           </div>
@@ -2072,7 +2056,7 @@ export default function NutritionQuestionnaire({
             ]);
 
             return (
-              <div key={p} className={`space-y-2 rounded-2xl border p-3 ${t.border} ${t.light}`}>
+              <div key={p} className={`space-y-2 rounded-[14px] border p-3 ${t.border} ${t.light}`}>
                 <p className={`text-[11px] font-black uppercase tracking-wider ${t.text}`}>
                   {p === 'el' ? `Perfil ${labelEl}` : `Perfil ${labelElla}`}
                 </p>
@@ -2148,7 +2132,7 @@ export default function NutritionQuestionnaire({
             <button
               onClick={() => onViewPlan(targetProfile)}
               data-testid="questionnaire-view-plan"
-              className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] bg-gradient-to-r ${tc.grad} hover:brightness-110 text-white`}
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-ink-700 py-3.5 text-sm font-bold text-white transition-all active:scale-[.98] dark:bg-cream-50 dark:text-ink-900"
             >
               <CheckCircle2 className="w-5 h-5" />
               ¡Listo! Revisa tu plan
@@ -2160,16 +2144,14 @@ export default function NutritionQuestionnaire({
               onClick={handleGenerate}
               disabled={loading}
               data-testid="questionnaire-generate"
-              animate={!loading ? { backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] } : {}}
-              transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
-              className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold shadow-md transition-all active:scale-[.98] ${
+              className={`w-full flex items-center justify-center gap-2 rounded-[14px] py-3.5 text-sm font-bold transition-all active:scale-[.98] ${
                 loading
                   ? 'bg-ink-700 opacity-70 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-pine-600 via-pine-500 to-pine-400 bg-[length:200%_200%] hover:brightness-110'
+                  : 'bg-ink-700 hover:bg-ink-600 dark:bg-cream-50 dark:text-ink-900 dark:hover:bg-cream-100'
               } text-white`}
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-apricot-300" />}
-              {loading ? 'Generando plan...' : '✨ Generar plan con IA'}
+              {loading ? 'Generando plan...' : 'Generar plan con IA'}
             </motion.button>
           )}
 
@@ -2201,7 +2183,7 @@ export default function NutritionQuestionnaire({
 
   return (
     <>
-      <div className="mt-4 overflow-hidden rounded-[24px] border border-cream-200 bg-white shadow-sm dark:border-ink-700 dark:bg-ink-900">
+      <div className="mt-0 overflow-hidden border-y border-cream-200 bg-white shadow-none dark:border-ink-700 dark:bg-ink-900 sm:mt-4 sm:rounded-[22px] sm:border">
         <div className="h-1.5 bg-cream-100 dark:bg-ink-800">
           <motion.div
             className={`h-full bg-gradient-to-r ${tc.grad}`}
@@ -2248,7 +2230,7 @@ export default function NutritionQuestionnaire({
         </div>
 
         {(showBack || showNext) && (
-          <div className="flex items-center gap-2 border-t border-cream-100 px-4 pb-4 pt-3 dark:border-ink-700">
+          <div className="sticky bottom-0 z-20 flex items-center gap-2 border-t border-cream-100 bg-white/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-ink-700 dark:bg-ink-900/95 sm:pb-4">
             {showBack && (
               <button
                 onClick={goBack}
@@ -2277,9 +2259,9 @@ export default function NutritionQuestionnaire({
                   onClick={advance}
                   disabled={!canContinue()}
                   data-testid="questionnaire-next"
-                  className={`ml-auto flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold transition-all active:scale-[.98] ${
+                  className={`ml-auto flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-bold transition-all active:scale-[.98] ${
                     canContinue()
-                      ? `bg-gradient-to-r ${tc.grad} text-white shadow-sm`
+                      ? 'bg-ink-700 text-white dark:bg-cream-50 dark:text-ink-900'
                       : 'bg-cream-100 text-cream-300 cursor-not-allowed dark:bg-ink-800 dark:text-ink-500'
                   }`}
                 >

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowRight, Flame, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { estimateDailyCaloriesFromObjectives, estimateDailyMacroTargetsFromObjectives } from '../../utils/nutrition';
 import { getAccentColors, getMonitoringPalette } from '../../utils/theme';
@@ -81,6 +81,7 @@ export default function CalorieMonitoringView() {
     isAmbos,
     diaActivo,
     setDiaActivo,
+    setTab,
     isDarkMode,
   } = useDiet();
 
@@ -146,6 +147,9 @@ export default function CalorieMonitoringView() {
     el: getProfileMetrics('el'),
     ella: getProfileMetrics('ella'),
   }), [getProfileMetrics]);
+  const hasAnyData = profileIds.some((profileId) =>
+    metricsByProfile[profileId].daySummaries.some((day) => day.kcal > 0)
+  );
 
   const statusPills: Record<StatusKey, string> = {
     low: isDarkMode ? 'bg-apricot-950/40 text-apricot-300' : 'bg-apricot-100 text-apricot-700',
@@ -327,11 +331,16 @@ export default function CalorieMonitoringView() {
       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
       className="space-y-3"
     >
-      <section className={`rounded-[26px] border p-4 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+      <header className="px-1 pb-1">
+        <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-pine-700 dark:text-pine-300">Tu avance</p>
+        <h2 className={`mt-1 font-display text-[30px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>Progreso</h2>
+      </header>
+
+      <section className={`rounded-[18px] border p-4 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className={`font-display text-lg font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>Kcal por día</h3>
-            <p className={`mt-0.5 text-[11px] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+            <p className={`mt-0.5 text-xs ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
               Toca un día para revisar sus metas.
             </p>
           </div>
@@ -345,7 +354,7 @@ export default function CalorieMonitoringView() {
                 key={dia}
                 type="button"
                 onClick={() => setDiaActivo(dia)}
-                className={`inline-flex min-w-0 items-center justify-center rounded-xl px-1 py-2 text-[10px] font-extrabold transition active:scale-95 sm:text-xs ${
+                className={`inline-flex min-w-0 items-center justify-center rounded-xl px-1 py-2 text-xs font-bold transition active:scale-95 ${
                   active
                     ? `${palette.activeCard} shadow-sm`
                     : isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-cream-100 text-ink-500'
@@ -358,6 +367,25 @@ export default function CalorieMonitoringView() {
         </div>
       </section>
 
+      {!hasAnyData ? (
+        <section className={`rounded-[18px] border px-5 py-8 text-center ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+          <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full ${isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-cream-100 text-ink-500'}`}>
+            <Flame className="h-5 w-5" />
+          </span>
+          <h3 className={`mt-3 font-display text-xl font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>Aún no hay comidas registradas</h3>
+          <p className={`mx-auto mt-1 max-w-md text-sm ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+            Tus calorías y macros aparecerán cuando elijas o registres una comida. No mostraremos diferencias hasta tener datos reales.
+          </p>
+          <button
+            type="button"
+            onClick={() => setTab('plan')}
+            className="mx-auto mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] bg-ink-900 px-5 text-sm font-bold text-white dark:bg-cream-100 dark:text-ink-900"
+          >
+            Ir a registrar comida
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </section>
+      ) : <>
       {isCombined ? (
         <section className={`rounded-[26px] border p-4 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
           <div className="mb-2.5 flex items-center justify-between gap-3">
@@ -420,6 +448,7 @@ export default function CalorieMonitoringView() {
           <ProfilePanel key={profileId} profileId={profileId} />
         ))}
       </div>
+      </>}
     </motion.div>
   );
 }

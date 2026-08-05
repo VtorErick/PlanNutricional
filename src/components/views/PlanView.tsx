@@ -50,32 +50,32 @@ const momentoIcons: Record<string, React.ElementType> = {
   cena: Moon,
 };
 
-// Cada momento tiene su propio color para que el plan se sienta vivo
+// Los momentos usan una superficie neutral; el color queda reservado al perfil.
 const momentoThemes: Record<string, { tile: string; icon: string; strip: string }> = {
   desayuno: {
-    tile: 'bg-apricot-100 dark:bg-apricot-950/50',
-    icon: 'text-apricot-600 dark:text-apricot-300',
-    strip: 'bg-apricot-400',
+    tile: 'bg-cream-100 dark:bg-ink-800',
+    icon: 'text-ink-700 dark:text-cream-200',
+    strip: 'bg-cream-200 dark:bg-ink-700',
   },
   colacion_am: {
-    tile: 'bg-coral-100 dark:bg-coral-950/50',
-    icon: 'text-coral-500 dark:text-coral-300',
-    strip: 'bg-coral-400',
+    tile: 'bg-cream-100 dark:bg-ink-800',
+    icon: 'text-ink-700 dark:text-cream-200',
+    strip: 'bg-cream-200 dark:bg-ink-700',
   },
   comida: {
-    tile: 'bg-pine-100 dark:bg-pine-950/50',
-    icon: 'text-pine-600 dark:text-pine-300',
-    strip: 'bg-pine-500',
+    tile: 'bg-cream-100 dark:bg-ink-800',
+    icon: 'text-ink-700 dark:text-cream-200',
+    strip: 'bg-cream-200 dark:bg-ink-700',
   },
   colacion_pm: {
-    tile: 'bg-ocean-100 dark:bg-ocean-950/50',
-    icon: 'text-ocean-500 dark:text-ocean-300',
-    strip: 'bg-ocean-400',
+    tile: 'bg-cream-100 dark:bg-ink-800',
+    icon: 'text-ink-700 dark:text-cream-200',
+    strip: 'bg-cream-200 dark:bg-ink-700',
   },
   cena: {
-    tile: 'bg-ink-800 dark:bg-ink-700',
-    icon: 'text-cream-100 dark:text-cream-200',
-    strip: 'bg-ink-500',
+    tile: 'bg-cream-100 dark:bg-ink-800',
+    icon: 'text-ink-700 dark:text-cream-200',
+    strip: 'bg-cream-200 dark:bg-ink-700',
   },
 };
 
@@ -369,17 +369,18 @@ export default function PlanView() {
       key={`${meal.nombre}-${meal.detalle}`}
       role="article"
       data-testid={dataTestId}
-      className={`group rounded-[18px] border p-3 ${
+      className={`group rounded-[16px] border p-3 ${
         isDarkMode
           ? 'border-ink-700 bg-ink-800/50'
-          : 'border-cream-200 bg-cream-50'
-      } cursor-pointer transition-all hover:shadow-soft active:scale-[0.99]`}
+          : 'border-cream-200 bg-white'
+      } cursor-pointer transition-colors hover:border-cream-300 active:scale-[0.99]`}
     >
         <div className="flex items-center gap-3">
         <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xl ${isDarkMode ? 'bg-ink-900' : 'bg-white shadow-soft'}`}>
           {getMealEmoji(meal.nombre)}
         </div>
         <div className="min-w-0 flex-1">
+          <p className={`text-xs font-bold ${accent.text}`}>{getProfileLabel(profileLabels, profileId)}</p>
           <h4 className={`line-clamp-2 font-display text-[15px] font-semibold leading-snug ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
             {meal.nombre}
           </h4>
@@ -390,14 +391,10 @@ export default function PlanView() {
           </span>
         </div>
         </div>
-        {meal.detalle ? (
-          <p className={`mt-2 pl-[52px] line-clamp-2 text-[11px] font-medium leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-            {meal.detalle}
-          </p>
-        ) : null}
-        <p className={`mt-1.5 pl-[52px] text-[11px] font-medium leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-          {meal.porciones}
+        <p className={`mt-2 pl-[52px] text-xs font-medium ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+          {meal.proteinaG || 0} g proteína · {meal.grasasG || 0} g grasas
         </p>
+        {meal.porciones ? <p className={`mt-1 pl-[52px] line-clamp-1 text-xs ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>{meal.porciones}</p> : null}
       <div className={`mt-2.5 flex items-center gap-1.5 border-t pt-2 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
         <button
           type="button"
@@ -423,11 +420,11 @@ export default function PlanView() {
                 : 'Esta opción no está disponible en otro día de este plan.'
             );
           }}
-          className={`inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold transition active:scale-95 ${isDarkMode ? 'bg-ink-900 text-ink-200 hover:bg-ink-700' : 'bg-cream-100 text-ink-600 hover:bg-cream-200'}`}
+          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition active:scale-95 ${isDarkMode ? 'bg-ink-900 text-ink-200 hover:bg-ink-700' : 'bg-cream-100 text-ink-600 hover:bg-cream-200'}`}
           aria-label={`Repetir ${meal.nombre} en otro día`}
+          title="Repetir en otro día"
         >
           <Repeat2 className="h-3.5 w-3.5" />
-          Repetir
         </button>
         <button
           type="button"
@@ -435,7 +432,7 @@ export default function PlanView() {
             event.stopPropagation();
             toggleComidaCompletada(profileId, diaActivo, momentoKey);
           }}
-          className={`ml-auto inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 text-[10px] font-extrabold transition active:scale-95 ${
+          className={`ml-auto inline-flex min-h-8 items-center gap-1 rounded-full px-3 text-xs font-bold transition active:scale-95 ${
             comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`]
               ? isDarkMode ? 'bg-pine-950/50 text-pine-200' : 'bg-pine-100 text-pine-700'
               : isDarkMode ? 'bg-ink-900 text-ink-300 hover:bg-ink-700' : 'bg-white text-ink-600 shadow-sm hover:bg-cream-100'
@@ -443,7 +440,7 @@ export default function PlanView() {
           aria-pressed={Boolean(comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`])}
         >
           <CheckCircle2 className="h-3.5 w-3.5" />
-          {comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`] ? 'Completada' : 'Marcar completada'}
+          {comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`] ? 'Completada' : 'Marcar lista'}
         </button>
         <button
           type="button"
@@ -451,13 +448,13 @@ export default function PlanView() {
             event.stopPropagation();
             onChange();
           }}
-          className={`inline-flex min-h-8 items-center rounded-full px-2.5 text-[10px] font-extrabold transition active:scale-95 ${isDarkMode ? 'text-ink-300 hover:bg-ink-700' : 'text-ink-500 hover:bg-cream-100'}`}
+          className={`inline-flex min-h-8 items-center rounded-full px-2.5 text-xs font-bold transition active:scale-95 ${isDarkMode ? 'text-ink-300 hover:bg-ink-700' : 'text-ink-500 hover:bg-cream-100'}`}
         >
           Cambiar
         </button>
       </div>
     </div>
-  ), [comidasCompletadas, diaActivo, isComidaFavorita, isDarkMode, notify, repetirComida, toggleComidaCompletada, toggleFavoritoComida]);
+  ), [comidasCompletadas, diaActivo, isComidaFavorita, isDarkMode, notify, profileLabels, repetirComida, toggleComidaCompletada, toggleFavoritoComida]);
 
   const renderEmptyMealState = React.useCallback((
     accent: AccentColors,
@@ -469,10 +466,10 @@ export default function PlanView() {
       role="button"
       tabIndex={0}
       data-testid={dataTestId}
-      className={`flex items-center justify-center gap-2.5 rounded-[20px] border-2 border-dashed px-4 py-4 text-center transition-all cursor-pointer hover:shadow-soft active:scale-[0.99] ${
+      className={`flex min-h-[52px] items-center justify-start gap-2.5 rounded-[16px] border px-3 py-2.5 text-left transition-colors cursor-pointer active:scale-[0.99] ${
         isDarkMode
-          ? 'border-ink-600 bg-ink-800/30 hover:border-ink-500'
-          : `${accent.border} bg-cream-50 hover:bg-cream-100`
+          ? 'border-ink-700 bg-ink-800/40 hover:border-ink-500'
+          : `${accent.border} bg-white hover:bg-cream-50`
       }`}
     >
       <span className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${accent.tagBg} ${accent.text}`}>
@@ -497,8 +494,8 @@ export default function PlanView() {
       data-testid={`meal-log-open-${profileId}-${diaActivo}-${momentoKey}`}
       className={`flex w-full items-center justify-center rounded-[20px] border font-extrabold transition hover:shadow-soft active:scale-[0.97] ${
         compact
-          ? 'min-h-9 flex-row gap-1.5 px-3 text-[11px]'
-          : 'min-h-[74px] flex-col gap-1 px-2 text-[11px]'
+          ? 'min-h-[52px] flex-row gap-1.5 px-2 text-xs'
+          : 'min-h-[52px] flex-row gap-1.5 px-3 text-xs'
       } ${
         isDarkMode
           ? 'border-ink-700 bg-ink-800/60 text-ink-200 hover:bg-ink-800'
@@ -509,7 +506,7 @@ export default function PlanView() {
       <span className={`flex items-center justify-center rounded-full ${compact ? 'h-6 w-6' : 'h-8 w-8'} ${accent.tagBg} ${accent.text}`}>
         <Camera className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
       </span>
-      <span>{compact ? 'Registrar lo que comí' : 'Con foto'}</span>
+      <span>{compact ? 'Registrar' : 'Registrar comida'}</span>
     </button>
   ), [diaActivo, isDarkMode, openLogSheet]);
 
@@ -521,24 +518,24 @@ export default function PlanView() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -15 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className="space-y-4"
+        className="space-y-3"
       >
         <div className="space-y-4">
           <div className="px-1">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className={`font-display text-[27px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+                 <h2 className={`font-display text-[30px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                   Mi plan
                 </h2>
-                <p className={`mt-0.5 text-[11px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                 <p className={`mt-0.5 text-sm font-semibold ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                   {diaActivo}
                 </p>
                 {nextPendingMoment ? (
-                  <p className={`mt-1 text-[10px] font-extrabold ${ac.text}`}>
+                   <p className={`mt-1 text-xs font-bold ${ac.text}`}>
                     Siguiente: {nextPendingMoment.label} · {nextPendingMoment.hora}
                   </p>
                 ) : (
-                  <p className="mt-1 text-[10px] font-extrabold text-pine-600 dark:text-pine-300">Día completado</p>
+                   <p className="mt-1 text-xs font-bold text-pine-600 dark:text-pine-300">Día completado</p>
                 )}
               </div>
 
@@ -547,11 +544,11 @@ export default function PlanView() {
                   <p className={`whitespace-nowrap text-sm font-black tabular-nums ${ac.text}`}>
                     {activeDayStats.kcal}
                     <span className={`ml-1 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                      de {activeDayStats.target} kcal
+                      / {activeDayStats.target} kcal
                     </span>
                   </p>
                   <p className={`mt-0.5 text-[9px] font-bold ${isDarkMode ? 'text-ink-500' : 'text-ink-400'}`}>
-                    Total del día
+                    Seleccionadas hoy
                   </p>
                 </div>
 
@@ -572,7 +569,7 @@ export default function PlanView() {
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-7 gap-1" aria-label="Elegir día del plan">
+            <div className="mt-4 grid grid-cols-7 gap-1.5" aria-label="Elegir día del plan">
               {diasDisponibles.map((day) => {
                 const isActiveDay = day === diaActivo;
                 return (
@@ -583,7 +580,7 @@ export default function PlanView() {
                     aria-label={`Ver ${day}`}
                     aria-pressed={isActiveDay}
                     data-testid={`plan-day-${day}`}
-                    className={`min-h-10 rounded-xl px-1 text-[10px] font-extrabold transition active:scale-90 sm:text-xs ${
+                    className={`min-h-10 rounded-xl px-1 text-xs font-bold transition active:scale-95 ${
                       isActiveDay
                         ? `${ac.btnActive} shadow-sm`
                         : isDarkMode
@@ -605,7 +602,7 @@ export default function PlanView() {
               />
             </div>
 
-            <div className={`mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+            <div className={`mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-semibold ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
               <span>{activeDayPlannedCount} de {totalMomentosProgress} planeadas</span>
               <span>{completadosCount} completadas</span>
               <span className="tabular-nums">{calorieProgress}% de kcal</span>
@@ -627,8 +624,8 @@ export default function PlanView() {
                         setIsSupplementsSheetOpen(true);
                       }}
                       data-testid="plan-suplementos-nav"
-                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full text-[11px] font-bold transition active:scale-90 ${
-                        isDarkMode ? 'bg-ink-900 text-ink-200' : 'bg-white text-ink-500 shadow-soft'
+                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[14px] border text-xs font-bold transition active:scale-95 ${
+                        isDarkMode ? 'border-ink-700 bg-ink-900 text-ink-200' : 'border-cream-200 bg-white text-ink-600'
                       }`}
                     >
                       <Pill className="h-4 w-4" />
@@ -641,8 +638,8 @@ export default function PlanView() {
                         setIsEquivalenciasSheetOpen(true);
                       }}
                       data-testid="plan-equivalencias-open"
-                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full text-[11px] font-bold transition active:scale-90 ${
-                        isDarkMode ? 'bg-ink-900 text-ink-200' : 'bg-white text-ink-500 shadow-soft'
+                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[14px] border text-xs font-bold transition active:scale-95 ${
+                        isDarkMode ? 'border-ink-700 bg-ink-900 text-ink-200' : 'border-cream-200 bg-white text-ink-600'
                       }`}
                     >
                       <BookOpen className="h-4 w-4" />
@@ -655,7 +652,7 @@ export default function PlanView() {
                         setIsPlanAiSheetOpen(true);
                       }}
                       data-testid="plan-ai-open"
-                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r px-3 text-[11px] font-bold text-white transition active:scale-90 ${ac.bgGradient}`}
+                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[14px] bg-ink-900 px-3 text-xs font-bold text-white transition active:scale-95 dark:bg-cream-100 dark:text-ink-900"
                     >
                       <Sparkles className="h-3.5 w-3.5" />
                       Cambiar mi plan
@@ -708,13 +705,13 @@ export default function PlanView() {
                 }}
                 id={`momento-${momento.key}`}
                 data-testid={`moment-section-${momento.key}`}
-                className={`rounded-[24px] overflow-hidden border transition-all duration-300 shadow-soft ${
+                className={`overflow-hidden rounded-[18px] border transition-colors ${
                   isDarkMode
                     ? 'border-ink-700 bg-ink-900'
                     : 'border-cream-200 bg-white'
                 }`}
               >
-                <div className={`h-1 w-full ${momentoTheme.strip}`} aria-hidden="true" />
+                <div className={`h-px w-full ${momentoTheme.strip}`} aria-hidden="true" />
                 <button
                   onClick={() => {
                     setMomentosColapsados((prev) => ({
@@ -722,7 +719,7 @@ export default function PlanView() {
                       [momento.key]: !prev[momento.key],
                     }));
                   }}
-                  className={`w-full flex items-center justify-between text-left px-4 py-3.5 transition-colors focus:outline-none ${
+                    className={`flex w-full items-center justify-between px-3.5 py-3 text-left transition-colors focus:outline-none ${
                     isDarkMode
                       ? 'hover:bg-ink-800/60'
                       : 'hover:bg-cream-50'
@@ -730,7 +727,7 @@ export default function PlanView() {
                 >
                   <div className="min-w-0 flex items-center gap-3">
                     <div
-                      className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[13px] ${
                         done
                           ? `bg-gradient-to-br ${ac.bgGradient} text-white shadow-sm`
                           : momentoTheme.tile
@@ -744,10 +741,10 @@ export default function PlanView() {
                     </div>
 
                     <div className="min-w-0">
-                      <h3 className={`font-display text-lg font-semibold truncate leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
+                       <h3 className={`truncate font-display text-base font-semibold leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>
                         {momento.label}
                       </h3>
-                      <p className={`mt-0.5 text-xs font-semibold tabular-nums ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                       <p className={`mt-0.5 text-xs font-semibold tabular-nums ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                         {momento.hora}
                         {done ? ' · Listo' : ''}
                       </p>
@@ -777,7 +774,7 @@ export default function PlanView() {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ type: 'spring', damping: 26, stiffness: 200 }}
                     >
-                      <div className="px-4 pb-4 pt-0">
+                      <div className="px-3.5 pb-3.5 pt-0">
                         {!isAmbos ? (
                           <div className={isElegidoVacio ? 'grid grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'space-y-2.5'}>
                             <div
@@ -812,7 +809,7 @@ export default function PlanView() {
                                 </div>
                               )}
                             </div>
-                            {renderLogMealButton(singleProfileId, momento.key, momento.label, singleEmptyAccent, !isElegidoVacio)}
+                            {renderLogMealButton(singleProfileId, momento.key, momento.label, singleEmptyAccent, true)}
                           </div>
                         ) : (
                           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -847,7 +844,7 @@ export default function PlanView() {
                                   )
                                 )}
                               </div>
-                              {renderLogMealButton('el', momento.key, momento.label, elAccent, mealsElSeleccionadas.length > 0)}
+                              {renderLogMealButton('el', momento.key, momento.label, elAccent, true)}
                             </div>
 
                             <div className={mealsEllaSeleccionadas.length === 0 ? 'grid grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'space-y-2.5'}>
@@ -881,7 +878,7 @@ export default function PlanView() {
                                   )
                                 )}
                               </div>
-                              {renderLogMealButton('ella', momento.key, momento.label, ellaAccent, mealsEllaSeleccionadas.length > 0)}
+                              {renderLogMealButton('ella', momento.key, momento.label, ellaAccent, true)}
                             </div>
                           </div>
                         )}
@@ -899,21 +896,18 @@ export default function PlanView() {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className={`mt-8 p-5 sm:p-6 lg:p-8 rounded-[2rem] bg-gradient-to-br ${ac.bgGradient} text-white shadow-lift relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-5 sm:gap-6`}
+            className="mt-6 flex flex-col items-center justify-between gap-4 rounded-[20px] border border-pine-200 bg-pine-50 p-5 text-pine-950 sm:flex-row dark:border-pine-900 dark:bg-pine-950/50 dark:text-pine-100"
           >
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/20 rounded-full blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-black/10 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="flex items-center gap-4 sm:gap-5 z-10 text-center sm:text-left">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-md rounded-full flex flex-shrink-0 items-center justify-center shadow-inner">
-                <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-white drop-shadow" />
+            <div className="flex items-center gap-4 text-center sm:text-left">
+              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-pine-600 text-white">
+                <CheckCircle2 className="h-6 w-6" />
               </div>
 
               <div>
                 <h3 className="font-display text-xl sm:text-2xl font-semibold mb-1">
                   Día completado
                 </h3>
-                <p className="text-white/85 text-sm max-w-sm">
+                <p className="max-w-sm text-sm text-pine-800 dark:text-pine-200">
                   Marcaste todas tus comidas planeadas como completadas.
                 </p>
               </div>
@@ -923,7 +917,7 @@ export default function PlanView() {
               onClick={() => {
                 void handleDownloadDayPdf();
               }}
-              className="z-10 group flex items-center gap-2 bg-white text-ink-800 px-5 sm:px-6 py-3 rounded-full font-bold text-sm shadow-md hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all w-full sm:w-auto justify-center"
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-pine-200 bg-white px-5 py-3 text-sm font-bold text-ink-800 transition active:scale-[0.98] sm:w-auto dark:border-pine-800 dark:bg-ink-900 dark:text-cream-100"
             >
               <FileText className={`w-5 h-5 ${ac.text}`} />
               <span>Descargar menu</span>

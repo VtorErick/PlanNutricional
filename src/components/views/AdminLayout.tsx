@@ -59,7 +59,7 @@ export default function AdminLayout() {
 
   const currentModel = geminiRecommendedModel || DEFAULT_AI_MODEL || geminiModel || DEFAULT_GEMINI_MODEL;
   const currentModelLabel = getAiModelLabel(currentModel);
-  const availabilityMessage = (geminiAvailabilityMessage || 'Pendiente de validacion.')
+  const availabilityMessage = (geminiAvailabilityMessage || 'Pendiente de validación.')
     .replace(/\bGEMINI_API_KEY\b/g, 'API key')
     .replace(/\bGemini\b/g, 'IA');
   const fallbackPreview = (geminiFallbackModels.length
@@ -217,8 +217,8 @@ export default function AdminLayout() {
     setQuestionnaireAdditionalNotes('');
 
     await notify(
-      'Aplicacion restablecida',
-      'Se limpiaron los datos locales de esta app y volvio al estado inicial.'
+      'Aplicación restablecida',
+      'Se limpiaron los datos locales de esta app y volvió al estado inicial.'
     );
 
     try {
@@ -236,7 +236,7 @@ export default function AdminLayout() {
             <Settings className="w-4 h-4 text-cream-50 dark:text-ink-900" />
           </div>
           <div>
-            <h1 className="font-display text-lg font-semibold text-ink-900 dark:text-cream-100 leading-tight">Configuracion</h1>
+            <h1 className="font-display text-lg font-semibold text-ink-900 dark:text-cream-100 leading-tight">Configuración</h1>
             <p className="text-[11px] text-ink-400 dark:text-ink-400 hidden sm:block">
               Respaldo local y control del modelo IA
             </p>
@@ -261,6 +261,7 @@ export default function AdminLayout() {
           <button
             onClick={() => setShowAdmin(false)}
             data-testid="admin-close-button"
+            aria-label="Cerrar configuración"
             className="p-2 bg-cream-100 hover:bg-cream-200 dark:bg-ink-800 dark:hover:bg-ink-700 rounded-full text-ink-500 dark:text-cream-200 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -269,22 +270,21 @@ export default function AdminLayout() {
       </header>
 
       <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-3">
-        <div className="flex gap-1.5 p-1.5 bg-white dark:bg-ink-900 rounded-full border border-cream-200 dark:border-ink-700 shadow-soft">
+        <div className="flex gap-1 rounded-2xl border border-cream-200 bg-white p-1 dark:border-ink-700 dark:bg-ink-900">
           {([
-            { key: 'manual', label: 'Respaldo', shortLabel: 'Respaldo', emoji: 'JSON' },
-            { key: 'settings', label: 'IA', shortLabel: 'IA', emoji: 'AI' },
+            { key: 'manual', label: 'Respaldo', shortLabel: 'Respaldo' },
+            { key: 'settings', label: 'Inteligencia artificial', shortLabel: 'IA' },
           ] as const).map((tabItem) => (
             <button
               key={tabItem.key}
               onClick={() => setAdminTab(tabItem.key)}
               data-testid={`admin-tab-${tabItem.key}`}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-full font-bold text-sm transition-all duration-200 active:scale-95 ${
+              className={`flex-1 flex items-center justify-center gap-2 rounded-[13px] px-3 py-2.5 text-sm font-bold transition-colors active:scale-[.98] ${
                 adminTab === tabItem.key
                   ? 'bg-ink-900 text-cream-50 shadow-sm dark:bg-cream-100 dark:text-ink-900'
                   : 'text-ink-400 hover:text-ink-700 hover:bg-cream-100 dark:text-ink-400 dark:hover:text-cream-100 dark:hover:bg-ink-800'
               }`}
             >
-              <span className="block text-xs font-extrabold">{tabItem.emoji}</span>
               <span className="hidden sm:block">{tabItem.label}</span>
               <span className="sm:hidden">{tabItem.shortLabel}</span>
             </button>
@@ -298,11 +298,11 @@ export default function AdminLayout() {
             <div>
               <h2 className="font-display text-2xl font-semibold text-ink-900 dark:text-cream-50">AI</h2>
               <p className="text-sm text-ink-400 dark:text-ink-400 mt-0.5">
-                Modelo activo, fallback y llave usada por la app.
+                Modelo activo, alternativa y clave usada por la app.
               </p>
             </div>
 
-            <section className="bg-white dark:bg-ink-900 rounded-[22px] p-4 md:p-5 shadow-soft border border-cream-200 dark:border-ink-700">
+            <section className="rounded-[20px] border border-cream-200 bg-white p-4 dark:border-ink-700 dark:bg-ink-900 md:p-5">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 rounded-2xl bg-pine-50 border border-pine-100 flex items-center justify-center flex-shrink-0 dark:bg-pine-950/40 dark:border-pine-900/50">
                   <ShieldCheck className="w-5 h-5 text-pine-600 dark:text-pine-300" />
@@ -331,7 +331,7 @@ export default function AdminLayout() {
                   <p className="mt-1.5 text-sm font-semibold text-ink-800 dark:text-cream-100">
                     {fallbackPreview.length
                       ? fallbackPreview.map((model) => getAiModelLabel(model)).join(', ')
-                      : 'Sin fallback validado todavia.'}
+                      : 'Sin alternativa validada todavía.'}
                   </p>
                 </div>
               </div>
@@ -369,9 +369,9 @@ export default function AdminLayout() {
         {adminTab === 'manual' && (
           <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="mb-4">
-              <h2 className="font-display text-2xl font-semibold text-ink-900 dark:text-cream-50">Respaldo y restauracion</h2>
+              <h2 className="font-display text-2xl font-semibold text-ink-900 dark:text-cream-50">Respaldo y restauración</h2>
               <p className="text-sm text-ink-400 dark:text-ink-400">
-                Guarda una copia de tus planes o recupera una version anterior desde un archivo JSON.
+                Guarda una copia de tus planes o recupera una versión anterior desde un archivo JSON.
               </p>
             </div>
 
@@ -411,7 +411,7 @@ export default function AdminLayout() {
               <p className="text-xs text-ink-400 dark:text-ink-300 mb-3">
                 Si encuentras un error o quieres empezar desde cero en este dispositivo, puedes limpiar el almacenamiento local de esta app.
                 <br />
-                Esto no se puede deshacer y perderas cualquier dato que no hayas respaldado.
+                Esto no se puede deshacer y perderás cualquier dato que no hayas respaldado.
               </p>
               <button
                 onClick={resetAppState}
