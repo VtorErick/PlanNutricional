@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Flame, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowRight, ChevronDown, Flame, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { estimateDailyCaloriesFromObjectives, estimateDailyMacroTargetsFromObjectives } from '../../utils/nutrition';
 import { getAccentColors, getMonitoringPalette } from '../../utils/theme';
@@ -152,14 +152,14 @@ export default function CalorieMonitoringView() {
   );
 
   const statusPills: Record<StatusKey, string> = {
-    low: isDarkMode ? 'bg-apricot-950/40 text-apricot-300' : 'bg-apricot-100 text-apricot-700',
-    near: isDarkMode ? 'bg-pine-950/60 text-pine-300' : 'bg-pine-100 text-pine-700',
-    high: isDarkMode ? 'bg-coral-950/50 text-coral-300' : 'bg-coral-100 text-coral-600',
+    low: 'status-warning',
+    near: 'status-success',
+    high: 'status-danger',
   };
 
   const ringColors: Record<ProfileId, string> = {
-    el: isDarkMode ? '#5c82ff' : '#2f6bff',
-    ella: isDarkMode ? '#ff5c9a' : '#f92f7c',
+    el: isDarkMode ? '#94ace6' : '#315fc3',
+    ella: isDarkMode ? '#e792ab' : '#b33f68',
   };
 
   const MetricCard = ({
@@ -179,16 +179,16 @@ export default function CalorieMonitoringView() {
     const status: StatusKey = percent > 110 ? 'high' : percent >= 85 ? 'near' : 'low';
 
     return (
-      <div className={`rounded-[22px] border p-3.5 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+      <div className="surface-card p-3.5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className={`text-[10px] uppercase tracking-[0.16em] font-extrabold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>{label}</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-ink-400">{label}</p>
             <p className={`mt-1.5 font-display text-2xl font-semibold leading-none ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
               {value}
               <span className={`ml-1 font-sans text-xs font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>{unit}</span>
             </p>
           </div>
-          <div className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${statusPills[status]}`}>
+          <div className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${statusPills[status]}`}>
             {percent}%
           </div>
         </div>
@@ -202,7 +202,7 @@ export default function CalorieMonitoringView() {
           />
         </div>
 
-        <p className={`mt-1.5 text-[11px] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+        <p className="mt-1.5 text-xs text-ink-400">
           Meta: {target} {unit}
         </p>
       </div>
@@ -218,12 +218,10 @@ export default function CalorieMonitoringView() {
 
     return (
       <section className="space-y-3">
-        <div className={`rounded-[26px] border p-5 shadow-soft ${
-          isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'
-        }`}>
+        <div className="surface-raised p-5">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className={`text-[11px] uppercase tracking-[0.18em] font-extrabold ${accent.text}`}>
+              <p className={`text-xs font-extrabold uppercase tracking-[0.14em] ${accent.text}`}>
                 {getLabel(profileId)} · {diaActivo}
               </p>
               <div className="mt-2 flex items-baseline gap-1.5">
@@ -232,12 +230,12 @@ export default function CalorieMonitoringView() {
                 </span>
                 <span className={`text-sm font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>kcal</span>
               </div>
-              <p className={`mt-2.5 flex items-center gap-1.5 text-[13px] font-semibold ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+              <p className={`mt-2.5 flex items-center gap-1.5 text-sm font-semibold ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                 <Target className={`h-4 w-4 ${accent.text}`} />
                 Meta diaria: {metrics.calorieTarget} kcal
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-extrabold ${statusPills[active.status]}`}>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${statusPills[active.status]}`}>
                   {STATUS_LABELS[active.status]}
                 </span>
                 <span className={`text-[12px] font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
@@ -255,7 +253,7 @@ export default function CalorieMonitoringView() {
                 <p className={`font-display text-[26px] leading-none font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                   {dayPercent}%
                 </p>
-                <p className={`mt-1 text-[10px] font-bold tabular-nums ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                <p className="mt-1 text-xs font-bold tabular-nums text-ink-400">
                   {deltaLabel}
                 </p>
               </div>
@@ -264,40 +262,42 @@ export default function CalorieMonitoringView() {
 
           <div className={`mt-4 grid grid-cols-3 gap-2 rounded-2xl p-2.5 ${isDarkMode ? 'bg-ink-800/70' : 'bg-cream-100'}`}>
             <div className="px-1">
-              <p className={`text-[9px] uppercase tracking-[0.14em] font-extrabold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>Promedio</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">Promedio</p>
               <p className={`mt-0.5 font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.weeklyAverage}</p>
             </div>
             <div className="px-1">
-              <p className={`text-[9px] uppercase tracking-[0.14em] font-extrabold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>Rango</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">Rango</p>
               <p className={`mt-0.5 font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.adherenceDays}/7</p>
             </div>
             <div className="min-w-0 px-1">
-              <p className={`text-[9px] uppercase tracking-[0.14em] font-extrabold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>Mejor</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">Mejor</p>
               <p className={`mt-0.5 truncate font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.bestDay?.dia || '-'}</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-2.5">
-          <MetricCard label="Calorías" value={metrics.selectedDayTotals.kcal} target={metrics.calorieTarget} unit="kcal" accent={accent} />
-          <div className="grid grid-cols-2 gap-2.5">
+        <details className="group surface-card p-4">
+          <summary className={`flex cursor-pointer list-none items-center justify-between gap-3 font-display text-base font-semibold [&::-webkit-details-marker]:hidden ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+            <span className="flex items-center gap-2">
+              <Flame className={`h-4 w-4 ${accent.text}`} />
+              Macros y semana
+            </span>
+            <ChevronDown className="h-4 w-4 text-ink-400 transition-transform group-open:rotate-180" />
+          </summary>
+
+          <div className="mt-4 grid grid-cols-2 gap-2.5">
             <MetricCard label="Proteína" value={metrics.selectedDayTotals.proteinG} target={metrics.macroTargets.proteinG} unit="g" accent={accent} />
             <MetricCard label="Grasas" value={metrics.selectedDayTotals.fatG} target={metrics.macroTargets.fatG} unit="g" accent={accent} />
           </div>
-        </div>
 
-        <div className={`rounded-[26px] border p-4 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
-          <div className="flex items-center gap-2">
-            <Flame className={`w-4 h-4 ${accent.text}`} />
-            <h3 className={`font-display text-base font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>Semana de {getLabel(profileId)}</h3>
-          </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <p className="mt-4 text-xs font-extrabold uppercase tracking-[0.12em] text-ink-400">Semana de {getLabel(profileId)}</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {metrics.daySummaries.map((item) => (
               <button
                 key={`${profileId}-${item.dia}`}
                 type="button"
                 onClick={() => setDiaActivo(item.dia)}
-                className={`rounded-2xl p-3 text-left transition active:scale-[0.98] ${
+                className={`rounded-[14px] p-3 text-left transition active:scale-[0.98] ${
                   item.dia === diaActivo
                     ? `${accent.btnActive} shadow-sm`
                     : isDarkMode ? 'bg-ink-800 text-ink-200' : 'bg-cream-100 text-ink-600'
@@ -305,19 +305,19 @@ export default function CalorieMonitoringView() {
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-extrabold">{item.dia.slice(0, 3)}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.dia === diaActivo ? 'bg-white/15 text-white' : statusPills[item.status]}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${item.dia === diaActivo ? 'bg-white/15 text-white' : statusPills[item.status]}`}>
                     {STATUS_LABELS[item.status]}
                   </span>
                 </div>
                 <p className="mt-2 font-display text-xl font-semibold">{item.kcal}</p>
-                <p className={`text-[11px] font-medium ${item.dia === diaActivo ? 'text-white/75' : isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                <p className={`text-xs font-medium ${item.dia === diaActivo ? 'text-white/75' : 'text-ink-400'}`}>
                   {item.delta > 0 ? <TrendingUp className="mr-1 inline h-3 w-3" /> : <TrendingDown className="mr-1 inline h-3 w-3" />}
                   {item.delta > 0 ? '+' : ''}{item.delta} kcal
                 </p>
               </button>
             ))}
           </div>
-        </div>
+        </details>
       </section>
     );
   };
@@ -332,11 +332,11 @@ export default function CalorieMonitoringView() {
       className="space-y-3"
     >
       <header className="px-1 pb-1">
-        <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-pine-700 dark:text-pine-300">Tu avance</p>
+        <p className="eyebrow-label">Tu avance</p>
         <h2 className={`mt-1 font-display text-[30px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>Progreso</h2>
       </header>
 
-      <section className={`rounded-[18px] border p-4 ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+      <section className="surface-card p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className={`font-display text-lg font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>Kcal por día</h3>
@@ -368,7 +368,7 @@ export default function CalorieMonitoringView() {
       </section>
 
       {!hasAnyData ? (
-        <section className={`rounded-[18px] border px-5 py-8 text-center ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+        <section className="surface-card px-5 py-8 text-center">
           <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full ${isDarkMode ? 'bg-ink-800 text-ink-300' : 'bg-cream-100 text-ink-500'}`}>
             <Flame className="h-5 w-5" />
           </span>
@@ -387,7 +387,7 @@ export default function CalorieMonitoringView() {
         </section>
       ) : <>
       {isCombined ? (
-        <section className={`rounded-[26px] border p-4 shadow-soft ${isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'}`}>
+        <section className="surface-card p-4">
           <div className="mb-2.5 flex items-center justify-between gap-3">
             <h3 className={`font-display text-base font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
               Comparativa del día
@@ -409,22 +409,22 @@ export default function CalorieMonitoringView() {
                   key={`compare-${profileId}`}
                   type="button"
                   onClick={() => setExpandedProfileId(profileId)}
-                  className={`rounded-[20px] border p-3 text-left transition active:scale-[0.98] ${
+                  className={`rounded-[14px] border p-3 text-left transition active:scale-[0.98] ${
                     selected
                       ? `${accent.tagBg} ${accent.tagText} ${accent.borderAccent}`
                       : isDarkMode ? 'border-ink-700 bg-ink-800 text-ink-200' : 'border-cream-200 bg-cream-50 text-ink-600'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.14em]">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
                       {getLabel(profileId)}
                     </p>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${statusPills[active.status]}`}>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-extrabold ${statusPills[active.status]}`}>
                       {percent}%
                     </span>
                   </div>
                   <p className={`mt-1.5 font-display text-2xl font-semibold leading-none ${selected ? accent.tagText : ''}`}>{active.kcal}</p>
-                  <p className={`mt-1 text-[11px] font-semibold ${selected ? accent.tagText : isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                  <p className={`mt-1 text-xs font-semibold ${selected ? accent.tagText : 'text-ink-400'}`}>
                     de {metrics.calorieTarget} kcal
                   </p>
                   <div className={`mt-2 h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}>
@@ -433,7 +433,7 @@ export default function CalorieMonitoringView() {
                       style={{ width: `${Math.max(8, Math.min(100, percent))}%` }}
                     />
                   </div>
-                  <p className={`mt-1.5 text-[10px] font-extrabold ${selected ? accent.tagText : accent.text}`}>
+                  <p className={`mt-1.5 text-xs font-extrabold ${selected ? accent.tagText : accent.text}`}>
                     Ver detalle
                   </p>
                 </button>

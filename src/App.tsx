@@ -27,7 +27,7 @@ const SupplementsView = lazy(() => import('./components/views/SupplementsView'))
 
 function ViewFallback() {
   return (
-    <div className="rounded-[28px] border border-cream-200 bg-white p-6 shadow-soft dark:border-ink-700 dark:bg-ink-900">
+    <div className="surface-raised border border-[var(--ui-border)] p-6">
       <div className="animate-pulse space-y-4">
         <div className="h-5 w-1/3 rounded-full bg-cream-200 dark:bg-ink-700" />
         <div className="h-4 w-2/3 rounded-full bg-cream-100 dark:bg-ink-800" />
@@ -155,7 +155,7 @@ export default function App() {
       aria-label="Navegación principal móvil"
     >
       <div className="relative mx-auto w-full max-w-md px-4">
-        <div className="grid grid-cols-5 gap-0.5 rounded-[22px] border border-cream-200/90 bg-white/96 p-1 shadow-lift backdrop-blur-2xl dark:border-ink-700 dark:bg-ink-900/96">
+        <div className="surface-raised grid grid-cols-5 gap-0.5 border border-[var(--ui-border)] p-1 backdrop-blur-2xl">
           {tabItems.map((tabItem) => {
             const isActive = activeTab === tabItem.key;
             return (
@@ -167,7 +167,7 @@ export default function App() {
                 }}
                 data-testid={`mobile-tab-${tabItem.key}`}
                 whileTap={{ scale: 0.9 }}
-                className={`relative isolate flex min-h-[52px] flex-col items-center justify-center gap-1 overflow-hidden rounded-[17px] transition-colors duration-200 ${
+                className={`relative isolate flex min-h-[52px] flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl transition-colors duration-200 ${
                   isActive ? 'text-white' : 'text-ink-500 hover:text-ink-800 dark:text-ink-300 dark:hover:text-cream-100'
                 }`}
                 aria-label={tabItem.label}
@@ -176,12 +176,12 @@ export default function App() {
                 {isActive ? (
                   <motion.span
                     layoutId="mobile-nav-active"
-                    className="absolute inset-0 -z-10 rounded-[17px] bg-ink-900 shadow-sm dark:bg-cream-100"
+                    className="absolute inset-0 -z-10 rounded-2xl bg-ink-900 dark:bg-cream-100"
                     transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                   />
                 ) : null}
                 <tabItem.icon className="h-[19px] w-[19px]" strokeWidth={isActive ? 2.5 : 1.9} />
-                <span className={`text-[9px] leading-none min-[370px]:text-[10px] ${isActive ? 'font-extrabold dark:text-ink-900' : 'font-semibold'}`}>
+                <span className={`text-xs leading-none ${isActive ? 'font-extrabold dark:text-ink-900' : 'font-semibold'}`}>
                   {tabItem.shortLabel}
                 </span>
               </motion.button>
@@ -201,7 +201,7 @@ export default function App() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className="grid grid-cols-5 gap-1 rounded-[20px] border border-cream-200 bg-white p-1.5 dark:border-ink-700 dark:bg-ink-900 xl:grid-cols-1 xl:p-2"
+        className="surface-card grid grid-cols-5 gap-1 p-1.5 xl:grid-cols-1 xl:p-2"
       >
         {tabItems.map((tabItem) => (
           <button
@@ -233,7 +233,7 @@ export default function App() {
               <h1 className="font-display text-base font-bold leading-tight text-ink-900 dark:text-cream-100">
                 Generar plan con IA
               </h1>
-              <p className="text-[10px] text-ink-400 dark:text-ink-400 sm:text-[11px]">
+              <p className="text-xs text-ink-400 dark:text-ink-400">
                 {questionnaireStepIndex > 0
                   ? `Guardado automáticamente · continúa en el paso ${questionnaireStepIndex + 1}`
                   : 'Sólo lo esencial · puedes continuar después'}

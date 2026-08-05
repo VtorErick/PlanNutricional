@@ -5,6 +5,7 @@ import {
   Loader2,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   CheckCircle2,
   User,
   Scale,
@@ -432,7 +433,7 @@ function QuickTag({
     <button
       type="button"
       onClick={onClick}
-      className="px-2.5 py-1 rounded-full text-[11px] font-medium border border-cream-200 bg-white text-ink-500 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-200 dark:hover:bg-ink-800"
+      className="rounded-full border border-cream-200 bg-white px-2.5 py-1 text-xs font-medium text-ink-500 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-cream-200 dark:hover:bg-ink-800"
     >
       {children}
     </button>
@@ -471,7 +472,7 @@ function NumField({
 
   return (
     <div className="flex flex-col gap-1.5 rounded-[14px] border border-cream-200 bg-white p-3 transition-colors focus-within:border-pine-400 focus-within:ring-2 focus-within:ring-pine-100 dark:border-ink-600 dark:bg-ink-900 dark:focus-within:border-pine-600 dark:focus-within:ring-pine-900/50">
-      <div className="flex items-center justify-between text-[11px] font-bold text-ink-400 uppercase dark:text-ink-400">
+      <div className="flex items-center justify-between text-xs font-bold uppercase text-ink-400 dark:text-ink-400">
         <label>
           {label} {required && <span className="text-coral-400 ml-0.5">*</span>}
         </label>
@@ -1250,7 +1251,7 @@ export default function NutritionQuestionnaire({
                 const fallbackLabel = isEl ? 'El' : 'Ella';
                 return (
                   <label key={profileId} className="space-y-1.5">
-                    <span className="block text-[11px] font-black uppercase tracking-[0.12em] text-ink-400 dark:text-ink-400">
+                    <span className="block text-xs font-black uppercase tracking-[0.12em] text-ink-400 dark:text-ink-400">
                       {isEl ? 'Primer perfil' : 'Segundo perfil'}
                     </span>
                     <input
@@ -1680,7 +1681,7 @@ export default function NutritionQuestionnaire({
                     <span className={`text-xs font-bold leading-tight ${active ? tc.text : 'text-ink-600 dark:text-cream-100'}`}>
                       {al.val}
                     </span>
-                    <span className={`text-[10px] leading-tight ${active ? `${tc.text} opacity-60` : 'text-ink-400'}`}>
+                    <span className={`text-xs leading-tight ${active ? `${tc.text} opacity-60` : 'text-ink-400'}`}>
                       {al.desc}
                     </span>
                   </button>
@@ -1782,7 +1783,7 @@ export default function NutritionQuestionnaire({
                   <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-pine-700 dark:text-pine-200' : 'text-ink-700 dark:text-cream-100'}`}>
                     {title}
                   </span>
-                  <span className={`text-[10px] ${portionMode === val ? 'text-pine-500' : 'text-ink-400'}`}>
+                  <span className={`text-xs ${portionMode === val ? 'text-pine-500' : 'text-ink-400'}`}>
                     {sub}
                   </span>
                 </button>
@@ -1804,7 +1805,7 @@ export default function NutritionQuestionnaire({
                     className="h-full rounded-full bg-gradient-to-r from-pine-500 to-pine-500"
                   />
                 </div>
-                <p className="mt-1 text-[11px] text-pine-600 dark:text-pine-300">Completado: {progressPercent}%</p>
+                <p className="mt-1 text-xs text-pine-600 dark:text-pine-300">Completado: {progressPercent}%</p>
               </div>
 
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -1829,7 +1830,7 @@ export default function NutritionQuestionnaire({
               <div className="space-y-2">
                 {macroGroups.map((macro) => (
                   <div key={macro.key} className={`rounded-xl border p-2 ${macro.tone}`}>
-                    <p className="text-[11px] font-bold text-ink-500 uppercase mb-1 dark:text-cream-300">{macro.label}</p>
+                    <p className="mb-1 text-xs font-bold uppercase text-ink-500 dark:text-cream-300">{macro.label}</p>
 
                     <div className="space-y-2">
                       {macro.foodKeys.map((foodKey) => {
@@ -1995,17 +1996,17 @@ export default function NutritionQuestionnaire({
           <p className="text-center text-sm font-semibold text-ink-400 dark:text-ink-400">Revisa los puntos clave antes de generar.</p>
 
           <div className="space-y-2 rounded-2xl border border-cream-200 bg-cream-50 p-3 dark:border-ink-600 dark:bg-ink-800">
-            <p className="text-[11px] font-black uppercase tracking-wider text-ink-500 dark:text-cream-300">
+            <p className="text-xs font-black uppercase tracking-wider text-ink-500 dark:text-cream-300">
               Configuración
             </p>
 
             <div className="grid grid-cols-2 gap-2 text-xs text-ink-500 dark:text-cream-200">
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-wide text-ink-400">Perfil</span>
+                <span className="block text-xs font-black uppercase tracking-wide text-ink-400">Perfil</span>
                 <strong>{targetLabel}</strong>
               </div>
               <div>
-                <span className="block text-[10px] font-black uppercase tracking-wide text-ink-400">Porciones</span>
+                <span className="block text-xs font-black uppercase tracking-wide text-ink-400">Porciones</span>
                 <strong>{portionMode === 'auto' ? 'IA decide' : 'Manual'}</strong>
               </div>
               {portionSummary ? <p className="col-span-2 text-ink-400 dark:text-ink-400">Porciones: {portionSummary}</p> : null}
@@ -2015,17 +2016,23 @@ export default function NutritionQuestionnaire({
             </div>
           </div>
 
-          <div
+          <details
             data-testid="questionnaire-model-preview"
-            className="rounded-2xl border border-pine-100 bg-pine-50/70 px-3 py-2.5 text-xs text-pine-900 dark:border-pine-900/60 dark:bg-pine-950/30 dark:text-pine-100"
+            className="group surface-card px-3 py-2.5 text-xs"
           >
-            <p className="font-bold">Modelo previsto: {plannedModelLabel}</p>
-            <p className="mt-1 opacity-90">
-              {fallbackPreviewLabel
-                ? `Alternativa automática: ${fallbackPreviewLabel}.`
-                : 'No hay otro fallback validado en este momento.'}
-            </p>
-          </div>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-bold text-ink-600 dark:text-ink-200 [&::-webkit-details-marker]:hidden">
+              <span>Detalles técnicos de generación</span>
+              <ChevronDown className="h-4 w-4 text-ink-400 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-2 border-t border-cream-200 pt-2 text-ink-500 dark:border-ink-700 dark:text-ink-300">
+              <p className="font-bold">Modelo previsto: {plannedModelLabel}</p>
+              <p className="mt-1">
+                {fallbackPreviewLabel
+                  ? `Alternativa automática: ${fallbackPreviewLabel}.`
+                  : 'No hay otra alternativa validada en este momento.'}
+              </p>
+            </div>
+          </details>
 
           {profiles.map((p) => {
             const data = person(p);
@@ -2056,8 +2063,8 @@ export default function NutritionQuestionnaire({
             ]);
 
             return (
-              <div key={p} className={`space-y-2 rounded-[14px] border p-3 ${t.border} ${t.light}`}>
-                <p className={`text-[11px] font-black uppercase tracking-wider ${t.text}`}>
+              <div key={p} className={`space-y-2 rounded-[16px] border p-3 ${t.border} ${t.light}`}>
+                <p className={`text-xs font-black uppercase tracking-wider ${t.text}`}>
                   {p === 'el' ? `Perfil ${labelEl}` : `Perfil ${labelElla}`}
                 </p>
 
@@ -2081,12 +2088,12 @@ export default function NutritionQuestionnaire({
                   <button
                     type="button"
                     onClick={() => setShowAiErrorReason((visible) => !visible)}
-                    className="inline-flex items-center rounded-xl border border-coral-300 bg-white px-3 py-2 text-[11px] font-bold text-coral-700 transition hover:bg-coral-100 dark:border-coral-700 dark:bg-ink-900 dark:text-coral-100 dark:hover:bg-coral-950/60"
+                    className="inline-flex items-center rounded-xl border border-coral-300 bg-white px-3 py-2 text-xs font-bold text-coral-700 transition hover:bg-coral-100 dark:border-coral-700 dark:bg-ink-900 dark:text-coral-100 dark:hover:bg-coral-950/60"
                   >
                     {showAiErrorReason ? 'Ocultar motivo' : 'Ver motivo'}
                   </button>
                   {showAiErrorReason && getAiErrorReason(aiErrorLog) ? (
-                    <p className="rounded-xl border border-coral-200/80 bg-white/70 px-3 py-2 text-[11px] dark:border-coral-800/60 dark:bg-ink-900/70">
+                    <p className="rounded-xl border border-coral-200/80 bg-white/70 px-3 py-2 text-xs dark:border-coral-800/60 dark:bg-ink-900/70">
                       {getAiErrorReason(aiErrorLog)}
                     </p>
                   ) : null}
@@ -2110,7 +2117,7 @@ export default function NutritionQuestionnaire({
               <div className="text-center space-y-1 px-4">
                 <p className="text-sm font-bold text-ink-600 dark:text-cream-100">La IA está creando tu plan</p>
                 <p className="text-xs text-ink-400 dark:text-ink-400">Esto puede tomar 30 a 60 segundos.</p>
-                <p className="text-[11px] text-ink-400 dark:text-ink-400">
+                <p className="text-xs text-ink-400 dark:text-ink-400">
                   Modelo previsto: {plannedModelLabel}
                 </p>
               </div>
@@ -2155,7 +2162,7 @@ export default function NutritionQuestionnaire({
             </motion.button>
           )}
 
-          <p className="mt-3 text-[10px] text-cream-300 text-center leading-relaxed">
+          <p className="mt-3 text-xs text-ink-400 text-center leading-relaxed">
             Las recomendaciones de IA no sustituyen valoración profesional.
           </p>
         </div>

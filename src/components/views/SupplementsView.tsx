@@ -46,11 +46,11 @@ export default function SupplementsView() {
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {isAmbos ? (
-                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ac.tagBg} ${ac.tagText}`}>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.12em] ${ac.tagBg} ${ac.tagText}`}>
                   2 perfiles
                 </span>
               ) : (
-                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${ac.tagBg} ${ac.tagText}`}>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.12em] ${ac.tagBg} ${ac.tagText}`}>
                   {(supplementsData[profilesToRender[0]] || []).length} opciones
                 </span>
               )}
@@ -68,14 +68,14 @@ export default function SupplementsView() {
               {isAmbos ? (
                 <div className={`flex items-center justify-between rounded-[22px] border p-3 ${isDarkMode ? 'border-ink-700 bg-ink-900/92' : 'border-cream-100 bg-white'}`}>
                   <div>
-                    <p className={`text-[11px] font-black uppercase tracking-[0.16em] ${profileAccent.text}`}>
+                    <p className={`text-xs font-black uppercase tracking-[0.14em] ${profileAccent.text}`}>
                       {getProfileLabel(profileLabels, profileId)}
                     </p>
                     <h3 className={`text-base font-black ${isDarkMode ? 'text-cream-50' : 'text-ink-800'}`}>
                       Suplementos sugeridos
                     </h3>
                   </div>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${profileAccent.tagBg} ${profileAccent.tagText}`}>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.12em] ${profileAccent.tagBg} ${profileAccent.tagText}`}>
                     {items.length} opciones
                   </span>
                 </div>
@@ -109,7 +109,7 @@ export default function SupplementsView() {
                         <p className={`mt-1 text-sm font-semibold leading-snug ${isDarkMode ? 'text-cream-300' : 'text-ink-500'}`}>
                           {supplement.goalSupport}
                         </p>
-                        <span className={`mt-2 inline-flex items-center rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${profileAccent.tagBg} ${profileAccent.tagText}`}>
+                        <span className={`mt-2 inline-flex items-center rounded-full px-2 py-1 text-xs font-black uppercase tracking-[0.12em] ${profileAccent.tagBg} ${profileAccent.tagText}`}>
                           {supplement.timing}
                         </span>
                       </div>
@@ -120,7 +120,7 @@ export default function SupplementsView() {
                     {expandedSupplement === `${profileId}-${supplement.name}` ? (
                       <div className="mt-4 space-y-3 border-t border-cream-100 pt-3 text-sm dark:border-ink-700">
                         <div>
-                          <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-ink-400">
                             Por que podria ayudar
                           </p>
                           <p className={`mt-1.5 ${isDarkMode ? 'text-cream-200' : 'text-ink-600'}`}>
@@ -128,7 +128,7 @@ export default function SupplementsView() {
                           </p>
                         </div>
                         <div>
-                          <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-ink-400">
                             Como usarlo
                           </p>
                           <p className={`mt-1.5 ${isDarkMode ? 'text-cream-200' : 'text-ink-600'}`}>
@@ -136,7 +136,7 @@ export default function SupplementsView() {
                           </p>
                         </div>
                         <div className="rounded-2xl bg-pine-50 p-3 dark:bg-pine-950/30">
-                          <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-pine-700 dark:text-pine-300">
+                          <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-pine-700 dark:text-pine-300">
                             <Clock3 className="h-3.5 w-3.5" />
                             Nota
                           </p>
@@ -146,7 +146,7 @@ export default function SupplementsView() {
                         </div>
                         {supplement.caution ? (
                           <div className="rounded-2xl bg-apricot-50 p-3 dark:bg-apricot-950/30">
-                            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-apricot-700 dark:text-apricot-300">
+                            <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-apricot-700 dark:text-apricot-300">
                               <ShieldAlert className="h-3.5 w-3.5" />
                               Precaucion
                             </p>
