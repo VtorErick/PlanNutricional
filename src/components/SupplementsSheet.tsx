@@ -98,7 +98,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                         </div>
                       ) : null}
 
-                      <div className="space-y-2.5">
+                      <div className="overflow-hidden rounded-[20px] border border-cream-200 bg-white dark:border-ink-700 dark:bg-ink-900">
                         {items.map((supplement) => {
                           const key = `${profileId}-${supplement.name}`;
                           const expanded = expandedSupplement === key;
@@ -106,8 +106,8 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                           return (
                             <article
                               key={key}
-                              className={`rounded-[20px] border px-3.5 py-3 shadow-soft ${
-                                isDarkMode ? 'border-ink-700 bg-ink-800/50' : 'border-cream-200 bg-white'
+                              className={`border-b px-3.5 py-3 last:border-b-0 ${
+                                isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-100 bg-white'
                               }`}
                             >
                               <button
@@ -139,7 +139,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                                 <div className="mt-3 space-y-3 border-t border-cream-200 pt-3 text-sm dark:border-ink-700">
                                   <div>
                                     <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                                      Por que podria ayudar
+                                      Por qué podría ayudar
                                     </p>
                                     <p className={`mt-1.5 ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
                                       {supplement.whyItMayHelp}
@@ -147,7 +147,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                                   </div>
                                   <div>
                                     <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                                      Como usarlo
+                                      Cómo usarlo
                                     </p>
                                     <p className={`mt-1.5 ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
                                       {supplement.howToUse}

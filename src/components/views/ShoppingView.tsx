@@ -275,7 +275,7 @@ export default function ShoppingView() {
       className="space-y-3"
     >
       <div
-        className={`relative overflow-hidden rounded-[26px] border p-4 sm:p-5 shadow-soft ${
+        className={`relative overflow-hidden rounded-[20px] border p-4 sm:p-5 ${
           isDarkMode
             ? 'border-ink-700 bg-ink-900'
             : 'border-cream-200 bg-white'
@@ -284,7 +284,7 @@ export default function ShoppingView() {
         <div className="relative z-10">
         <div className="relative mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-pine-600 dark:text-pine-300">
+            <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-pine-700 dark:text-pine-300">
               Lista semanal
             </p>
             <h2
@@ -300,7 +300,7 @@ export default function ShoppingView() {
               }`}
             >
               {' '}
-              <strong className={isDarkMode ? 'text-pine-300' : 'text-pine-700'}>
+              <strong className={isDarkMode ? 'text-cream-100' : 'text-ink-800'}>
                 {shoppingList.length} ingredientes
               </strong>{' '}
               de tus comidas seleccionadas.
@@ -333,7 +333,7 @@ export default function ShoppingView() {
             </div>
             <div className={`mt-2 h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}>
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-pine-400 to-pine-600"
+                className="h-full rounded-full bg-pine-600"
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ type: 'spring', stiffness: 80, damping: 15 }}
               />
@@ -359,27 +359,27 @@ export default function ShoppingView() {
 
         {shoppingList.length === 0 ? (
           <div
-            className={`rounded-[22px] py-12 text-center border border-dashed ${
+            className={`rounded-[18px] border py-8 text-center ${
               isDarkMode ? 'border-ink-600 bg-ink-800/40' : 'border-cream-300 bg-cream-50'
             }`}
           >
-            <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full ${isDarkMode ? 'bg-ink-800' : 'bg-cream-100'}`}>
+            <div className={`mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full ${isDarkMode ? 'bg-ink-800' : 'bg-cream-100'}`}>
               <ShoppingCart
-                className={`w-6 h-6 ${
+                className={`h-5 w-5 ${
                   isDarkMode ? 'text-ink-400' : 'text-ink-400'
                 }`}
               />
             </div>
             <p className={`font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
-              Carrito vacío
+              Tu lista está vacía
             </p>
             <p className={`mt-1 px-6 text-sm ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-              Ve a &quot;Mi Plan&quot; y selecciona comidas para agregar ingredientes automáticamente.
+              Elige comidas en tu plan y aquí aparecerán sus ingredientes.
             </p>
             <button
               type="button"
               onClick={() => setTab('plan')}
-              className="mx-auto mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-ink-900 px-5 text-sm font-bold text-white transition hover:bg-ink-800 active:scale-[0.97] dark:bg-cream-100 dark:text-ink-900"
+              className="mx-auto mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] bg-ink-900 px-5 text-sm font-bold text-white transition hover:bg-ink-800 active:scale-[0.97] dark:bg-cream-100 dark:text-ink-900"
             >
               Ir a mi plan
               <ArrowRight className="h-4 w-4" />
@@ -436,7 +436,7 @@ export default function ShoppingView() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                <div className={`overflow-hidden rounded-[16px] border ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
             {section.items.map((item) => {
               const isChecked = comprasCheck[item.ingrediente];
               const displayUsos = getDisplayUsos(item.usos);
@@ -445,17 +445,17 @@ export default function ShoppingView() {
                 <motion.div
                   whileTap={{ scale: 0.985 }}
                   key={item.ingrediente}
-                  className={`group flex cursor-pointer items-stretch overflow-hidden rounded-[20px] border transition-all duration-200 ${
+                  className={`group flex cursor-pointer items-stretch overflow-hidden border-0 border-b last:border-b-0 transition-colors duration-200 ${
                     isChecked
                       ? isDarkMode
                         ? 'border-ink-700 bg-ink-800/50 opacity-70'
                         : 'border-cream-200 bg-cream-50 opacity-70'
                       : isDarkMode
-                        ? 'border-ink-700 bg-ink-900 hover:border-ink-600'
-                        : 'border-cream-200 bg-white shadow-soft hover:shadow-lift'
+                        ? 'border-ink-700 bg-ink-900 hover:bg-ink-800/60'
+                        : 'border-cream-200 bg-white hover:bg-cream-50'
                   }`}
                 >
-                  <div className="min-w-0 flex-1 p-3">
+                  <div className="min-w-0 flex-1 px-3 py-3.5">
                     <div className={`${expandedIngredients[item.ingrediente] ? 'mb-2.5' : ''} flex items-start gap-3`}>
                       <motion.button
                         type="button"
@@ -483,7 +483,7 @@ export default function ShoppingView() {
 
                       <div className="min-w-0 flex-1">
                         <h3
-                          className={`text-[15px] font-bold tracking-tight leading-snug break-words capitalize ${
+                          className={`text-[15px] font-semibold tracking-tight leading-snug break-words capitalize ${
                             isChecked
                               ? 'text-ink-400 line-through'
                               : isDarkMode
@@ -495,13 +495,13 @@ export default function ShoppingView() {
                         </h3>
 
                         <p
-                          className={`mt-0.5 text-[11px] font-medium ${
+                          className={`mt-0.5 text-xs font-medium ${
                             isDarkMode ? 'text-ink-400' : 'text-ink-400'
                           }`}
                         >
                           Aparece en {displayUsos.length} comida{displayUsos.length > 1 ? 's' : ''} seleccionada{displayUsos.length > 1 ? 's' : ''}
                         </p>
-                        <p className={`mt-1 text-[11px] font-extrabold ${isChecked ? (isDarkMode ? 'text-pine-300' : 'text-pine-600') : isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                        <p className={`mt-1 text-xs font-bold ${isChecked ? (isDarkMode ? 'text-pine-300' : 'text-pine-600') : isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                           {isChecked ? 'Comprado' : 'Pendiente'}{isAmbos ? ` · ${displayUsos.some((uso) => uso.perfiles.length === 2) ? 'Compartido' : 'Uso individual'}` : ''}
                         </p>
                       </div>

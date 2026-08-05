@@ -76,7 +76,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:py-5">
-              <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
+              <div className="grid overflow-hidden rounded-[20px] border border-cream-200 bg-white dark:border-ink-700 dark:bg-ink-900 sm:grid-cols-2">
                 {equivalencesDB.map((eq, idx) => {
                   const Icon = eq.icon;
 
@@ -88,18 +88,18 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.03 }}
-                      className={`grid min-h-[72px] grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-[20px] px-3 py-2.5 text-left transition-all active:scale-[0.98] ${
+                      className={`grid min-h-[72px] grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-cream-100 px-3 py-2.5 text-left transition-colors last:border-b-0 active:bg-cream-50 dark:border-ink-700 sm:[&:nth-last-child(-n+2)]:border-b-0 ${
                         isDarkMode
-                          ? 'bg-ink-800/60 border border-ink-700 hover:border-ink-600'
-                          : 'bg-white border border-cream-200 hover:border-cream-300 shadow-soft hover:shadow-lift'
+                          ? 'bg-ink-900 hover:bg-ink-800'
+                          : 'bg-white hover:bg-cream-50'
                       }`}
                     >
-                      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${ac.bgGradient}`}>
+                      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-[14px] ${ac.bgLight}`}>
                         {typeof Icon === 'string' ? (
                           <span className="text-lg">{Icon}</span>
                         ) : (() => {
                           const LucideIcon = Icon as React.ComponentType<{ className?: string }>;
-                          return <LucideIcon className="h-5 w-5 text-white" />;
+                          return <LucideIcon className={`h-5 w-5 ${ac.text}`} />;
                         })()}
                       </div>
 

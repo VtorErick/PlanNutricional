@@ -1,16 +1,13 @@
-import { Suspense, lazy, useMemo, useEffect, useState, useRef } from 'react';
+import { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Calendar,
   ChefHat,
   Flame,
   Home,
-  Lightbulb,
-  MoreHorizontal,
   Moon,
   ShoppingCart,
   Sparkles,
-  Settings,
   Sun,
   UserRound,
   X,
@@ -62,15 +59,14 @@ function getTodayPlanDay() {
 export default function App() {
   const [isPlanAdjustOpen, setIsPlanAdjustOpen] = useState(false);
   const [isAppOverlayOpen, setIsAppOverlayOpen] = useState(false);
-  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const mobileNavRef = useRef<HTMLElement | null>(null);
+  const contentScrollRef = useRef<HTMLElement | null>(null);
   const lastProfileRef = useRef(getStoredProfileFromLocalStorage());
   const {
     perfilActivo: activeProfile,
     tab: activeTab,
     setTab: setActiveTab,
     showAdmin: isAdminOpen,
-    setShowAdmin: setIsAdminOpen,
     showQuestionnaire: isQuestionnaireOpen,
     setShowQuestionnaire: setIsQuestionnaireOpen,
     setPerfilActivo: setActiveProfile,
@@ -116,6 +112,11 @@ export default function App() {
     }
   }, [activeTab, setActiveTab]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+    contentScrollRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [activeTab]);
+
 
 
   useEffect(() => {
@@ -137,66 +138,14 @@ export default function App() {
 
   const isChromeHidden = isPlanAdjustOpen || isAppOverlayOpen;
 
-  const desktopTabBackdrop = useMemo(() => {
-    switch (activeTab) {
-      case 'plan':
-        return {
-          imageSrc: '/images/hero.png',
-          imagePosition: 'center 22%',
-          overlay: 'from-pine-200/40 via-cream-50/40 to-transparent',
-        };
-      case 'compras':
-        return {
-          imageSrc: '/images/meal-prep.png',
-          imagePosition: 'center 26%',
-          overlay: 'from-apricot-200/35 via-cream-50/35 to-transparent',
-        };
-      case 'resumen':
-        return {
-          imageSrc: '/images/hero.png',
-          imagePosition: 'center 18%',
-          overlay: 'from-pine-200/35 via-cream-50/35 to-transparent',
-        };
-      default:
-        return null;
-    }
-  }, [activeTab]);
-
-  // 🔹 ORDEN DE TABS
+  // La navegación mantiene visibles las cinco tareas principales.
   const tabItems = [
-    { key: 'inicio' as const, label: 'Inicio', shortLabel: 'Inicio', icon: Home },
+    { key: 'inicio' as const, label: 'Hoy', shortLabel: 'Hoy', icon: Home },
     { key: 'plan' as const, label: 'Mi Plan', shortLabel: 'Plan', icon: Calendar },
-    { key: 'calorias' as const, label: 'Calorías', shortLabel: 'Kcal', icon: Flame },
+    { key: 'calorias' as const, label: 'Progreso', shortLabel: 'Progreso', icon: Flame },
     { key: 'compras' as const, label: 'Compras', shortLabel: 'Compras', icon: ShoppingCart },
     { key: 'resumen' as const, label: 'Perfil', shortLabel: 'Perfil', icon: UserRound },
   ];
-
-  const mobileTabItems = [
-    tabItems[0],
-    tabItems[1],
-    tabItems[3],
-    tabItems[4],
-  ];
-
-  const mobileMoreItems = [
-    { key: 'calorias' as const, label: 'Calorías', icon: Flame },
-    { key: 'equivalencias' as const, label: 'Guía de intercambios', icon: Lightbulb },
-    { key: 'suplementos' as const, label: 'Suplementos', icon: Sparkles },
-  ];
-
-  // ── Mobile nav active tint by active profile ──
-  const navActiveSurface = useMemo(() => {
-    switch (activeProfile) {
-      case 'el':
-        return 'bg-ocean-600 text-white shadow-[0_8px_20px_-6px_rgba(47,107,255,0.45)]';
-      case 'ella':
-        return 'bg-coral-500 text-white shadow-[0_8px_20px_-6px_rgba(249,47,124,0.45)]';
-      case 'ambos':
-        return 'bg-pine-600 text-white shadow-[0_8px_20px_-6px_rgba(234,65,9,0.45)]';
-      default:
-        return 'bg-ink-900 text-white shadow-[0_8px_20px_-6px_rgba(23,23,27,0.5)]';
-    }
-  }, [activeProfile]);
 
   const mobileNavigationBar = (
     <nav
@@ -206,47 +155,8 @@ export default function App() {
       aria-label="Navegación principal móvil"
     >
       <div className="relative mx-auto w-full max-w-md px-4">
-        {isMobileMoreOpen ? (
-          <div className="absolute inset-x-4 bottom-[calc(100%+10px)] rounded-[24px] border border-white/80 bg-white/95 p-2 shadow-lift backdrop-blur-2xl dark:border-ink-700/80 dark:bg-ink-900/95">
-            <div className="mb-1 flex items-center justify-between px-2 py-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-ink-400 dark:text-ink-400">Más herramientas</p>
-              <button type="button" onClick={() => setIsMobileMoreOpen(false)} className="rounded-full p-1 text-ink-400 hover:bg-cream-100 dark:hover:bg-ink-800" aria-label="Cerrar más herramientas">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-1">
-              {mobileMoreItems.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  data-testid={`mobile-tab-${item.key}`}
-                  onClick={() => {
-                    setActiveTab(item.key);
-                    setIsMobileMoreOpen(false);
-                  }}
-                  className="flex min-h-11 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-ink-600 transition hover:bg-cream-100 dark:text-cream-200 dark:hover:bg-ink-800"
-                >
-                  <item.icon className="h-4 w-4 text-pine-600 dark:text-pine-300" />
-                  {item.label}
-                </button>
-              ))}
-              <button
-                type="button"
-                data-testid="mobile-more-settings"
-                onClick={() => {
-                  setIsAdminOpen(true);
-                  setIsMobileMoreOpen(false);
-                }}
-                className="flex min-h-11 items-center gap-3 rounded-2xl px-3 text-left text-sm font-bold text-ink-600 transition hover:bg-cream-100 dark:text-cream-200 dark:hover:bg-ink-800"
-              >
-                <Settings className="h-4 w-4 text-pine-600 dark:text-pine-300" />
-                Ajustes
-              </button>
-            </div>
-          </div>
-        ) : null}
-        <div className="grid grid-cols-5 gap-1 rounded-[26px] border border-white/80 bg-white/88 p-1.5 shadow-[0_18px_50px_-22px_rgba(15,23,42,0.42)] backdrop-blur-2xl dark:border-ink-700/80 dark:bg-ink-900/90">
-          {mobileTabItems.map((tabItem) => {
+        <div className="grid grid-cols-5 gap-0.5 rounded-[22px] border border-cream-200/90 bg-white/96 p-1 shadow-lift backdrop-blur-2xl dark:border-ink-700 dark:bg-ink-900/96">
+          {tabItems.map((tabItem) => {
             const isActive = activeTab === tabItem.key;
             return (
               <motion.button
@@ -254,12 +164,11 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   setActiveTab(tabItem.key);
-                  setIsMobileMoreOpen(false);
                 }}
                 data-testid={`mobile-tab-${tabItem.key}`}
                 whileTap={{ scale: 0.9 }}
-                className={`relative isolate flex min-h-[54px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[20px] transition-colors duration-200 ${
-                  isActive ? 'text-white' : 'text-ink-400 hover:text-ink-600 dark:text-ink-400 dark:hover:text-ink-200'
+                className={`relative isolate flex min-h-[52px] flex-col items-center justify-center gap-1 overflow-hidden rounded-[17px] transition-colors duration-200 ${
+                  isActive ? 'text-white' : 'text-ink-500 hover:text-ink-800 dark:text-ink-300 dark:hover:text-cream-100'
                 }`}
                 aria-label={tabItem.label}
                 aria-current={isActive ? 'page' : undefined}
@@ -267,31 +176,47 @@ export default function App() {
                 {isActive ? (
                   <motion.span
                     layoutId="mobile-nav-active"
-                    className={`absolute inset-0 -z-10 rounded-[20px] ${navActiveSurface}`}
+                    className="absolute inset-0 -z-10 rounded-[17px] bg-ink-900 shadow-sm dark:bg-cream-100"
                     transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                   />
                 ) : null}
                 <tabItem.icon className="h-[19px] w-[19px]" strokeWidth={isActive ? 2.5 : 1.9} />
-                <span className={`text-[10px] leading-none ${isActive ? 'font-black' : 'font-semibold'}`}>
+                <span className={`text-[9px] leading-none min-[370px]:text-[10px] ${isActive ? 'font-extrabold dark:text-ink-900' : 'font-semibold'}`}>
                   {tabItem.shortLabel}
                 </span>
               </motion.button>
             );
           })}
-          <motion.button
-            type="button"
-            onClick={() => setIsMobileMoreOpen((open) => !open)}
-            data-testid="mobile-more-button"
-            whileTap={{ scale: 0.9 }}
-            className={`relative flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-[20px] transition-colors duration-200 ${isMobileMoreOpen ? 'bg-ink-900 text-white dark:bg-cream-100 dark:text-ink-900' : 'text-ink-400 hover:text-ink-600 dark:text-ink-400 dark:hover:text-ink-200'}`}
-            aria-expanded={isMobileMoreOpen}
-            aria-label="Más herramientas"
-          >
-            <MoreHorizontal className="h-[19px] w-[19px]" strokeWidth={2.2} />
-            <span className={`text-[10px] leading-none ${isMobileMoreOpen ? 'font-black' : 'font-semibold'}`}>Más</span>
-          </motion.button>
         </div>
       </div>
+    </nav>
+  );
+
+  const desktopNavigationBar = (
+    <nav
+      className="hidden sm:block xl:sticky xl:top-[76px] xl:col-start-1"
+      aria-label="Navegación principal"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+        className="grid grid-cols-5 gap-1 rounded-[20px] border border-cream-200 bg-white p-1.5 dark:border-ink-700 dark:bg-ink-900 xl:grid-cols-1 xl:p-2"
+      >
+        {tabItems.map((tabItem) => (
+          <button
+            key={tabItem.key}
+            onClick={() => setActiveTab(tabItem.key)}
+            className={`flex min-h-[46px] items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-sm font-bold transition-colors active:scale-[0.98] xl:justify-start ${activeTab === tabItem.key
+              ? 'bg-ink-900 text-cream-50 dark:bg-cream-100 dark:text-ink-900'
+              : 'text-ink-600 hover:bg-cream-100 hover:text-ink-900 dark:text-ink-200 dark:hover:bg-ink-800 dark:hover:text-cream-100'
+              }`}
+          >
+            <tabItem.icon className="h-4 w-4 flex-shrink-0" />
+            <span>{tabItem.label}</span>
+          </button>
+        ))}
+      </motion.div>
     </nav>
   );
 
@@ -310,8 +235,8 @@ export default function App() {
               </h1>
               <p className="text-[10px] text-ink-400 dark:text-ink-400 sm:text-[11px]">
                 {questionnaireStepIndex > 0
-                  ? `Guardado automaticamente Â· continua en el paso ${questionnaireStepIndex + 1}`
-                  : 'Solo lo esencial Â· puedes continuar despues'}
+                  ? `Guardado automáticamente · continúa en el paso ${questionnaireStepIndex + 1}`
+                  : 'Sólo lo esencial · puedes continuar después'}
               </p>
             </div>
           </div>
@@ -336,7 +261,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl px-4 py-6 pb-24 sm:px-6">
+        <main className="mx-auto w-full max-w-3xl px-4 py-3 pb-24 sm:px-6 sm:py-6">
           <section className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <Suspense fallback={<ViewFallback />}>
               <NutritionQuestionnaire
@@ -394,7 +319,12 @@ export default function App() {
         data-profile={activeProfile}
       >
         {!isChromeHidden && <Header />}
-        <LandingView />
+        <main className="relative mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col overflow-hidden sm:grid sm:grid-rows-[auto_minmax(0,1fr)] sm:gap-5 sm:px-6 sm:py-4 xl:grid-cols-[210px_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] xl:items-start">
+          {desktopNavigationBar}
+          <section className="flex min-h-0 min-w-0 xl:col-start-2">
+            <LandingView />
+          </section>
+        </main>
         {!isChromeHidden && mobileNavigationBar}
       </div>
     );
@@ -407,57 +337,20 @@ export default function App() {
       >
       {!isChromeHidden && <Header />}
 
-      <main className="relative z-0 mx-auto flex min-h-0 w-full max-w-5xl min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-x-none px-4 py-4 pb-4 sm:block sm:min-h-0 sm:flex-none sm:overflow-visible sm:px-6 sm:pb-8 space-y-4">
-        {desktopTabBackdrop ? (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-6 top-4 -z-10 hidden h-[360px] overflow-hidden rounded-[36px] sm:block"
-          >
-            <div
-              className="absolute inset-0 scale-105 bg-cover bg-no-repeat opacity-95"
-              style={{
-                backgroundImage: `url('${desktopTabBackdrop.imageSrc}')`,
-                backgroundPosition: desktopTabBackdrop.imagePosition,
-              }}
-            />
-            <div className={`absolute inset-0 bg-gradient-to-br ${desktopTabBackdrop.overlay}`} />
-            <div className="absolute inset-0 bg-gradient-to-b from-cream-50/15 via-cream-50/55 to-cream-50/95 dark:from-ink-950/25 dark:via-ink-950/50 dark:to-ink-950/90" />
-            <div className="absolute inset-0 backdrop-blur-[2px]" />
-          </div>
-        ) : null}
+      <main ref={contentScrollRef} className="relative z-0 mx-auto flex min-h-0 w-full max-w-7xl min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-x-none px-4 py-4 pb-4 sm:grid sm:min-h-0 sm:flex-none sm:grid-cols-1 sm:gap-5 sm:overflow-visible sm:px-6 sm:pb-8 xl:grid-cols-[210px_minmax(0,1fr)] xl:items-start">
+        {desktopNavigationBar}
 
-        <div className="hidden sm:block sticky top-[76px] z-40">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="grid grid-cols-5 gap-1.5 rounded-full border border-cream-200/90 bg-white/85 p-1.5 shadow-lift backdrop-blur-xl dark:border-ink-700/80 dark:bg-ink-900/85"
-          >
-            {tabItems.map((tabItem) => (
-              <button
-                key={tabItem.key}
-                onClick={() => setActiveTab(tabItem.key)}
-                className={`flex min-h-[46px] items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-all duration-300 active:scale-[0.98] ${activeTab === tabItem.key
-                  ? 'bg-ink-900 text-cream-50 shadow-sm dark:bg-cream-100 dark:text-ink-900'
-                  : 'text-ink-500 hover:bg-cream-100 hover:text-ink-800 dark:text-ink-300 dark:hover:bg-ink-800 dark:hover:text-cream-100'
-                  }`}
-              >
-                <tabItem.icon className="h-4 w-4 flex-shrink-0" />
-                <span>{tabItem.label}</span>
-              </button>
-            ))}
-          </motion.div>
-        </div>
-
-        <AnimatePresence mode="wait">
-          <Suspense fallback={<ViewFallback />}>
-            {activeTab === 'plan' && <PlanView />}
-            {activeTab === 'suplementos' && <SupplementsView />}
-            {activeTab === 'calorias' && <CalorieMonitoringView />}
-            {activeTab === 'resumen' && <SummaryView />}
-            {activeTab === 'compras' && <ShoppingView />}
-          </Suspense>
-        </AnimatePresence>
+        <section className="min-w-0 xl:col-start-2">
+          <AnimatePresence mode="wait">
+            <Suspense fallback={<ViewFallback />}>
+              {activeTab === 'plan' && <PlanView />}
+              {activeTab === 'suplementos' && <SupplementsView />}
+              {activeTab === 'calorias' && <CalorieMonitoringView />}
+              {activeTab === 'resumen' && <SummaryView />}
+              {activeTab === 'compras' && <ShoppingView />}
+            </Suspense>
+          </AnimatePresence>
+        </section>
       </main>
 
       {!isChromeHidden && mobileNavigationBar}
@@ -466,7 +359,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 text-center text-ink-400 text-xs sm:text-sm dark:text-ink-400">
           <p className="flex items-center justify-center gap-2">
             <ChefHat className="w-3.5 h-3.5" />
-            Plan de alimentación personalizado - 2026
+          Plan de alimentación personalizado · 2026
           </p>
         </div>
       </footer>
