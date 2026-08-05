@@ -131,7 +131,7 @@ export default function AdminPanel({
 
   return (
     <div
-      className={`flex flex-col gap-4 rounded-[20px] border border-l-4 ${accentBorder} border-cream-200 bg-white p-4 dark:border-ink-700 dark:bg-ink-900`}
+      className={`flex flex-col gap-4 rounded-2xl border border-l-4 ${accentBorder} border-cream-200 bg-white p-4 dark:border-ink-700 dark:bg-ink-900`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -141,7 +141,7 @@ export default function AdminPanel({
             </h3>
 
             {isCustomAvailable && dataVersion === 'custom' && (
-              <span className="inline-flex items-center gap-1 text-[10px] bg-pine-50 border border-pine-100 px-2 py-1 rounded-full text-pine-700 dark:bg-pine-950/40 dark:border-pine-900/50 dark:text-pine-300 font-bold tracking-wide uppercase">
+              <span className="inline-flex items-center gap-1 text-xs bg-pine-50 border border-pine-100 px-2 py-1 rounded-full text-pine-700 dark:bg-pine-950/40 dark:border-pine-900/50 dark:text-pine-300 font-bold tracking-wide uppercase">
                 <CheckCircle2 className="w-3 h-3" />
                 Personalizado
               </span>
@@ -164,7 +164,7 @@ export default function AdminPanel({
         />
 
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400 mb-2">
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400 mb-2">
             Respaldo
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -195,12 +195,12 @@ export default function AdminPanel({
         </div>
 
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400 mb-2">
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400 mb-2">
             Importación
           </p>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-ink-900 px-4 py-3 font-bold text-cream-50 transition active:scale-[.98] hover:bg-ink-800 dark:bg-cream-100 dark:text-ink-900 dark:hover:bg-cream-200"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-4 py-3 font-bold text-cream-50 transition active:scale-[.98] hover:bg-ink-800 dark:bg-cream-100 dark:text-ink-900 dark:hover:bg-cream-200"
           >
             <Upload className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm leading-tight text-center">Importar archivo personalizado</span>
@@ -212,9 +212,9 @@ export default function AdminPanel({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-bold text-ink-700 dark:text-cream-100">Versión activa</p>
-                <p className="text-[11px] text-ink-400 dark:text-ink-400 mt-0.5">Cambia la fuente usada en la app.</p>
+                <p className="text-xs text-ink-400 dark:text-ink-400 mt-0.5">Cambia la fuente usada en la app.</p>
               </div>
-              <span className={`inline-flex items-center rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${softBadgeColor}`}>
+              <span className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-bold uppercase tracking-wide ${softBadgeColor}`}>
                 Archivo listo
               </span>
             </div>

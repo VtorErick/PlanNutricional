@@ -141,7 +141,7 @@ export default function Header() {
                 data-testid="header-home-button"
                 aria-label="Ir a Inicio"
                 title="Ir a Inicio"
-              className="group relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-ink-950 text-white shadow-sm transition hover:bg-ink-800 active:scale-95 sm:h-11 sm:w-11"
+              className="group relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-ink-950 text-white shadow-sm transition hover:bg-ink-800 active:scale-95 sm:h-11 sm:w-11"
             >
                 <Leaf className="h-5 w-5 -rotate-12 text-apricot-300 transition-transform group-hover:rotate-0" strokeWidth={2.4} />
                 <Sparkles className="absolute right-1.5 top-1.5 h-2.5 w-2.5 text-white/85" strokeWidth={2.5} />

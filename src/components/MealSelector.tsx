@@ -47,7 +47,7 @@ export default function MealSelector({
                 onToggle(perfil, dia, momento, comida.nombre);
               }
             }}
-            className={`relative overflow-hidden rounded-[22px] sm:rounded-[26px] transition-all duration-300 text-left w-full group cursor-pointer ${
+            className={`relative overflow-hidden rounded-2xl sm:rounded-[26px] transition-all duration-300 text-left w-full group cursor-pointer ${
               esSeleccionada
                 ? `${accentClasses.bgLight} border-2 ${accentClasses.borderAccent} shadow-[0_8px_28px_rgb(0,0,0,0.05)]`
                 : isDarkMode
@@ -107,7 +107,7 @@ export default function MealSelector({
                   <p className={`text-xs sm:text-[13px] mt-1.5 font-medium leading-relaxed break-words line-clamp-2 ${isDarkMode ? 'text-cream-300' : 'text-ink-400'}`}>
                     {comida.detalle}
                   </p>
-                  <p className={`text-[11px] sm:text-xs mt-2 font-bold ${accentClasses.text}`}>
+                  <p className={`text-xs sm:text-xs mt-2 font-bold ${accentClasses.text}`}>
                     {comida.caloriasKcal || 0} kcal
                     {typeof comida.proteinaG === 'number' ? ` · ${comida.proteinaG}g proteina` : ''}
                   </p>
@@ -121,9 +121,9 @@ export default function MealSelector({
                       <span
                         key={`${comida.nombre}-${item.key}-${item.cantidad}`}
                         title={`${item.label} ${item.cantidad}`}
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-[10px] font-bold`}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${accentClasses.tagBg} ${accentClasses.tagText} text-xs font-bold`}
                       >
-                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] shadow-sm ${isDarkMode ? 'bg-ink-800 text-cream-100 shadow-black/30' : 'bg-white/70 shadow-cream-200/50'}`}>
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs shadow-sm ${isDarkMode ? 'bg-ink-800 text-cream-100 shadow-black/30' : 'bg-white/70 shadow-cream-200/50'}`}>
                           {item.icon}
                         </span>
                         <span>x{item.cantidad}</span>
@@ -132,7 +132,7 @@ export default function MealSelector({
                   </div>
                 ) : (
                   <div
-                    className={`flex items-center gap-2 text-[11px] rounded-[14px] px-2.5 py-2 border shadow-sm ${
+                    className={`flex items-center gap-2 text-xs rounded-xl px-2.5 py-2 border shadow-sm ${
                       esSeleccionada
                         ? isDarkMode
                           ? `bg-ink-800/80 ${accentClasses.border}`

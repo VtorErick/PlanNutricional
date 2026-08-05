@@ -118,7 +118,7 @@ export default function DailyProgress() {
       {/* Mobile compact strip */}
       <div className="relative z-10 mx-auto max-w-md px-3 pb-3 pt-3 sm:hidden">
         <div
-          className={`w-full flex items-center gap-3 rounded-[22px] border px-3 py-2.5 text-left shadow-soft ${
+          className={`w-full flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-left shadow-soft ${
             isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'
           }`}
         >
@@ -137,7 +137,7 @@ export default function DailyProgress() {
                     }}
                     aria-label={`Ver ${day}`}
                     aria-pressed={active}
-                    className={`h-[34px] min-w-[42px] rounded-full px-2 text-[11px] font-extrabold transition-all active:scale-90 snap-start ${
+                    className={`h-[34px] min-w-[42px] rounded-full px-2 text-xs font-extrabold transition-all active:scale-90 snap-start ${
                       active
                         ? `${accentColors.btnActive} shadow-sm`
                         : isDarkMode
@@ -155,7 +155,7 @@ export default function DailyProgress() {
           {/* Kcal + mini bar + percent */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="min-w-[110px]">
-              <p className={`text-[10px] font-bold tabular-nums ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
+              <p className={`text-xs font-bold tabular-nums ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
                 {isAmbos
                   ? `${profileDayStats.el.kcal}/${profileDayStats.el.target} · ${profileDayStats.ella.kcal}/${profileDayStats.ella.target}`
                   : `${activeStats.kcal}/${activeStats.target} kcal`
@@ -224,7 +224,7 @@ export default function DailyProgress() {
           </div>
 
           <div
-            className={`flex-shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold whitespace-nowrap ${
+            className={`flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap ${
               isDarkMode ? 'bg-ink-900 text-ink-300' : 'bg-white text-ink-500 border border-cream-200'
             }`}
           >
@@ -286,7 +286,7 @@ export default function DailyProgress() {
 
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <span
-            className={`text-[11px] sm:text-xs font-black ${
+            className={`text-xs sm:text-xs font-black ${
               dailyProgressPercent === 100
                 ? isDarkMode
                   ? 'text-pine-300'
@@ -328,12 +328,12 @@ export default function DailyProgress() {
           >
             <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 pb-4 pt-1">
               <div className="flex items-center justify-between gap-3 mb-3">
-                <p className={`text-[11px] sm:text-xs font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
+                <p className={`text-xs sm:text-xs font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
                   {completadosCount} de {totalMomentCount} momentos completados
                 </p>
 
                 {dailyProgressPercent === 100 && (
-                  <span className={`text-[11px] font-semibold flex items-center gap-1 whitespace-nowrap ${isDarkMode ? 'text-pine-300' : 'text-pine-600'}`}>
+                  <span className={`text-xs font-semibold flex items-center gap-1 whitespace-nowrap ${isDarkMode ? 'text-pine-300' : 'text-pine-600'}`}>
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     Dia completo
                   </span>
@@ -381,7 +381,7 @@ export default function DailyProgress() {
                       </div>
 
                       <span
-                        className={`text-[10px] sm:text-[11px] font-bold text-center leading-tight ${
+                        className={`text-xs sm:text-xs font-bold text-center leading-tight ${
                           done ? 'text-white' : isDarkMode ? 'text-ink-100' : 'text-ink-600'
                         }`}
                       >
@@ -389,7 +389,7 @@ export default function DailyProgress() {
                       </span>
 
                       <span
-                        className={`text-[9px] sm:text-[10px] text-center leading-tight tabular-nums ${
+                        className={`text-xs sm:text-xs text-center leading-tight tabular-nums ${
                           done ? 'text-white/75' : 'text-ink-400'
                         }`}
                       >

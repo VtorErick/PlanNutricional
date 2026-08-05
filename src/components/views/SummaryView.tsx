@@ -65,33 +65,23 @@ export default function SummaryView() {
     setShowQuestionnaire(true);
   };
 
-  return (
-    <motion.div
-      key="resumen"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -15 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-      className="w-full flex flex-col"
-    >
-      <section className="mb-3 px-1">
-        <p className="eyebrow-label">
-          Tu perfil y preferencias
-        </p>
-        <h2 className={`mt-0.5 font-display text-[28px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
-          Resumen
-        </h2>
-      </section>
+  const ProfileManagement = () => (
+    <details className="group mt-4 surface-card p-4">
+      <summary className={`flex cursor-pointer list-none items-center justify-between gap-3 font-display text-base font-semibold [&::-webkit-details-marker]:hidden ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+        <span className="flex items-center gap-2">
+          <Pencil className={`h-4 w-4 ${ac.text}`} />
+          Gestionar perfil
+        </span>
+        <ChevronDown className="h-4 w-4 text-ink-400 transition-transform group-open:rotate-180" />
+      </summary>
 
-      <section className={`flex items-center gap-3 border-b px-1 py-3 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
+      <div className={`mt-3 flex items-center gap-3 border-b pb-3 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
         <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${ac.tagBg}`}>
           <BellRing className={`h-4 w-4 ${ac.text}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>Recordatorios opcionales</p>
-          <p className={`mt-0.5 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-            Recibe un aviso antes de tu siguiente comida.
-          </p>
+          <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>Recordatorios</p>
+          <p className={`mt-0.5 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>Aviso antes de tu siguiente comida.</p>
         </div>
         <button
           type="button"
@@ -103,42 +93,50 @@ export default function SummaryView() {
         >
           <span className={`block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${recordatoriosActivos ? 'translate-x-5' : ''}`} />
         </button>
-      </section>
+      </div>
 
-      <section className={`mb-4 border-b px-1 py-3 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
-        <div className="flex items-start gap-3">
-          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${isDarkMode ? 'bg-ink-800' : 'bg-cream-100'}`}>
-            <Pencil className={`h-4 w-4 ${ac.text}`} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className={`text-sm font-extrabold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>¿Cambió algo?</p>
-            <p className={`mt-0.5 text-xs leading-relaxed ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-              Actualiza tus respuestas. Tus datos se conservan y no tienes que empezar de nuevo.
-            </p>
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => openProfileEditor('el')}
-                data-testid="summary-edit-el"
-                className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-extrabold transition active:scale-95 ${isDarkMode ? 'bg-ink-800 text-cream-100 hover:bg-ink-700' : 'bg-cream-100 text-ink-700 hover:bg-cream-200'}`}
-              >
-                Editar {getProfileLabel(profileLabels, 'el')}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-              {isAmbos ? (
-                <button
-                  type="button"
-                  onClick={() => openProfileEditor('ella')}
-                  data-testid="summary-edit-ella"
-                  className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-extrabold transition active:scale-95 ${isDarkMode ? 'bg-ink-800 text-cream-100 hover:bg-ink-700' : 'bg-cream-100 text-ink-700 hover:bg-cream-200'}`}
-                >
-                  Editar {getProfileLabel(profileLabels, 'ella')}
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </div>
+      <p className={`mt-3 text-sm ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+        Actualiza tus respuestas cuando cambie tu rutina, objetivo o estado de salud.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => openProfileEditor('el')}
+          data-testid="summary-edit-el"
+          className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-xs font-extrabold transition active:scale-95 ${isDarkMode ? 'bg-ink-800 text-cream-100 hover:bg-ink-700' : 'bg-cream-100 text-ink-700 hover:bg-cream-200'}`}
+        >
+          Editar {getProfileLabel(profileLabels, 'el')}
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+        {isAmbos ? (
+          <button
+            type="button"
+            onClick={() => openProfileEditor('ella')}
+            data-testid="summary-edit-ella"
+            className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-xs font-extrabold transition active:scale-95 ${isDarkMode ? 'bg-ink-800 text-cream-100 hover:bg-ink-700' : 'bg-cream-100 text-ink-700 hover:bg-cream-200'}`}
+          >
+            Editar {getProfileLabel(profileLabels, 'ella')}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
+    </details>
+  );
+
+  return (
+    <motion.div
+      key="resumen"
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -15 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      className="w-full flex flex-col"
+    >
+      <section className="mb-3 px-1">
+        <p className="eyebrow-label">Tu plan en breve</p>
+        <h2 className={`mt-0.5 font-display text-[28px] font-semibold tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
+          Tu perfil
+        </h2>
       </section>
 
       {isAmbos ? (
@@ -543,6 +541,7 @@ export default function SummaryView() {
           );
         })}
       </div>
+      <ProfileManagement />
     </motion.div>
   );
 }

@@ -371,7 +371,7 @@ export default function ShoppingView() {
             <button
               type="button"
               onClick={() => setTab('plan')}
-              className="mx-auto mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] bg-ink-900 px-5 text-sm font-bold text-white transition hover:bg-ink-800 active:scale-[0.97] dark:bg-cream-100 dark:text-ink-900"
+              className="mx-auto mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 text-sm font-bold text-white transition hover:bg-ink-800 active:scale-[0.97] dark:bg-cream-100 dark:text-ink-900"
             >
               Ir a mi plan
               <ArrowRight className="h-4 w-4" />
@@ -428,7 +428,7 @@ export default function ShoppingView() {
                   </div>
                 </div>
 
-                <div className={`overflow-hidden rounded-[16px] border ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
+                <div className={`overflow-hidden rounded-2xl border ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
             {section.items.map((item) => {
               const isChecked = comprasCheck[item.ingrediente];
               const displayUsos = getDisplayUsos(item.usos);
@@ -447,8 +447,8 @@ export default function ShoppingView() {
                         : 'border-cream-200 bg-white hover:bg-cream-50'
                   }`}
                 >
-                  <div className="min-w-0 flex-1 px-3 py-3.5">
-                    <div className={`${expandedIngredients[item.ingrediente] ? 'mb-2.5' : ''} flex items-start gap-3`}>
+                  <div className="min-w-0 flex-1 px-3 py-2.5">
+                    <div className={`${expandedIngredients[item.ingrediente] ? 'mb-2.5' : ''} flex items-center gap-3`}>
                       <motion.button
                         type="button"
                         onClick={() =>
@@ -459,7 +459,7 @@ export default function ShoppingView() {
                         }
                         animate={isChecked ? { scale: [1, 1.18, 1] } : { scale: 1 }}
                         transition={{ duration: 0.3 }}
-                        className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                        className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                           isChecked
                             ? 'check-control-complete'
                             : isDarkMode
@@ -486,15 +486,9 @@ export default function ShoppingView() {
                           {item.ingrediente}
                         </h3>
 
-                        <p
-                          className={`mt-0.5 text-xs font-medium ${
-                            isDarkMode ? 'text-ink-400' : 'text-ink-400'
-                          }`}
-                        >
-                          Aparece en {displayUsos.length} comida{displayUsos.length > 1 ? 's' : ''} seleccionada{displayUsos.length > 1 ? 's' : ''}
-                        </p>
-                        <p className={`mt-1 text-xs font-bold ${isChecked ? 'text-[var(--ui-success)]' : isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-                          {isChecked ? 'Comprado' : 'Pendiente'}{isAmbos ? ` · ${displayUsos.some((uso) => uso.perfiles.length === 2) ? 'Compartido' : 'Uso individual'}` : ''}
+                        <p className={`mt-0.5 text-xs font-semibold ${isChecked ? 'text-[var(--ui-success)]' : isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                          {isChecked ? 'Comprado' : 'Pendiente'} · {displayUsos.length} uso{displayUsos.length > 1 ? 's' : ''}
+                          {isAmbos ? ` · ${displayUsos.some((uso) => uso.perfiles.length === 2) ? 'Compartido' : 'Individual'}` : ''}
                         </p>
                       </div>
 

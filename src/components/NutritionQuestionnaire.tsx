@@ -13,7 +13,6 @@ import {
   Shield,
   Activity,
   Settings2,
-  SkipForward,
   Hourglass,
   Pill,
   Heart,
@@ -33,6 +32,12 @@ import {
   FileUp,
   ScanLine,
   Trash,
+  Info,
+  Armchair,
+  Footprints,
+  Dumbbell,
+  Zap,
+  ListChecks,
 } from 'lucide-react';
 import { getAiErrorReason, type AiDebugLog } from '../utils/aiDiagnostics';
 import { showAppAlert } from '../utils/appDialogs';
@@ -133,10 +138,10 @@ const OBJECTIVES = [
 ];
 
 const ACTIVITY_LEVELS = [
-  { val: 'Sedentario', emoji: '🪑', desc: 'Sin ejercicio' },
-  { val: 'Ligero', emoji: '🚶', desc: '1-2 días/sem' },
-  { val: 'Moderado', emoji: '🏃', desc: '3-4 días/sem' },
-  { val: 'Intenso', emoji: '⚡', desc: '5+ días/sem' },
+  { val: 'Sedentario', Icon: Armchair, desc: 'Sin ejercicio' },
+  { val: 'Ligero', Icon: Footprints, desc: '1-2 días/sem' },
+  { val: 'Moderado', Icon: Dumbbell, desc: '3-4 días/sem' },
+  { val: 'Intenso', Icon: Zap, desc: '5+ días/sem' },
 ];
 
 const TIMELINE_OPTIONS = [
@@ -359,6 +364,15 @@ function CardSection({
   );
 }
 
+function OptionalNotice({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex items-start gap-2 rounded-xl border border-apricot-100 bg-apricot-50 px-3 py-2 text-xs text-ink-500 dark:border-apricot-700/60 dark:bg-apricot-950/40 dark:text-apricot-200">
+      <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-apricot-600 dark:text-apricot-300" />
+      <span>{children}</span>
+    </p>
+  );
+}
+
 function ChipButton({
   active,
   onClick,
@@ -392,9 +406,12 @@ function CheckList({
   currentValueString: string;
   onToggle: (tag: string) => void;
 }) {
+  const [showAll, setShowAll] = useState(false);
+  const visibleOptions = showAll ? options : options.slice(0, 6);
+
   return (
-    <div className="max-h-64 overflow-y-auto rounded-2xl border border-cream-200 bg-white scrollbar-thin scrollbar-thumb-cream-200 dark:border-ink-600 dark:bg-ink-900 dark:scrollbar-thumb-ink-600">
-      {options.map((option) => {
+    <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white dark:border-ink-600 dark:bg-ink-900">
+      {visibleOptions.map((option) => {
         const isActive = currentValueString.includes(option);
         return (
           <button
@@ -418,6 +435,16 @@ function CheckList({
           </button>
         )
       })}
+      {options.length > 6 ? (
+        <button
+          type="button"
+          onClick={() => setShowAll((visible) => !visible)}
+          className="flex min-h-11 w-full items-center justify-center gap-1.5 bg-cream-50 px-3 py-2 text-xs font-bold text-ink-500 transition hover:bg-cream-100 dark:bg-ink-800 dark:text-ink-300 dark:hover:bg-ink-700"
+        >
+          {showAll ? 'Ver menos' : `Ver ${options.length - 6} opciones más`}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showAll ? 'rotate-180' : ''}`} />
+        </button>
+      ) : null}
     </div>
   )
 }
@@ -471,7 +498,7 @@ function NumField({
   };
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-[14px] border border-cream-200 bg-white p-3 transition-colors focus-within:border-pine-400 focus-within:ring-2 focus-within:ring-pine-100 dark:border-ink-600 dark:bg-ink-900 dark:focus-within:border-pine-600 dark:focus-within:ring-pine-900/50">
+    <div className="flex flex-col gap-1.5 rounded-xl border border-cream-200 bg-white p-3 transition-colors focus-within:border-pine-400 focus-within:ring-2 focus-within:ring-pine-100 dark:border-ink-600 dark:bg-ink-900 dark:focus-within:border-pine-600 dark:focus-within:ring-pine-900/50">
       <div className="flex items-center justify-between text-xs font-bold uppercase text-ink-400 dark:text-ink-400">
         <label>
           {label} {required && <span className="text-coral-400 ml-0.5">*</span>}
@@ -585,7 +612,7 @@ function TimeWheelPicker({
     <div className="space-y-4">
       <p className="text-center text-sm font-semibold text-ink-600 dark:text-cream-100">{title}</p>
 
-      <div className="rounded-[24px] border border-pine-100 bg-gradient-to-br from-pine-50 to-pine-50 p-4 shadow-sm dark:border-pine-900/60 dark:from-ink-900 dark:to-pine-950/60">
+      <div className="rounded-3xl border border-pine-100 bg-gradient-to-br from-pine-50 to-pine-50 p-4 shadow-sm dark:border-pine-900/60 dark:from-ink-900 dark:to-pine-950/60">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl border border-cream-200 bg-white p-3 shadow-sm dark:border-ink-600 dark:bg-ink-900">
             <div className="mb-2 flex items-center justify-between gap-2">
@@ -737,6 +764,10 @@ export default function NutritionQuestionnaire({
   });
 
   const [activePortionMoment, setActivePortionMoment] = useState('desayuno');
+  const [expandedMedicalSection, setExpandedMedicalSection] = useState<
+    'medications' | 'allergies' | 'intolerances'
+  >('medications');
+  const wizardCardRef = useRef<HTMLDivElement | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const wakeLockReleaseTimeoutRef = useRef<number | null>(null);
   const [showAiErrorReason, setShowAiErrorReason] = useState(false);
@@ -822,6 +853,11 @@ export default function NutritionQuestionnaire({
     ella: labelElla,
   }));
   const [editingProfileLabel, setEditingProfileLabel] = useState<'el' | 'ella' | null>(null);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    wizardCardRef.current?.closest('main')?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [stepIdx]);
 
   useEffect(() => {
     if (editingProfileLabel) return;
@@ -1263,7 +1299,7 @@ export default function NutritionQuestionnaire({
                       maxLength={24}
                       data-testid={`questionnaire-label-${profileId}`}
                       aria-label={`Nombre del ${isEl ? 'primer' : 'segundo'} perfil`}
-                      className="h-11 w-full rounded-[14px] border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
+                      className="h-11 w-full rounded-xl border border-cream-200 bg-cream-50 px-3 text-sm font-bold text-ink-700 outline-none transition focus:border-pine-300 focus:ring-2 focus:ring-pine-100 dark:border-ink-600 dark:bg-ink-800 dark:text-cream-100 dark:focus:border-pine-500 dark:focus:ring-pine-950"
                       placeholder={fallbackLabel}
                     />
                   </label>
@@ -1276,6 +1312,20 @@ export default function NutritionQuestionnaire({
             <Shield className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-pine-600 dark:text-pine-300" />
             Comparte sólo la información necesaria. Evita nombres completos o datos identificables en las notas.
           </p>
+
+          <button
+            type="button"
+            onClick={() => {
+              setDirection(1);
+              setStepIdx(1, targetProfile);
+            }}
+            data-testid="questionnaire-who-continue"
+            disabled={loading}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-ink-700 px-4 py-3 text-sm font-bold text-white transition active:scale-[.98] disabled:opacity-50 dark:bg-cream-50 dark:text-ink-900"
+          >
+            Continuar con {targetLabel}
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       );
     }
@@ -1363,7 +1413,7 @@ export default function NutritionQuestionnaire({
                     onClick={toggleObjective}
                     className={`
                       relative flex min-h-12 items-center gap-2
-                      rounded-[14px] border px-3 py-2.5 text-left
+                      rounded-xl border px-3 py-2.5 text-left
                       transition-all duration-150 active:scale-[.96] select-none
                       ${isSelected
                         ? `${tc.border} ${tc.light} ${tc.text}`
@@ -1403,7 +1453,7 @@ export default function NutritionQuestionnaire({
                     onClick={() => setPerson(profile, { objectiveTimeline: tl.val })}
                     className={`
                       flex min-h-11 items-center justify-center
-                      rounded-[14px] border px-2 py-2.5 transition-all active:scale-[.97]
+                      rounded-xl border px-2 py-2.5 transition-all active:scale-[.97]
                       ${active
                         ? `${tc.border} ${tc.light} ${tc.text}`
                         : 'border-cream-200 bg-white text-ink-400 hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:text-ink-400 dark:hover:bg-ink-800'
@@ -1425,9 +1475,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
-            💡 Esta sección es opcional. Puedes saltar si no aplica.
-          </p>
+          <OptionalNotice>Esta sección es opcional. Puedes omitirla si no aplica.</OptionalNotice>
 
           <CardSection title="Condiciones médicas" hint="Selecciona si tienes alguna de las siguientes.">
             <CheckList 
@@ -1442,37 +1490,75 @@ export default function NutritionQuestionnaire({
 
     if (type === 'medicos' && profile) {
       const p = person(profile);
+      const medicalSections = [
+        {
+          key: 'medications' as const,
+          title: 'Medicamentos',
+          hint: 'Selecciona los que usas frecuentemente.',
+          options: QUICK_TAGS.medications,
+          value: p.medications || '',
+        },
+        {
+          key: 'allergies' as const,
+          title: 'Alergias',
+          hint: 'Incluye sólo las que conozcas.',
+          options: QUICK_TAGS.allergies,
+          value: p.allergies || '',
+        },
+        {
+          key: 'intolerances' as const,
+          title: 'Intolerancias',
+          hint: 'Selecciona las que afecten tus elecciones diarias.',
+          options: QUICK_TAGS.intolerances,
+          value: p.intolerances || '',
+        },
+      ];
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
-            💡 Esta sección es opcional.
-          </p>
+          <OptionalNotice>Revisa sólo lo que aplique. Puedes dejar las tres categorías vacías.</OptionalNotice>
 
-          <CardSection title="Medicamentos" hint="Selecciona los que usas frecuentemente.">
-            <CheckList 
-              options={QUICK_TAGS.medications} 
-              currentValueString={p.medications || ''} 
-              onToggle={(tag) => toggleListTag(profile, 'medications', tag)} 
-            />
-          </CardSection>
+          <div className="space-y-2">
+            {medicalSections.map((section) => {
+              const isExpanded = expandedMedicalSection === section.key;
+              const selectedCount = section.value
+                .split(',')
+                .map((item: string) => item.trim())
+                .filter(Boolean).length;
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CardSection title="Alergias">
-              <CheckList 
-                options={QUICK_TAGS.allergies} 
-                currentValueString={p.allergies || ''} 
-                onToggle={(tag) => toggleListTag(profile, 'allergies', tag)} 
-              />
-            </CardSection>
+              return (
+                <div
+                  key={section.key}
+                  className="overflow-hidden rounded-2xl border border-cream-200 bg-white dark:border-ink-600 dark:bg-ink-900"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setExpandedMedicalSection(section.key)}
+                    className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-3 text-left"
+                    aria-expanded={isExpanded}
+                  >
+                    <span>
+                      <span className="block text-sm font-bold text-ink-700 dark:text-cream-100">{section.title}</span>
+                      <span className="mt-0.5 block text-xs text-ink-400">
+                        {selectedCount ? `${selectedCount} seleccionados` : 'Sin respuestas'}
+                      </span>
+                    </span>
+                    <ChevronDown className={`h-4 w-4 flex-shrink-0 text-ink-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  </button>
 
-            <CardSection title="Intolerancias">
-              <CheckList 
-                options={QUICK_TAGS.intolerances} 
-                currentValueString={p.intolerances || ''} 
-                onToggle={(tag) => toggleListTag(profile, 'intolerances', tag)} 
-              />
-            </CardSection>
+                  {isExpanded && (
+                    <div className="border-t border-cream-100 p-3 dark:border-ink-700">
+                      <p className="mb-2 text-xs text-ink-400">{section.hint}</p>
+                      <CheckList
+                        options={section.options}
+                        currentValueString={section.value}
+                        onToggle={(tag) => toggleListTag(profile, section.key, tag)}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       );
@@ -1484,9 +1570,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
-            💡 Este paso es opcional. Puedes adjuntar un PDF de báscula corporal o capturar medidas manuales.
-          </p>
+          <OptionalNotice>Este paso es opcional. Adjunta un PDF de báscula corporal o captura las medidas que tengas.</OptionalNotice>
 
           <CardSection
             title="Reporte corporal en PDF"
@@ -1502,7 +1586,7 @@ export default function NutritionQuestionnaire({
                     {p.assessmentReportPdf ? 'Cambiar PDF adjunto' : 'Adjuntar PDF opcional'}
                   </p>
                   <p className="text-xs text-ink-400 mt-1 leading-relaxed dark:text-cream-300">
-                    La IA lo toma como contexto adicional. Tus respuestas manuales siguen teniendo prioridad.
+                    La inteligencia artificial lo toma como contexto adicional. Tus respuestas manuales tienen prioridad.
                   </p>
                 </div>
               </div>
@@ -1595,9 +1679,7 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
-            💡 Esta sección es opcional.
-          </p>
+          <OptionalNotice>Esta sección es opcional. Añade sólo preferencias importantes para ti.</OptionalNotice>
 
           <CardSection title="Síntomas digestivos" hint="Selecciona los que experimentes frecuentemente.">
             <CheckList 
@@ -1653,6 +1735,7 @@ export default function NutritionQuestionnaire({
             <div className="grid grid-cols-2 gap-2">
               {ACTIVITY_LEVELS.map((al) => {
                 const active = p.activityLevel === al.val;
+                const ActivityIcon = al.Icon;
                 return (
                   <button
                     key={al.val}
@@ -1675,8 +1758,8 @@ export default function NutritionQuestionnaire({
                         : 'border-cream-200 bg-white hover:bg-cream-50 dark:border-ink-600 dark:bg-ink-900 dark:hover:bg-ink-800'
                     }`}
                   >
-                    <span className="text-xl mb-0.5 w-9 h-9 rounded-full bg-white shadow-sm border border-cream-100 flex items-center justify-center dark:bg-ink-800 dark:border-ink-600">
-                      {al.emoji}
+                    <span className="mb-0.5 flex h-9 w-9 items-center justify-center rounded-full border border-cream-100 bg-white shadow-sm dark:border-ink-600 dark:bg-ink-800">
+                      <ActivityIcon className="h-4 w-4" />
                     </span>
                     <span className={`text-xs font-bold leading-tight ${active ? tc.text : 'text-ink-600 dark:text-cream-100'}`}>
                       {al.val}
@@ -1749,16 +1832,14 @@ export default function NutritionQuestionnaire({
 
       return (
         <div className="space-y-4">
-          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
-            💡 Este paso es opcional. Puedes saltar si prefieres que la IA calcule las porciones automáticamente.
-          </p>
+          <OptionalNotice>Puedes omitir este paso para que la inteligencia artificial calcule las porciones.</OptionalNotice>
 
           <CardSection title="Modo de porciones">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {([
-                ['auto', '🤖', 'IA decide', 'Calculado automáticamente'],
-                ['manual', '📋', 'Manual', 'Yo defino las cantidades'],
-              ] as const).map(([val, emoji, title, sub]) => (
+                ['auto', Sparkles, 'Automático', 'Calculado para tu objetivo'],
+                ['manual', ListChecks, 'Manual', 'Yo defino las cantidades'],
+              ] as const).map(([val, ModeIcon, title, sub]) => (
                 <button
                   key={val}
                   onClick={() => setPortionMode(val)}
@@ -1779,7 +1860,7 @@ export default function NutritionQuestionnaire({
                     <Check className="w-3.5 h-3.5" />
                   </motion.span>
 
-                  <span className="text-xl">{emoji}</span>
+                  <ModeIcon className="h-5 w-5 text-pine-600 dark:text-pine-300" />
                   <span className={`text-sm font-bold mt-1 ${portionMode === val ? 'text-pine-700 dark:text-pine-200' : 'text-ink-700 dark:text-cream-100'}`}>
                     {title}
                   </span>
@@ -1916,9 +1997,7 @@ export default function NutritionQuestionnaire({
     if (type === 'cocina') {
       return (
         <div className="space-y-4">
-          <p className="text-xs text-ink-400 bg-apricot-50 border border-apricot-100 rounded-xl px-3 py-2 dark:bg-apricot-950/40 dark:border-apricot-700/60 dark:text-apricot-200">
-            💡 Esta sección es opcional.
-          </p>
+          <OptionalNotice>Esta sección es opcional. Elige sólo lo que realmente usarías.</OptionalNotice>
 
           <CardSection title="Estilos de cocina preferidos">
             <div className="flex flex-wrap gap-2">
@@ -2007,7 +2086,7 @@ export default function NutritionQuestionnaire({
               </div>
               <div>
                 <span className="block text-xs font-black uppercase tracking-wide text-ink-400">Porciones</span>
-                <strong>{portionMode === 'auto' ? 'IA decide' : 'Manual'}</strong>
+                <strong>{portionMode === 'auto' ? 'Cálculo automático' : 'Manual'}</strong>
               </div>
               {portionSummary ? <p className="col-span-2 text-ink-400 dark:text-ink-400">Porciones: {portionSummary}</p> : null}
               {el.favoriteCuisineStyles ? <p className="col-span-2 text-ink-400 dark:text-ink-400">Cocina: {el.favoriteCuisineStyles}</p> : null}
@@ -2063,7 +2142,7 @@ export default function NutritionQuestionnaire({
             ]);
 
             return (
-              <div key={p} className={`space-y-2 rounded-[16px] border p-3 ${t.border} ${t.light}`}>
+              <div key={p} className={`space-y-2 rounded-2xl border p-3 ${t.border} ${t.light}`}>
                 <p className={`text-xs font-black uppercase tracking-wider ${t.text}`}>
                   {p === 'el' ? `Perfil ${labelEl}` : `Perfil ${labelElla}`}
                 </p>
@@ -2115,7 +2194,7 @@ export default function NutritionQuestionnaire({
               </div>
 
               <div className="text-center space-y-1 px-4">
-                <p className="text-sm font-bold text-ink-600 dark:text-cream-100">La IA está creando tu plan</p>
+                <p className="text-sm font-bold text-ink-600 dark:text-cream-100">Estamos creando tu plan</p>
                 <p className="text-xs text-ink-400 dark:text-ink-400">Esto puede tomar 30 a 60 segundos.</p>
                 <p className="text-xs text-ink-400 dark:text-ink-400">
                   Modelo previsto: {plannedModelLabel}
@@ -2139,7 +2218,7 @@ export default function NutritionQuestionnaire({
             <button
               onClick={() => onViewPlan(targetProfile)}
               data-testid="questionnaire-view-plan"
-              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-ink-700 py-3.5 text-sm font-bold text-white transition-all active:scale-[.98] dark:bg-cream-50 dark:text-ink-900"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-ink-700 py-3.5 text-sm font-bold text-white transition-all active:scale-[.98] dark:bg-cream-50 dark:text-ink-900"
             >
               <CheckCircle2 className="w-5 h-5" />
               ¡Listo! Revisa tu plan
@@ -2151,19 +2230,19 @@ export default function NutritionQuestionnaire({
               onClick={handleGenerate}
               disabled={loading}
               data-testid="questionnaire-generate"
-              className={`w-full flex items-center justify-center gap-2 rounded-[14px] py-3.5 text-sm font-bold transition-all active:scale-[.98] ${
+              className={`w-full flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold transition-all active:scale-[.98] ${
                 loading
                   ? 'bg-ink-700 opacity-70 cursor-not-allowed'
                   : 'bg-ink-700 hover:bg-ink-600 dark:bg-cream-50 dark:text-ink-900 dark:hover:bg-cream-100'
               } text-white`}
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5 text-apricot-300" />}
-              {loading ? 'Generando plan...' : 'Generar plan con IA'}
+              {loading ? 'Generando plan...' : 'Generar mi plan'}
             </motion.button>
           )}
 
           <p className="mt-3 text-xs text-ink-400 text-center leading-relaxed">
-            Las recomendaciones de IA no sustituyen valoración profesional.
+            Las recomendaciones automáticas no sustituyen una valoración profesional.
           </p>
         </div>
       );
@@ -2190,7 +2269,7 @@ export default function NutritionQuestionnaire({
 
   return (
     <>
-      <div className="mt-0 overflow-hidden border-y border-cream-200 bg-white shadow-none dark:border-ink-700 dark:bg-ink-900 sm:mt-4 sm:rounded-[22px] sm:border">
+      <div ref={wizardCardRef} className="mt-0 overflow-hidden border-y border-cream-200 bg-white shadow-none dark:border-ink-700 dark:bg-ink-900 sm:mt-4 sm:rounded-2xl sm:border">
         <div className="h-1.5 bg-cream-100 dark:bg-ink-800">
           <motion.div
             className={`h-full bg-gradient-to-r ${tc.grad}`}
@@ -2217,6 +2296,16 @@ export default function NutritionQuestionnaire({
             </div>
           </div>
 
+          {isOptional && showNext && (
+            <button
+              type="button"
+              onClick={advance}
+              data-testid="questionnaire-skip"
+              className="flex-shrink-0 rounded-xl px-2 py-2 text-xs font-bold text-ink-400 transition hover:bg-cream-50 hover:text-ink-600 active:scale-95 dark:hover:bg-ink-800 dark:hover:text-cream-200"
+            >
+              Omitir
+            </button>
+          )}
         </div>
 
         <div className="px-4 py-4 sm:px-5 sm:py-5">
@@ -2250,23 +2339,11 @@ export default function NutritionQuestionnaire({
             )}
 
             {showNext && (
-              <>
-                {isOptional && (
-                <button
-                  onClick={advance}
-                  data-testid="questionnaire-skip"
-                  className="flex items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-semibold text-ink-400 underline underline-offset-2 hover:text-ink-500 transition active:scale-95 dark:text-ink-400 dark:hover:text-cream-300"
-                >
-                    <SkipForward className="w-3.5 h-3.5" />
-                    Ahora no
-                  </button>
-                )}
-
-                <button
+              <button
                   onClick={advance}
                   disabled={!canContinue()}
                   data-testid="questionnaire-next"
-                  className={`ml-auto flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-bold transition-all active:scale-[.98] ${
+                  className={`ml-auto flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all active:scale-[.98] ${
                     canContinue()
                       ? 'bg-ink-700 text-white dark:bg-cream-50 dark:text-ink-900'
                       : 'bg-cream-100 text-cream-300 cursor-not-allowed dark:bg-ink-800 dark:text-ink-500'
@@ -2275,7 +2352,6 @@ export default function NutritionQuestionnaire({
                   {isLastNav ? 'Confirmar' : 'Siguiente'}
                   <ChevronRight className="w-4 h-4" />
                 </button>
-              </>
             )}
           </div>
         )}
@@ -2296,7 +2372,7 @@ export default function NutritionQuestionnaire({
               exit={{ opacity: 0, y: 24, scale: 0.98 }}
               transition={{ type: 'spring', stiffness: 320, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-[28px] bg-white border border-cream-200 shadow-2xl p-4 sm:p-5 dark:bg-ink-900 dark:border-ink-700"
+              className="w-full max-w-sm rounded-3xl bg-white border border-cream-200 shadow-2xl p-4 sm:p-5 dark:bg-ink-900 dark:border-ink-700"
             >
               <TimeWheelPicker
                 title={timePickerState.field === 'wakeTime' ? 'Hora de despertar' : 'Hora de dormir'}

@@ -410,6 +410,6 @@ test('combined mobile navigation renders every major view with populated data', 
   await saveDocScreenshot(page, 'shopping-mobile.png');
 
   await selectMobileTab(page, 'resumen');
-  await expect(page.getByRole('heading', { name: /^Resumen$/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Tu perfil$/ })).toBeVisible();
   await saveDocScreenshot(page, 'summary-mobile.png');
 });

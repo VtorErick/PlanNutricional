@@ -1,12 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, ChevronDown, Flame, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowRight, ChevronDown, Flame, Target } from 'lucide-react';
 import { useDiet } from '../../context/DietContext';
 import { estimateDailyCaloriesFromObjectives, estimateDailyMacroTargetsFromObjectives } from '../../utils/nutrition';
 import { getAccentColors, getMonitoringPalette } from '../../utils/theme';
 import { getProfileLabel } from '../../utils/profileLabels';
 
 const STATUS_LABELS = {
+  none: 'Sin registro',
   low: 'Debajo',
   near: 'En rango',
   high: 'Arriba',
@@ -114,21 +115,22 @@ export default function CalorieMonitoringView() {
       const totals = totalsForDay(dia);
       const ratio = calorieTarget > 0 ? totals.kcal / calorieTarget : 0;
       const delta = totals.kcal - calorieTarget;
-      const status: StatusKey = ratio < 0.85 ? 'low' : ratio <= 1.1 ? 'near' : 'high';
+      const status: StatusKey = totals.kcal === 0 ? 'none' : ratio < 0.85 ? 'low' : ratio <= 1.1 ? 'near' : 'high';
 
       return { dia, ...totals, ratio, delta, status };
     });
 
     const selectedDayTotals = totalsForDay(diaActivo);
     const activeDaySummary = daySummaries.find((item) => item.dia === diaActivo) || daySummaries[0];
-    const adherenceDays = daySummaries.filter((item) => item.status === 'near').length;
-    const weeklyAverage = daySummaries.length
-      ? Math.round(daySummaries.reduce((acc, item) => acc + item.kcal, 0) / daySummaries.length)
+    const recordedDays = daySummaries.filter((item) => item.kcal > 0);
+    const adherenceDays = recordedDays.filter((item) => item.status === 'near').length;
+    const weeklyAverage = recordedDays.length
+      ? Math.round(recordedDays.reduce((acc, item) => acc + item.kcal, 0) / recordedDays.length)
       : 0;
-    const bestDay = daySummaries.reduce((best, item) => {
+    const bestDay = recordedDays.reduce((best, item) => {
       if (!best) return item;
       return Math.abs(item.delta) < Math.abs(best.delta) ? item : best;
-    }, daySummaries[0]);
+    }, recordedDays[0]);
 
     return {
       profile,
@@ -137,6 +139,7 @@ export default function CalorieMonitoringView() {
       selectedDayTotals,
       activeDaySummary,
       daySummaries,
+      recordedDaysCount: recordedDays.length,
       adherenceDays,
       weeklyAverage,
       bestDay,
@@ -152,6 +155,7 @@ export default function CalorieMonitoringView() {
   );
 
   const statusPills: Record<StatusKey, string> = {
+    none: 'bg-cream-100 text-ink-500 dark:bg-ink-700 dark:text-ink-300',
     low: 'status-warning',
     near: 'status-success',
     high: 'status-danger',
@@ -214,7 +218,8 @@ export default function CalorieMonitoringView() {
     const metrics = metricsByProfile[profileId];
     const active = metrics.activeDaySummary;
     const dayPercent = clampPercent(active.ratio * 100);
-    const deltaLabel = `${active.delta > 0 ? '+' : ''}${active.delta} kcal`;
+    const hasActiveData = active.kcal > 0;
+    const deltaLabel = hasActiveData ? `${active.delta > 0 ? '+' : ''}${active.delta} kcal` : 'Sin registro';
 
     return (
       <section className="space-y-3">
@@ -238,9 +243,11 @@ export default function CalorieMonitoringView() {
                 <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${statusPills[active.status]}`}>
                   {STATUS_LABELS[active.status]}
                 </span>
-                <span className={`text-[12px] font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
-                  Diferencia: {deltaLabel}
-                </span>
+                {hasActiveData ? (
+                  <span className={`text-xs font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                    Diferencia: {deltaLabel}
+                  </span>
+                ) : null}
               </div>
             </div>
 
@@ -251,7 +258,7 @@ export default function CalorieMonitoringView() {
             >
               <div className="text-center">
                 <p className={`font-display text-[26px] leading-none font-semibold ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
-                  {dayPercent}%
+                  {hasActiveData ? `${dayPercent}%` : '—'}
                 </p>
                 <p className="mt-1 text-xs font-bold tabular-nums text-ink-400">
                   {deltaLabel}
@@ -260,20 +267,28 @@ export default function CalorieMonitoringView() {
             </ProgressRing>
           </div>
 
-          <div className={`mt-4 grid grid-cols-3 gap-2 rounded-2xl p-2.5 ${isDarkMode ? 'bg-ink-800/70' : 'bg-cream-100'}`}>
-            <div className="px-1">
-              <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">Promedio</p>
-              <p className={`mt-0.5 font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.weeklyAverage}</p>
+          {metrics.recordedDaysCount < 2 ? (
+            <div className={`mt-4 rounded-2xl px-3.5 py-3 text-sm ${isDarkMode ? 'bg-ink-800/70 text-ink-300' : 'bg-cream-100 text-ink-500'}`}>
+              {metrics.recordedDaysCount === 0
+                ? 'Registra una comida para empezar a medir tu semana.'
+                : 'Primer día registrado. El promedio aparecerá con dos o más días.'}
             </div>
-            <div className="px-1">
-              <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">Rango</p>
-              <p className={`mt-0.5 font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.adherenceDays}/7</p>
+          ) : (
+            <div className={`mt-4 grid grid-cols-3 gap-2 rounded-2xl p-2.5 ${isDarkMode ? 'bg-ink-800/70' : 'bg-cream-100'}`}>
+              <div className="px-1">
+                <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">Promedio</p>
+                <p className={`mt-0.5 font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.weeklyAverage}</p>
+              </div>
+              <div className="px-1">
+                <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">En rango</p>
+                <p className={`mt-0.5 font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.adherenceDays}/{metrics.recordedDaysCount}</p>
+              </div>
+              <div className="min-w-0 px-1">
+                <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">Mejor</p>
+                <p className={`mt-0.5 truncate font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.bestDay?.dia || '—'}</p>
+              </div>
             </div>
-            <div className="min-w-0 px-1">
-              <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-ink-400">Mejor</p>
-              <p className={`mt-0.5 truncate font-display text-lg font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>{metrics.bestDay?.dia || '-'}</p>
-            </div>
-          </div>
+          )}
         </div>
 
         <details className="group surface-card p-4">
@@ -291,29 +306,26 @@ export default function CalorieMonitoringView() {
           </div>
 
           <p className="mt-4 text-xs font-extrabold uppercase tracking-[0.12em] text-ink-400">Semana de {getLabel(profileId)}</p>
-          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="mt-2 grid grid-cols-7 gap-1.5">
             {metrics.daySummaries.map((item) => (
               <button
                 key={`${profileId}-${item.dia}`}
                 type="button"
                 onClick={() => setDiaActivo(item.dia)}
-                className={`rounded-[14px] p-3 text-left transition active:scale-[0.98] ${
+                className={`flex min-w-0 flex-col items-center rounded-xl px-1 py-2 transition active:scale-[0.98] ${
                   item.dia === diaActivo
                     ? `${accent.btnActive} shadow-sm`
                     : isDarkMode ? 'bg-ink-800 text-ink-200' : 'bg-cream-100 text-ink-600'
                 }`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-extrabold">{item.dia.slice(0, 3)}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${item.dia === diaActivo ? 'bg-white/15 text-white' : statusPills[item.status]}`}>
-                    {STATUS_LABELS[item.status]}
-                  </span>
+                <div className={`flex h-14 w-full items-end overflow-hidden rounded-lg ${item.dia === diaActivo ? 'bg-white/15' : isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}>
+                  <div
+                    className={`w-full bg-gradient-to-t ${accent.progressFill}`}
+                    style={{ height: item.kcal > 0 ? `${Math.max(10, Math.min(100, item.ratio * 100))}%` : '0%' }}
+                  />
                 </div>
-                <p className="mt-2 font-display text-xl font-semibold">{item.kcal}</p>
-                <p className={`text-xs font-medium ${item.dia === diaActivo ? 'text-white/75' : 'text-ink-400'}`}>
-                  {item.delta > 0 ? <TrendingUp className="mr-1 inline h-3 w-3" /> : <TrendingDown className="mr-1 inline h-3 w-3" />}
-                  {item.delta > 0 ? '+' : ''}{item.delta} kcal
-                </p>
+                <span className="mt-1.5 text-xs font-extrabold">{item.dia.slice(0, 1)}</span>
+                <span className={`mt-1 h-1.5 w-1.5 rounded-full ${item.status === 'none' ? 'bg-ink-300 dark:bg-ink-500' : item.status === 'near' ? 'bg-pine-500' : item.status === 'high' ? 'bg-coral-500' : 'bg-apricot-500'}`} />
               </button>
             ))}
           </div>
@@ -379,7 +391,7 @@ export default function CalorieMonitoringView() {
           <button
             type="button"
             onClick={() => setTab('plan')}
-            className="mx-auto mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] bg-ink-900 px-5 text-sm font-bold text-white dark:bg-cream-100 dark:text-ink-900"
+            className="mx-auto mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 text-sm font-bold text-white dark:bg-cream-100 dark:text-ink-900"
           >
             Ir a registrar comida
             <ArrowRight className="h-4 w-4" />
@@ -409,32 +421,25 @@ export default function CalorieMonitoringView() {
                   key={`compare-${profileId}`}
                   type="button"
                   onClick={() => setExpandedProfileId(profileId)}
-                  className={`rounded-[14px] border p-3 text-left transition active:scale-[0.98] ${
+                  className={`rounded-2xl border p-3 text-left transition active:scale-[0.98] ${
                     selected
                       ? `${accent.tagBg} ${accent.tagText} ${accent.borderAccent}`
                       : isDarkMode ? 'border-ink-700 bg-ink-800 text-ink-200' : 'border-cream-200 bg-cream-50 text-ink-600'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
+                    <p className="truncate text-xs font-extrabold uppercase tracking-[0.1em]">
                       {getLabel(profileId)}
                     </p>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-extrabold ${statusPills[active.status]}`}>
-                      {percent}%
+                      {active.kcal > 0 ? `${percent}%` : '—'}
                     </span>
                   </div>
-                  <p className={`mt-1.5 font-display text-2xl font-semibold leading-none ${selected ? accent.tagText : ''}`}>{active.kcal}</p>
-                  <p className={`mt-1 text-xs font-semibold ${selected ? accent.tagText : 'text-ink-400'}`}>
-                    de {metrics.calorieTarget} kcal
+                  <p className={`mt-2 font-display text-xl font-semibold leading-none ${selected ? accent.tagText : ''}`}>
+                    {active.kcal} <span className="font-sans text-xs font-bold">kcal</span>
                   </p>
-                  <div className={`mt-2 h-1.5 rounded-full overflow-hidden ${isDarkMode ? 'bg-ink-700' : 'bg-cream-200'}`}>
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${accent.progressFill}`}
-                      style={{ width: `${Math.max(8, Math.min(100, percent))}%` }}
-                    />
-                  </div>
-                  <p className={`mt-1.5 text-xs font-extrabold ${selected ? accent.tagText : accent.text}`}>
-                    Ver detalle
+                  <p className={`mt-1 truncate text-xs font-semibold ${selected ? accent.tagText : 'text-ink-400'}`}>
+                    {active.kcal > 0 ? STATUS_LABELS[active.status] : 'Sin registro'}
                   </p>
                 </button>
               );

@@ -237,7 +237,7 @@ export default function AdminLayout() {
           </div>
           <div>
             <h1 className="font-display text-lg font-semibold text-ink-900 dark:text-cream-100 leading-tight">Configuración</h1>
-            <p className="text-[11px] text-ink-400 dark:text-ink-400 hidden sm:block">
+            <p className="text-xs text-ink-400 dark:text-ink-400 hidden sm:block">
               Respaldo local y control del modelo IA
             </p>
           </div>
@@ -279,7 +279,7 @@ export default function AdminLayout() {
               key={tabItem.key}
               onClick={() => setAdminTab(tabItem.key)}
               data-testid={`admin-tab-${tabItem.key}`}
-              className={`flex-1 flex items-center justify-center gap-2 rounded-[13px] px-3 py-2.5 text-sm font-bold transition-colors active:scale-[.98] ${
+              className={`flex-1 flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors active:scale-[.98] ${
                 adminTab === tabItem.key
                   ? 'bg-ink-900 text-cream-50 shadow-sm dark:bg-cream-100 dark:text-ink-900'
                   : 'text-ink-400 hover:text-ink-700 hover:bg-cream-100 dark:text-ink-400 dark:hover:text-cream-100 dark:hover:bg-ink-800'
@@ -302,7 +302,7 @@ export default function AdminLayout() {
               </p>
             </div>
 
-            <section className="rounded-[20px] border border-cream-200 bg-white p-4 dark:border-ink-700 dark:bg-ink-900 md:p-5">
+            <section className="rounded-2xl border border-cream-200 bg-white p-4 dark:border-ink-700 dark:bg-ink-900 md:p-5">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-10 h-10 rounded-2xl bg-pine-50 border border-pine-100 flex items-center justify-center flex-shrink-0 dark:bg-pine-950/40 dark:border-pine-900/50">
                   <ShieldCheck className="w-5 h-5 text-pine-600 dark:text-pine-300" />
@@ -319,7 +319,7 @@ export default function AdminLayout() {
 
               <div className="grid gap-2.5 md:grid-cols-2">
                 <div className="rounded-2xl border border-cream-200 bg-cream-50 p-3.5 dark:border-ink-700 dark:bg-ink-800/60">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400">Modelo actual</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400">Modelo actual</p>
                   <p className="mt-1.5 text-sm font-bold text-ink-900 dark:text-cream-100">{currentModelLabel}</p>
                   <p className="mt-1 text-xs text-ink-400 dark:text-ink-400">
                     {geminiCustomApiKey ? 'Usando API key personalizada.' : 'Usando API key default.'}
@@ -327,7 +327,7 @@ export default function AdminLayout() {
                 </div>
 
                 <div className="rounded-2xl border border-cream-200 bg-cream-50 p-3.5 dark:border-ink-700 dark:bg-ink-800/60">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400">Fallback</p>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-ink-400 dark:text-ink-400">Alternativas</p>
                   <p className="mt-1.5 text-sm font-semibold text-ink-800 dark:text-cream-100">
                     {fallbackPreview.length
                       ? fallbackPreview.map((model) => getAiModelLabel(model)).join(', ')
@@ -404,7 +404,7 @@ export default function AdminLayout() {
               />
             </div>
 
-            <div className="mt-5 bg-white dark:bg-ink-900 rounded-[22px] p-4 border border-coral-200 dark:border-coral-900/60 shadow-soft">
+            <div className="mt-5 bg-white dark:bg-ink-900 rounded-2xl p-4 border border-coral-200 dark:border-coral-900/60 shadow-soft">
               <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-coral-600 dark:text-coral-300 mb-1">
                 Zona de riesgo
               </p>
