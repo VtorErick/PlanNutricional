@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BookOpen, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronRight, X } from 'lucide-react';
 import EquivalenciasCard from './EquivalenciasCard';
 import { useDiet } from '../context/DietContext';
 import { equivalencesDB } from '../data/equivalencesDB';
@@ -14,6 +14,10 @@ interface EquivalenciasSheetProps {
 export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheetProps) {
   const { ac, isDarkMode } = useDiet();
   const [selectedEq, setSelectedEq] = React.useState<Equivalencia | null>(null);
+  const handleClose = React.useCallback(() => {
+    setSelectedEq(null);
+    onClose();
+  }, [onClose]);
 
   if (!open) return null;
 
@@ -24,7 +28,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
+        onClick={handleClose}
       >
         <div className="flex h-full items-end justify-center p-0 sm:items-center sm:p-6">
           <motion.div
@@ -32,7 +36,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-[30px] border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-[30px] ${
+            className={`flex h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-3xl border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-3xl ${
               isDarkMode
                 ? 'bg-ink-900 border-ink-700 shadow-lift'
                 : 'bg-white border-cream-200 shadow-lift'
@@ -49,20 +53,18 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[11px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
-                    Guía rápida
-                  </p>
+                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>Guía rápida</p>
                   <h3 className={`font-display text-xl font-semibold tracking-tight leading-tight sm:text-2xl ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
-                    Equivalencias
+                    {selectedEq ? selectedEq.titulo : 'Equivalencias'}
                   </h3>
                   <p className={`mt-1 text-xs leading-relaxed sm:text-sm ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
-                    Toca una categoría para ver todas las opciones de intercambio.
+                    {selectedEq ? 'Revisa las alternativas y vuelve a la lista cuando termines.' : 'Toca una categoría para ver todas las opciones de intercambio.'}
                   </p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   className={`flex h-10 w-10 items-center justify-center rounded-full border transition active:scale-90 ${
                     isDarkMode
                       ? 'border-ink-700 text-ink-200 bg-ink-900 hover:bg-ink-800'
@@ -76,7 +78,29 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:py-5">
-              <div className="grid overflow-hidden rounded-[20px] border border-cream-200 bg-white dark:border-ink-700 dark:bg-ink-900 sm:grid-cols-2">
+              {selectedEq ? (
+                <motion.div
+                  key={selectedEq.titulo}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="space-y-3"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEq(null)}
+                    className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold ${isDarkMode ? 'bg-ink-800 text-cream-200' : 'bg-cream-100 text-ink-600'}`}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Todas las categorías
+                  </button>
+                  <EquivalenciasCard
+                    equivalencia={selectedEq}
+                    accentClasses={ac}
+                    isDarkMode={isDarkMode}
+                  />
+                </motion.div>
+              ) : (
+              <div className="grid overflow-hidden rounded-2xl border border-cream-200 bg-white dark:border-ink-700 dark:bg-ink-900 sm:grid-cols-2">
                 {equivalencesDB.map((eq, idx) => {
                   const Icon = eq.icon;
 
@@ -94,7 +118,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
                           : 'bg-white hover:bg-cream-50'
                       }`}
                     >
-                      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-[14px] ${ac.bgLight}`}>
+                      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${ac.bgLight}`}>
                         {typeof Icon === 'string' ? (
                           <span className="text-lg">{Icon}</span>
                         ) : (() => {
@@ -107,7 +131,7 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
                         <h3 className={`line-clamp-2 font-display text-[15px] font-semibold leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>
                           {eq.titulo}
                         </h3>
-                        <p className={`mt-1 text-[11px] font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                        <p className={`mt-1 text-xs font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                           {eq.items.length} opciones
                         </p>
                       </div>
@@ -117,56 +141,11 @@ export default function EquivalenciasSheet({ open, onClose }: EquivalenciasSheet
                   );
                 })}
               </div>
+              )}
             </div>
           </motion.div>
         </div>
 
-        {selectedEq ? (
-          <>
-            <motion.button
-              type="button"
-              aria-label="Cerrar detalle de equivalencia"
-              onClick={() => setSelectedEq(null)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[80] bg-ink-950/55 backdrop-blur-[3px]"
-            />
-
-            <motion.section
-              role="dialog"
-              aria-modal="true"
-              aria-label={`Detalle de ${selectedEq.titulo}`}
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-              className={`fixed inset-x-0 bottom-0 z-[90] mx-auto max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-t-[30px] border ${
-                isDarkMode ? 'border-ink-700 bg-ink-950' : 'border-cream-200 bg-white'
-              }`}
-              style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-            >
-              <div className={`sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur-xl bg-white/90 dark:bg-ink-950/90 dark:border-ink-700 border-cream-200`}>
-                <p className={`font-display text-base font-semibold ${isDarkMode ? 'text-cream-100' : 'text-ink-900'}`}>Detalle</p>
-                <button
-                  type="button"
-                  onClick={() => setSelectedEq(null)}
-                  className={`rounded-full p-2 active:scale-90 ${isDarkMode ? 'hover:bg-ink-800 text-ink-300' : 'hover:bg-cream-100 text-ink-500'}`}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="overflow-y-auto p-3 sm:p-4">
-                <EquivalenciasCard
-                  equivalencia={selectedEq}
-                  accentClasses={ac}
-                  isDarkMode={isDarkMode}
-                />
-              </div>
-            </motion.section>
-          </>
-        ) : null}
       </motion.div>
     </AnimatePresence>
   );

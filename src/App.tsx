@@ -207,7 +207,7 @@ export default function App() {
           <button
             key={tabItem.key}
             onClick={() => setActiveTab(tabItem.key)}
-            className={`flex min-h-[46px] items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-sm font-bold transition-colors active:scale-[0.98] xl:justify-start ${activeTab === tabItem.key
+            className={`flex min-h-[46px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors active:scale-[0.98] xl:justify-start ${activeTab === tabItem.key
               ? 'bg-ink-900 text-cream-50 dark:bg-cream-100 dark:text-ink-900'
               : 'text-ink-600 hover:bg-cream-100 hover:text-ink-900 dark:text-ink-200 dark:hover:bg-ink-800 dark:hover:text-cream-100'
               }`}
@@ -231,11 +231,11 @@ export default function App() {
             </div>
             <div>
               <h1 className="font-display text-base font-bold leading-tight text-ink-900 dark:text-cream-100">
-                Generar plan con IA
+                Generar mi plan
               </h1>
               <p className="text-xs text-ink-400 dark:text-ink-400">
                 {questionnaireStepIndex > 0
-                  ? `Guardado automáticamente · continúa en el paso ${questionnaireStepIndex + 1}`
+                  ? `Guardado · paso ${questionnaireStepIndex + 1}`
                   : 'Sólo lo esencial · puedes continuar después'}
               </p>
             </div>

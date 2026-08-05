@@ -269,7 +269,7 @@ export default function LandingView() {
             className="surface-raised max-w-3xl border border-[var(--ui-border)] p-5 sm:p-7"
           >
             <div className="flex items-start gap-4">
-              <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[14px] bg-pine-600 text-white">
+              <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-pine-600 text-white">
                 <Sparkles className="h-5 w-5" />
               </span>
               <div>
@@ -296,9 +296,9 @@ export default function LandingView() {
               type="button"
               onClick={() => openQuestionnaire()}
               data-testid="landing-customize-ambos"
-              className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-[16px] bg-pine-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-pine-700 active:scale-[0.99] sm:w-auto"
+              className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-pine-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-pine-700 active:scale-[0.99] sm:w-auto"
             >
-              {questionnaireStepIdx > 0 ? `Continuar desde el paso ${questionnaireStepIdx + 1}` : 'Crear mi plan con IA'}
+              {questionnaireStepIdx > 0 ? `Continuar desde el paso ${questionnaireStepIdx + 1}` : 'Crear mi plan'}
               <ArrowRight className="h-4 w-4" />
             </button>
           </motion.section>
@@ -312,7 +312,7 @@ export default function LandingView() {
             >
               <div className="flex items-start justify-between gap-4 border-b border-cream-200 p-5 dark:border-ink-700 sm:p-6">
                 <div className="flex min-w-0 items-start gap-3">
-                  <span className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[14px] ${accent.tagBg} ${accent.text}`}>
+                  <span className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl ${accent.tagBg} ${accent.text}`}>
                     <UtensilsCrossed className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
@@ -352,7 +352,7 @@ export default function LandingView() {
                 <button
                   type="button"
                   onClick={() => activeCard && openMealMoment(activeCard.moment.key)}
-                  className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-[16px] bg-ink-900 px-4 text-sm font-extrabold text-white transition hover:bg-ink-800 active:scale-[0.99] dark:bg-cream-100 dark:text-ink-900"
+                  className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-ink-900 px-4 text-sm font-extrabold text-white transition hover:bg-ink-800 active:scale-[0.99] dark:bg-cream-100 dark:text-ink-900"
                 >
                   {activeMealReady ? `Ver ${activeMomentName}` : `Elegir ${activeMomentName}`}
                   <ArrowRight className="h-4 w-4" />
@@ -362,7 +362,7 @@ export default function LandingView() {
                   <button
                     type="button"
                     onClick={() => activeCard && openMealMoment(activeCard.moment.key)}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] border border-cream-200 text-xs font-bold text-ink-600 dark:border-ink-700 dark:text-ink-200"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cream-200 text-xs font-bold text-ink-600 dark:border-ink-700 dark:text-ink-200"
                   >
                     <Camera className="h-4 w-4" />
                     Registrar comida
@@ -370,7 +370,7 @@ export default function LandingView() {
                   <button
                     type="button"
                     onClick={() => setTab('plan')}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[14px] border border-cream-200 text-xs font-bold text-ink-600 dark:border-ink-700 dark:text-ink-200"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cream-200 text-xs font-bold text-ink-600 dark:border-ink-700 dark:text-ink-200"
                   >
                     <CalendarDays className="h-4 w-4" />
                     Ver todo el plan
@@ -406,7 +406,7 @@ export default function LandingView() {
                   type="button"
                   onClick={() => openQuestionnaire(missingPlanProfile)}
                   data-testid="landing-create-missing-plan"
-                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-pine-200 bg-pine-50 text-sm font-bold text-pine-800 dark:border-pine-900 dark:bg-pine-950/50 dark:text-pine-200"
+                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-pine-200 bg-pine-50 text-sm font-bold text-pine-800 dark:border-pine-900 dark:bg-pine-950/50 dark:text-pine-200"
                 >
                   <Sparkles className="h-4 w-4" />
                   Crear plan para {getProfileLabel(profileLabels, missingPlanProfile)}

@@ -13,10 +13,11 @@ interface SupplementsSheetProps {
 export default function SupplementsSheet({ open, onClose }: SupplementsSheetProps) {
   const { perfilActivo, supplementsData, profileLabels, isAmbos, ac, isDarkMode } = useDiet();
   const [expandedSupplement, setExpandedSupplement] = React.useState<string | null>(null);
+  const [supplementProfile, setSupplementProfile] = React.useState<'el' | 'ella'>('el');
   const elAccent = getAccentColors('el', isDarkMode);
   const ellaAccent = getAccentColors('ella', isDarkMode);
   const profilesToRender = isAmbos
-    ? (['el', 'ella'] as const)
+    ? ([supplementProfile] as const)
     : ([perfilActivo === 'ella' ? 'ella' : 'el'] as const);
 
   if (!open) return null;
@@ -36,7 +37,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-[30px] border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-[30px] ${
+            className={`flex h-[min(92dvh,760px)] w-full flex-col overflow-hidden rounded-t-3xl border sm:h-auto sm:max-h-[88vh] sm:max-w-2xl sm:rounded-3xl ${
               isDarkMode
                 ? 'border-ink-700 bg-ink-900 shadow-lift'
                 : 'border-cream-200 bg-white shadow-lift'
@@ -53,9 +54,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[10px] font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>
-                    Opcional
-                  </p>
+                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${ac.text}`}>Recomendaciones</p>
                   <h3 className={`font-display text-xl font-semibold leading-tight tracking-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                     Suplementos
                   </h3>
@@ -80,7 +79,30 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:py-5">
-              <div className={isAmbos ? 'grid gap-3 sm:grid-cols-2' : 'space-y-3'}>
+              {isAmbos ? (
+                <div className="mb-3 grid grid-cols-2 gap-1.5 rounded-2xl border border-cream-200 p-1.5 dark:border-ink-700">
+                  {(['el', 'ella'] as const).map((profileId) => {
+                    const active = supplementProfile === profileId;
+                    const profileAccent = profileId === 'el' ? elAccent : ellaAccent;
+                    return (
+                      <button
+                        key={profileId}
+                        type="button"
+                        onClick={() => {
+                          setSupplementProfile(profileId);
+                          setExpandedSupplement(null);
+                        }}
+                        aria-pressed={active}
+                        className={`min-h-10 rounded-xl px-3 text-sm font-bold transition ${active ? `${profileAccent.tagBg} ${profileAccent.tagText}` : isDarkMode ? 'text-ink-300 hover:bg-ink-800' : 'text-ink-500 hover:bg-cream-100'}`}
+                      >
+                        {getProfileLabel(profileLabels, profileId)} · {(supplementsData[profileId] || []).length}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              <div className="space-y-3">
                 {profilesToRender.map((profileId) => {
                   const items = supplementsData[profileId] || [];
                   const profileAccent = profileId === 'el' ? elAccent : ellaAccent;
@@ -89,16 +111,14 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                     <section key={profileId} className="space-y-2.5">
                       {isAmbos ? (
                         <div className="flex items-center justify-between px-1">
-                          <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${profileAccent.text}`}>
-                            {getProfileLabel(profileLabels, profileId)} · Opcional
-                          </p>
-                          <p className={`text-[11px] font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                          <p className={`text-xs font-extrabold uppercase tracking-[0.16em] ${profileAccent.text}`}>{getProfileLabel(profileLabels, profileId)}</p>
+                          <p className={`text-xs font-medium ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                             {items.length} opciones
                           </p>
                         </div>
                       ) : null}
 
-                      <div className="overflow-hidden rounded-[20px] border border-cream-200 bg-white dark:border-ink-700 dark:bg-ink-900">
+                      <div className="overflow-hidden rounded-2xl border border-cream-200 bg-white dark:border-ink-700 dark:bg-ink-900">
                         {items.map((supplement) => {
                           const key = `${profileId}-${supplement.name}`;
                           const expanded = expandedSupplement === key;
@@ -126,7 +146,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                                   <p className={`mt-1 line-clamp-2 text-[13px] font-medium leading-snug ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                                     {supplement.goalSupport}
                                   </p>
-                                  <p className={`mt-1.5 flex items-start gap-1.5 text-[11px] font-bold leading-snug ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                                  <p className={`mt-1.5 flex items-start gap-1.5 text-xs font-bold leading-snug ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                                     <Clock3 className={`mt-0.5 h-3.5 w-3.5 flex-shrink-0 ${profileAccent.text}`} />
                                     <span className="min-w-0">{supplement.timing}</span>
                                   </p>
@@ -138,7 +158,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                               {expanded ? (
                                 <div className="mt-3 space-y-3 border-t border-cream-200 pt-3 text-sm dark:border-ink-700">
                                   <div>
-                                    <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                                    <p className={`text-xs font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                                       Por qué podría ayudar
                                     </p>
                                     <p className={`mt-1.5 ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
@@ -146,7 +166,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                                     </p>
                                   </div>
                                   <div>
-                                    <p className={`text-[11px] font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                                    <p className={`text-xs font-extrabold uppercase tracking-[0.16em] ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                                       Cómo usarlo
                                     </p>
                                     <p className={`mt-1.5 ${isDarkMode ? 'text-ink-200' : 'text-ink-600'}`}>
@@ -154,7 +174,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                                     </p>
                                   </div>
                                   <div className="rounded-2xl bg-pine-50 p-3.5 dark:bg-pine-950/40">
-                                    <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-pine-700 dark:text-pine-300">
+                                    <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-pine-700 dark:text-pine-300">
                                       <Clock3 className="h-3.5 w-3.5" />
                                       Nota
                                     </p>
@@ -164,7 +184,7 @@ export default function SupplementsSheet({ open, onClose }: SupplementsSheetProp
                                   </div>
                                   {supplement.caution ? (
                                     <div className="rounded-2xl bg-apricot-50 p-3.5 dark:bg-apricot-950/30">
-                                      <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-apricot-700 dark:text-apricot-300">
+                                      <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-apricot-700 dark:text-apricot-300">
                                         <ShieldAlert className="h-3.5 w-3.5" />
                                         Precaucion
                                       </p>

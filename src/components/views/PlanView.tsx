@@ -7,6 +7,7 @@ import {
   ChevronUp,
   Coffee,
   FileText,
+  MoreHorizontal,
   Pill,
   Plus,
   Repeat2,
@@ -222,6 +223,20 @@ export default function PlanView() {
   }, [diaActivo, perfilActivo, perfilesData, selecciones]);
 
   const nextPendingMoment = perfilBase.momentos.find((moment) => !momentoCompletado[moment.key]);
+  const momentRevealKey = `${perfilActivo}-${diaActivo}-${perfilBase.momentos
+    .map((moment) => `${moment.key}:${momentoCompletado[moment.key] ? '1' : '0'}`)
+    .join('|')}`;
+
+  React.useEffect(() => {
+    const nextMoment = perfilBase.momentos.find((moment) => !momentoCompletado[moment.key]);
+    setMomentosColapsados(
+      Object.fromEntries(
+        perfilBase.momentos.map((moment) => [moment.key, nextMoment ? moment.key !== nextMoment.key : false])
+      )
+    );
+  // momentRevealKey expresa el día, perfil y avance que deben cambiar la revelación.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [momentRevealKey]);
 
   const calorieProgress = activeDayStats.target > 0
     ? Math.min(100, Math.round((activeDayStats.kcal / activeDayStats.target) * 100))
@@ -395,44 +410,14 @@ export default function PlanView() {
           {meal.proteinaG || 0} g proteína · {meal.grasasG || 0} g grasas
         </p>
         {meal.porciones ? <p className={`mt-1 pl-[52px] line-clamp-1 text-xs ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>{meal.porciones}</p> : null}
-      <div className={`mt-2.5 flex items-center gap-1.5 border-t pt-2 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            toggleFavoritoComida(profileId, meal.nombre);
-          }}
-          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition active:scale-90 ${isDarkMode ? 'text-apricot-200 hover:bg-ink-700' : 'text-apricot-600 hover:bg-apricot-50'}`}
-          aria-label={isComidaFavorita(profileId, meal.nombre) ? `Quitar ${meal.nombre} de favoritos` : `Guardar ${meal.nombre} en favoritos`}
-          title={isComidaFavorita(profileId, meal.nombre) ? 'Quitar de favoritos' : 'Guardar favorito'}
-        >
-          <Star className="h-4 w-4" fill={isComidaFavorita(profileId, meal.nombre) ? 'currentColor' : 'none'} />
-        </button>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            const targetDay = repetirComida(profileId, diaActivo, momentoKey, meal);
-            void notify(
-              targetDay ? 'Comida repetida' : 'No encontramos esa opción',
-              targetDay
-                ? `La dejamos planeada también para ${targetDay}.`
-                : 'Esta opción no está disponible en otro día de este plan.'
-            );
-          }}
-          className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition active:scale-95 ${isDarkMode ? 'bg-ink-900 text-ink-200 hover:bg-ink-700' : 'bg-cream-100 text-ink-600 hover:bg-cream-200'}`}
-          aria-label={`Repetir ${meal.nombre} en otro día`}
-          title="Repetir en otro día"
-        >
-          <Repeat2 className="h-3.5 w-3.5" />
-        </button>
+      <div className={`mt-2.5 flex items-center gap-2 border-t pt-2 ${isDarkMode ? 'border-ink-700' : 'border-cream-200'}`}>
         <button
           type="button"
           onClick={(event) => {
             event.stopPropagation();
             toggleComidaCompletada(profileId, diaActivo, momentoKey);
           }}
-          className={`ml-auto inline-flex min-h-8 items-center gap-1 rounded-full px-3 text-xs font-bold transition active:scale-95 ${
+          className={`inline-flex min-h-9 flex-1 items-center justify-center gap-1 rounded-full px-3 text-xs font-bold transition active:scale-95 ${
             comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`]
               ? 'status-success'
               : isDarkMode ? 'bg-ink-900 text-ink-300 hover:bg-ink-700' : 'bg-white text-ink-600 shadow-sm hover:bg-cream-100'
@@ -442,16 +427,46 @@ export default function PlanView() {
           <CheckCircle2 className="h-3.5 w-3.5" />
           {comidasCompletadas[`${profileId}-${diaActivo}-${momentoKey}`] ? 'Completada' : 'Marcar lista'}
         </button>
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onChange();
-          }}
-          className={`inline-flex min-h-8 items-center rounded-full px-2.5 text-xs font-bold transition active:scale-95 ${isDarkMode ? 'text-ink-300 hover:bg-ink-700' : 'text-ink-500 hover:bg-cream-100'}`}
-        >
-          Cambiar
-        </button>
+        <details className="group/options relative" onClick={(event) => event.stopPropagation()}>
+          <summary className={`flex min-h-9 cursor-pointer list-none items-center gap-1 rounded-full px-3 text-xs font-bold transition [&::-webkit-details-marker]:hidden ${isDarkMode ? 'text-ink-300 hover:bg-ink-700' : 'text-ink-500 hover:bg-cream-100'}`}>
+            <MoreHorizontal className="h-4 w-4" />
+            Opciones
+          </summary>
+          <div className={`absolute bottom-11 right-0 z-30 w-48 overflow-hidden rounded-2xl border p-1 shadow-xl ${isDarkMode ? 'border-ink-600 bg-ink-800' : 'border-cream-200 bg-white'}`}>
+            <button
+              type="button"
+              onClick={() => toggleFavoritoComida(profileId, meal.nombre)}
+              className={`flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-bold ${isDarkMode ? 'hover:bg-ink-700' : 'hover:bg-cream-50'}`}
+            >
+              <Star className="h-4 w-4 text-apricot-500" fill={isComidaFavorita(profileId, meal.nombre) ? 'currentColor' : 'none'} />
+              {isComidaFavorita(profileId, meal.nombre) ? 'Quitar favorito' : 'Guardar favorito'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const targetDay = repetirComida(profileId, diaActivo, momentoKey, meal);
+                void notify(
+                  targetDay ? 'Comida repetida' : 'No encontramos esa opción',
+                  targetDay
+                    ? `La dejamos planeada también para ${targetDay}.`
+                    : 'Esta opción no está disponible en otro día de este plan.'
+                );
+              }}
+              className={`flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-bold ${isDarkMode ? 'hover:bg-ink-700' : 'hover:bg-cream-50'}`}
+            >
+              <Repeat2 className="h-4 w-4" />
+              Repetir otro día
+            </button>
+            <button
+              type="button"
+              onClick={onChange}
+              className={`flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-bold ${isDarkMode ? 'hover:bg-ink-700' : 'hover:bg-cream-50'}`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Cambiar comida
+            </button>
+          </div>
+        </details>
       </div>
     </div>
   ), [comidasCompletadas, diaActivo, isComidaFavorita, isDarkMode, notify, profileLabels, repetirComida, toggleComidaCompletada, toggleFavoritoComida]);
@@ -466,7 +481,7 @@ export default function PlanView() {
       role="button"
       tabIndex={0}
       data-testid={dataTestId}
-      className={`flex min-h-[52px] items-center justify-start gap-2.5 rounded-[16px] border px-3 py-2.5 text-left transition-colors cursor-pointer active:scale-[0.99] ${
+      className={`flex min-h-[52px] items-center justify-start gap-2.5 rounded-2xl border px-3 py-2.5 text-left transition-colors cursor-pointer active:scale-[0.99] ${
         isDarkMode
           ? 'border-ink-700 bg-ink-800/40 hover:border-ink-500'
           : `${accent.border} bg-white hover:bg-cream-50`
@@ -492,7 +507,7 @@ export default function PlanView() {
       type="button"
       onClick={() => openLogSheet(profileId, momentoKey, momentoLabel)}
       data-testid={`meal-log-open-${profileId}-${diaActivo}-${momentoKey}`}
-      className={`flex w-full items-center justify-center rounded-[20px] border font-extrabold transition hover:shadow-soft active:scale-[0.97] ${
+      className={`flex w-full items-center justify-center rounded-2xl border font-extrabold transition hover:shadow-soft active:scale-[0.97] ${
         compact
           ? 'min-h-[52px] flex-row gap-1.5 px-2 text-xs'
           : 'min-h-[52px] flex-row gap-1.5 px-3 text-xs'
@@ -621,7 +636,7 @@ export default function PlanView() {
                         setIsSupplementsSheetOpen(true);
                       }}
                       data-testid="plan-suplementos-nav"
-                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[14px] border text-xs font-bold transition active:scale-95 ${
+                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border text-xs font-bold transition active:scale-95 ${
                         isDarkMode ? 'border-ink-700 bg-ink-900 text-ink-200' : 'border-cream-200 bg-white text-ink-600'
                       }`}
                     >
@@ -635,7 +650,7 @@ export default function PlanView() {
                         setIsEquivalenciasSheetOpen(true);
                       }}
                       data-testid="plan-equivalencias-open"
-                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-[14px] border text-xs font-bold transition active:scale-95 ${
+                      className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border text-xs font-bold transition active:scale-95 ${
                         isDarkMode ? 'border-ink-700 bg-ink-900 text-ink-200' : 'border-cream-200 bg-white text-ink-600'
                       }`}
                     >
@@ -649,7 +664,7 @@ export default function PlanView() {
                         setIsPlanAiSheetOpen(true);
                       }}
                       data-testid="plan-ai-open"
-                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[14px] bg-ink-900 px-3 text-xs font-bold text-white transition active:scale-95 dark:bg-cream-100 dark:text-ink-900"
+                      className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-ink-900 px-3 text-xs font-bold text-white transition active:scale-95 dark:bg-cream-100 dark:text-ink-900"
                     >
                       <Sparkles className="h-3.5 w-3.5" />
                       Cambiar mi plan
@@ -721,7 +736,7 @@ export default function PlanView() {
                 >
                   <div className="min-w-0 flex items-center gap-3">
                     <div
-                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[13px] ${
+                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
                         done
                           ? 'bg-[var(--ui-success)] text-white'
                           : momentoTheme.tile
@@ -808,7 +823,7 @@ export default function PlanView() {
                           </div>
                         ) : (
                           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                            <div className={mealsElSeleccionadas.length === 0 ? 'grid self-start grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'self-start space-y-2.5'}>
+                            <div className={mealsElSeleccionadas.length === 0 ? 'grid self-start grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5 lg:block lg:space-y-2.5' : 'self-start space-y-2.5'}>
                               <div
                                 onClick={() => openSwapSheet(
                                   'el',
@@ -819,7 +834,7 @@ export default function PlanView() {
                                   porcionesElMomento,
                                   elAccent,
                                 )}
-                                className="cursor-pointer space-y-3"
+                                className="cursor-pointer space-y-3 lg:[&>[role=button]]:min-h-[180px]"
                               >
                                 {mealsElSeleccionadas.length > 0 ? (
                                   mealsElSeleccionadas.map((meal) => renderSelectedMealCard(
@@ -842,7 +857,7 @@ export default function PlanView() {
                               {renderLogMealButton('el', momento.key, momento.label, elAccent, true)}
                             </div>
 
-                            <div className={mealsEllaSeleccionadas.length === 0 ? 'grid self-start grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5' : 'self-start space-y-2.5'}>
+                            <div className={mealsEllaSeleccionadas.length === 0 ? 'grid self-start grid-cols-[minmax(0,1fr)_78px] items-stretch gap-2.5 lg:block lg:space-y-2.5' : 'self-start space-y-2.5'}>
                               <div
                                 onClick={() => openSwapSheet(
                                   'ella',
@@ -853,7 +868,7 @@ export default function PlanView() {
                                   porcionesEllaMomento,
                                   ellaAccent,
                                 )}
-                                className="cursor-pointer space-y-3"
+                                className="cursor-pointer space-y-3 lg:[&>[role=button]]:min-h-[180px]"
                               >
                                 {mealsEllaSeleccionadas.length > 0 ? (
                                   mealsEllaSeleccionadas.map((meal) => renderSelectedMealCard(
@@ -912,7 +927,7 @@ export default function PlanView() {
               onClick={() => {
                 void handleDownloadDayPdf();
               }}
-              className="flex w-full items-center justify-center gap-2 rounded-[14px] border border-[var(--ui-border)] bg-[var(--ui-surface)] px-5 py-3 text-sm font-bold text-[var(--ui-text)] transition active:scale-[0.98] sm:w-auto"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-surface)] px-5 py-3 text-sm font-bold text-[var(--ui-text)] transition active:scale-[0.98] sm:w-auto"
             >
               <FileText className={`w-5 h-5 ${ac.text}`} />
               <span>Descargar menu</span>

@@ -61,8 +61,8 @@ export default function PlanAiRefreshSheet({
   if (!open) return null;
 
   const inputClasses = isDarkMode
-    ? 'w-full rounded-[20px] border border-ink-600 bg-ink-900 px-4 py-3.5 text-sm text-cream-100 placeholder:text-ink-400 focus:border-pine-400 focus:outline-none'
-    : 'w-full rounded-[20px] border border-cream-200 bg-cream-50 px-4 py-3.5 text-sm text-ink-800 placeholder:text-ink-400 focus:border-pine-500 focus:bg-white focus:outline-none';
+    ? 'w-full rounded-2xl border border-ink-600 bg-ink-900 px-4 py-3.5 text-sm text-cream-100 placeholder:text-ink-400 focus:border-pine-400 focus:outline-none'
+    : 'w-full rounded-2xl border border-cream-200 bg-cream-50 px-4 py-3.5 text-sm text-ink-800 placeholder:text-ink-400 focus:border-pine-500 focus:bg-white focus:outline-none';
 
   const submitLabel = mode === 'regenerate'
     ? 'Crear otra versión'
@@ -100,7 +100,7 @@ export default function PlanAiRefreshSheet({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex max-h-[min(88dvh,720px)] w-full flex-col overflow-hidden rounded-t-[30px] border sm:max-w-2xl sm:rounded-[30px] ${
+            className={`flex max-h-[min(88dvh,720px)] w-full flex-col overflow-hidden rounded-t-3xl border sm:max-w-2xl sm:rounded-3xl ${
               isDarkMode
                 ? 'border-ink-700 bg-ink-900 shadow-lift'
                 : 'border-cream-200 bg-white shadow-lift'
@@ -117,7 +117,7 @@ export default function PlanAiRefreshSheet({
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[10px] font-extrabold uppercase tracking-[0.18em] ${accentClasses.text}`}>
+                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${accentClasses.text}`}>
                     Cambios con IA
                   </p>
                   <h3 className={`font-display text-xl font-semibold tracking-tight leading-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
@@ -150,7 +150,7 @@ export default function PlanAiRefreshSheet({
                   <div>
                     <div className="mb-2 flex items-center gap-2">
                       <CheckCircle2 className={`h-3.5 w-3.5 ${accentClasses.text}`} />
-                      <p className={`text-[10px] font-extrabold uppercase tracking-[0.16em] ${accentClasses.text}`}>
+                      <p className={`text-xs font-extrabold uppercase tracking-[0.16em] ${accentClasses.text}`}>
                         Tipo de cambio
                       </p>
                     </div>
@@ -188,7 +188,7 @@ export default function PlanAiRefreshSheet({
                   </div>
 
                   {mode === 'regenerate' ? (
-                    <div className={`rounded-[20px] border px-4 py-3 ${
+                    <div className={`rounded-2xl border px-4 py-3 ${
                       isDarkMode
                         ? 'border-ink-700 bg-ink-900/70 text-ink-300'
                         : 'border-cream-200 bg-cream-100 text-ink-500'
@@ -206,7 +206,7 @@ export default function PlanAiRefreshSheet({
                 <div>
                   <div className="mb-2 flex items-center gap-2">
                     <UserRound className={`h-3.5 w-3.5 ${accentClasses.text}`} />
-                    <p className={`text-[10px] font-extrabold uppercase tracking-[0.16em] ${accentClasses.text}`}>
+                    <p className={`text-xs font-extrabold uppercase tracking-[0.16em] ${accentClasses.text}`}>
                       A quien aplica
                     </p>
                   </div>
@@ -220,7 +220,7 @@ export default function PlanAiRefreshSheet({
                           type="button"
                           data-testid={`plan-ai-target-${item.id}`}
                           onClick={() => setTargetProfile(item.id)}
-                          className={`min-w-0 rounded-[18px] border px-2.5 py-2.5 text-left transition active:scale-[0.98] ${
+                          className={`min-w-0 rounded-2xl border px-2.5 py-2.5 text-left transition active:scale-[0.98] ${
                             active
                               ? `${accentClasses.tagBg} ${accentClasses.borderAccent} ${accentClasses.tagText}`
                               : isDarkMode
@@ -229,7 +229,7 @@ export default function PlanAiRefreshSheet({
                           }`}
                         >
                           <span className="block truncate text-sm font-bold">{item.title}</span>
-                          <span className={`mt-0.5 block truncate text-[10px] font-medium ${
+                          <span className={`mt-0.5 block truncate text-xs font-medium ${
                             active
                               ? accentClasses.tagText
                               : isDarkMode ? 'text-ink-400' : 'text-ink-400'
@@ -270,7 +270,7 @@ export default function PlanAiRefreshSheet({
                 </div>
 
                 {errorMessage ? (
-                  <div className={`space-y-3 rounded-[20px] border px-4 py-3 text-sm ${
+                  <div className={`space-y-3 rounded-2xl border px-4 py-3 text-sm ${
                     isDarkMode
                       ? 'border-coral-900/60 bg-coral-950/30 text-coral-100'
                       : 'border-coral-200 bg-coral-50 text-coral-600'

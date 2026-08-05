@@ -198,7 +198,7 @@ export default function MealLogSheet({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex max-h-[min(92dvh,720px)] w-full flex-col overflow-hidden rounded-t-[30px] border sm:max-w-lg sm:rounded-[30px] ${surfaceClass} shadow-lift`}
+            className={`flex max-h-[min(92dvh,720px)] w-full flex-col overflow-hidden rounded-t-3xl border sm:max-w-lg sm:rounded-3xl ${surfaceClass} shadow-lift`}
             onClick={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -212,13 +212,13 @@ export default function MealLogSheet({
                   <Camera className={`h-5 w-5 ${accentClasses.text}`} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[10px] font-extrabold uppercase tracking-[0.18em] ${accentClasses.text}`}>
+                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${accentClasses.text}`}>
                     {momentoLabel} · {dia}
                   </p>
                   <h3 id="meal-log-title" className="font-display text-xl font-semibold tracking-tight leading-tight">
                     Registra lo que comiste
                   </h3>
-                  <p className={`mt-1 text-[11px] font-medium leading-snug ${mutedText}`}>
+                  <p className={`mt-1 text-xs font-medium leading-snug ${mutedText}`}>
                     Una foto o una frase es suficiente. Podrás revisar el resultado antes de guardarlo.
                   </p>
                 </div>
@@ -254,7 +254,7 @@ export default function MealLogSheet({
                   />
 
                   {photo ? (
-                    <div className="relative overflow-hidden rounded-[22px] border border-cream-200 dark:border-ink-700">
+                    <div className="relative overflow-hidden rounded-2xl border border-cream-200 dark:border-ink-700">
                       <img src={photo.previewUrl} alt="Foto de tu comida" className="h-44 w-full object-cover" />
                       <button
                         type="button"
@@ -270,7 +270,7 @@ export default function MealLogSheet({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       data-testid="meal-log-photo-button"
-                      className={`flex w-full flex-col items-center justify-center gap-2 rounded-[22px] border-2 border-dashed px-4 py-7 transition active:scale-[0.99] ${
+                      className={`flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-7 transition active:scale-[0.99] ${
                         isDarkMode
                           ? 'border-ink-600 bg-ink-800/40 hover:border-ink-500'
                           : `${accentClasses.border} bg-cream-50 hover:bg-cream-100`
@@ -282,7 +282,7 @@ export default function MealLogSheet({
                       <span className={`text-sm font-bold ${accentClasses.text}`}>
                         Tomar una foto
                       </span>
-                      <span className={`text-[11px] ${mutedText}`}>
+                      <span className={`text-xs ${mutedText}`}>
                         También puedes elegirla de tu galería
                       </span>
                     </button>
@@ -290,7 +290,7 @@ export default function MealLogSheet({
 
                   {/* Description input */}
                   <div>
-                    <p className={`mb-1.5 text-[11px] font-extrabold uppercase tracking-[0.14em] ${mutedText}`}>
+                    <p className={`mb-1.5 text-xs font-extrabold uppercase tracking-[0.14em] ${mutedText}`}>
                       {photo ? 'Añade un detalle (opcional)' : 'O escribe qué comiste'}
                     </p>
                     <textarea
@@ -339,7 +339,7 @@ export default function MealLogSheet({
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4" />
-                        Analizar con IA
+                        Analizar automáticamente
                       </>
                     )}
                   </button>
@@ -351,7 +351,7 @@ export default function MealLogSheet({
                   animate={{ opacity: 1, y: 0 }}
                   className="space-y-4"
                 >
-                  <div className={`overflow-hidden rounded-[22px] border ${isDarkMode ? 'border-ink-700 bg-ink-800/50' : 'border-cream-200 bg-cream-50'}`}>
+                  <div className={`overflow-hidden rounded-2xl border ${isDarkMode ? 'border-ink-700 bg-ink-800/50' : 'border-cream-200 bg-cream-50'}`}>
                     {photo ? (
                       <div className="h-28 w-full overflow-hidden">
                         <img src={photo.previewUrl} alt="Comida analizada" className="h-full w-full object-cover" />
@@ -365,7 +365,7 @@ export default function MealLogSheet({
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <h4 className="min-w-0 flex-1 font-display text-lg font-semibold leading-snug">{analysis.nombre}</h4>
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-extrabold ${
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-extrabold ${
                               analysis.necesitaRevision
                                 ? isDarkMode ? 'bg-apricot-950/50 text-apricot-200' : 'bg-apricot-100 text-apricot-700'
                                 : isDarkMode ? 'bg-pine-950/50 text-pine-200' : 'bg-pine-100 text-pine-700'
@@ -384,24 +384,24 @@ export default function MealLogSheet({
                             <Flame className="h-3.5 w-3.5" />
                             {analysis.caloriasKcal}
                           </p>
-                          <p className={`text-[10px] font-bold uppercase tracking-wide ${mutedText}`}>kcal</p>
+                          <p className={`text-xs font-bold uppercase tracking-wide ${mutedText}`}>kcal</p>
                         </div>
                         <div className={`rounded-2xl px-2 py-2.5 ${isDarkMode ? 'bg-ink-900' : 'bg-white shadow-soft'}`}>
                           <p className="font-display text-lg font-semibold">{analysis.proteinaG}g</p>
-                          <p className={`text-[10px] font-bold uppercase tracking-wide ${mutedText}`}>proteína</p>
+                          <p className={`text-xs font-bold uppercase tracking-wide ${mutedText}`}>proteína</p>
                         </div>
                         <div className={`rounded-2xl px-2 py-2.5 ${isDarkMode ? 'bg-ink-900' : 'bg-white shadow-soft'}`}>
                           <p className="font-display text-lg font-semibold">{analysis.grasasG}g</p>
-                          <p className={`text-[10px] font-bold uppercase tracking-wide ${mutedText}`}>grasas</p>
+                          <p className={`text-xs font-bold uppercase tracking-wide ${mutedText}`}>grasas</p>
                         </div>
                       </div>
 
-                      <p className={`mt-3 flex items-start gap-1.5 text-[11px] font-medium ${mutedText}`}>
+                      <p className={`mt-3 flex items-start gap-1.5 text-xs font-medium ${mutedText}`}>
                         <UtensilsCrossed className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
                         {analysis.porciones}
                       </p>
                       {analysis.supuestos?.[0] ? (
-                        <p className={`mt-2 text-[11px] leading-relaxed ${mutedText}`}>
+                        <p className={`mt-2 text-xs leading-relaxed ${mutedText}`}>
                           Supuesto: {analysis.supuestos[0]}
                         </p>
                       ) : null}
@@ -426,7 +426,7 @@ export default function MealLogSheet({
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className={`space-y-3 overflow-hidden rounded-[20px] border p-3.5 ${isDarkMode ? 'border-ink-700 bg-ink-800/40' : 'border-cream-200 bg-white'}`}
+                      className={`space-y-3 overflow-hidden rounded-2xl border p-3.5 ${isDarkMode ? 'border-ink-700 bg-ink-800/40' : 'border-cream-200 bg-white'}`}
                     >
                       <label className="block text-xs font-bold">
                         Nombre
@@ -452,7 +452,7 @@ export default function MealLogSheet({
                           ['proteinaG', 'Proteína'],
                           ['grasasG', 'Grasas'],
                         ] as const).map(([field, label]) => (
-                          <label key={field} className="text-[11px] font-bold">
+                          <label key={field} className="text-xs font-bold">
                             {label}
                             <input
                               type="number"

@@ -22,7 +22,7 @@ export default function EquivalenciasCard({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       whileTap={{ scale: 0.985 }}
       transition={{ type: 'spring', stiffness: 400, damping: 30, delay }}
-      className={`group rounded-[20px] p-3 transition-all duration-300 overflow-hidden relative z-0 border ${
+      className={`group rounded-2xl p-3 transition-all duration-300 overflow-hidden relative z-0 border ${
         isDarkMode
           ? 'border-ink-700 bg-ink-900/92'
           : 'border-cream-100 bg-white'
@@ -55,11 +55,11 @@ export default function EquivalenciasCard({
               <h3 className={`font-black text-sm tracking-tight leading-tight ${isDarkMode ? 'text-cream-100' : 'text-ink-700'}`}>
                 {equivalencia.titulo}
               </h3>
-              <p className={`mt-1 text-[11px] font-semibold ${accentClasses.text}`}>
+              <p className={`mt-1 text-xs font-semibold ${accentClasses.text}`}>
                 Cada elemento = 1 porcion
               </p>
             </div>
-            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${accentClasses.tagBg} ${accentClasses.tagText}`}>
+            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-[0.14em] ${accentClasses.tagBg} ${accentClasses.tagText}`}>
               {equivalencia.items.length} opciones
             </span>
           </div>
@@ -74,13 +74,13 @@ export default function EquivalenciasCard({
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: delay + idx * 0.03 }}
-            className={`flex items-start gap-2.5 rounded-[14px] px-2.5 py-2 transition-colors ${
+            className={`flex items-start gap-2.5 rounded-xl px-2.5 py-2 transition-colors ${
               isDarkMode
                 ? 'bg-ink-800'
                 : 'bg-cream-50/80'
             }`}
           >
-            <span className={`mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-black ${accentClasses.tagBg} ${accentClasses.tagText}`}>
+            <span className={`mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-xs font-black ${accentClasses.tagBg} ${accentClasses.tagText}`}>
               {idx + 1}
             </span>
             <p className={`text-[13px] font-medium leading-snug break-words ${isDarkMode ? 'text-cream-200' : 'text-ink-500'}`}>

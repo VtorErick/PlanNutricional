@@ -58,7 +58,7 @@ export default function MealSwapSheet({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`flex h-[min(92dvh,790px)] w-full flex-col overflow-hidden rounded-t-[30px] border sm:h-auto sm:max-h-[84vh] sm:max-w-lg sm:rounded-[30px] ${
+            className={`flex h-[min(92dvh,790px)] w-full flex-col overflow-hidden rounded-t-3xl border sm:h-auto sm:max-h-[84vh] sm:max-w-lg sm:rounded-3xl ${
               isDarkMode
                 ? 'bg-ink-900 border-ink-700 shadow-lift'
                 : 'bg-white border-cream-200 shadow-lift'
@@ -72,19 +72,19 @@ export default function MealSwapSheet({
               <div className="flex items-start gap-3">
                 <div className={`mt-0.5 flex h-11 w-11 flex-shrink-0 flex-col items-center justify-center rounded-2xl border ${accentClasses.bgLight} ${accentClasses.border}`}>
                   <Clock3 className={`h-3.5 w-3.5 ${accentClasses.text}`} />
-                  <span className={`mt-0.5 text-[9px] font-extrabold tabular-nums ${accentClasses.text}`}>
+                  <span className={`mt-0.5 text-xs font-extrabold tabular-nums ${accentClasses.text}`}>
                     {momentoHora}
                   </span>
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className={`text-[10px] font-extrabold uppercase tracking-[0.18em] ${accentClasses.text}`}>
+                  <p className={`text-xs font-extrabold uppercase tracking-[0.18em] ${accentClasses.text}`}>
                     {momentoLabel}
                   </p>
                   <h3 className={`font-display text-xl font-semibold tracking-tight leading-tight ${isDarkMode ? 'text-cream-50' : 'text-ink-900'}`}>
                     {title}
                   </h3>
-                  <p className={`mt-1 text-[11px] font-medium leading-snug ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
+                  <p className={`mt-1 text-xs font-medium leading-snug ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>
                     Elige una opción. Puedes cambiarla cuando quieras.
                   </p>
                 </div>
@@ -130,7 +130,7 @@ export default function MealSwapSheet({
                           onClose();
                         }
                       }}
-                      className={`relative w-full cursor-pointer overflow-hidden rounded-[20px] text-left transition-all duration-300 group ${
+                      className={`relative w-full cursor-pointer overflow-hidden rounded-2xl text-left transition-all duration-300 group ${
                         esSeleccionada
                           ? `${accentClasses.bgLight} border-2 ${accentClasses.borderAccent}`
                           : isDarkMode
@@ -146,7 +146,7 @@ export default function MealSwapSheet({
                           <h4 className={`pr-16 font-display text-[15px] font-semibold leading-snug ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>
                             {comida.nombre}
                           </h4>
-                          <p className={`mt-1 line-clamp-2 text-[11px] font-medium leading-[1.45] ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+                          <p className={`mt-1 line-clamp-2 text-xs font-medium leading-[1.45] ${isDarkMode ? 'text-ink-300' : 'text-ink-500'}`}>
                             {comida.detalle}
                           </p>
                           <p className={`mt-2 line-clamp-1 text-xs font-bold ${isDarkMode ? 'text-ink-400' : 'text-ink-400'}`}>

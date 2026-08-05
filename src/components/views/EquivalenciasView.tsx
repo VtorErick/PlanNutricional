@@ -1,6 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Repeat, X } from 'lucide-react';
+import { ArrowLeft, Repeat } from 'lucide-react';
 import EquivalenciasCard from '../EquivalenciasCard';
 import { useDiet } from '../../context/DietContext';
 import { equivalencesDB } from '../../data/equivalencesDB';
@@ -40,13 +40,13 @@ export default function EquivalenciasView() {
               Diccionario de Intercambios
             </h2>
             <p className={`mt-0.5 text-xs font-semibold ${isDarkMode ? 'text-ink-400' : 'text-ink-500'}`}>
-              Vista Bento: explora en grid y toca para ver el detalle completo.
+              Encuentra reemplazos sencillos y revisa su detalle sin perder tu lugar.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      {!selectedEq ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         {equivalencesDB.map((eq, idx) => {
           const Icon = eq.icon;
 
@@ -102,54 +102,32 @@ export default function EquivalenciasView() {
             </motion.button>
           );
         })}
-      </div>
+      </div> : null}
 
       <AnimatePresence>
         {selectedEq ? (
-          <>
-            <motion.button
+          <motion.section
+            key={selectedEq.titulo}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="surface-card p-4"
+          >
+            <button
               type="button"
-              aria-label="Cerrar detalle de equivalencia"
               onClick={() => setSelectedEq(null)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-ink-900/55 backdrop-blur-[2px]"
-            />
-
-            <motion.section
-              role="dialog"
-              aria-modal="true"
-              aria-label={`Detalle de ${selectedEq.titulo}`}
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-              className={`fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-t-[28px] border ${
-                isDarkMode ? 'border-ink-700 bg-ink-900' : 'border-cream-200 bg-white'
-              }`}
-              style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+              className={`mb-4 inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-bold ${isDarkMode ? 'bg-ink-800 text-cream-200' : 'bg-cream-100 text-ink-600'}`}
             >
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b px-4 py-3 backdrop-blur-xl bg-white/90 dark:bg-ink-900/90 dark:border-ink-700 border-cream-200">
-                <p className={`text-sm font-black ${isDarkMode ? 'text-cream-100' : 'text-ink-800'}`}>Detalle</p>
-                <button
-                  type="button"
-                  onClick={() => setSelectedEq(null)}
-                  className={`rounded-xl p-2 ${isDarkMode ? 'hover:bg-ink-800 text-cream-300' : 'hover:bg-cream-100 text-ink-500'}`}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="overflow-y-auto p-4">
-                <EquivalenciasCard
-                  equivalencia={selectedEq}
-                  accentClasses={ac}
-                  isDarkMode={isDarkMode}
-                />
-              </div>
-            </motion.section>
-          </>
+              <ArrowLeft className="h-4 w-4" />
+              Volver al diccionario
+            </button>
+            <EquivalenciasCard
+              equivalencia={selectedEq}
+              accentClasses={ac}
+              isDarkMode={isDarkMode}
+            />
+          </motion.section>
         ) : null}
       </AnimatePresence>
     </motion.div>
